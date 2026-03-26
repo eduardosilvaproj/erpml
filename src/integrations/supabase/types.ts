@@ -32,6 +32,102 @@ export type Database = {
         }
         Relationships: []
       }
+      conference_items: {
+        Row: {
+          conference_id: string
+          created_at: string
+          expected_quantity: number
+          id: string
+          invoice_item_id: string
+          product_id: string | null
+          scanned_quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          conference_id: string
+          created_at?: string
+          expected_quantity?: number
+          id?: string
+          invoice_item_id: string
+          product_id?: string | null
+          scanned_quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          conference_id?: string
+          created_at?: string
+          expected_quantity?: number
+          id?: string
+          invoice_item_id?: string
+          product_id?: string | null
+          scanned_quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conference_items_conference_id_fkey"
+            columns: ["conference_id"]
+            isOneToOne: false
+            referencedRelation: "conferences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conference_items_invoice_item_id_fkey"
+            columns: ["invoice_item_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conference_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conferences: {
+        Row: {
+          created_at: string
+          finished_at: string | null
+          id: string
+          invoice_id: string
+          notes: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          invoice_id: string
+          notes?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          finished_at?: string | null
+          id?: string
+          invoice_id?: string
+          notes?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conferences_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
