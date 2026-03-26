@@ -32,6 +32,108 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_items: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_id: string
+          match_confidence: number | null
+          match_type: string
+          product_id: string | null
+          quantity: number
+          stock_updated: boolean
+          total_value: number
+          unit_value: number
+          xml_code: string
+          xml_description: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_id: string
+          match_confidence?: number | null
+          match_type?: string
+          product_id?: string | null
+          quantity?: number
+          stock_updated?: boolean
+          total_value?: number
+          unit_value?: number
+          xml_code: string
+          xml_description: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          match_confidence?: number | null
+          match_type?: string
+          product_id?: string | null
+          quantity?: number
+          stock_updated?: boolean
+          total_value?: number
+          unit_value?: number
+          xml_code?: string
+          xml_description?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          id: string
+          imported_at: string
+          issuer_cnpj: string | null
+          issuer_name: string | null
+          items_count: number
+          number: string
+          series: string | null
+          status: string
+          total_value: number
+          xml_data: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imported_at?: string
+          issuer_cnpj?: string | null
+          issuer_name?: string | null
+          items_count?: number
+          number: string
+          series?: string | null
+          status?: string
+          total_value?: number
+          xml_data?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imported_at?: string
+          issuer_cnpj?: string | null
+          issuer_name?: string | null
+          items_count?: number
+          number?: string
+          series?: string | null
+          status?: string
+          total_value?: number
+          xml_data?: string | null
+        }
+        Relationships: []
+      }
       product_suppliers: {
         Row: {
           cost: number
