@@ -1,17 +1,31 @@
-import { LayoutDashboard, Package, ShoppingBag, Warehouse, Users, TrendingUp, ArrowRightLeft, FileText } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingBag, Warehouse, Users, TrendingUp, ArrowRightLeft, FileText, ScanBarcode, Monitor } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { useProducts } from "@/hooks/useProductData";
+import { useSalesStats } from "@/hooks/useSalesData";
+import { useCustomerStats } from "@/hooks/useCustomerData";
 
 const modules = [
-  { title: "Produtos", desc: "Cadastro e gestão", icon: Package, url: "/produtos", count: "0" },
-  { title: "Entrada XML", desc: "Importar notas", icon: FileText, url: "/entrada-xml", count: "0" },
-  { title: "Estoque", desc: "Físico + FULL", icon: Warehouse, url: "/estoque", count: "0" },
-  { title: "Envio FULL", desc: "Movimentações", icon: ArrowRightLeft, url: "/movimentacao-full", count: "0" },
-  { title: "Vendas ML", desc: "Mercado Livre", icon: ShoppingBag, url: "/integracao-ml", count: "0" },
-  { title: "Clientes", desc: "CRM", icon: Users, url: "/crm", count: "0" },
+  { title: "Produtos", desc: "Cadastro e gestão", icon: Package, url: "/produtos" },
+  { title: "Entrada XML", desc: "Importar notas", icon: FileText, url: "/entrada-xml" },
+  { title: "Conferência", desc: "Bip de recebimento", icon: ScanBarcode, url: "/conferencia" },
+  { title: "Estoque", desc: "Físico + FULL", icon: Warehouse, url: "/estoque" },
+  { title: "Envio FULL", desc: "Movimentações", icon: ArrowRightLeft, url: "/movimentacao-full" },
+  { title: "PDV", desc: "Ponto de Venda", icon: Monitor, url: "/pdv" },
+  { title: "CRM", desc: "Clientes", icon: Users, url: "/crm" },
+  { title: "Vendas ML", desc: "Mercado Livre", icon: ShoppingBag, url: "/integracao-ml" },
 ];
 
 const Index = () => {
+  const { data: productData } = useProducts({ pageSize: 1 });
+  const { data: salesStats } = useSalesStats();
+  const { data: customerStats } = useCustomerStats();
+
+  const totalProducts = productData?.total ?? 0;
+
+  const formatCurrency = (v: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
+
   return (
     <div className="space-y-6">
       <div>
@@ -21,10 +35,10 @@ const Index = () => {
 
       <div className="grid gap-4 md:grid-cols-4">
         {[
-          { label: "Produtos", value: "0", icon: Package, trend: "+0%" },
-          { label: "Vendas Hoje", value: "R$ 0", icon: TrendingUp, trend: "+0%" },
-          { label: "Estoque Total", value: "0", icon: Warehouse, trend: "0" },
-          { label: "Clientes", value: "0", icon: Users, trend: "+0" },
+          { label: "Produtos", value: totalProducts.toString(), icon: Package },
+          { label: "Vendas Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: TrendingUp },
+          { label: "Vendas (30d)", value: (salesStats?.sales30d ?? 0).toString(), icon: ShoppingBag },
+          { label: "Clientes", value: (customerStats?.total ?? 0).toString(), icon: Users },
         ].map((stat) => (
           <Card key={stat.label}>
             <CardContent className="flex items-center gap-4 p-4">
@@ -42,7 +56,7 @@ const Index = () => {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">Módulos</h2>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           {modules.map((mod) => (
             <Link key={mod.title} to={mod.url}>
               <Card className="transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer">
