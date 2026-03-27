@@ -11,7 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useSuppliers, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import { enrichProduct } from "@/lib/enrich-product";
+import { useToast } from "@/hooks/use-toast";
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
