@@ -176,8 +176,12 @@ export type Database = {
           stock_updated: boolean
           total_value: number
           unit_value: number
+          xml_cfop: string | null
           xml_code: string
           xml_description: string
+          xml_ean: string | null
+          xml_ncm: string | null
+          xml_unit: string | null
         }
         Insert: {
           created_at?: string
@@ -190,8 +194,12 @@ export type Database = {
           stock_updated?: boolean
           total_value?: number
           unit_value?: number
+          xml_cfop?: string | null
           xml_code: string
           xml_description: string
+          xml_ean?: string | null
+          xml_ncm?: string | null
+          xml_unit?: string | null
         }
         Update: {
           created_at?: string
@@ -204,8 +212,12 @@ export type Database = {
           stock_updated?: boolean
           total_value?: number
           unit_value?: number
+          xml_cfop?: string | null
           xml_code?: string
           xml_description?: string
+          xml_ean?: string | null
+          xml_ncm?: string | null
+          xml_unit?: string | null
         }
         Relationships: [
           {
