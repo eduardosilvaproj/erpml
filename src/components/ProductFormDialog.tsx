@@ -41,11 +41,13 @@ interface ProductFormDialogProps {
 }
 
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
+  const { toast } = useToast();
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
+  const [isEnriching, setIsEnriching] = useState(false);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
