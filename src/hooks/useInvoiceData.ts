@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MatchResult } from "@/lib/nfe-parser";
+import { enrichProduct } from "@/lib/enrich-product";
 
 export function useInvoices() {
   return useQuery({
@@ -75,18 +76,49 @@ export function useImportInvoice() {
           const cost = xmlP.unitValue;
           const markup = 1.5;
 
+          // Try to enrich with AI (non-blocking - if it fails, use XML data only)
+          let enrichedData: Partial<{
+            description: string;
+            weight_kg: number | null;
+            width_cm: number | null;
+            height_cm: number | null;
+            depth_cm: number | null;
+            suggested_price_brl: number | null;
+          }> = {};
+
+          try {
+            enrichedData = await enrichProduct({
+              productName: xmlP.description,
+              ean: xmlP.ean || undefined,
+              ncm: xmlP.ncm || undefined,
+              unit: xmlP.unit || undefined,
+            });
+          } catch {
+            // AI enrichment failed, continue with XML data only
+          }
+
+          const description = enrichedData.description
+            || `Importado via NF-e ${nfeData.number} | NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;
+          const price = enrichedData.suggested_price_brl
+            ? enrichedData.suggested_price_brl
+            : Math.round(cost * markup * 100) / 100;
+
           const { data: newProduct, error: prodError } = await supabase
             .from("products")
             .insert({
               sku,
               barcode: xmlP.ean || null,
               name: xmlP.description,
-              description: `Importado via NF-e ${nfeData.number} | NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`,
+              description,
               cost,
-              price: Math.round(cost * markup * 100) / 100,
+              price,
               stock_physical: 0,
               min_stock: 1,
               active: true,
+              weight: enrichedData.weight_kg ?? null,
+              width: enrichedData.width_cm ?? null,
+              height: enrichedData.height_cm ?? null,
+              depth: enrichedData.depth_cm ?? null,
             })
             .select()
             .single();
