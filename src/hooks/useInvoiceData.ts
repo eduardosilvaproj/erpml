@@ -108,27 +108,50 @@ export function useImportInvoice() {
           stock_updated: !!productId,
         });
 
-        // Update stock if matched
+        // Update stock and enrich product data if matched
         if (productId) {
           const { data: current } = await supabase
             .from("products")
-            .select("stock_physical, cost")
+            .select("stock_physical, cost, barcode, name, description, price, min_stock")
             .eq("id", productId)
             .single();
 
           if (current) {
-            const newStock = current.stock_physical + Math.floor(match.xmlProduct.quantity);
-            // Calculate weighted average cost
+            const xmlP = match.xmlProduct;
+            const newStock = current.stock_physical + Math.floor(xmlP.quantity);
             const totalOldCost = current.stock_physical * current.cost;
-            const totalNewCost = match.xmlProduct.quantity * match.xmlProduct.unitValue;
-            const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : match.xmlProduct.unitValue;
+            const totalNewCost = xmlP.quantity * xmlP.unitValue;
+            const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlP.unitValue;
+
+            // Build update with enriched data
+            const updates: Record<string, any> = {
+              stock_physical: newStock,
+              cost: Math.round(avgCost * 100) / 100,
+            };
+
+            // Fill barcode if missing
+            if (!current.barcode && xmlP.ean) {
+              updates.barcode = xmlP.ean;
+            }
+
+            // Update description if empty or very short
+            if (!current.description || current.description.length < 5) {
+              updates.description = `NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;
+            }
+
+            // Update price if it's 0 (never set)
+            if (current.price === 0 && xmlP.unitValue > 0) {
+              updates.price = Math.round(xmlP.unitValue * 1.5 * 100) / 100;
+            }
+
+            // Set min_stock if it's 0
+            if (current.min_stock === 0) {
+              updates.min_stock = 1;
+            }
 
             await supabase
               .from("products")
-              .update({
-                stock_physical: newStock,
-                cost: Math.round(avgCost * 100) / 100,
-              })
+              .update(updates)
               .eq("id", productId);
           }
         }
