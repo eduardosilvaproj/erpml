@@ -197,6 +197,22 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 </FormItem>
               )} />
 
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleEnrich}
+                disabled={isEnriching}
+                className="w-full"
+              >
+                {isEnriching ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {isEnriching ? "Buscando dados com IA..." : "Preencher com IA"}
+              </Button>
+
               <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Descrição</FormLabel>
