@@ -116,6 +116,52 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     );
   };
 
+  const handleEnrich = async () => {
+    const name = form.getValues("name");
+    if (!name) {
+      toast({ title: "Informe o nome do produto primeiro", variant: "destructive" });
+      return;
+    }
+    setIsEnriching(true);
+    try {
+      const data = await enrichProduct({
+        productName: name,
+        ean: form.getValues("barcode") || undefined,
+      });
+      // Only fill empty fields
+      if (data.description && !form.getValues("description")) {
+        form.setValue("description", data.description);
+      }
+      if (data.weight_kg != null && !form.getValues("weight")) {
+        form.setValue("weight", data.weight_kg);
+      }
+      if (data.width_cm != null && !form.getValues("width")) {
+        form.setValue("width", data.width_cm);
+      }
+      if (data.height_cm != null && !form.getValues("height")) {
+        form.setValue("height", data.height_cm);
+      }
+      if (data.depth_cm != null && !form.getValues("depth")) {
+        form.setValue("depth", data.depth_cm);
+      }
+      if (data.suggested_price_brl != null && form.getValues("price") === 0) {
+        form.setValue("price", data.suggested_price_brl);
+      }
+      // Try to match suggested category
+      if (data.suggested_category && !form.getValues("category_id") && categories) {
+        const match = categories.find(
+          (c) => c.name.toLowerCase() === data.suggested_category!.toLowerCase()
+        );
+        if (match) form.setValue("category_id", match.id);
+      }
+      toast({ title: "Dados preenchidos com IA!", description: "Revise os campos antes de salvar." });
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar dados", description: err.message, variant: "destructive" });
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh]">
