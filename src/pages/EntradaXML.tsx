@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import {
   FileText, Upload, CheckCircle, AlertTriangle, Loader2, X, Package,
-  ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp
+  ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp, Trash2, Files
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,14 +18,36 @@ import { useToast } from "@/hooks/use-toast";
 
 type ImportStep = "upload" | "review" | "processing" | "done";
 
+interface QueuedFile {
+  id: string;
+  file: File;
+  status: "pending" | "parsing" | "parsed" | "error";
+  nfeData?: NFeData;
+  matches?: MatchResult[];
+  error?: string;
+}
+
+interface ImportResult {
+  fileName: string;
+  nfeNumber: string;
+  issuerName: string;
+  totalItems: number;
+  matchedCount: number;
+  newCount: number;
+  success: boolean;
+  error?: string;
+}
+
 const EntradaXML = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<ImportStep>("upload");
-  const [nfeData, setNfeData] = useState<NFeData | null>(null);
-  const [matches, setMatches] = useState<MatchResult[]>([]);
+  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [createNewProducts, setCreateNewProducts] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [currentProcessing, setCurrentProcessing] = useState("");
+  const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [expandedHistory, setExpandedHistory] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
@@ -33,82 +55,168 @@ const EntradaXML = () => {
   const { data: invoices } = useInvoices();
   const importInvoice = useImportInvoice();
 
-  const processFile = useCallback(async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".xml")) {
-      toast({ title: "Arquivo inválido", description: "Selecione um arquivo XML.", variant: "destructive" });
-      return;
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const addFiles = useCallback(async (files: FileList | File[]) => {
+    const xmlFiles = Array.from(files).filter((f) => f.name.toLowerCase().endsWith(".xml"));
+    const nonXml = Array.from(files).length - xmlFiles.length;
+
+    if (nonXml > 0) {
+      toast({
+        title: `${nonXml} arquivo(s) ignorado(s)`,
+        description: "Apenas arquivos XML são aceitos.",
+        variant: "destructive",
+      });
     }
 
-    try {
-      const xmlString = await file.text();
-      const parsed = parseNFeXml(xmlString);
-      setNfeData(parsed);
+    if (xmlFiles.length === 0) return;
 
-      // Fetch existing products for matching
-      const { data: dbProducts } = await supabase
-        .from("products")
-        .select("id, name, barcode, sku");
+    const newQueued: QueuedFile[] = xmlFiles.map((file) => ({
+      id: generateId(),
+      file,
+      status: "pending" as const,
+    }));
 
-      const matchResults = matchProducts(parsed.products, dbProducts || []);
-      setMatches(matchResults);
-      setStep("review");
-    } catch (err: any) {
-      toast({ title: "Erro ao ler XML", description: err.message, variant: "destructive" });
+    setQueuedFiles((prev) => [...prev, ...newQueued]);
+
+    // Parse each file
+    const { data: dbProducts } = await supabase
+      .from("products")
+      .select("id, name, barcode, sku");
+
+    for (const qf of newQueued) {
+      setQueuedFiles((prev) =>
+        prev.map((f) => (f.id === qf.id ? { ...f, status: "parsing" } : f))
+      );
+
+      try {
+        const xmlString = await qf.file.text();
+        const parsed = parseNFeXml(xmlString);
+        const matchResults = matchProducts(parsed.products, dbProducts || []);
+
+        setQueuedFiles((prev) =>
+          prev.map((f) =>
+            f.id === qf.id
+              ? { ...f, status: "parsed", nfeData: parsed, matches: matchResults }
+              : f
+          )
+        );
+      } catch (err: any) {
+        setQueuedFiles((prev) =>
+          prev.map((f) =>
+            f.id === qf.id ? { ...f, status: "error", error: err.message } : f
+          )
+        );
+      }
     }
   }, [toast]);
 
+  const removeFile = (id: string) => {
+    setQueuedFiles((prev) => prev.filter((f) => f.id !== id));
+    if (selectedFileId === id) setSelectedFileId(null);
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processFile(file);
+    if (e.target.files) addFiles(e.target.files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processFile(file);
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
-  const handleImport = async () => {
-    if (!nfeData) return;
-    setStep("processing");
-    setProgress(10);
+  const parsedFiles = queuedFiles.filter((f) => f.status === "parsed");
+  const errorFiles = queuedFiles.filter((f) => f.status === "error");
+  const parsingFiles = queuedFiles.filter((f) => f.status === "parsing" || f.status === "pending");
 
-    const interval = setInterval(() => {
-      setProgress((p) => Math.min(p + 15, 85));
-    }, 300);
+  const selectedFile = selectedFileId
+    ? queuedFiles.find((f) => f.id === selectedFileId)
+    : null;
 
-    try {
-      await importInvoice.mutateAsync({
-        nfeData: {
-          number: nfeData.number,
-          series: nfeData.series,
-          issuerName: nfeData.issuerName,
-          issuerCnpj: nfeData.issuerCnpj,
-          totalValue: nfeData.totalValue,
-        },
-        matches,
-        createNewProducts,
-      });
-      setProgress(100);
-      setStep("done");
-    } catch {
-      setStep("review");
-    } finally {
-      clearInterval(interval);
+  const totalMatched = parsedFiles.reduce(
+    (sum, f) => sum + (f.matches?.filter((m) => m.matchType !== "none").length ?? 0),
+    0
+  );
+  const totalNew = parsedFiles.reduce(
+    (sum, f) => sum + (f.matches?.filter((m) => m.matchType === "none").length ?? 0),
+    0
+  );
+
+  const goToReview = () => {
+    if (parsedFiles.length === 0) {
+      toast({ title: "Nenhum arquivo válido", description: "Adicione ao menos um XML válido.", variant: "destructive" });
+      return;
     }
+    setStep("review");
+  };
+
+  const handleImportAll = async () => {
+    setStep("processing");
+    setProgress(0);
+    const results: ImportResult[] = [];
+    const total = parsedFiles.length;
+
+    for (let i = 0; i < total; i++) {
+      const qf = parsedFiles[i];
+      if (!qf.nfeData || !qf.matches) continue;
+
+      setCurrentProcessing(`${qf.nfeData.number} - ${qf.file.name}`);
+      setProgress(Math.round(((i) / total) * 100));
+
+      try {
+        await importInvoice.mutateAsync({
+          nfeData: {
+            number: qf.nfeData.number,
+            series: qf.nfeData.series,
+            issuerName: qf.nfeData.issuerName,
+            issuerCnpj: qf.nfeData.issuerCnpj,
+            totalValue: qf.nfeData.totalValue,
+          },
+          matches: qf.matches,
+          createNewProducts,
+        });
+
+        const matched = qf.matches.filter((m) => m.matchType !== "none").length;
+        const newP = qf.matches.filter((m) => m.matchType === "none").length;
+        results.push({
+          fileName: qf.file.name,
+          nfeNumber: qf.nfeData.number,
+          issuerName: qf.nfeData.issuerName,
+          totalItems: qf.matches.length,
+          matchedCount: matched,
+          newCount: newP,
+          success: true,
+        });
+      } catch (err: any) {
+        results.push({
+          fileName: qf.file.name,
+          nfeNumber: qf.nfeData?.number ?? "?",
+          issuerName: qf.nfeData?.issuerName ?? "",
+          totalItems: qf.matches?.length ?? 0,
+          matchedCount: 0,
+          newCount: 0,
+          success: false,
+          error: err.message,
+        });
+      }
+    }
+
+    setProgress(100);
+    setImportResults(results);
+    setStep("done");
   };
 
   const resetFlow = () => {
     setStep("upload");
-    setNfeData(null);
-    setMatches([]);
+    setQueuedFiles([]);
+    setSelectedFileId(null);
     setProgress(0);
+    setImportResults([]);
+    setCurrentProcessing("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  const matchedCount = matches.filter((m) => m.matchType === "exact" || m.matchType === "fuzzy").length;
-  const newCount = matches.filter((m) => m.matchType === "none").length;
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -168,83 +276,248 @@ const EntradaXML = () => {
 
       {/* ===== UPLOAD STEP ===== */}
       {step === "upload" && (
-        <Card>
-          <CardContent className="p-8">
-            <div
-              className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-16 transition-colors ${
-                dragOver ? "border-primary bg-primary/5" : "border-border"
-              }`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <Upload className={`mb-4 h-12 w-12 transition-colors ${dragOver ? "text-primary" : "text-muted-foreground opacity-40"}`} />
-              <p className="mb-2 text-lg font-medium text-foreground">
-                {dragOver ? "Solte o arquivo aqui" : "Arraste o XML da Nota Fiscal aqui"}
-              </p>
-              <p className="mb-4 text-sm text-muted-foreground">ou clique para selecionar o arquivo</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xml"
-                className="hidden"
-                onChange={handleFileSelect}
-              />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" />
-                Selecionar XML
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ===== REVIEW STEP ===== */}
-      {step === "review" && nfeData && (
         <div className="space-y-4">
-          {/* NF-e header */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  NF-e #{nfeData.number} | Série {nfeData.series}
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={resetFlow}>
-                  <X className="mr-1 h-4 w-4" /> Cancelar
+            <CardContent className="p-8">
+              <div
+                className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed py-12 transition-colors ${
+                  dragOver ? "border-primary bg-primary/5" : "border-border"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
+                <Upload className={`mb-4 h-12 w-12 transition-colors ${dragOver ? "text-primary" : "text-muted-foreground opacity-40"}`} />
+                <p className="mb-2 text-lg font-medium text-foreground">
+                  {dragOver ? "Solte os arquivos aqui" : "Arraste seus XMLs de Nota Fiscal aqui"}
+                </p>
+                <p className="mb-4 text-sm text-muted-foreground">Suporta múltiplos arquivos XML simultaneamente</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xml"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Selecionar XMLs
                 </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Emitente</p>
-                  <p className="font-medium">{nfeData.issuerName || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">CNPJ</p>
-                  <p className="font-mono">{nfeData.issuerCnpj || "—"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Valor Total</p>
-                  <p className="font-bold text-lg">{formatCurrency(nfeData.totalValue)}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Itens</p>
-                  <p className="font-bold text-lg">{nfeData.products.length}</p>
-                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Match summary */}
+          {/* File queue list */}
+          {queuedFiles.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Files className="h-5 w-5" />
+                    Arquivos carregados ({queuedFiles.length})
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setQueuedFiles([])}>
+                      Limpar tudo
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {queuedFiles.map((qf) => (
+                  <div
+                    key={qf.id}
+                    className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
+                      qf.status === "error"
+                        ? "border-destructive/30 bg-destructive/5"
+                        : qf.status === "parsed"
+                        ? "border-emerald-200 bg-emerald-50/50"
+                        : "border-border"
+                    } ${selectedFileId === qf.id ? "ring-2 ring-primary" : ""}`}
+                  >
+                    <div
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => qf.status === "parsed" && setSelectedFileId(qf.id === selectedFileId ? null : qf.id)}
+                    >
+                      {qf.status === "pending" || qf.status === "parsing" ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+                      ) : qf.status === "parsed" ? (
+                        <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{qf.file.name}</p>
+                        {qf.status === "parsed" && qf.nfeData && (
+                          <p className="text-xs text-muted-foreground">
+                            NF-e #{qf.nfeData.number} • {qf.nfeData.issuerName} • {qf.nfeData.products.length} itens • {formatCurrency(qf.nfeData.totalValue)}
+                          </p>
+                        )}
+                        {qf.status === "error" && (
+                          <p className="text-xs text-destructive">{qf.error}</p>
+                        )}
+                        {(qf.status === "pending" || qf.status === "parsing") && (
+                          <p className="text-xs text-muted-foreground">Processando...</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {qf.status === "parsed" && qf.matches && (
+                        <div className="flex gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {qf.matches.filter((m) => m.matchType !== "none").length} vinculados
+                          </Badge>
+                          {qf.matches.filter((m) => m.matchType === "none").length > 0 && (
+                            <Badge variant="destructive" className="text-xs">
+                              {qf.matches.filter((m) => m.matchType === "none").length} novos
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFile(qf.id)}>
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Summary bar */}
+                {parsedFiles.length > 0 && parsingFiles.length === 0 && (
+                  <>
+                    <Separator className="my-3" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-4 text-sm">
+                        <span className="text-muted-foreground">
+                          <strong className="text-foreground">{parsedFiles.length}</strong> nota(s) válida(s)
+                        </span>
+                        {errorFiles.length > 0 && (
+                          <span className="text-destructive">
+                            <strong>{errorFiles.length}</strong> com erro
+                          </span>
+                        )}
+                        <span className="text-muted-foreground">
+                          <strong className="text-emerald-600">{totalMatched}</strong> vinculados
+                        </span>
+                        <span className="text-muted-foreground">
+                          <strong className="text-amber-600">{totalNew}</strong> novos
+                        </span>
+                      </div>
+                      <Button onClick={goToReview} disabled={parsedFiles.length === 0}>
+                        <ArrowRight className="mr-2 h-4 w-4" />
+                        Revisar e Importar ({parsedFiles.length})
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {parsingFiles.length > 0 && (
+                  <>
+                    <Separator className="my-3" />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Processando {parsingFiles.length} arquivo(s)...
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Selected file detail */}
+          {selectedFile?.status === "parsed" && selectedFile.nfeData && selectedFile.matches && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Detalhes: NF-e #{selectedFile.nfeData.number} — {selectedFile.file.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Código</TableHead>
+                      <TableHead>Descrição XML</TableHead>
+                      <TableHead className="text-center">Qtd</TableHead>
+                      <TableHead className="text-right">Valor Unit.</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead>Match</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedFile.matches.map((m, i) => (
+                      <TableRow key={i} className={m.matchType === "none" ? "bg-destructive/5" : ""}>
+                        <TableCell className="font-mono text-xs">{m.xmlProduct.code}</TableCell>
+                        <TableCell className="max-w-[200px] truncate text-sm">{m.xmlProduct.description}</TableCell>
+                        <TableCell className="text-center">{m.xmlProduct.quantity}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(m.xmlProduct.unitValue)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(m.xmlProduct.totalValue)}</TableCell>
+                        <TableCell>{matchBadge(m.matchType, m.confidence)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ===== REVIEW STEP ===== */}
+      {step === "review" && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Files className="h-5 w-5" />
+                  Revisão — {parsedFiles.length} nota(s) fiscal(is)
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setStep("upload")}>
+                  <X className="mr-1 h-4 w-4" /> Voltar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {parsedFiles.map((qf) => (
+                  <div key={qf.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-primary" />
+                      <div>
+                        <p className="text-sm font-medium">
+                          NF-e #{qf.nfeData!.number} — {qf.nfeData!.issuerName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {qf.nfeData!.products.length} itens • {formatCurrency(qf.nfeData!.totalValue)} •
+                          CNPJ: {qf.nfeData!.issuerCnpj}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Badge variant="secondary">
+                        {qf.matches!.filter((m) => m.matchType !== "none").length} vinculados
+                      </Badge>
+                      {qf.matches!.filter((m) => m.matchType === "none").length > 0 && (
+                        <Badge variant="destructive">
+                          {qf.matches!.filter((m) => m.matchType === "none").length} novos
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Global settings */}
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardContent className="flex items-center gap-3 p-4">
                 <Check className="h-6 w-6 text-emerald-600" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Vinculados</p>
-                  <p className="text-xl font-bold">{matchedCount}</p>
+                  <p className="text-sm text-muted-foreground">Total Vinculados</p>
+                  <p className="text-xl font-bold">{totalMatched}</p>
                 </div>
               </CardContent>
             </Card>
@@ -252,8 +525,8 @@ const EntradaXML = () => {
               <CardContent className="flex items-center gap-3 p-4">
                 <XCircle className="h-6 w-6 text-destructive" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Não encontrados</p>
-                  <p className="text-xl font-bold">{newCount}</p>
+                  <p className="text-sm text-muted-foreground">Total Não Encontrados</p>
+                  <p className="text-xl font-bold">{totalNew}</p>
                 </div>
               </CardContent>
             </Card>
@@ -270,54 +543,11 @@ const EntradaXML = () => {
             </Card>
           </div>
 
-          {/* Items table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Itens da Nota Fiscal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Descrição XML</TableHead>
-                    <TableHead className="text-center">Qtd</TableHead>
-                    <TableHead className="text-right">Valor Unit.</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead>Match</TableHead>
-                    <TableHead>Produto Vinculado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {matches.map((m, i) => (
-                    <TableRow key={i} className={m.matchType === "none" ? "bg-destructive/5" : ""}>
-                      <TableCell className="font-mono text-xs">{m.xmlProduct.code}</TableCell>
-                      <TableCell className="max-w-[200px] truncate text-sm">{m.xmlProduct.description}</TableCell>
-                      <TableCell className="text-center">{m.xmlProduct.quantity}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(m.xmlProduct.unitValue)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(m.xmlProduct.totalValue)}</TableCell>
-                      <TableCell>{matchBadge(m.matchType, m.confidence)}</TableCell>
-                      <TableCell className="text-sm">
-                        {m.matchedProductName ? (
-                          <span className="text-emerald-700">{m.matchedProductName}</span>
-                        ) : (
-                          <span className="text-muted-foreground italic">
-                            {createNewProducts ? "Será criado" : "Não vinculado"}
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={resetFlow}>Cancelar</Button>
-            <Button onClick={handleImport}>
+            <Button variant="outline" onClick={() => setStep("upload")}>Voltar</Button>
+            <Button onClick={handleImportAll}>
               <ArrowRight className="mr-2 h-4 w-4" />
-              Importar e Atualizar Estoque
+              Importar {parsedFiles.length} Nota(s)
             </Button>
           </div>
         </div>
@@ -328,9 +558,10 @@ const EntradaXML = () => {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Loader2 className="mb-4 h-10 w-10 animate-spin text-primary" />
-            <p className="mb-2 text-lg font-medium">Importando nota fiscal...</p>
+            <p className="mb-2 text-lg font-medium">Importando notas fiscais...</p>
+            <p className="mb-2 text-sm text-muted-foreground">{currentProcessing}</p>
             <p className="mb-6 text-sm text-muted-foreground">
-              Atualizando estoque de {matchedCount + (createNewProducts ? newCount : 0)} produto(s)
+              {parsedFiles.length} nota(s) • {totalMatched + (createNewProducts ? totalNew : 0)} produto(s)
             </p>
             <Progress value={progress} className="max-w-md" />
             <p className="mt-2 text-sm text-muted-foreground">{progress}%</p>
@@ -339,34 +570,54 @@ const EntradaXML = () => {
       )}
 
       {/* ===== DONE STEP ===== */}
-      {step === "done" && nfeData && (
+      {step === "done" && importResults.length > 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="mb-4 rounded-full bg-emerald-100 p-4">
-              <CheckCircle className="h-10 w-10 text-emerald-600" />
+          <CardContent className="py-10">
+            <div className="flex flex-col items-center mb-6">
+              <div className="mb-4 rounded-full bg-emerald-100 p-4">
+                <CheckCircle className="h-10 w-10 text-emerald-600" />
+              </div>
+              <p className="text-xl font-bold text-foreground">Importação concluída!</p>
+              <p className="text-muted-foreground">
+                {importResults.filter((r) => r.success).length} de {importResults.length} nota(s) importada(s) com sucesso
+              </p>
             </div>
-            <p className="mb-2 text-xl font-bold text-foreground">Importação concluída!</p>
-            <p className="mb-1 text-muted-foreground">
-              NF-e #{nfeData.number} • {nfeData.issuerName}
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-6 text-center">
-              <div>
-                <p className="text-2xl font-bold text-primary">{matches.length}</p>
-                <p className="text-xs text-muted-foreground">Itens processados</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-emerald-600">{matchedCount}</p>
-                <p className="text-xs text-muted-foreground">Estoque atualizado</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-amber-600">{createNewProducts ? newCount : 0}</p>
-                <p className="text-xs text-muted-foreground">Produtos criados</p>
-              </div>
+
+            <div className="space-y-2 max-w-2xl mx-auto">
+              {importResults.map((r, i) => (
+                <div
+                  key={i}
+                  className={`flex items-center justify-between rounded-lg border p-3 ${
+                    r.success ? "border-emerald-200 bg-emerald-50/50" : "border-destructive/30 bg-destructive/5"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    {r.success ? (
+                      <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive shrink-0" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">
+                        NF-e #{r.nfeNumber} — {r.issuerName || r.fileName}
+                      </p>
+                      {r.success ? (
+                        <p className="text-xs text-muted-foreground">
+                          {r.totalItems} itens • {r.matchedCount} vinculados • {r.newCount} criados
+                        </p>
+                      ) : (
+                        <p className="text-xs text-destructive">{r.error}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="mt-6 flex gap-3">
+
+            <div className="mt-6 flex justify-center">
               <Button variant="outline" onClick={resetFlow}>
                 <Upload className="mr-2 h-4 w-4" />
-                Importar Outra Nota
+                Importar Mais Notas
               </Button>
             </div>
           </CardContent>
