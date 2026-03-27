@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,29 +43,37 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const { data: suppliers } = useSuppliers();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>(
-    product?.product_suppliers?.map((ps) => ps.supplier_id) || []
-  );
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
+
+  const getDefaults = (p?: Product | null): FormValues => ({
+    sku: p?.sku || "",
+    barcode: p?.barcode || "",
+    name: p?.name || "",
+    description: p?.description || "",
+    category_id: p?.category_id || "",
+    cost: p?.cost || 0,
+    price: p?.price || 0,
+    weight: p?.weight ?? "",
+    width: p?.width ?? "",
+    height: p?.height ?? "",
+    depth: p?.depth ?? "",
+    sku_ml: p?.sku_ml || "",
+    id_ml: p?.id_ml || "",
+    min_stock: p?.min_stock || 0,
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      sku: product?.sku || "",
-      barcode: product?.barcode || "",
-      name: product?.name || "",
-      description: product?.description || "",
-      category_id: product?.category_id || "",
-      cost: product?.cost || 0,
-      price: product?.price || 0,
-      weight: product?.weight ?? "",
-      width: product?.width ?? "",
-      height: product?.height ?? "",
-      depth: product?.depth ?? "",
-      sku_ml: product?.sku_ml || "",
-      id_ml: product?.id_ml || "",
-      min_stock: product?.min_stock || 0,
-    },
+    defaultValues: getDefaults(product),
   });
+
+  // Reset form and suppliers when product changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      form.reset(getDefaults(product));
+      setSelectedSuppliers(product?.product_suppliers?.map((ps) => ps.supplier_id) || []);
+    }
+  }, [open, product]);
 
   const isLoading = createProduct.isPending || updateProduct.isPending;
 
