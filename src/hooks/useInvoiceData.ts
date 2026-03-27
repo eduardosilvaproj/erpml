@@ -70,15 +70,23 @@ export function useImportInvoice() {
 
         // Create new product if no match and flag is set
         if (!productId && createNewProducts) {
+          const xmlP = match.xmlProduct;
+          const sku = xmlP.code || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          const cost = xmlP.unitValue;
+          const markup = 1.5;
+
           const { data: newProduct, error: prodError } = await supabase
             .from("products")
             .insert({
-              sku: match.xmlProduct.code || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-              barcode: match.xmlProduct.ean || null,
-              name: match.xmlProduct.description,
-              cost: match.xmlProduct.unitValue,
-              price: match.xmlProduct.unitValue * 1.5, // default markup
+              sku,
+              barcode: xmlP.ean || null,
+              name: xmlP.description,
+              description: `Importado via NF-e ${nfeData.number} | NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`,
+              cost,
+              price: Math.round(cost * markup * 100) / 100,
               stock_physical: 0,
+              min_stock: 1,
+              active: true,
             })
             .select()
             .single();
