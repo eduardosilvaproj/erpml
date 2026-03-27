@@ -20,6 +20,8 @@ import { useQueryClient } from "@tanstack/react-query";
 const PAGE_SIZE = 10;
 
 const Produtos = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
@@ -29,6 +31,8 @@ const Produtos = () => {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [supplierDialogOpen, setSupplierDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0, name: "" });
 
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
@@ -43,6 +47,86 @@ const Produtos = () => {
   });
   const deleteProduct = useDeleteProduct();
   const deleteSupplier = useDeleteSupplier();
+
+  const handleBatchEnrich = useCallback(async () => {
+    setEnriching(true);
+    try {
+      // Fetch ALL products with missing fields (not just current page)
+      const { data: allProducts, error } = await supabase
+        .from("products")
+        .select("id, name, barcode, description, weight, width, height, depth, price")
+        .eq("active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const incomplete = (allProducts || []).filter(
+        (p) =>
+          !p.description ||
+          p.description.length < 10 ||
+          p.weight == null ||
+          p.width == null ||
+          p.height == null ||
+          p.depth == null
+      );
+
+      if (incomplete.length === 0) {
+        toast({ title: "Todos os produtos já possuem dados completos!" });
+        setEnriching(false);
+        return;
+      }
+
+      setEnrichProgress({ current: 0, total: incomplete.length, name: "" });
+      let successCount = 0;
+
+      for (let i = 0; i < incomplete.length; i++) {
+        const prod = incomplete[i];
+        setEnrichProgress({ current: i + 1, total: incomplete.length, name: prod.name });
+
+        try {
+          const enriched = await enrichProduct({
+            productName: prod.name,
+            ean: prod.barcode || undefined,
+          });
+
+          const updates: Record<string, any> = {};
+          if (enriched.description && (!prod.description || prod.description.length < 10)) {
+            updates.description = enriched.description;
+          }
+          if (enriched.weight_kg != null && prod.weight == null) updates.weight = enriched.weight_kg;
+          if (enriched.width_cm != null && prod.width == null) updates.width = enriched.width_cm;
+          if (enriched.height_cm != null && prod.height == null) updates.height = enriched.height_cm;
+          if (enriched.depth_cm != null && prod.depth == null) updates.depth = enriched.depth_cm;
+          if (enriched.suggested_price_brl != null && prod.price === 0) {
+            updates.price = enriched.suggested_price_brl;
+          }
+
+          if (Object.keys(updates).length > 0) {
+            await supabase.from("products").update(updates).eq("id", prod.id);
+            successCount++;
+          }
+        } catch {
+          // Skip failed items, continue with next
+        }
+
+        // Small delay to avoid rate limiting
+        if (i < incomplete.length - 1) {
+          await new Promise((r) => setTimeout(r, 500));
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({
+        title: "Atualização com IA concluída!",
+        description: `${successCount} de ${incomplete.length} produto(s) atualizado(s).`,
+      });
+    } catch (err: any) {
+      toast({ title: "Erro na atualização", description: err.message, variant: "destructive" });
+    } finally {
+      setEnriching(false);
+      setEnrichProgress({ current: 0, total: 0, name: "" });
+    }
+  }, [toast, queryClient]);
 
   const totalPages = Math.ceil((data?.total || 0) / PAGE_SIZE);
 
