@@ -219,11 +219,32 @@ const Produtos = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button
+                  variant="outline"
+                  onClick={handleBatchEnrich}
+                  disabled={enriching}
+                >
+                  {enriching ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  {enriching ? "Atualizando..." : "Atualizar com IA"}
+                </Button>
                 <Button onClick={() => { setEditingProduct(null); setProductDialogOpen(true); }}>
                   <Plus className="mr-2 h-4 w-4" />
                   Novo Produto
                 </Button>
               </div>
+              {enriching && enrichProgress.total > 0 && (
+                <div className="mt-3 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Enriquecendo: {enrichProgress.name}</span>
+                    <span>{enrichProgress.current}/{enrichProgress.total}</span>
+                  </div>
+                  <Progress value={(enrichProgress.current / enrichProgress.total) * 100} />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {isLoading ? (
