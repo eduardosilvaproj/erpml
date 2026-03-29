@@ -173,23 +173,6 @@ export default function LandingPage() {
           </motion.p>
         </motion.div>
 
-        {/* Hero Mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5, ease: [0, 0, 0.2, 1] }}
-          className="relative max-w-5xl mx-auto px-4 -mb-16 md:-mb-24"
-        >
-          <div className="rounded-xl overflow-hidden shadow-2xl border border-border">
-            <img
-              src={mockupDashboard}
-              alt="Dashboard do sistema ERP com controle de estoque e integração Mercado Livre"
-              width={1280}
-              height={800}
-              className="w-full h-auto"
-            />
-          </div>
-        </motion.div>
       </section>
 
       {/* DOR */}
