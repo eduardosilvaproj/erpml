@@ -169,9 +169,9 @@ const PDV = () => {
   }
 
   return (
-    <div className="grid h-[calc(100vh-6rem)] gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
       {/* Left: Product scan + cart */}
-      <div className="md:col-span-2 space-y-4 flex flex-col">
+      <div className="md:col-span-2 space-y-4 flex flex-col min-h-[50vh] md:min-h-0">
         {/* Stats bar */}
         <div className="grid grid-cols-2 gap-3">
           <Card>
