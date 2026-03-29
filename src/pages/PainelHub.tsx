@@ -105,6 +105,7 @@ const PainelHub = () => {
           </h2>
           <Card>
             <CardContent className="pt-4">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -127,6 +128,7 @@ const PainelHub = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -141,6 +143,7 @@ const PainelHub = () => {
           </h2>
           <Card>
             <CardContent className="pt-4">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -165,6 +168,7 @@ const PainelHub = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

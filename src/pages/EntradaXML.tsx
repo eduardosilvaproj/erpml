@@ -433,6 +433,7 @@ const EntradaXML = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -457,6 +458,7 @@ const EntradaXML = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -638,6 +640,7 @@ const EntradaXML = () => {
           </CardHeader>
           {expandedHistory && (
             <CardContent>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -666,6 +669,7 @@ const EntradaXML = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           )}
         </Card>

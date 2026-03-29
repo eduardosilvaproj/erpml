@@ -320,6 +320,7 @@ const Conferencia = () => {
               <CardTitle className="text-base">Itens da Conferência</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -366,6 +367,7 @@ const Conferencia = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 
@@ -396,6 +398,7 @@ const Conferencia = () => {
                 <CardTitle className="text-base">Notas Aguardando Conferência</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -433,6 +436,7 @@ const Conferencia = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -492,6 +496,7 @@ const Conferencia = () => {
                 </div>
 
                 {conferences && conferences.length > 0 ? (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -532,6 +537,7 @@ const Conferencia = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                     <ScanBarcode className="mb-3 h-10 w-10 opacity-30" />
