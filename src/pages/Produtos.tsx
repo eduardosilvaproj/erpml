@@ -253,6 +253,7 @@ const Produtos = () => {
                 </div>
               ) : data?.products && data.products.length > 0 ? (
                 <>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
