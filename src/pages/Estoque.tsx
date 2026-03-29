@@ -44,7 +44,7 @@ const Estoque = () => {
         <p className="text-muted-foreground">Estoque Físico + FULL (Mercado Livre)</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Estoque Físico", value: totalPhysical, icon: Warehouse, color: "text-primary" },
           { label: "Estoque FULL", value: totalFull, icon: Package, color: "text-accent" },
