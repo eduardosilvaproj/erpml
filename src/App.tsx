@@ -53,6 +53,7 @@ const App = () => (
                       <Route path="/pdv" element={<PDV />} />
                       <Route path="/crm" element={<CRM />} />
                       <Route path="/painel-hub" element={<PainelHub />} />
+                      <Route path="/admin" element={<AdminPanel />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
