@@ -10,9 +10,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import mockupDashboard from "@/assets/mockup-dashboard.jpg";
-import mockupScanner from "@/assets/mockup-scanner.jpg";
-import mockupEstoque from "@/assets/mockup-estoque.jpg";
 
 const painPoints = [
   { icon: XCircle, text: "Erros na conferência de mercadoria" },
@@ -176,23 +173,6 @@ export default function LandingPage() {
           </motion.p>
         </motion.div>
 
-        {/* Hero Mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5, ease: [0, 0, 0.2, 1] }}
-          className="relative max-w-5xl mx-auto px-4 -mb-16 md:-mb-24"
-        >
-          <div className="rounded-xl overflow-hidden shadow-2xl border border-border">
-            <img
-              src={mockupDashboard}
-              alt="Dashboard do sistema ERP com controle de estoque e integração Mercado Livre"
-              width={1280}
-              height={800}
-              className="w-full h-auto"
-            />
-          </div>
-        </motion.div>
       </section>
 
       {/* DOR */}
@@ -248,35 +228,6 @@ export default function LandingPage() {
             Pensado para eliminar erros e dar controle total da operação. Tudo num só lugar, sem complicação.
           </motion.p>
 
-          {/* Solution Mockups */}
-          <motion.div
-            variants={fadeUp}
-            custom={3}
-            className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto"
-          >
-            <div className="rounded-xl overflow-hidden shadow-xl border border-border">
-              <img
-                src={mockupEstoque}
-                alt="Controle de estoque físico e Full lado a lado"
-                loading="lazy"
-                width={1280}
-                height={720}
-                className="w-full h-auto"
-              />
-            </div>
-            <div className="flex justify-center">
-              <div className="rounded-2xl overflow-hidden shadow-xl border border-border max-w-[280px]">
-                <img
-                  src={mockupScanner}
-                  alt="App de conferência com leitor de código de barras"
-                  loading="lazy"
-                  width={640}
-                  height={800}
-                  className="w-full h-auto"
-                />
-              </div>
-            </div>
-          </motion.div>
         </motion.div>
       </section>
 
