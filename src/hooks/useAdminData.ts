@@ -15,12 +15,6 @@ export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin-users"],
     queryFn: async (): Promise<AdminUser[]> => {
-      const { data, error } = await supabase.functions.invoke("admin-users", {
-        body: null,
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-      // For GET with query params, use fetch directly
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
       
