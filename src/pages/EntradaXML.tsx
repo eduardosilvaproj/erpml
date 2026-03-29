@@ -253,7 +253,7 @@ const EntradaXML = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Notas Importadas", value: stats?.total ?? 0, icon: FileText },
           { label: "Aguardando Conferência", value: stats?.aguardando ?? 0, icon: AlertTriangle },
@@ -513,7 +513,7 @@ const EntradaXML = () => {
           </Card>
 
           {/* Global settings */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
             <Card>
               <CardContent className="flex items-center gap-3 p-4">
                 <Check className="h-6 w-6 text-emerald-600" />

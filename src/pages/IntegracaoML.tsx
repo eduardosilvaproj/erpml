@@ -16,7 +16,7 @@ const IntegracaoML = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         {[
           { label: "Vendas Hoje", value: "0", icon: ShoppingBag },
           { label: "Produtos Vinculados", value: "0", icon: Link2 },
