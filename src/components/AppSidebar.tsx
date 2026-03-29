@@ -1,14 +1,16 @@
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
-  Users, BarChart3
+  Users, BarChart3, LogOut
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  useSidebar,
+  SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
 const menuItems = [
@@ -28,6 +30,7 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { signOut, user } = useAuth();
 
   return (
     <Sidebar collapsible="icon">
@@ -59,6 +62,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <div className="flex flex-col gap-2 p-2">
+          {!collapsed && user?.email && (
+            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+          )}
+          <Button variant="ghost" size="sm" onClick={signOut} className="justify-start">
+            <LogOut className="h-4 w-4 mr-2" />
+            {!collapsed && "Sair"}
+          </Button>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   );
 }
