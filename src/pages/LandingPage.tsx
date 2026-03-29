@@ -10,9 +10,6 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import mockupDashboard from "@/assets/mockup-dashboard.jpg";
-import mockupScanner from "@/assets/mockup-scanner.jpg";
-import mockupEstoque from "@/assets/mockup-estoque.jpg";
 
 const painPoints = [
   { icon: XCircle, text: "Erros na conferência de mercadoria" },
