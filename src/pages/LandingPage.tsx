@@ -40,6 +40,27 @@ const benefits = [
   { icon: Zap, text: "Crescimento com segurança" },
 ];
 
+const testimonials = [
+  {
+    name: "Ricardo M.",
+    role: "Vendedor Mercado Livre — 2.000+ vendas/mês",
+    text: "Antes eu perdia horas conferindo mercadoria na mão. Com o sistema, faço tudo com bip em minutos. Reduzi erros em 90% e minha equipe ficou muito mais produtiva.",
+    highlight: "Reduzi erros em 90%",
+  },
+  {
+    name: "Camila S.",
+    role: "Loja de eletrônicos — Full + Físico",
+    text: "A confusão entre estoque físico e Full acabou. Agora sei exatamente o que tenho em cada lugar e as vendas nunca mais cancelaram por falta de estoque.",
+    highlight: "Vendas nunca mais cancelaram",
+  },
+  {
+    name: "André L.",
+    role: "Vendedor desde 2019 — MercadoLíder",
+    text: "O XML da nota fiscal entra e já atualiza tudo automaticamente. Economizo pelo menos 3 horas por dia que eu gastava em planilhas. Melhor investimento que fiz.",
+    highlight: "Economizo 3 horas por dia",
+  },
+];
+
 const plans = [
   {
     name: "Básico",
