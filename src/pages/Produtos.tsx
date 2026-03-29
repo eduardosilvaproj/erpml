@@ -209,7 +209,7 @@ const Produtos = () => {
                   </SelectContent>
                 </Select>
                 <Select value={supplierFilter} onValueChange={(v) => { setSupplierFilter(v === "all" ? "" : v); setPage(1); }}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Fornecedor" />
                   </SelectTrigger>
                   <SelectContent>
