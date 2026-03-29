@@ -7,36 +7,36 @@ import {
   DollarSign, ClipboardList, Monitor, Users, ArrowRight,
   CheckCircle2, XCircle, ChevronDown, Zap,
   Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown,
-  Quote, MessageSquare
+  Quote, MessageSquare, MessageCircle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const painPoints = [
-  { icon: XCircle, text: "Erros na conferência de mercadoria" },
-  { icon: AlertTriangle, text: "Estoque desatualizado no Mercado Livre" },
-  { icon: DollarSign, text: "Perda de vendas por falta de controle" },
-  { icon: RefreshCw, text: "Confusão entre estoque físico e Full" },
-  { icon: Clock, text: "Processos manuais demorados" },
+  { icon: XCircle, text: "Produto vendido sem ter em estoque" },
+  { icon: AlertTriangle, text: "Confusão entre estoque físico e FULL" },
+  { icon: RefreshCw, text: "Erro na conferência de mercadoria" },
+  { icon: Clock, text: "Tempo perdido em processos manuais" },
+  { icon: DollarSign, text: "Problemas com notas fiscais" },
 ];
 
 const features = [
-  { icon: Package, title: "Entrada automática via XML", desc: "Importe notas fiscais e atualize o estoque automaticamente. Sem digitação, sem erro." },
-  { icon: ScanBarcode, title: "Conferência com leitor de código de barras", desc: "Valide produtos com bip e elimine erros na conferência de mercadoria." },
-  { icon: BarChart3, title: "Controle de estoque físico e Full", desc: "Separe e gerencie corretamente os dois estoques em tempo real." },
-  { icon: Truck, title: "Envio para Full com controle por bip", desc: "Separe e envie produtos com segurança e agilidade total." },
-  { icon: RefreshCw, title: "Integração automática com Mercado Livre", desc: "Baixa automática de estoque a cada venda. Sem intervenção manual." },
-  { icon: DollarSign, title: "Controle de custo e lucro", desc: "Saiba exatamente quanto está ganhando em cada produto e operação." },
-  { icon: ClipboardList, title: "Cadastro inteligente de produtos", desc: "Controle origem (nacional/importado), múltiplos fornecedores e enriqueça dados com IA." },
-  { icon: Monitor, title: "PDV integrado", desc: "Venda direto com leitor de código de barras e controle total." },
-  { icon: Users, title: "CRM de clientes", desc: "Controle histórico, relacionamento e fidelize seus compradores." },
+  { icon: Package, title: "📦 Importação automática de notas (XML)", desc: "Cadastre produtos e atualize o estoque automaticamente, sem digitar nada." },
+  { icon: ScanBarcode, title: "📡 Conferência com leitor de código de barras", desc: "Evite erros humanos e garanta que o produto recebido está correto." },
+  { icon: BarChart3, title: "📊 Controle de estoque físico e FULL", desc: "Separe corretamente seus estoques e evite vender produto indisponível." },
+  { icon: Truck, title: "🚚 Envio para FULL com controle por bip", desc: "Faça a separação com agilidade e segurança, sem erro de envio." },
+  { icon: RefreshCw, title: "🔄 Integração automática com Mercado Livre", desc: "Toda venda atualiza o estoque automaticamente." },
+  { icon: DollarSign, title: "💰 Controle de custo e lucro", desc: "Saiba exatamente quanto você ganha em cada produto." },
+  { icon: ClipboardList, title: "🧾 Cadastro inteligente de produtos", desc: "Mesmo produto com vários fornecedores, sem conflito de código de barras." },
+  { icon: Monitor, title: "🛒 PDV integrado", desc: "Venda direta com leitor de código de barras e baixa automática no estoque." },
+  { icon: Users, title: "👥 Controle de clientes (CRM)", desc: "Tenha histórico completo de compras e pedidos." },
 ];
 
 const benefits = [
-  { icon: Shield, text: "Redução de erros" },
-  { icon: BarChart3, text: "Mais controle" },
+  { icon: Shield, text: "Menos erros e prejuízo" },
+  { icon: BarChart3, text: "Mais controle e organização" },
   { icon: Clock, text: "Economia de tempo" },
-  { icon: TrendingUp, text: "Aumento da produtividade" },
+  { icon: TrendingUp, text: "Processo mais rápido" },
   { icon: Zap, text: "Crescimento com segurança" },
 ];
 
@@ -68,10 +68,11 @@ const plans = [
     desc: "Para quem está começando",
     icon: Star,
     highlight: false,
+    color: "green",
     features: [
       "Cadastro de produtos",
-      "Importação XML",
-      "Estoque físico",
+      "Importação de XML",
+      "Controle de estoque físico",
       "PDV básico",
       "1 usuário",
     ],
@@ -80,10 +81,12 @@ const plans = [
   {
     name: "Profissional",
     price: "147",
-    desc: "Perfeito para quem quer escalar sem perder controle",
+    desc: "Para quem vende no Mercado Livre e quer escalar",
+    subdesc: "Perfeito para quem quer crescer sem perder controle",
     icon: Crown,
     highlight: true,
-    badge: "Mais escolhido",
+    color: "yellow",
+    badge: "🔥 Mais escolhido",
     features: [
       "Tudo do plano básico",
       "Integração com Mercado Livre",
@@ -102,6 +105,7 @@ const plans = [
     desc: "Para operações maiores",
     icon: Rocket,
     highlight: false,
+    color: "blue",
     features: [
       "Tudo do plano profissional",
       "Usuários ilimitados",
@@ -114,11 +118,10 @@ const plans = [
 ];
 
 const faqs = [
-  { q: "Funciona com Mercado Livre Full?", a: "Sim! O sistema foi pensado especificamente para quem trabalha com estoque físico e Full. Você controla os dois estoques separadamente e faz envios com controle por bip." },
-  { q: "Preciso de leitor de código de barras?", a: "Recomendamos para melhor produtividade, mas não é obrigatório. O sistema funciona com leitura por câmera do celular também." },
-  { q: "Consigo importar minhas notas fiscais?", a: "Sim! Basta importar o XML da nota fiscal e o sistema atualiza automaticamente seu estoque, cadastro de produtos e fornecedores." },
-  { q: "Serve para empresa pequena ou grande?", a: "O sistema escala com sua operação. Funciona tanto para quem vende 50 quanto para quem vende 5.000 produtos por mês." },
-  { q: "Preciso de conhecimento técnico?", a: "Não! A interface é simples e intuitiva. Se você sabe usar o Mercado Livre, sabe usar nosso sistema." },
+  { q: "Funciona com Mercado Livre Full?", a: "Sim, o sistema separa estoque físico e FULL automaticamente." },
+  { q: "Preciso de leitor de código de barras?", a: "Recomendado para máxima eficiência, mas não obrigatório." },
+  { q: "Consigo importar minhas notas fiscais?", a: "Sim, via XML de forma automática." },
+  { q: "Serve para empresa pequena?", a: "Sim, desde quem está começando até operações maiores." },
 ];
 
 const fadeUp = {
@@ -143,6 +146,8 @@ const scaleIn = {
     transition: { duration: 0.4, delay: i * 0.08, ease: [0, 0, 0.2, 1] as const },
   }),
 };
+
+const WHATSAPP_URL = "https://wa.me/5511999999999?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20o%20sistema%20ERP";
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -172,20 +177,19 @@ export default function LandingPage() {
             custom={1}
             className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-foreground leading-tight max-w-4xl mx-auto"
           >
-            Controle total do seu estoque e vendas no Mercado Livre{" "}
-            <span className="text-primary">— sem erros e sem planilhas</span>
+            Pare de perder dinheiro com erro de estoque no{" "}
+            <span className="text-primary">Mercado Livre</span>
           </motion.h1>
           <motion.p
             variants={fadeUp}
             custom={2}
             className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
           >
-            Automatize sua operação com leitura por código de barras, integração automática
-            e controle de estoque físico + Full
+            Controle total do seu estoque físico e FULL com leitura por código de barras, importação automática de notas e integração em tempo real.
           </motion.p>
           <motion.div variants={fadeUp} custom={3} className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={handleCTA} className="text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
-              Quero automatizar minha operação
+              👉 Quero automatizar minha operação
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
@@ -194,7 +198,6 @@ export default function LandingPage() {
             Desenvolvido para quem vende de verdade no dia a dia
           </motion.p>
         </motion.div>
-
       </section>
 
       {/* DOR */}
@@ -205,19 +208,12 @@ export default function LandingPage() {
             variants={fadeUp}
             className="text-2xl md:text-4xl font-bold text-center text-foreground mb-4"
           >
-            Você se identifica com algum desses problemas?
+            🔴 Você está passando por isso hoje?
           </motion.h2>
-          <motion.p
-            initial="hidden" whileInView="visible" viewport={{ once: true }}
-            variants={fadeUp} custom={1}
-            className="text-center text-muted-foreground mb-12 max-w-xl mx-auto"
-          >
-            Se você ainda faz isso manualmente, está perdendo tempo e dinheiro todos os dias.
-          </motion.p>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
             variants={staggerContainer}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-10"
           >
             {painPoints.map((p, i) => (
               <motion.div key={i} variants={scaleIn} custom={i}>
@@ -230,6 +226,13 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.div>
+          <motion.p
+            initial="hidden" whileInView="visible" viewport={{ once: true }}
+            variants={fadeUp} custom={1}
+            className="text-center text-muted-foreground mt-10 text-lg font-semibold"
+          >
+            👉 Se você ainda controla isso manualmente, está perdendo dinheiro todos os dias.
+          </motion.p>
         </div>
       </section>
 
@@ -241,15 +244,14 @@ export default function LandingPage() {
           className="max-w-5xl mx-auto px-4 text-center"
         >
           <motion.div variants={fadeUp}>
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30">A solução</Badge>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30">🟢 A solução</Badge>
           </motion.div>
           <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-            Sistema ERP completo com integração automática ao Mercado Livre
+            Um sistema completo para eliminar erros e organizar sua operação
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Pensado para eliminar erros e dar controle total da operação. Tudo num só lugar, sem complicação.
+            Sistema ERP integrado ao Mercado Livre que automatiza processos, reduz falhas e te dá controle total do estoque e das vendas.
           </motion.p>
-
         </motion.div>
       </section>
 
@@ -259,10 +261,17 @@ export default function LandingPage() {
           <motion.h2
             initial="hidden" whileInView="visible" viewport={{ once: true }}
             variants={fadeUp}
-            className="text-2xl md:text-4xl font-bold text-center text-foreground mb-12"
+            className="text-2xl md:text-4xl font-bold text-center text-foreground mb-4"
           >
-            Tudo que você precisa em um só sistema
+            ⚙️ Funcionalidades com foco em benefício
           </motion.h2>
+          <motion.p
+            initial="hidden" whileInView="visible" viewport={{ once: true }}
+            variants={fadeUp} custom={1}
+            className="text-center text-muted-foreground mb-12 max-w-xl mx-auto"
+          >
+            Cada recurso foi pensado para resolver um problema real da sua operação.
+          </motion.p>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
             variants={staggerContainer}
@@ -296,19 +305,12 @@ export default function LandingPage() {
             variants={fadeUp}
             className="text-2xl md:text-4xl font-bold text-foreground mb-4"
           >
-            O resultado na sua operação
+            🔵 O que muda na sua operação
           </motion.h2>
-          <motion.p
-            initial="hidden" whileInView="visible" viewport={{ once: true }}
-            variants={fadeUp} custom={1}
-            className="text-muted-foreground mb-12 max-w-xl mx-auto text-lg"
-          >
-            Você deixa de apagar incêndio e passa a ter controle total.
-          </motion.p>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
             variants={staggerContainer}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mt-10"
           >
             {benefits.map((b, i) => (
               <motion.div
@@ -325,6 +327,13 @@ export default function LandingPage() {
               </motion.div>
             ))}
           </motion.div>
+          <motion.p
+            initial="hidden" whileInView="visible" viewport={{ once: true }}
+            variants={fadeUp} custom={1}
+            className="text-muted-foreground mt-10 text-lg font-semibold"
+          >
+            👉 Você sai do caos operacional e passa a ter controle total do seu negócio.
+          </motion.p>
         </div>
       </section>
 
@@ -337,14 +346,11 @@ export default function LandingPage() {
             className="text-center mb-12"
           >
             <motion.div variants={fadeUp}>
-              <Badge variant="outline" className="mb-4 text-primary border-primary/30">Planos</Badge>
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30">💰 Planos</Badge>
             </motion.div>
             <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
               Escolha o plano ideal para sua operação
             </motion.h2>
-            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-xl mx-auto text-lg">
-              Invista menos do que você perde com erros manuais em um único mês.
-            </motion.p>
           </motion.div>
 
           <motion.div
@@ -383,7 +389,10 @@ export default function LandingPage() {
                       <span className="text-muted-foreground">/mês</span>
                     </div>
 
-                    <p className="text-sm text-muted-foreground mb-6">{plan.desc}</p>
+                    <p className="text-sm text-muted-foreground mb-2">{plan.desc}</p>
+                    {plan.subdesc && (
+                      <p className="text-xs text-primary font-medium mb-4">👉 {plan.subdesc}</p>
+                    )}
 
                     <ul className="space-y-3 mb-8 flex-1">
                       {plan.features.map((feat, fi) => (
@@ -409,7 +418,7 @@ export default function LandingPage() {
             ))}
           </motion.div>
 
-          {/* Bônus */}
+          {/* Implantação */}
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
             variants={fadeUp}
@@ -419,8 +428,8 @@ export default function LandingPage() {
               <CardContent className="p-6 flex items-center gap-4 flex-col sm:flex-row">
                 <Zap className="h-8 w-8 text-primary shrink-0" />
                 <div className="text-left">
-                  <p className="font-semibold text-foreground">🎁 Bônus: Implantação assistida disponível</p>
-                  <p className="text-sm text-muted-foreground">Configuração + integração + suporte inicial para começar com tudo funcionando.</p>
+                  <p className="font-semibold text-foreground">💡 Implantação assistida disponível</p>
+                  <p className="text-sm text-muted-foreground">Configuração completa do sistema para você começar com tudo funcionando.</p>
                 </div>
               </CardContent>
             </Card>
@@ -445,9 +454,6 @@ export default function LandingPage() {
             <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
               Quem usa, recomenda
             </motion.h2>
-            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-xl mx-auto text-lg">
-              Veja o que vendedores reais dizem sobre o sistema.
-            </motion.p>
           </motion.div>
 
           <motion.div
@@ -481,7 +487,7 @@ export default function LandingPage() {
       </section>
 
       {/* PROVA / AUTORIDADE */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 bg-card border-y border-border">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
@@ -495,14 +501,43 @@ export default function LandingPage() {
               <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
             </motion.div>
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Desenvolvido com base na operação real de vendedores
+              🟣 Desenvolvido com base na operação real
             </h2>
             <p className="text-muted-foreground text-lg max-w-lg mx-auto">
-              Pensado para quem realmente vende no dia a dia. Cada funcionalidade
-              foi criada para resolver problemas reais de quem opera no Mercado Livre.
+              Desenvolvido com base na operação real de vendedores que utilizam Mercado Livre diariamente.
             </p>
           </motion.div>
         </div>
+      </section>
+
+      {/* CTA FINAL */}
+      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/10 via-background to-accent/5">
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
+          variants={staggerContainer}
+          className="max-w-3xl mx-auto px-4 text-center"
+        >
+          <motion.h2 variants={fadeUp} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
+            🟢 Comece agora a organizar sua operação
+          </motion.h2>
+          <motion.p variants={fadeUp} custom={1} className="text-muted-foreground mb-8 text-lg">
+            Pare de perder tempo e dinheiro com processos manuais.
+          </motion.p>
+          <motion.div variants={fadeUp} custom={2}>
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+              <Button
+                size="lg"
+                className="text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,38%)] text-primary-foreground"
+              >
+                <MessageCircle className="mr-2 h-6 w-6" />
+                Falar no WhatsApp agora
+              </Button>
+            </a>
+          </motion.div>
+          <motion.p variants={fadeUp} custom={3} className="mt-4 text-sm text-muted-foreground">
+            Cadastro rápido • Sem cartão de crédito • Suporte incluso
+          </motion.p>
+        </motion.div>
       </section>
 
       {/* FAQ */}
@@ -513,7 +548,7 @@ export default function LandingPage() {
             variants={fadeUp}
             className="text-2xl md:text-4xl font-bold text-center text-foreground mb-12"
           >
-            Perguntas frequentes
+            ❓ Perguntas frequentes
           </motion.h2>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
@@ -557,41 +592,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA FINAL */}
-      <section className="py-16 md:py-24 bg-gradient-to-br from-primary/10 via-background to-accent/5">
-        <motion.div
-          initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
-          variants={staggerContainer}
-          className="max-w-3xl mx-auto px-4 text-center"
-        >
-          <motion.h2 variants={fadeUp} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-            Comece agora a organizar sua operação
-          </motion.h2>
-          <motion.p variants={fadeUp} custom={1} className="text-muted-foreground mb-8 text-lg">
-            Pare de perder dinheiro com erros e processos manuais. Automatize sua operação hoje.
-          </motion.p>
-          <motion.div variants={fadeUp} custom={2}>
-            <Button
-              size="lg"
-              onClick={handleCTA}
-              className="text-lg px-10 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all"
-            >
-              Quero testar o sistema
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </motion.div>
-          <motion.p variants={fadeUp} custom={3} className="mt-4 text-sm text-muted-foreground">
-            Cadastro rápido • Sem cartão de crédito • Suporte incluso
-          </motion.p>
-        </motion.div>
-      </section>
-
       {/* FOOTER */}
       <footer className="py-8 border-t border-border">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} ERP Mercado Livre — Todos os direitos reservados
         </div>
       </footer>
+
+      {/* BOTÃO WHATSAPP FIXO */}
+      <a
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,38%)] text-primary-foreground flex items-center justify-center shadow-xl hover:scale-110 transition-all"
+        aria-label="Falar no WhatsApp"
+      >
+        <MessageCircle className="h-7 w-7" />
+      </a>
     </div>
   );
 }
