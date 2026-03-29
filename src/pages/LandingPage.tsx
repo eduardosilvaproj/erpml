@@ -6,7 +6,8 @@ import {
   Package, ScanBarcode, BarChart3, Truck, RefreshCw,
   DollarSign, ClipboardList, Monitor, Users, ArrowRight,
   CheckCircle2, XCircle, ChevronDown, Zap,
-  Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown
+  Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown,
+  Quote, MessageSquare
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
