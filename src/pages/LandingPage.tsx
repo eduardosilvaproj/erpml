@@ -247,6 +247,36 @@ export default function LandingPage() {
           <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-2xl mx-auto text-lg">
             Pensado para eliminar erros e dar controle total da operação. Tudo num só lugar, sem complicação.
           </motion.p>
+
+          {/* Solution Mockups */}
+          <motion.div
+            variants={fadeUp}
+            custom={3}
+            className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center max-w-4xl mx-auto"
+          >
+            <div className="rounded-xl overflow-hidden shadow-xl border border-border">
+              <img
+                src={mockupEstoque}
+                alt="Controle de estoque físico e Full lado a lado"
+                loading="lazy"
+                width={1280}
+                height={720}
+                className="w-full h-auto"
+              />
+            </div>
+            <div className="flex justify-center">
+              <div className="rounded-2xl overflow-hidden shadow-xl border border-border max-w-[280px]">
+                <img
+                  src={mockupScanner}
+                  alt="App de conferência com leitor de código de barras"
+                  loading="lazy"
+                  width={640}
+                  height={800}
+                  className="w-full h-auto"
+                />
+              </div>
+            </div>
+          </motion.div>
         </motion.div>
       </section>
 
