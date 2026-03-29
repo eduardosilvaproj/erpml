@@ -101,6 +101,7 @@ export default function AdminPanel() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
