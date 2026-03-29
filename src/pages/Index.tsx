@@ -33,7 +33,7 @@ const Index = () => {
         <p className="text-muted-foreground">Visão geral do sistema ERP</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Produtos", value: totalProducts.toString(), icon: Package },
           { label: "Vendas Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: TrendingUp },
