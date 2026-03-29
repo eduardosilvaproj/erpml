@@ -371,6 +371,7 @@ const Produtos = () => {
           <Card>
             <CardContent className="pt-6">
               {suppliers && suppliers.length > 0 ? (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
