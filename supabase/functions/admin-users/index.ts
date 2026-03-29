@@ -60,7 +60,7 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const action = url.searchParams.get("action");
+    const action = url.searchParams.get("action") || (req.method === "GET" ? "list-users" : null);
 
     // List all users
     if (action === "list-users") {
