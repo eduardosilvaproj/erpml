@@ -460,7 +460,7 @@ const Conferencia = () => {
                 <div className="flex flex-wrap gap-3 items-center">
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -474,14 +474,14 @@ const Conferencia = () => {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-[160px]"
+                    className="w-full sm:w-[160px]"
                     placeholder="De"
                   />
                   <Input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-[160px]"
+                    className="w-full sm:w-[160px]"
                     placeholder="Até"
                   />
                   {(statusFilter !== "all" || dateFrom || dateTo) && (
