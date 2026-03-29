@@ -33,7 +33,7 @@ const Index = () => {
         <p className="text-muted-foreground">Visão geral do sistema ERP</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Produtos", value: totalProducts.toString(), icon: Package },
           { label: "Vendas Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: TrendingUp },
@@ -56,7 +56,7 @@ const Index = () => {
 
       <div>
         <h2 className="mb-3 text-lg font-semibold">Módulos</h2>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           {modules.map((mod) => (
             <Link key={mod.title} to={mod.url}>
               <Card className="transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer">

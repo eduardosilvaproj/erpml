@@ -151,7 +151,7 @@ const Produtos = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="products">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Cadastro de Produtos</h1>
             <p className="text-muted-foreground">Gerencie seu catálogo de produtos e fornecedores</p>
@@ -164,7 +164,7 @@ const Produtos = () => {
 
         {/* ===== PRODUCTS TAB ===== */}
         <TabsContent value="products" className="space-y-4 mt-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             {[
               { label: "Total", value: data?.total ?? 0, icon: Package },
               { label: "Ativos", value: data?.products?.filter((p) => p.active).length ?? 0, icon: BarChart3 },
@@ -198,7 +198,7 @@ const Produtos = () => {
                   />
                 </div>
                 <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v === "all" ? "" : v); setPage(1); }}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -209,7 +209,7 @@ const Produtos = () => {
                   </SelectContent>
                 </Select>
                 <Select value={supplierFilter} onValueChange={(v) => { setSupplierFilter(v === "all" ? "" : v); setPage(1); }}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Fornecedor" />
                   </SelectTrigger>
                   <SelectContent>
@@ -253,6 +253,7 @@ const Produtos = () => {
                 </div>
               ) : data?.products && data.products.length > 0 ? (
                 <>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -330,9 +331,10 @@ const Produtos = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3">
                     <p className="text-sm text-muted-foreground">
                       {data.total} produto(s) encontrado(s)
                     </p>
@@ -369,6 +371,7 @@ const Produtos = () => {
           <Card>
             <CardContent className="pt-6">
               {suppliers && suppliers.length > 0 ? (
+                <div className="overflow-x-auto -mx-4 sm:mx-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -413,6 +416,7 @@ const Produtos = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                   <Truck className="mb-4 h-12 w-12 opacity-30" />

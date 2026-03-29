@@ -45,7 +45,7 @@ const PainelHub = () => {
           <ShoppingBag className="h-5 w-5" />
           Vendas
         </h2>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           {[
             { label: "Vendas Hoje", value: salesStats?.salesToday ?? 0 },
             { label: "Faturamento Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0) },
@@ -68,7 +68,7 @@ const PainelHub = () => {
           <Warehouse className="h-5 w-5" />
           Estoque
         </h2>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-sm text-muted-foreground">Produtos</p>
@@ -105,6 +105,7 @@ const PainelHub = () => {
           </h2>
           <Card>
             <CardContent className="pt-4">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -127,6 +128,7 @@ const PainelHub = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -141,6 +143,7 @@ const PainelHub = () => {
           </h2>
           <Card>
             <CardContent className="pt-4">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -165,6 +168,7 @@ const PainelHub = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

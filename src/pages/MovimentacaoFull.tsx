@@ -168,7 +168,7 @@ const MovimentacaoFull = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Separando", value: statCounts.separando, icon: Package },
           { label: "Enviado", value: statCounts.enviado, icon: Truck },
@@ -248,6 +248,7 @@ const MovimentacaoFull = () => {
           {/* Items list */}
           {items.length > 0 && (
             <div className="space-y-3">
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -284,6 +285,7 @@ const MovimentacaoFull = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
 
               <div className="flex items-center justify-between pt-2">
                 <p className="text-sm text-muted-foreground">
@@ -316,6 +318,7 @@ const MovimentacaoFull = () => {
             <CardTitle className="text-base">Ordens de Envio ({orders.length})</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -373,6 +376,7 @@ const MovimentacaoFull = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}

@@ -171,7 +171,7 @@ const Conferencia = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <Card>
           <CardContent className="flex items-center gap-4 p-4">
             <div className="rounded-lg bg-primary/10 p-2">
@@ -320,6 +320,7 @@ const Conferencia = () => {
               <CardTitle className="text-base">Itens da Conferência</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -366,6 +367,7 @@ const Conferencia = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
 
@@ -396,6 +398,7 @@ const Conferencia = () => {
                 <CardTitle className="text-base">Notas Aguardando Conferência</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -433,6 +436,7 @@ const Conferencia = () => {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -456,7 +460,7 @@ const Conferencia = () => {
                 <div className="flex flex-wrap gap-3 items-center">
                   <Filter className="h-4 w-4 text-muted-foreground" />
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -470,14 +474,14 @@ const Conferencia = () => {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-[160px]"
+                    className="w-full sm:w-[160px]"
                     placeholder="De"
                   />
                   <Input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-[160px]"
+                    className="w-full sm:w-[160px]"
                     placeholder="Até"
                   />
                   {(statusFilter !== "all" || dateFrom || dateTo) && (
@@ -492,6 +496,7 @@ const Conferencia = () => {
                 </div>
 
                 {conferences && conferences.length > 0 ? (
+                  <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -532,6 +537,7 @@ const Conferencia = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                     <ScanBarcode className="mb-3 h-10 w-10 opacity-30" />

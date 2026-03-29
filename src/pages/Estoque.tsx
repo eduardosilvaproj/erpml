@@ -44,7 +44,7 @@ const Estoque = () => {
         <p className="text-muted-foreground">Estoque Físico + FULL (Mercado Livre)</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Estoque Físico", value: totalPhysical, icon: Warehouse, color: "text-primary" },
           { label: "Estoque FULL", value: totalFull, icon: Package, color: "text-accent" },
@@ -78,7 +78,7 @@ const Estoque = () => {
               />
             </div>
             <Select value={categoryFilter || "all"} onValueChange={(v) => { setCategoryFilter(v === "all" ? "" : v); setPage(1); }}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -89,7 +89,7 @@ const Estoque = () => {
               </SelectContent>
             </Select>
             <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -106,6 +106,7 @@ const Estoque = () => {
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : filtered.length > 0 ? (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -149,6 +150,7 @@ const Estoque = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Warehouse className="mb-4 h-12 w-12 opacity-30" />
