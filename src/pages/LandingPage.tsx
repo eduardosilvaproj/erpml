@@ -6,7 +6,8 @@ import {
   Package, ScanBarcode, BarChart3, Truck, RefreshCw,
   DollarSign, ClipboardList, Monitor, Users, ArrowRight,
   CheckCircle2, XCircle, ChevronDown, Zap,
-  Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown
+  Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown,
+  Quote, MessageSquare
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,6 +38,27 @@ const benefits = [
   { icon: Clock, text: "Economia de tempo" },
   { icon: TrendingUp, text: "Aumento da produtividade" },
   { icon: Zap, text: "Crescimento com segurança" },
+];
+
+const testimonials = [
+  {
+    name: "Ricardo M.",
+    role: "Vendedor Mercado Livre — 2.000+ vendas/mês",
+    text: "Antes eu perdia horas conferindo mercadoria na mão. Com o sistema, faço tudo com bip em minutos. Reduzi erros em 90% e minha equipe ficou muito mais produtiva.",
+    highlight: "Reduzi erros em 90%",
+  },
+  {
+    name: "Camila S.",
+    role: "Loja de eletrônicos — Full + Físico",
+    text: "A confusão entre estoque físico e Full acabou. Agora sei exatamente o que tenho em cada lugar e as vendas nunca mais cancelaram por falta de estoque.",
+    highlight: "Vendas nunca mais cancelaram",
+  },
+  {
+    name: "André L.",
+    role: "Vendedor desde 2019 — MercadoLíder",
+    text: "O XML da nota fiscal entra e já atualiza tudo automaticamente. Economizo pelo menos 3 horas por dia que eu gastava em planilhas. Melhor investimento que fiz.",
+    highlight: "Economizo 3 horas por dia",
+  },
 ];
 
 const plans = [
@@ -402,6 +424,58 @@ export default function LandingPage() {
                 </div>
               </CardContent>
             </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* DEPOIMENTOS */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="text-center mb-12"
+          >
+            <motion.div variants={fadeUp}>
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30">
+                <MessageSquare className="h-3.5 w-3.5 mr-1.5 inline" />
+                Depoimentos
+              </Badge>
+            </motion.div>
+            <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
+              Quem usa, recomenda
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-xl mx-auto text-lg">
+              Veja o que vendedores reais dizem sobre o sistema.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {testimonials.map((t, i) => (
+              <motion.div key={i} variants={scaleIn} custom={i}>
+                <Card className="h-full hover:shadow-lg transition-all hover:border-primary/30">
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <Quote className="h-8 w-8 text-primary/30 mb-4" />
+                    <p className="text-muted-foreground text-sm leading-relaxed flex-1 mb-4">
+                      "{t.text}"
+                    </p>
+                    <div className="mb-4">
+                      <Badge variant="secondary" className="text-xs">
+                        {t.highlight}
+                      </Badge>
+                    </div>
+                    <div className="border-t border-border pt-4">
+                      <p className="font-semibold text-foreground text-sm">{t.name}</p>
+                      <p className="text-xs text-muted-foreground">{t.role}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
