@@ -5,18 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import {
   Package, ScanBarcode, BarChart3, Truck, RefreshCw,
   DollarSign, ClipboardList, Monitor, Users, ArrowRight,
-  CheckCircle2, XCircle, ChevronDown, ChevronUp, Zap,
-  Shield, Clock, TrendingUp, AlertTriangle
+  CheckCircle2, XCircle, ChevronDown, Zap,
+  Shield, Clock, TrendingUp, AlertTriangle, Check, Star, Rocket, Crown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const painPoints = [
-  { icon: XCircle, text: "Erro na conferência de mercadoria" },
+  { icon: XCircle, text: "Erros na conferência de mercadoria" },
   { icon: AlertTriangle, text: "Estoque desatualizado no Mercado Livre" },
   { icon: DollarSign, text: "Perda de vendas por falta de controle" },
   { icon: RefreshCw, text: "Confusão entre estoque físico e Full" },
-  { icon: Clock, text: "Tempo perdido em processos manuais" },
+  { icon: Clock, text: "Processos manuais demorados" },
 ];
 
 const features = [
@@ -26,24 +26,76 @@ const features = [
   { icon: Truck, title: "Envio para Full com controle por bip", desc: "Separe e envie produtos com segurança e agilidade total." },
   { icon: RefreshCw, title: "Integração automática com Mercado Livre", desc: "Baixa automática de estoque a cada venda. Sem intervenção manual." },
   { icon: DollarSign, title: "Controle de custo e lucro", desc: "Saiba exatamente quanto está ganhando em cada produto e operação." },
-  { icon: ClipboardList, title: "Cadastro inteligente de produtos", desc: "Controle origem, múltiplos fornecedores e enriqueça dados com IA." },
+  { icon: ClipboardList, title: "Cadastro inteligente de produtos", desc: "Controle origem (nacional/importado), múltiplos fornecedores e enriqueça dados com IA." },
   { icon: Monitor, title: "PDV integrado", desc: "Venda direto com leitor de código de barras e controle total." },
   { icon: Users, title: "CRM de clientes", desc: "Controle histórico, relacionamento e fidelize seus compradores." },
 ];
 
 const benefits = [
-  { icon: Shield, text: "Redução de erros operacionais" },
-  { icon: BarChart3, text: "Mais controle e organização" },
+  { icon: Shield, text: "Redução de erros" },
+  { icon: BarChart3, text: "Mais controle" },
   { icon: Clock, text: "Economia de tempo" },
   { icon: TrendingUp, text: "Aumento da produtividade" },
   { icon: Zap, text: "Crescimento com segurança" },
+];
+
+const plans = [
+  {
+    name: "Básico",
+    price: "97",
+    desc: "Para quem está começando",
+    icon: Star,
+    highlight: false,
+    features: [
+      "Cadastro de produtos",
+      "Importação XML",
+      "Estoque físico",
+      "PDV básico",
+      "1 usuário",
+    ],
+    cta: "Começar agora",
+  },
+  {
+    name: "Profissional",
+    price: "147",
+    desc: "Perfeito para quem quer escalar sem perder controle",
+    icon: Crown,
+    highlight: true,
+    badge: "Mais escolhido",
+    features: [
+      "Tudo do plano básico",
+      "Integração com Mercado Livre",
+      "Baixa automática de vendas",
+      "Controle de estoque FULL",
+      "Envio para FULL com bip",
+      "Conferência por código de barras",
+      "Custo médio e lucro",
+      "Até 3 usuários",
+    ],
+    cta: "Quero automatizar tudo",
+  },
+  {
+    name: "Avançado",
+    price: "247",
+    desc: "Para operações maiores",
+    icon: Rocket,
+    highlight: false,
+    features: [
+      "Tudo do plano profissional",
+      "Usuários ilimitados",
+      "Relatórios avançados",
+      "Dashboard completo",
+      "Suporte prioritário",
+    ],
+    cta: "Falar com especialista",
+  },
 ];
 
 const faqs = [
   { q: "Funciona com Mercado Livre Full?", a: "Sim! O sistema foi pensado especificamente para quem trabalha com estoque físico e Full. Você controla os dois estoques separadamente e faz envios com controle por bip." },
   { q: "Preciso de leitor de código de barras?", a: "Recomendamos para melhor produtividade, mas não é obrigatório. O sistema funciona com leitura por câmera do celular também." },
   { q: "Consigo importar minhas notas fiscais?", a: "Sim! Basta importar o XML da nota fiscal e o sistema atualiza automaticamente seu estoque, cadastro de produtos e fornecedores." },
-  { q: "Serve para operação pequena ou grande?", a: "O sistema escala com sua operação. Funciona tanto para quem vende 50 quanto para quem vende 5.000 produtos por mês." },
+  { q: "Serve para empresa pequena ou grande?", a: "O sistema escala com sua operação. Funciona tanto para quem vende 50 quanto para quem vende 5.000 produtos por mês." },
   { q: "Preciso de conhecimento técnico?", a: "Não! A interface é simples e intuitiva. Se você sabe usar o Mercado Livre, sabe usar nosso sistema." },
 ];
 
@@ -106,7 +158,7 @@ export default function LandingPage() {
             custom={2}
             className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
           >
-            Sistema completo com leitura por código de barras, integração automática
+            Automatize sua operação com leitura por código de barras, integração automática
             e controle de estoque físico + Full
           </motion.p>
           <motion.div variants={fadeUp} custom={3} className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
@@ -117,7 +169,7 @@ export default function LandingPage() {
           </motion.div>
           <motion.p variants={fadeUp} custom={4} className="mt-4 text-sm text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 inline mr-1 text-accent" />
-            Usado por vendedores que querem escalar com segurança
+            Desenvolvido para quem vende de verdade no dia a dia
           </motion.p>
         </motion.div>
       </section>
@@ -137,7 +189,7 @@ export default function LandingPage() {
             variants={fadeUp} custom={1}
             className="text-center text-muted-foreground mb-12 max-w-xl mx-auto"
           >
-            Se você ainda controla isso manualmente, está perdendo dinheiro todos os dias.
+            Se você ainda faz isso manualmente, está perdendo tempo e dinheiro todos os dias.
           </motion.p>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
@@ -169,10 +221,10 @@ export default function LandingPage() {
             <Badge variant="outline" className="mb-4 text-primary border-primary/30">A solução</Badge>
           </motion.div>
           <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
-            Sistema ERP completo com integração total ao Mercado Livre
+            Sistema ERP completo com integração automática ao Mercado Livre
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-2xl mx-auto text-lg">
-            Pensado para quem precisa de controle, velocidade e precisão na operação. Tudo num só lugar, sem complicação.
+            Pensado para eliminar erros e dar controle total da operação. Tudo num só lugar, sem complicação.
           </motion.p>
         </motion.div>
       </section>
@@ -227,7 +279,7 @@ export default function LandingPage() {
             variants={fadeUp} custom={1}
             className="text-muted-foreground mb-12 max-w-xl mx-auto text-lg"
           >
-            Você deixa de apagar incêndio e passa a ter controle total da operação.
+            Você deixa de apagar incêndio e passa a ter controle total.
           </motion.p>
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}
@@ -252,8 +304,108 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* PROVA / AUTORIDADE */}
+      {/* PREÇOS */}
       <section className="py-16 md:py-24 bg-card border-y border-border">
+        <div className="max-w-6xl mx-auto px-4">
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }}
+            variants={staggerContainer}
+            className="text-center mb-12"
+          >
+            <motion.div variants={fadeUp}>
+              <Badge variant="outline" className="mb-4 text-primary border-primary/30">Planos</Badge>
+            </motion.div>
+            <motion.h2 variants={fadeUp} custom={1} className="text-2xl md:text-4xl font-bold text-foreground mb-4">
+              Escolha o plano ideal para sua operação
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-xl mx-auto text-lg">
+              Invista menos do que você perde com erros manuais em um único mês.
+            </motion.p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.1 }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch"
+          >
+            {plans.map((plan, i) => (
+              <motion.div key={i} variants={scaleIn} custom={i} className="flex">
+                <Card
+                  className={`flex flex-col w-full relative transition-all ${
+                    plan.highlight
+                      ? "border-primary border-2 shadow-xl scale-[1.02] md:scale-105"
+                      : "hover:border-primary/30 hover:shadow-lg"
+                  }`}
+                >
+                  {plan.badge && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="bg-primary text-primary-foreground px-4 py-1 text-sm font-semibold shadow-md">
+                        {plan.badge}
+                      </Badge>
+                    </div>
+                  )}
+                  <CardContent className="flex flex-col flex-1 p-6 pt-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                        plan.highlight ? "bg-primary/20" : "bg-muted"
+                      }`}>
+                        <plan.icon className={`h-5 w-5 ${plan.highlight ? "text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                    </div>
+
+                    <div className="mb-4">
+                      <span className="text-4xl font-extrabold text-foreground">R$ {plan.price}</span>
+                      <span className="text-muted-foreground">/mês</span>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground mb-6">{plan.desc}</p>
+
+                    <ul className="space-y-3 mb-8 flex-1">
+                      {plan.features.map((feat, fi) => (
+                        <li key={fi} className="flex items-start gap-2 text-sm text-foreground">
+                          <Check className={`h-4 w-4 mt-0.5 shrink-0 ${plan.highlight ? "text-primary" : "text-accent"}`} />
+                          {feat}
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      size="lg"
+                      onClick={handleCTA}
+                      variant={plan.highlight ? "default" : "outline"}
+                      className={`w-full rounded-xl ${plan.highlight ? "shadow-lg" : ""}`}
+                    >
+                      {plan.cta}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Bônus */}
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
+            variants={fadeUp}
+            className="mt-12 text-center"
+          >
+            <Card className="inline-block border-primary/20 bg-primary/5">
+              <CardContent className="p-6 flex items-center gap-4 flex-col sm:flex-row">
+                <Zap className="h-8 w-8 text-primary shrink-0" />
+                <div className="text-left">
+                  <p className="font-semibold text-foreground">🎁 Bônus: Implantação assistida disponível</p>
+                  <p className="text-sm text-muted-foreground">Configuração + integração + suporte inicial para começar com tudo funcionando.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* PROVA / AUTORIDADE */}
+      <section className="py-16 md:py-24">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <motion.div
             initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.4 }}
@@ -278,7 +430,7 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-16 md:py-24">
+      <section className="py-16 md:py-24 bg-card border-y border-border">
         <div className="max-w-3xl mx-auto px-4">
           <motion.h2
             initial="hidden" whileInView="visible" viewport={{ once: true }}
