@@ -16,6 +16,7 @@ import IntegracaoML from "./pages/IntegracaoML";
 import PDV from "./pages/PDV";
 import CRM from "./pages/CRM";
 import PainelHub from "./pages/PainelHub";
+import AdminPanel from "./pages/AdminPanel";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -52,6 +53,7 @@ const App = () => (
                       <Route path="/pdv" element={<PDV />} />
                       <Route path="/crm" element={<CRM />} />
                       <Route path="/painel-hub" element={<PainelHub />} />
+                      <Route path="/admin" element={<AdminPanel />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
