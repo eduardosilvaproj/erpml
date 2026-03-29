@@ -150,6 +150,7 @@ const Estoque = () => {
                 })}
               </TableBody>
             </Table>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Warehouse className="mb-4 h-12 w-12 opacity-30" />
