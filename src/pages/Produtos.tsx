@@ -164,7 +164,7 @@ const Produtos = () => {
 
         {/* ===== PRODUCTS TAB ===== */}
         <TabsContent value="products" className="space-y-4 mt-4">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
             {[
               { label: "Total", value: data?.total ?? 0, icon: Package },
               { label: "Ativos", value: data?.products?.filter((p) => p.active).length ?? 0, icon: BarChart3 },
