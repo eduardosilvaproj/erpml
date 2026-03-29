@@ -153,7 +153,7 @@ const PDV = () => {
 
   if (saleComplete) {
     return (
-      <div className="flex h-[calc(100vh-6rem)] items-center justify-center">
+      <div className="flex min-h-[60vh] md:h-[calc(100vh-6rem)] items-center justify-center">
         <Card className="max-w-md w-full">
           <CardContent className="flex flex-col items-center py-12">
             <div className="mb-4 rounded-full bg-emerald-100 p-4">
