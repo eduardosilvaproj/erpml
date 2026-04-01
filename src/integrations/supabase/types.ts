@@ -278,6 +278,137 @@ export type Database = {
         }
         Relationships: []
       }
+      ml_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          is_active: boolean
+          ml_user_id: string
+          refresh_token: string
+          seller_nickname: string | null
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          ml_user_id: string
+          refresh_token: string
+          seller_nickname?: string | null
+          token_expires_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          ml_user_id?: string
+          refresh_token?: string
+          seller_nickname?: string | null
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ml_linked_products: {
+        Row: {
+          created_at: string
+          id: string
+          last_synced_at: string | null
+          ml_available_quantity: number | null
+          ml_item_id: string
+          ml_price: number | null
+          ml_status: string | null
+          ml_title: string | null
+          product_id: string
+          sync_status: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          ml_available_quantity?: number | null
+          ml_item_id: string
+          ml_price?: number | null
+          ml_status?: string | null
+          ml_title?: string | null
+          product_id: string
+          sync_status?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_synced_at?: string | null
+          ml_available_quantity?: number | null
+          ml_item_id?: string
+          ml_price?: number | null
+          ml_status?: string | null
+          ml_title?: string | null
+          product_id?: string
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_linked_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ml_sync_logs: {
+        Row: {
+          created_at: string
+          details: string | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          items_synced: number | null
+          started_at: string
+          status: string
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          items_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          items_synced?: number | null
+          started_at?: string
+          status?: string
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_suppliers: {
         Row: {
           cost: number
