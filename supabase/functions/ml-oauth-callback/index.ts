@@ -48,8 +48,10 @@ Deno.serve(async (req) => {
 
     if (!tokenRes.ok) {
       console.error("ML token error:", tokenData);
-      return new Response(`OAuth error: ${JSON.stringify(tokenData)}`, {
-        status: 400,
+      const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
+      return new Response(null, {
+        status: 302,
+        headers: { Location: `${appUrl}/integracao-ml?error=oauth_failed` },
       });
     }
 
