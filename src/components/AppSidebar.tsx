@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
-  Users, BarChart3, LogOut, ShieldCheck, DollarSign
+  Users, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -26,6 +26,7 @@ const menuItems = [
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "IA Tributária", url: "/ia-consulta", icon: Sparkles },
 ];
 
 export function AppSidebar() {

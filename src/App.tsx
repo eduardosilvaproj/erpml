@@ -18,6 +18,7 @@ import CRM from "./pages/CRM";
 import PainelHub from "./pages/PainelHub";
 import AdminPanel from "./pages/AdminPanel";
 import Financeiro from "./pages/Financeiro";
+import IAConsulta from "./pages/IAConsulta";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -57,6 +58,7 @@ const App = () => (
                       <Route path="/crm" element={<CRM />} />
                       <Route path="/painel-hub" element={<PainelHub />} />
                       <Route path="/financeiro" element={<Financeiro />} />
+                      <Route path="/ia-consulta" element={<IAConsulta />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
