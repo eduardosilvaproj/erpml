@@ -454,7 +454,7 @@ Deno.serve(async (req) => {
       }
 
       const redirectUri = `${supabaseUrl}/functions/v1/ml-oauth-callback`;
-      const authUrl = `${ML_API_BASE.replace("api.", "auth.")}/authorization?response_type=code&client_id=${appId}&redirect_uri=${encodeURIComponent(
+      const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${appId}&redirect_uri=${encodeURIComponent(
         redirectUri
       )}&scope=${encodeURIComponent("offline_access read write")}&state=${encodeURIComponent(userId)}`;
 
