@@ -102,5 +102,6 @@ export function useMLAuthUrl() {
     queryKey: ["ml-auth-url"],
     queryFn: () => callML("get-auth-url"),
     staleTime: Infinity,
+    retry: 1,
   });
 }
