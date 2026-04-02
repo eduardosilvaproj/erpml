@@ -26,6 +26,7 @@ const menuItems = [
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "IA Tributária", url: "/ia-consulta", icon: Sparkles },
 ];
 
 export function AppSidebar() {

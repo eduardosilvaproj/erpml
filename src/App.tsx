@@ -58,6 +58,7 @@ const App = () => (
                       <Route path="/crm" element={<CRM />} />
                       <Route path="/painel-hub" element={<PainelHub />} />
                       <Route path="/financeiro" element={<Financeiro />} />
+                      <Route path="/ia-consulta" element={<IAConsulta />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
