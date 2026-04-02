@@ -128,6 +128,10 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return new Response(`Server error: ${error.message}`, { status: 500 });
+    const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
+    return new Response(null, {
+      status: 302,
+      headers: { Location: `${appUrl}/integracao-ml?error=server_error` },
+    });
   }
 });
