@@ -15,6 +15,7 @@ import {
   useTransferOrders, useCreateTransferOrder, useUpdateTransferStatus,
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const MovimentacaoFull = () => {
   const { toast } = useToast();
@@ -229,6 +230,7 @@ const MovimentacaoFull = () => {
             <Button size="lg" className="h-14" onClick={() => handleScan(scanBuffer)} disabled={!scanBuffer.trim()}>
               Bipar
             </Button>
+            <BarcodeScanner onScan={(code) => handleScan(code)} />
           </div>
 
           {/* Last scan feedback */}
