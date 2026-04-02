@@ -285,7 +285,7 @@ export type Database = {
           id: string
           is_active: boolean
           ml_user_id: string
-          refresh_token: string
+          refresh_token: string | null
           seller_nickname: string | null
           token_expires_at: string
           updated_at: string
@@ -297,7 +297,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           ml_user_id: string
-          refresh_token: string
+          refresh_token?: string | null
           seller_nickname?: string | null
           token_expires_at: string
           updated_at?: string
@@ -309,7 +309,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           ml_user_id?: string
-          refresh_token?: string
+          refresh_token?: string | null
           seller_nickname?: string | null
           token_expires_at?: string
           updated_at?: string
