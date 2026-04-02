@@ -147,28 +147,24 @@ Deno.serve(async (req) => {
         const itemsData = await itemsRes.json();
 
         if (itemsData.results?.length > 0) {
-          // ML multi-get supports max 20 IDs per request
-          const allIds: string[] = itemsData.results;
-          const allItems: any[] = [];
-
-          for (let i = 0; i < allIds.length; i += 20) {
-            const batch = allIds.slice(i, i + 20).join(",");
-            const detailsRes = await fetch(
-              `https://api.mercadolibre.com/items?ids=${batch}`,
-              { headers: mlHeaders }
-            );
-            const detailsJson = await detailsRes.json();
-            const detailsData = Array.isArray(detailsJson)
-              ? detailsJson
-              : Array.isArray(detailsJson?.results)
-                ? detailsJson.results
-                : [detailsJson].filter(Boolean);
-            allItems.push(...detailsData);
+          const idsList: string[] = Array.isArray(itemsData.results) ? itemsData.results : [];
+          const chunks: string[][] = [];
+          for (let i = 0; i < idsList.length; i += 20) {
+            chunks.push(idsList.slice(i, i + 20));
           }
-
+          const detailChunks = await Promise.all(
+            chunks.map(async (chunk) => {
+              const r = await fetch(
+                `https://api.mercadolibre.com/items?ids=${chunk.join(",")}`,
+                { headers: mlHeaders }
+              );
+              const j = await r.json();
+              return Array.isArray(j) ? j : [];
+            })
+          );
           result = {
-            total: itemsData.paging?.total || 0,
-            items: allItems.map((d: any) => d?.body ?? d).filter(Boolean),
+            total: itemsData.paging?.total ?? 0,
+            items: detailChunks.flat().map((x: any) => x?.body).filter(Boolean),
           };
         } else {
           result = { total: 0, items: [] };
