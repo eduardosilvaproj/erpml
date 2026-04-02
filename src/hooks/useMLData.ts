@@ -93,10 +93,12 @@ export function useSyncStock() {
   });
 }
 
-export function getMLAuthUrl(userId: string) {
-  const appId = import.meta.env.VITE_ML_APP_ID;
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const redirectUri = `${supabaseUrl}/functions/v1/ml-oauth-callback`;
+export function useMLAuthUrl() {
+  const { callML } = useMLApi();
 
-  return `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
+  return useQuery({
+    queryKey: ["ml-auth-url"],
+    queryFn: () => callML("get-auth-url"),
+    staleTime: Infinity,
+  });
 }
