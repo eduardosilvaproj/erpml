@@ -152,11 +152,15 @@ Deno.serve(async (req) => {
             `https://api.mercadolibre.com/items?ids=${ids}`,
             { headers: mlHeaders }
           );
-          const detailsData = await detailsRes.json();
-          const detailsArray = Array.isArray(detailsData) ? detailsData : [detailsData].filter(Boolean);
+          const detailsJson = await detailsRes.json();
+          const detailsData = Array.isArray(detailsJson)
+            ? detailsJson
+            : Array.isArray(detailsJson?.results)
+              ? detailsJson.results
+              : [detailsJson].filter(Boolean);
           result = {
             total: itemsData.paging?.total || 0,
-            items: detailsArray.map((d: any) => d?.body).filter(Boolean),
+            items: detailsData.map((d: any) => d?.body ?? d).filter(Boolean),
           };
         } else {
           result = { total: 0, items: [] };
