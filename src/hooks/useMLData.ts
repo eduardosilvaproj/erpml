@@ -42,6 +42,7 @@ export function useMLItems(enabled: boolean) {
     queryKey: ["ml-items"],
     enabled,
     queryFn: () => callML("get-items", { limit: 50, offset: 0 }),
+    retry: false,
   });
 }
 
@@ -52,6 +53,7 @@ export function useMLOrders(enabled: boolean) {
     queryKey: ["ml-orders"],
     enabled,
     queryFn: () => callML("get-orders", { limit: 20, offset: 0 }),
+    retry: false,
   });
 }
 
