@@ -153,9 +153,10 @@ Deno.serve(async (req) => {
             { headers: mlHeaders }
           );
           const detailsData = await detailsRes.json();
+          const detailsArray = Array.isArray(detailsData) ? detailsData : [detailsData].filter(Boolean);
           result = {
             total: itemsData.paging?.total || 0,
-            items: detailsData.map((d: any) => d.body),
+            items: detailsArray.map((d: any) => d?.body).filter(Boolean),
           };
         } else {
           result = { total: 0, items: [] };
