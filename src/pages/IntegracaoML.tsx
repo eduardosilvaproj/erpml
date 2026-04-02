@@ -49,16 +49,22 @@ export default function IntegracaoML() {
 
   const handleConnect = () => {
     if (authUrlData?.url) {
-      try {
-        if (window.top) {
-          window.top.location.href = authUrlData.url;
+      const isEmbedded = window.self !== window.top;
+
+      if (isEmbedded) {
+        const popup = window.open(
+          authUrlData.url,
+          "_blank",
+          "noopener,noreferrer"
+        );
+
+        if (popup) {
+          popup.opener = null;
           return;
         }
-      } catch {
-        // ignore cross-frame access issues and fall back to a new tab
       }
 
-      window.open(authUrlData.url, "_blank", "noopener,noreferrer");
+      window.location.assign(authUrlData.url);
     }
   };
 
