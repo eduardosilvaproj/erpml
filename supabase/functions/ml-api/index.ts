@@ -206,6 +206,15 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case "get-auth-url": {
+        const APP_ID = Deno.env.get("MERCADO_LIVRE_APP_ID")!;
+        const SUPABASE_URL_VAL = Deno.env.get("SUPABASE_URL")!;
+        const redirectUri = `${SUPABASE_URL_VAL}/functions/v1/ml-oauth-callback`;
+        const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
+        result = { url: authUrl };
+        break;
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: `Unknown action: ${action}` }),
