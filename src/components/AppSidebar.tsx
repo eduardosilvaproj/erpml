@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
-  Users, BarChart3, LogOut, ShieldCheck
+  Users, BarChart3, LogOut, ShieldCheck, DollarSign
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -25,6 +25,7 @@ const menuItems = [
   { title: "PDV", url: "/pdv", icon: Monitor },
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
 ];
 
 export function AppSidebar() {
