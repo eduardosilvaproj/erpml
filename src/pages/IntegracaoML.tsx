@@ -24,7 +24,7 @@ import {
   useMLOrders,
   useMLLinkedProducts,
   useSyncStock,
-  useMLApi,
+  useSyncMLCatalog,
   useMLAuthUrl,
 } from "@/hooks/useMLData";
 import { useSearchParams } from "react-router-dom";
@@ -39,6 +39,7 @@ export default function IntegracaoML() {
   const { data: orders, isLoading: loadingOrders } = useMLOrders(isConnected);
   const { data: linked, isLoading: loadingLinked } = useMLLinkedProducts();
   const syncStock = useSyncStock();
+  const syncCatalog = useSyncMLCatalog();
   const { data: authUrlData } = useMLAuthUrl();
 
   useEffect(() => {
@@ -81,6 +82,22 @@ export default function IntegracaoML() {
     }
   };
 
+  const handleSyncCatalog = async () => {
+    try {
+      const result = await syncCatalog.mutateAsync();
+      toast({
+        title: "Catálogo sincronizado!",
+        description: `${result.linked_products} produto(s) vinculado(s) e ${result.unmatched_items} anúncio(s) sem correspondência automática.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao sincronizar catálogo",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loadingConn) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -101,13 +118,23 @@ export default function IntegracaoML() {
           </p>
         </div>
         {isConnected ? (
-          <Badge
-            variant="default"
-            className="bg-accent text-accent-foreground gap-1 px-3 py-1.5"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Conectado: {connection.seller_nickname}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="default"
+              className="bg-accent text-accent-foreground gap-1 px-3 py-1.5"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              Conectado: {connection.seller_nickname}
+            </Badge>
+            <Button
+              variant="outline"
+              onClick={handleSyncCatalog}
+              disabled={syncCatalog.isPending || connection?.needs_reauth}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncCatalog.isPending ? "animate-spin" : ""}`} />
+              Sincronizar catálogo
+            </Button>
+          </div>
         ) : (
           <Button onClick={handleConnect} disabled={!authUrlData?.url}>
             <Link2 className="mr-2 h-4 w-4" />
@@ -156,6 +183,23 @@ export default function IntegracaoML() {
           </CardContent>
         </Card>
       </div>
+
+      {connection?.needs_reauth && (
+        <Card>
+          <CardContent className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium text-foreground">Reconecte sua conta do Mercado Livre</p>
+              <p className="text-sm text-muted-foreground">
+                A conexão expirou sem token de renovação. Reconecte para voltar a carregar anúncios, pedidos e vínculos no dashboard.
+              </p>
+            </div>
+            <Button onClick={handleConnect} disabled={!authUrlData?.url}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Reconectar conta
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {!isConnected ? (
         <Card>

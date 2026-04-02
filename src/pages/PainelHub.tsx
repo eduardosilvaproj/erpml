@@ -6,6 +6,7 @@ import { useProducts } from "@/hooks/useProductData";
 import { useSalesStats, useSales } from "@/hooks/useSalesData";
 import { useInvoiceStats } from "@/hooks/useInvoiceData";
 import { useTransferOrders } from "@/hooks/useTransferData";
+import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders } from "@/hooks/useMLData";
 
 const PainelHub = () => {
   const { data: productData } = useProducts({ pageSize: 999 });
@@ -13,6 +14,11 @@ const PainelHub = () => {
   const { data: recentSales } = useSales({ limit: 5 });
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
+  const { data: mlConnection } = useMLConnection();
+  const mlEnabled = !!mlConnection && !mlConnection.needs_reauth;
+  const { data: mlItems } = useMLItems(mlEnabled);
+  const { data: mlOrders } = useMLOrders(mlEnabled);
+  const { data: mlLinked } = useMLLinkedProducts();
 
   const products = productData?.products || [];
   const totalPhysical = products.reduce((s, p) => s + p.stock_physical, 0);
@@ -93,6 +99,28 @@ const PainelHub = () => {
               <p className="text-3xl font-bold">{totalPhysical + totalFull}</p>
             </CardContent>
           </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
+          <ShoppingBag className="h-5 w-5" />
+          Mercado Livre
+        </h2>
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+          {[
+            { label: "Conta", value: mlConnection ? (mlConnection.needs_reauth ? "Reconectar" : "Conectada") : "Desconectada" },
+            { label: "Pedidos ML", value: mlOrders?.paging?.total ?? 0 },
+            { label: "Anúncios ML", value: mlItems?.total ?? 0 },
+            { label: "Vinculados", value: mlLinked?.length ?? 0 },
+          ].map((item) => (
+            <Card key={item.label}>
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground">{item.label}</p>
+                <p className="text-2xl font-bold">{item.value}</p>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
 

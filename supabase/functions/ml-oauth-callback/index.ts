@@ -32,16 +32,21 @@ Deno.serve(async (req) => {
 
   try {
     // Exchange code for tokens
+    const tokenBody = new URLSearchParams({
+      grant_type: "authorization_code",
+      client_id: APP_ID,
+      client_secret: CLIENT_SECRET,
+      code,
+      redirect_uri: redirectUri,
+    });
+
     const tokenRes = await fetch("https://api.mercadolibre.com/oauth/token", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        grant_type: "authorization_code",
-        client_id: APP_ID,
-        client_secret: CLIENT_SECRET,
-        code,
-        redirect_uri: redirectUri,
-      }),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body: tokenBody.toString(),
     });
 
     const tokenData = await tokenRes.json();
