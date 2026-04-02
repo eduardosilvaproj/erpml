@@ -236,6 +236,56 @@ export type Database = {
           },
         ]
       }
+      invoice_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          due_date: string | null
+          id: string
+          installment_number: number | null
+          invoice_id: string
+          is_cash: boolean
+          notes: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          installment_number?: number | null
+          invoice_id: string
+          is_cash?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          installment_number?: number | null
+          invoice_id?: string
+          is_cash?: boolean
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           created_at: string
