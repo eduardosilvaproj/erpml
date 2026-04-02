@@ -99,14 +99,37 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, params } = body;
 
+    let result: any;
+
+    // Actions that don't require an ML connection
+    if (action === "get-auth-url") {
+      const APP_ID = Deno.env.get("MERCADO_LIVRE_APP_ID")!;
+      const SUPABASE_URL_VAL = Deno.env.get("SUPABASE_URL")!;
+      const redirectUri = `${SUPABASE_URL_VAL}/functions/v1/ml-oauth-callback`;
+      const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
+      return new Response(JSON.stringify({ url: authUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (action === "connection-status") {
+      const { data: conn } = await serviceClient
+        .from("ml_connections")
+        .select("seller_nickname, ml_user_id, token_expires_at, is_active")
+        .eq("user_id", userId)
+        .single();
+      return new Response(JSON.stringify(conn || null), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // All other actions require a valid ML token
     const accessToken = await getValidToken(serviceClient, userId);
 
     const mlHeaders = {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     };
-
-    let result: any;
 
     switch (action) {
       case "get-items": {
@@ -192,26 +215,6 @@ Deno.serve(async (req) => {
           .eq("ml_item_id", params.itemId)
           .eq("user_id", userId);
 
-        break;
-      }
-
-      case "connection-status": {
-        const { data: conn } = await serviceClient
-          .from("ml_connections")
-          .select("seller_nickname, ml_user_id, token_expires_at, is_active")
-          .eq("user_id", userId)
-          .single();
-
-        result = conn || null;
-        break;
-      }
-
-      case "get-auth-url": {
-        const APP_ID = Deno.env.get("MERCADO_LIVRE_APP_ID")!;
-        const SUPABASE_URL_VAL = Deno.env.get("SUPABASE_URL")!;
-        const redirectUri = `${SUPABASE_URL_VAL}/functions/v1/ml-oauth-callback`;
-        const authUrl = `https://auth.mercadolivre.com.br/authorization?response_type=code&client_id=${APP_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${userId}`;
-        result = { url: authUrl };
         break;
       }
 
