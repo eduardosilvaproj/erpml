@@ -15,6 +15,7 @@ import {
   useConferences, usePendingInvoices, useStartConference,
   useScanItem, useFinishConference, type Conference
 } from "@/hooks/useConferenceData";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const Conferencia = () => {
   const { toast } = useToast();
@@ -269,6 +270,10 @@ const Conferencia = () => {
                 >
                   {scanItem.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "Bipar"}
                 </Button>
+                <BarcodeScanner
+                  onScan={(code) => handleScan(code)}
+                  disabled={scanItem.isPending}
+                />
               </div>
 
               {/* Last scan feedback */}

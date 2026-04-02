@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateSale, useSalesStats, type CartItem } from "@/hooks/useSalesData";
 import { useToast } from "@/hooks/use-toast";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const PDV = () => {
   const { toast } = useToast();
@@ -217,6 +218,7 @@ const PDV = () => {
               <Button className="h-12" onClick={() => handleScan(scanBuffer)} disabled={!scanBuffer.trim()}>
                 Bipar
               </Button>
+              <BarcodeScanner onScan={(code) => handleScan(code)} />
             </div>
 
             {lastScan && (
