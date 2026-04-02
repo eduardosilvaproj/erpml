@@ -110,8 +110,10 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error("Insert error:", insertError);
-        return new Response(`Database error: ${insertError.message}`, {
-          status: 500,
+        const appUrl2 = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
+        return new Response(null, {
+          status: 302,
+          headers: { Location: `${appUrl2}/integracao-ml?error=db_error` },
         });
       }
     }
