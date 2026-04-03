@@ -380,7 +380,7 @@ export default function Financeiro() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
