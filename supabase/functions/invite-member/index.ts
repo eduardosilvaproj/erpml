@@ -138,6 +138,14 @@ serve(async (req) => {
         }
       }
 
+      // Audit log
+      await adminClient.from("company_audit_log").insert({
+        company_id: companyId,
+        user_id: callerId,
+        action: "member_invited",
+        details: { email: email.trim().toLowerCase(), role: memberRole },
+      });
+
       return new Response(
         JSON.stringify({ success: true, message: "Membro adicionado com sucesso" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
