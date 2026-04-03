@@ -129,7 +129,7 @@ export function useCompanyMembers(companyId: string | undefined) {
   return useQuery({
     queryKey: ["company-members", companyId],
     enabled: !!companyId,
-    queryFn: async (): Promise<(CompanyMember & { profile?: { full_name: string | null; email?: string } })[]> => {
+    queryFn: async (): Promise<(CompanyMember & { profile?: { full_name: string | null; email?: string; avatar_url?: string | null } })[]> => {
       const { data, error } = await supabase
         .from("company_members")
         .select("*")
