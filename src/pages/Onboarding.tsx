@@ -27,6 +27,7 @@ export default function Onboarding() {
 
     try {
       await createCompany.mutateAsync({ name: companyName.trim(), plan_id: selectedPlan });
+      await queryClient.invalidateQueries({ queryKey: ["my-company"] });
       toast.success("Empresa criada com sucesso!");
       navigate("/boas-vindas");
     } catch (err: any) {
