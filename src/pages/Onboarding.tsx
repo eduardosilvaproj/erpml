@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 export default function Onboarding() {
