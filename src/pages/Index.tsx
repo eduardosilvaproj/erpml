@@ -1,5 +1,5 @@
 import { LayoutDashboard, Package, ShoppingBag, Warehouse, Users, TrendingUp, ArrowRightLeft, FileText, ScanBarcode, Monitor } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { useProducts } from "@/hooks/useProductData";
 import { useSalesStats } from "@/hooks/useSalesData";
@@ -48,8 +48,8 @@ const Index = () => {
                 <stat.icon className={`h-5 w-5 ${stat.color}`} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
-                <p className="text-2xl font-bold text-foreground mt-0.5">{stat.value}</p>
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                <p className="text-[22px] font-extrabold text-foreground mt-0.5 leading-tight">{stat.value}</p>
               </div>
             </CardContent>
           </Card>
@@ -63,11 +63,11 @@ const Index = () => {
             <Link key={mod.title} to={mod.url}>
               <Card className="hover-lift cursor-pointer group">
                 <CardContent className="flex items-center gap-4 p-5">
-                  <div className="rounded-xl bg-primary/10 p-3 group-hover:bg-primary/15 transition-colors">
+                  <div className="rounded-xl bg-primary/10 p-3 group-hover:bg-primary/20 transition-colors">
                     <mod.icon className="h-5 w-5 text-primary" strokeWidth={1.75} />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground text-sm">{mod.title}</p>
+                    <p className="font-semibold text-foreground text-sm">{mod.title}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{mod.desc}</p>
                   </div>
                 </CardContent>

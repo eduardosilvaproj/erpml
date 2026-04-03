@@ -8,7 +8,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b border-border/40 bg-card/60 backdrop-blur-xl px-5 sticky top-0 z-30">
+          <header className="h-14 flex items-center border-b border-border/50 bg-background/80 backdrop-blur-xl px-5 sticky top-0 z-30">
             <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">

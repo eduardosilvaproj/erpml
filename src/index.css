@@ -4,29 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium Dark ERP Design System — All colors HSL */
+/* Premium Dark ERP Design System — High Contrast */
 
 @layer base {
   :root {
+    /* Background layers for depth */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 221 39% 11%;
+    /* Cards: lighter than bg for visual separation */
+    --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 221 39% 11%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
+    /* Primary blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
+    /* Secondary: subtle layer */
+    --secondary: 215 28% 20%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    /* Muted text */
+    --muted: 215 28% 20%;
+    --muted-foreground: 215 25% 63%;
 
-    --accent: 217 33% 17%;
+    --accent: 215 28% 22%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 72% 51%;
@@ -38,29 +43,31 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    /* Borders: visible separation */
+    --border: 215 25% 27%;
+    --input: 215 25% 22%;
     --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 215 20% 65%;
+    /* Sidebar: darkest layer */
+    --sidebar-background: 222 50% 7%;
+    --sidebar-foreground: 215 25% 63%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 14%;
+    --sidebar-accent: 217 40% 14%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 14%;
     --sidebar-ring: 217 91% 60%;
 
-    /* Premium shadows for dark mode */
-    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.15);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.15);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.25), 0 2px 4px -2px hsl(0 0% 0% / 0.15);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -4px hsl(0 0% 0% / 0.2);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.3), 0 8px 10px -6px hsl(0 0% 0% / 0.2);
-    --shadow-primary: 0 4px 14px -2px hsl(217 91% 60% / 0.3);
-    --shadow-glow: 0 0 20px -5px hsl(217 91% 60% / 0.15);
+    /* Shadows */
+    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.25), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.35), 0 4px 6px -4px hsl(0 0% 0% / 0.25);
+    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.35), 0 8px 10px -6px hsl(0 0% 0% / 0.25);
+    --shadow-primary: 0 4px 14px -2px hsl(217 91% 60% / 0.25);
+    --shadow-glow: 0 0 20px -5px hsl(217 91% 60% / 0.12);
   }
 }
 
@@ -95,7 +102,7 @@
   .shadow-glow { box-shadow: var(--shadow-glow); }
 
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/60;
+    @apply bg-card/90 backdrop-blur-xl border border-border;
     box-shadow: var(--shadow-sm);
   }
 
@@ -105,22 +112,5 @@
   .hover-lift:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-lg);
-  }
-
-  .gradient-border {
-    position: relative;
-  }
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, hsl(217 91% 60% / 0.3), hsl(142 71% 45% / 0.1));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
   }
 }
