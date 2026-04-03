@@ -130,9 +130,26 @@ const PainelHub = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Painel HUB</h1>
-        <p className="text-muted-foreground">Visão geral de vendas, estoque e financeiro</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Painel HUB</h1>
+          <p className="text-muted-foreground">Visão geral de vendas, estoque e financeiro</p>
+        </div>
+        <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setPeriod(opt.key)}
+              className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                period === opt.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* KPIs */}
