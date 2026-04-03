@@ -83,49 +83,16 @@ export function useMLOrders(enabled: boolean) {
 
 export function useMLLinkedProducts() {
   const { user } = useAuth();
-  const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-linked-products", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const fetchLinkedProducts = async () =>
-        await supabase
-          .from("ml_linked_products")
-          .select("*, products(id, name, sku, stock_physical, stock_full, price)")
-          .eq("user_id", user!.id);
-
-      let { data, error } = await fetchLinkedProducts();
+      const { data, error } = await supabase
+        .from("ml_linked_products")
+        .select("*, products(id, name, sku, stock_physical, stock_full, price)")
+        .eq("user_id", user!.id);
       if (error) throw error;
-
-      if ((data?.length ?? 0) > 0) {
-        return data;
-      }
-
-      const { data: connection, error: connectionError } = await supabase
-        .from("ml_connections")
-        .select("id, is_active")
-        .eq("user_id", user!.id)
-        .eq("is_active", true)
-        .maybeSingle();
-
-      if (connectionError) {
-        throw connectionError;
-      }
-
-      if (!connection) {
-        return data;
-      }
-
-      try {
-        await callML("sync-catalog");
-        const refreshed = await fetchLinkedProducts();
-        if (refreshed.error) throw refreshed.error;
-        data = refreshed.data;
-      } catch {
-        return data;
-      }
-
       return data;
     },
   });
