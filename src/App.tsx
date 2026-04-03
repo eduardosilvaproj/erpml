@@ -30,6 +30,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import Onboarding from "./pages/Onboarding";
 import MasterAdmin from "./pages/MasterAdmin";
 import Upgrade from "./pages/Upgrade";
+import Equipe from "./pages/Equipe";
 
 const queryClient = new QueryClient();
 

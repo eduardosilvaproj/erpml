@@ -23,6 +23,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Minha Empresa", url: "/empresa", icon: Building2 },
+  { title: "Equipe", url: "/equipe", icon: UsersRound },
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "Entrada XML", url: "/entrada-xml", icon: FileText },
   { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
