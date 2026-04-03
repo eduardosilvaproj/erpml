@@ -26,7 +26,7 @@ export default function Onboarding() {
     try {
       await createCompany.mutateAsync({ name: companyName.trim(), plan_id: selectedPlan });
       toast.success("Empresa criada com sucesso!");
-      navigate("/empresa");
+      navigate("/boas-vindas");
     } catch (err: any) {
       toast.error(err.message || "Erro ao criar empresa");
     }
