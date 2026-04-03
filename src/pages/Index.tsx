@@ -86,8 +86,51 @@ const Index = () => {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="space-y-8">
+          {/* Primary KPI Skeletons */}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="border-l-[3px] border-l-muted">
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <Skeleton className="h-10 w-10 rounded-xl" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-8 w-24 mb-2" />
+                  <Skeleton className="h-3 w-20" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Secondary KPI Skeletons */}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-xl shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-6 w-16" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Bottom Skeletons */}
+          <div className="grid gap-5 grid-cols-1 lg:grid-cols-2">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="pb-3">
+                  <Skeleton className="h-5 w-40" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <Skeleton key={j} className="h-14 w-full rounded-xl" />
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       ) : data ? (
         <>
