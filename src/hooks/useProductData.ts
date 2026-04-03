@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export type Product = {
   id: string;
@@ -23,6 +24,7 @@ export type Product = {
   active: boolean;
   created_at: string;
   updated_at: string;
+  company_id: string | null;
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
 };
@@ -54,12 +56,18 @@ export function useProducts(filters?: {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }) {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["products", filters],
+    queryKey: ["products", filters, companyId],
     queryFn: async () => {
       let query = supabase
         .from("products")
         .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))", { count: "exact" });
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
 
       if (filters?.search) {
         query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`);
@@ -80,7 +88,6 @@ export function useProducts(filters?: {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      // Filter by supplier_id client-side if needed
       let filtered = data as unknown as Product[];
       if (filters?.supplier_id) {
         filtered = filtered.filter((p) =>
@@ -96,6 +103,7 @@ export function useProducts(filters?: {
 export function useCreateProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async (data: ProductFormData) => {
@@ -112,6 +120,7 @@ export function useCreateProduct() {
         sku_ml: productData.sku_ml || null,
         id_ml: productData.id_ml || null,
         min_stock: productData.min_stock ?? 0,
+        company_id: companyId,
       };
 
       const { data: product, error } = await supabase
@@ -168,7 +177,6 @@ export function useUpdateProduct() {
       const { error } = await supabase.from("products").update(updateData).eq("id", id);
       if (error) throw error;
 
-      // Replace supplier links
       await supabase.from("product_suppliers").delete().eq("product_id", id);
       if (supplier_ids.length > 0) {
         const supplierLinks = supplier_ids.map((sid, i) => ({
@@ -210,10 +218,16 @@ export function useDeleteProduct() {
 }
 
 export function useCategories() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("name");
+      let query = supabase.from("categories").select("*").order("name");
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -221,10 +235,16 @@ export function useCategories() {
 }
 
 export function useSuppliers() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["suppliers"],
+    queryKey: ["suppliers", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suppliers").select("*").eq("active", true).order("name");
+      let query = supabase.from("suppliers").select("*").eq("active", true).order("name");
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -234,10 +254,11 @@ export function useSuppliers() {
 export function useCreateSupplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async (data: { name: string; cnpj?: string; email?: string; phone?: string; address?: string }) => {
-      const { data: supplier, error } = await supabase.from("suppliers").insert(data).select().single();
+      const { data: supplier, error } = await supabase.from("suppliers").insert({ ...data, company_id: companyId }).select().single();
       if (error) throw error;
       return supplier;
     },

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export type Customer = {
   id: string;
@@ -12,13 +13,19 @@ export type Customer = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  company_id: string | null;
 };
 
 export function useCustomers(search?: string) {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["customers", search],
+    queryKey: ["customers", search, companyId],
     queryFn: async () => {
       let query = supabase.from("customers").select("*").order("name");
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
       if (search) {
         query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,email.ilike.%${search}%`);
       }
@@ -46,18 +53,28 @@ export function useCustomerWithPurchases(customerId?: string) {
 }
 
 export function useCustomerStats() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["customer-stats"],
+    queryKey: ["customer-stats", companyId],
     queryFn: async () => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: all, error } = await supabase.from("customers").select("created_at");
+      let query = supabase.from("customers").select("created_at");
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { data: all, error } = await query;
       if (error) throw error;
 
-      const { data: sales30d } = await supabase
+      let salesQuery = supabase
         .from("sales")
         .select("id")
         .not("customer_id", "is", null)
         .gte("created_at", thirtyDaysAgo);
+      if (companyId) {
+        salesQuery = salesQuery.eq("company_id", companyId);
+      }
+      const { data: sales30d } = await salesQuery;
 
       return {
         total: all?.length || 0,
@@ -71,6 +88,7 @@ export function useCustomerStats() {
 export function useCreateCustomer() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async (data: { name: string; phone?: string; email?: string; cpf?: string; address?: string; notes?: string }) => {
@@ -83,6 +101,7 @@ export function useCreateCustomer() {
           cpf: data.cpf || null,
           address: data.address || null,
           notes: data.notes || null,
+          company_id: companyId,
         })
         .select()
         .single();
