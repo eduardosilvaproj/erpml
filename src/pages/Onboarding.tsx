@@ -15,6 +15,7 @@ export default function Onboarding() {
   const { data: plans, isLoading } = usePlans();
   const createCompany = useCreateCompany();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [step, setStep] = useState<"plan" | "company">("plan");
   const [selectedPlan, setSelectedPlan] = useState<string>("");
