@@ -68,7 +68,7 @@ const PainelHub = () => {
       });
     }
     return days;
-  }, [allSalesData]);
+  }, [allSalesData, selectedPeriod.days]);
 
   // Financial metrics
   const financialMetrics = useMemo(() => {
