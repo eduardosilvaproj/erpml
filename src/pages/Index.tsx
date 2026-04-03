@@ -26,28 +26,30 @@ const Index = () => {
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  const stats = [
+    { label: "Produtos", value: totalProducts.toString(), icon: Package, color: "text-primary", bg: "bg-primary/10" },
+    { label: "Vendas Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
+    { label: "Vendas (30d)", value: (salesStats?.sales30d ?? 0).toString(), icon: ShoppingBag, color: "text-warning", bg: "bg-warning/10" },
+    { label: "Clientes", value: (customerStats?.total ?? 0).toString(), icon: Users, color: "text-primary", bg: "bg-primary/10" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-muted-foreground">Visão geral do sistema ERP</p>
+        <p className="text-muted-foreground mt-1">Visão geral do sistema ERP</p>
       </div>
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        {[
-          { label: "Produtos", value: totalProducts.toString(), icon: Package },
-          { label: "Vendas Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: TrendingUp },
-          { label: "Vendas (30d)", value: (salesStats?.sales30d ?? 0).toString(), icon: ShoppingBag },
-          { label: "Clientes", value: (customerStats?.total ?? 0).toString(), icon: Users },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-lg bg-primary/10 p-3">
-                <stat.icon className="h-5 w-5 text-primary" />
+        {stats.map((stat) => (
+          <Card key={stat.label} className="hover-lift">
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className={`rounded-xl ${stat.bg} p-3`}>
+                <stat.icon className={`h-5 w-5 ${stat.color}`} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                <p className="text-2xl font-bold text-foreground mt-0.5">{stat.value}</p>
               </div>
             </CardContent>
           </Card>
@@ -55,18 +57,18 @@ const Index = () => {
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">Módulos</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Módulos</h2>
         <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
           {modules.map((mod) => (
             <Link key={mod.title} to={mod.url}>
-              <Card className="transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer">
+              <Card className="hover-lift cursor-pointer group">
                 <CardContent className="flex items-center gap-4 p-5">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <mod.icon className="h-6 w-6 text-primary" />
+                  <div className="rounded-xl bg-primary/10 p-3 group-hover:bg-primary/15 transition-colors">
+                    <mod.icon className="h-5 w-5 text-primary" strokeWidth={1.75} />
                   </div>
                   <div>
-                    <p className="font-medium">{mod.title}</p>
-                    <p className="text-sm text-muted-foreground">{mod.desc}</p>
+                    <p className="font-medium text-foreground text-sm">{mod.title}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{mod.desc}</p>
                   </div>
                 </CardContent>
               </Card>
