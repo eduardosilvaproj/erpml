@@ -226,26 +226,44 @@ export default function CompanyDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Histórico de Alterações</CardTitle>
+              <CardDescription>Últimas 50 ações registradas</CardDescription>
             </CardHeader>
             <CardContent>
               {auditLog && auditLog.length > 0 ? (
                 <div className="space-y-3">
-                  {auditLog.map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                      <History className="h-4 w-4 mt-1 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium">{entry.action.replace(/_/g, " ")}</p>
-                        {entry.details && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {JSON.stringify(entry.details).slice(0, 100)}
+                  {auditLog.map((entry) => {
+                    const actionLabels: Record<string, string> = {
+                      company_created: "Empresa criada",
+                      company_updated: "Dados da empresa atualizados",
+                      member_invited: "Membro convidado",
+                      member_removed: "Membro removido",
+                      member_role_changed: "Papel de membro alterado",
+                    };
+                    return (
+                      <div key={entry.id} className="flex items-start gap-3 p-3 rounded-lg border">
+                        <History className="h-4 w-4 mt-1 text-muted-foreground" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">
+                            {actionLabels[entry.action] || entry.action.replace(/_/g, " ")}
                           </p>
-                        )}
+                          <p className="text-xs text-muted-foreground">
+                            por {(entry as any).user_name || "Usuário"}
+                          </p>
+                          {entry.details && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {entry.action === "member_invited" && `E-mail: ${(entry.details as any).email}`}
+                              {entry.action === "member_role_changed" && `${(entry.details as any).old_role} → ${(entry.details as any).new_role}`}
+                              {!["member_invited", "member_role_changed", "member_removed"].includes(entry.action) &&
+                                JSON.stringify(entry.details).slice(0, 100)}
+                            </p>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(entry.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                        </span>
                       </div>
-                      <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {format(new Date(entry.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-muted-foreground text-sm">Nenhuma alteração registrada.</p>
