@@ -41,7 +41,7 @@ export default function IAConsulta() {
     setIsLoading(true);
 
     let assistantSoFar = "";
-
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error("Você precisa estar logado.");
