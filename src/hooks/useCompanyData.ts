@@ -253,7 +253,7 @@ export function useCreateCompany() {
 export function useAllCompanies() {
   return useQuery({
     queryKey: ["all-companies"],
-    queryFn: async (): Promise<(Company & { plan?: Plan; members_count?: number })[]> => {
+    queryFn: async (): Promise<(Company & { plan?: Plan; members_count?: number; owner_profile?: { full_name: string | null } })[]> => {
       const { data, error } = await supabase
         .from("companies")
         .select("*")
@@ -261,6 +261,13 @@ export function useAllCompanies() {
       if (error) throw error;
 
       const { data: plans } = await supabase.from("plans").select("*");
+
+      // Get owner profiles
+      const ownerIds = [...new Set((data || []).map((c: any) => c.owner_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", ownerIds);
 
       // Get member counts per company
       const companiesWithData = await Promise.all(
@@ -271,15 +278,49 @@ export function useAllCompanies() {
             .eq("company_id", c.id);
 
           const plan = plans?.find((p: any) => p.id === c.plan_id);
+          const ownerProfile = profiles?.find((p: any) => p.id === c.owner_id);
           return {
             ...c,
             plan: plan ? { ...plan, features: Array.isArray(plan.features) ? plan.features : [] } : undefined,
             members_count: count || 0,
+            owner_profile: ownerProfile || null,
           };
         })
       );
 
       return companiesWithData;
+    },
+  });
+}
+
+export function useAdminUpdateCompany() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Company> & { id: string }) => {
+      const { error } = await supabase
+        .from("companies")
+        .update(updates as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-companies"] });
+    },
+  });
+}
+
+export function useAdminChangeCompanyPlan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ companyId, planId }: { companyId: string; planId: string }) => {
+      const { error } = await supabase
+        .from("companies")
+        .update({ plan_id: planId })
+        .eq("id", companyId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["all-companies"] });
     },
   });
 }
