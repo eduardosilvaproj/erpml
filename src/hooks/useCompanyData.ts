@@ -156,7 +156,7 @@ export function useCompanyAuditLog(companyId: string | undefined) {
   return useQuery({
     queryKey: ["company-audit-log", companyId],
     enabled: !!companyId,
-    queryFn: async (): Promise<AuditLogEntry[]> => {
+    queryFn: async (): Promise<(AuditLogEntry & { user_name?: string })[]> => {
       const { data, error } = await supabase
         .from("company_audit_log")
         .select("*")
@@ -164,7 +164,22 @@ export function useCompanyAuditLog(companyId: string | undefined) {
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data || []).map((d: any) => ({ ...d, details: d.details as Record<string, unknown> | null })) as AuditLogEntry[];
+
+      const entries = (data || []).map((d: any) => ({ ...d, details: d.details as Record<string, unknown> | null })) as AuditLogEntry[];
+
+      // Fetch user names
+      const userIds = [...new Set(entries.map((e) => e.user_id))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        return entries.map((e) => ({
+          ...e,
+          user_name: profiles?.find((p: any) => p.id === e.user_id)?.full_name || undefined,
+        }));
+      }
+      return entries;
     },
   });
 }
