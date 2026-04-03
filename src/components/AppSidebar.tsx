@@ -4,6 +4,7 @@ import {
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock
 } from "lucide-react";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
