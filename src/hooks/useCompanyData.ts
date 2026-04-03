@@ -118,7 +118,7 @@ export function useMyCompany() {
         if (planData) {
           plan = {
             ...planData,
-            features: Array.isArray(planData.features) ? planData.features : JSON.parse(planData.features || "[]"),
+            features: Array.isArray(planData.features) ? planData.features as string[] : JSON.parse(String(planData.features || "[]")),
           } as Plan;
         }
       }
