@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCompanyMembers, useMyCompany } from "@/hooks/useCompanyData";
+import { getAvatarUrl } from "@/components/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -213,7 +214,7 @@ export default function Equipe() {
                 return (
                   <Card key={member.id} className="flex items-center gap-4 p-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={undefined} alt={member.profile?.full_name || ""} />
+                      <AvatarImage src={getAvatarUrl(member.profile?.avatar_url)} alt={member.profile?.full_name || ""} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {initials}
                       </AvatarFallback>

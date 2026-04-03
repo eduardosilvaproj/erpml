@@ -4,6 +4,7 @@ import {
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock
 } from "lucide-react";
+import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -134,14 +135,21 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="flex flex-col gap-2 p-2">
-          {!collapsed && planName && (
-            <Badge variant="outline" className="w-fit text-xs">
-              {planName}
-            </Badge>
-          )}
-          {!collapsed && user?.email && (
-            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-          )}
+          <div className="flex items-center gap-2">
+            <AvatarUpload size="sm" editable={!collapsed} />
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                {user?.email && (
+                  <span className="text-xs text-muted-foreground truncate block">{user.email}</span>
+                )}
+                {planName && (
+                  <Badge variant="outline" className="w-fit text-xs mt-0.5">
+                    {planName}
+                  </Badge>
+                )}
+              </div>
+            )}
+          </div>
           <Button variant="ghost" size="sm" onClick={signOut} className="justify-start">
             <LogOut className="h-4 w-4 mr-2" />
             {!collapsed && "Sair"}
