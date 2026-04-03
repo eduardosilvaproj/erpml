@@ -273,6 +273,14 @@ serve(async (req) => {
         );
       }
 
+      // Audit log
+      await adminClient.from("company_audit_log").insert({
+        company_id: companyId,
+        user_id: callerId,
+        action: "member_role_changed",
+        details: { target_user_id: member.user_id, old_role: member.role, new_role: newRole },
+      });
+
       return new Response(
         JSON.stringify({ success: true, message: "Papel alterado com sucesso" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
