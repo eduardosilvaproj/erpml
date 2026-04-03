@@ -25,6 +25,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
+import CompanyDashboard from "./pages/CompanyDashboard";
+import Onboarding from "./pages/Onboarding";
+import MasterAdmin from "./pages/MasterAdmin";
 
 const queryClient = new QueryClient();
 
@@ -60,6 +63,9 @@ const App = () => (
                       <Route path="/financeiro" element={<Financeiro />} />
                       <Route path="/ia-consulta" element={<IAConsulta />} />
                       <Route path="/admin" element={<AdminPanel />} />
+                      <Route path="/empresa" element={<CompanyDashboard />} />
+                      <Route path="/onboarding" element={<Onboarding />} />
+                      <Route path="/master-admin" element={<MasterAdmin />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

@@ -1,0 +1,252 @@
+import { useState } from "react";
+import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan } from "@/hooks/useCompanyData";
+import { useIsAdmin } from "@/hooks/useAdminData";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Building2, CreditCard, BarChart3, Loader2, Power, PowerOff, Pencil, Users } from "lucide-react";
+import { toast } from "sonner";
+import { Navigate } from "react-router-dom";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import type { Plan } from "@/hooks/useCompanyData";
+
+export default function MasterAdmin() {
+  const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
+  const { data: companies, isLoading: loadingCompanies } = useAllCompanies();
+  const { data: plans, isLoading: loadingPlans } = useAllPlans();
+  const toggleStatus = useToggleCompanyStatus();
+  const updatePlan = useUpdatePlan();
+
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [planForm, setPlanForm] = useState<Partial<Plan>>({});
+
+  if (checkingAdmin) {
+    return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  if (!isAdmin) return <Navigate to="/" replace />;
+
+  const totalCompanies = companies?.length || 0;
+  const activeCompanies = companies?.filter((c) => c.status === "active").length || 0;
+  const totalMembers = companies?.reduce((sum, c) => sum + (c.members_count || 0), 0) || 0;
+
+  const handleToggleStatus = async (id: string, current: string) => {
+    const newStatus = current === "active" ? "suspended" : "active";
+    try {
+      await toggleStatus.mutateAsync({ id, status: newStatus });
+      toast.success(`Empresa ${newStatus === "active" ? "ativada" : "suspensa"}`);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const openEditPlan = (plan: Plan) => {
+    setEditingPlan(plan);
+    setPlanForm({ name: plan.name, price: plan.price, max_users: plan.max_users, max_products: plan.max_products });
+  };
+
+  const handleSavePlan = async () => {
+    if (!editingPlan) return;
+    try {
+      await updatePlan.mutateAsync({ id: editingPlan.id, ...planForm } as any);
+      toast.success("Plano atualizado!");
+      setEditingPlan(null);
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+      active: { label: "Ativa", variant: "default" },
+      suspended: { label: "Suspensa", variant: "destructive" },
+      cancelled: { label: "Cancelada", variant: "secondary" },
+    };
+    const s = map[status] || { label: status, variant: "secondary" as const };
+    return <Badge variant={s.variant}>{s.label}</Badge>;
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Painel Master</h1>
+        <p className="text-muted-foreground">Gerencie todas as empresas e planos da plataforma</p>
+      </div>
+
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Empresas</CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold">{totalCompanies}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Empresas Ativas</CardTitle>
+            <Power className="h-4 w-4 text-accent" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold">{activeCompanies}</div></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent><div className="text-2xl font-bold">{totalMembers}</div></CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="empresas">
+        <TabsList>
+          <TabsTrigger value="empresas"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="planos"><CreditCard className="h-4 w-4 mr-1" /> Planos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="empresas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todas as Empresas</CardTitle>
+              <CardDescription>{totalCompanies} empresa(s) cadastrada(s)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingCompanies ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Empresa</TableHead>
+                        <TableHead>CNPJ</TableHead>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Membros</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Criada em</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {companies?.map((c) => (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell>{c.cnpj || "—"}</TableCell>
+                          <TableCell><Badge variant="outline">{c.plan?.name || "—"}</Badge></TableCell>
+                          <TableCell>{c.members_count}</TableCell>
+                          <TableCell>{statusBadge(c.status)}</TableCell>
+                          <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant={c.status === "active" ? "destructive" : "default"}
+                              size="sm"
+                              onClick={() => handleToggleStatus(c.id, c.status)}
+                              disabled={toggleStatus.isPending}
+                            >
+                              {c.status === "active" ? <PowerOff className="h-3 w-3 mr-1" /> : <Power className="h-3 w-3 mr-1" />}
+                              {c.status === "active" ? "Suspender" : "Ativar"}
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="planos">
+          <Card>
+            <CardHeader>
+              <CardTitle>Planos de Assinatura</CardTitle>
+              <CardDescription>Gerencie os planos disponíveis</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingPlans ? (
+                <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Plano</TableHead>
+                        <TableHead>Preço</TableHead>
+                        <TableHead>Máx. Usuários</TableHead>
+                        <TableHead>Máx. Produtos</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {plans?.map((p) => (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell>R$ {p.price.toFixed(2)}</TableCell>
+                          <TableCell>{p.max_users}</TableCell>
+                          <TableCell>{p.max_products >= 99999 ? "∞" : p.max_products}</TableCell>
+                          <TableCell>
+                            <Badge variant={p.is_active ? "default" : "secondary"}>
+                              {p.is_active ? "Ativo" : "Inativo"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="outline" size="sm" onClick={() => openEditPlan(p)}>
+                              <Pencil className="h-3 w-3 mr-1" /> Editar
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Edit Plan Dialog */}
+      <Dialog open={!!editingPlan} onOpenChange={() => setEditingPlan(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label>Nome</Label>
+              <Input value={planForm.name || ""} onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Preço (R$)</Label>
+              <Input type="number" step="0.01" value={planForm.price ?? 0} onChange={(e) => setPlanForm({ ...planForm, price: parseFloat(e.target.value) })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label>Máx. Usuários</Label>
+                <Input type="number" value={planForm.max_users ?? 1} onChange={(e) => setPlanForm({ ...planForm, max_users: parseInt(e.target.value) })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Máx. Produtos</Label>
+                <Input type="number" value={planForm.max_products ?? 50} onChange={(e) => setPlanForm({ ...planForm, max_products: parseInt(e.target.value) })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPlan(null)}>Cancelar</Button>
+            <Button onClick={handleSavePlan} disabled={updatePlan.isPending}>
+              {updatePlan.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
