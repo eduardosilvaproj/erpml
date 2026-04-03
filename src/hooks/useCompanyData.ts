@@ -141,7 +141,7 @@ export function useCompanyMembers(companyId: string | undefined) {
       const userIds = (data || []).map((m: any) => m.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name")
+        .select("id, full_name, avatar_url")
         .in("id", userIds);
 
       return (data || []).map((m: any) => ({
