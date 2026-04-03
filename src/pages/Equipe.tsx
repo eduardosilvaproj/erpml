@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { useCompanyMembers, useMyCompany } from "@/hooks/useCompanyData";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Users, UserCheck, UserX } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Loader2, Users, UserCheck, UserX, UserPlus } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const roleLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" }> = {
   owner: { label: "Proprietário", variant: "default" },
@@ -11,18 +21,126 @@ const roleLabels: Record<string, { label: string; variant: "default" | "secondar
 };
 
 export default function Equipe() {
+  const { user } = useAuth();
   const { data: company, isLoading: loadingCompany } = useMyCompany();
   const { data: members, isLoading: loadingMembers } = useCompanyMembers(company?.id);
+  const queryClient = useQueryClient();
+
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviting, setInviting] = useState(false);
 
   const isLoading = loadingCompany || loadingMembers;
-
   const activeCount = members?.filter((m) => m.is_active).length || 0;
+
+  // Check if current user is the owner
+  const isOwner = company?.owner_id === user?.id;
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim() || !company?.id) return;
+
+    setInviting(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-member`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            email: inviteEmail.trim(),
+            companyId: company.id,
+            role: inviteRole,
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        toast.error(result.error || "Erro ao convidar membro");
+        return;
+      }
+
+      toast.success("Membro adicionado com sucesso!");
+      setInviteEmail("");
+      setInviteRole("member");
+      setInviteOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["company-members"] });
+      queryClient.invalidateQueries({ queryKey: ["my-company"] });
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao convidar membro");
+    } finally {
+      setInviting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Equipe</h1>
-        <p className="text-muted-foreground">Membros da sua empresa</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Equipe</h1>
+          <p className="text-muted-foreground">Membros da sua empresa</p>
+        </div>
+        {isOwner && (
+          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Convidar Membro
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Convidar Membro</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">E-mail do usuário</Label>
+                  <Input
+                    id="invite-email"
+                    type="email"
+                    placeholder="usuario@exemplo.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    O usuário precisa ter uma conta cadastrada no sistema.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-role">Papel</Label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Membro</SelectItem>
+                      <SelectItem value="manager">Gerente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setInviteOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+                  {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Adicionar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -83,7 +201,7 @@ export default function Equipe() {
                       <p className="font-medium truncate">
                         {member.profile?.full_name || "Sem nome"}
                       </p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <Badge variant={role.variant}>{role.label}</Badge>
                         {member.is_active ? (
                           <Badge variant="outline" className="text-accent border-accent/30">
