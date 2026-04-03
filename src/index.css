@@ -4,19 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium Dark ERP — Layered Depth System */
+/* Premium Dark ERP — High Contrast Depth System */
 
 @layer base {
   :root {
-    /* Layer 1: Background #131A2B — mid-dark for depth */
-    --background: 222 38% 12%;
+    /* Background: deep dark #0F172A */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    /* Layer 3: Cards #263449 — clearly brighter */
-    --card: 216 30% 22%;
+    /* Cards: MUCH brighter ~#2A3A52 for real pop */
+    --card: 215 32% 25%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 32% 20%;
+    --popover: 215 32% 25%;
     --popover-foreground: 210 40% 98%;
 
     /* Primary: #2563EB */
@@ -27,7 +27,7 @@
     --secondary-foreground: 210 40% 98%;
 
     /* Muted text: #94A3B8 */
-    --muted: 215 28% 22%;
+    --muted: 215 28% 20%;
     --muted-foreground: 215 20% 65%;
 
     --accent: 215 28% 24%;
@@ -40,14 +40,14 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Borders: #3B475C — more visible */
-    --border: 216 22% 30%;
-    --input: 216 22% 26%;
+    /* Borders: bright enough to see ~#475569 */
+    --border: 215 20% 35%;
+    --input: 215 22% 28%;
     --ring: 217 91% 60%;
 
     --radius: 0.75rem;
 
-    /* Layer 2: Sidebar darkest #0B1220 */
+    /* Sidebar: darkest layer #0B1220 */
     --sidebar-background: 222 55% 8%;
     --sidebar-foreground: 215 20% 68%;
     --sidebar-primary: 217 91% 60%;
@@ -57,12 +57,12 @@
     --sidebar-border: 217 30% 16%;
     --sidebar-ring: 217 91% 60%;
 
-    /* Shadows */
-    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
-    --shadow-sm: 0 2px 6px 0 hsl(0 0% 0% / 0.3), 0 1px 3px -1px hsl(0 0% 0% / 0.25);
-    --shadow-md: 0 6px 16px -2px hsl(0 0% 0% / 0.4), 0 3px 6px -3px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.5), 0 5px 10px -5px hsl(0 0% 0% / 0.35);
-    --shadow-xl: 0 20px 35px -5px hsl(0 0% 0% / 0.5), 0 10px 15px -8px hsl(0 0% 0% / 0.35);
+    /* Strong shadows for depth */
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
+    --shadow-sm: 0 2px 8px 0 hsl(0 0% 0% / 0.35), 0 1px 3px -1px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 6px 18px -2px hsl(0 0% 0% / 0.45), 0 3px 8px -3px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.5), 0 6px 12px -5px hsl(0 0% 0% / 0.4);
+    --shadow-xl: 0 20px 40px -5px hsl(0 0% 0% / 0.55), 0 10px 20px -8px hsl(0 0% 0% / 0.4);
     --shadow-primary: 0 4px 20px -2px hsl(217 91% 60% / 0.35);
     --shadow-glow: 0 0 24px -4px hsl(217 91% 60% / 0.15);
   }
@@ -100,15 +100,14 @@
 
   .glass-card {
     @apply bg-card/90 backdrop-blur-xl border border-border;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
   }
 
   .hover-lift {
-    @apply transition-all duration-200 ease-out;
+    @apply transition-all duration-200 ease-out cursor-pointer;
   }
   .hover-lift:hover {
     transform: translateY(-3px);
-    box-shadow: var(--shadow-xl);
-    border-color: hsl(217 91% 60% / 0.3);
+    box-shadow: 0 14px 30px -4px hsl(0 0% 0% / 0.55), 0 0 0 1px hsl(217 91% 60% / 0.25);
   }
 }
