@@ -48,8 +48,8 @@ const Index = () => {
                 <stat.icon className={`h-5 w-5 ${stat.color}`} strokeWidth={1.75} />
               </div>
               <div>
-                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">{stat.label}</p>
-                <p className="text-[22px] font-extrabold text-foreground mt-0.5 leading-tight">{stat.value}</p>
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                <p className="text-[26px] font-extrabold text-foreground mt-0.5 leading-tight">{stat.value}</p>
               </div>
             </CardContent>
           </Card>
