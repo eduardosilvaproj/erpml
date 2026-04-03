@@ -306,7 +306,7 @@ export function useUpdatePlan() {
     mutationFn: async ({ id, ...updates }: Partial<Plan> & { id: string }) => {
       const { error } = await supabase
         .from("plans")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
       if (error) throw error;
     },
