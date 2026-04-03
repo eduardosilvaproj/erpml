@@ -1,5 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import SupportChat from "@/components/SupportChat";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -21,6 +22,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </main>
         </div>
       </div>
+      <SupportChat />
     </SidebarProvider>
   );
 };
