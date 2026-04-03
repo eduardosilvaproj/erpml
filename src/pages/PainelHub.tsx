@@ -181,7 +181,7 @@ const PainelHub = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Vendas — Últimos 7 dias
+              Vendas — Últimos {selectedPeriod.label}
             </CardTitle>
           </CardHeader>
           <CardContent>
