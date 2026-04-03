@@ -6,6 +6,12 @@ const MAX_ITEMS_TO_SYNC = 1000;
 const SEARCH_PAGE_SIZE = 100;
 const DETAIL_BATCH_SIZE = 20;
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
 function normalizeText(value?: string | null) {
   return value?.trim().toUpperCase() ?? "";
 }
@@ -191,13 +197,51 @@ async function syncForConnection(supabase: any, conn: any, accessToken: string) 
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: { "Access-Control-Allow-Origin": "*" } });
+    return new Response("ok", { headers: corsHeaders });
   }
+
+  // === AUTHENTICATION: Require admin JWT or CRON_SECRET ===
+  const authHeader = req.headers.get("Authorization");
+  const cronSecret = req.headers.get("x-cron-secret");
+  const expectedCronSecret = Deno.env.get("CRON_SECRET");
+
+  // Option 1: CRON_SECRET header (for scheduled/cron triggers)
+  const hasCronAuth = expectedCronSecret && cronSecret && cronSecret === expectedCronSecret;
+
+  // Option 2: Admin JWT (for manual triggers from admin panel)
+  let hasAdminAuth = false;
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
   const clientSecret = Deno.env.get("MERCADO_LIVRE_CLIENT_SECRET");
+
+  if (!hasCronAuth && authHeader?.startsWith("Bearer ")) {
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+
+    if (!claimsError && claimsData?.claims?.sub) {
+      const adminClient = createClient(supabaseUrl, serviceKey);
+      const { data: roleData } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", claimsData.claims.sub)
+        .eq("role", "admin")
+        .maybeSingle();
+      hasAdminAuth = !!roleData;
+    }
+  }
+
+  if (!hasCronAuth && !hasAdminAuth) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   if (!appId || !clientSecret) {
     return new Response(JSON.stringify({ error: "ML credentials missing" }), { status: 500 });

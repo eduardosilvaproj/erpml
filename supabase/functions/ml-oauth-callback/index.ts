@@ -28,6 +28,31 @@ Deno.serve(async (req) => {
     return new Response("ML credentials not configured", { status: 500 });
   }
 
+  const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
+
+  // === SECURITY: Validate that state is a real user_id ===
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+  // Validate UUID format to prevent injection
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(state)) {
+    console.error("Invalid state format (not UUID):", state);
+    return new Response(null, {
+      status: 302,
+      headers: { Location: `${appUrl}/integracao-ml?error=invalid_state` },
+    });
+  }
+
+  // Verify the user actually exists in auth system
+  const { data: userData, error: userError } = await supabase.auth.admin.getUserById(state);
+  if (userError || !userData?.user) {
+    console.error("State validation failed - user not found:", state);
+    return new Response(null, {
+      status: 302,
+      headers: { Location: `${appUrl}/integracao-ml?error=invalid_state` },
+    });
+  }
+
   const redirectUri = `${SUPABASE_URL}/functions/v1/ml-oauth-callback`;
 
   try {
@@ -53,7 +78,6 @@ Deno.serve(async (req) => {
 
     if (!tokenRes.ok) {
       console.error("ML token error:", tokenData);
-      const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
       return new Response(null, {
         status: 302,
         headers: { Location: `${appUrl}/integracao-ml?error=oauth_failed` },
@@ -71,15 +95,12 @@ Deno.serve(async (req) => {
     const userRes = await fetch("https://api.mercadolibre.com/users/me", {
       headers: { Authorization: `Bearer ${access_token}` },
     });
-    const userData = await userRes.json();
-    const sellerNickname = userData.nickname || null;
+    const mlUserData = await userRes.json();
+    const sellerNickname = mlUserData.nickname || null;
 
     const expiresAt = new Date(
       Date.now() + expires_in * 1000
     ).toISOString();
-
-    // Save to database
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Upsert connection (one per user)
     const { error: dbError } = await supabase
@@ -115,16 +136,14 @@ Deno.serve(async (req) => {
 
       if (insertError) {
         console.error("Insert error:", insertError);
-        const appUrl2 = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
         return new Response(null, {
           status: 302,
-          headers: { Location: `${appUrl2}/integracao-ml?error=db_error` },
+          headers: { Location: `${appUrl}/integracao-ml?error=db_error` },
         });
       }
     }
 
     // Redirect back to the app
-    const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
     return new Response(null, {
       status: 302,
       headers: {
@@ -133,7 +152,6 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("OAuth callback error:", error);
-    const appUrl = Deno.env.get("APP_URL") || "https://erpml.lovable.app";
     return new Response(null, {
       status: 302,
       headers: { Location: `${appUrl}/integracao-ml?error=server_error` },

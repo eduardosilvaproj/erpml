@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_MESSAGES = 50;
+const MAX_MESSAGE_LENGTH = 4000;
+const ALLOWED_ROLES = new Set(["user", "assistant"]);
+
 const SYSTEM_PROMPT = `Você é a Ana, assistente de suporte do ERP System — um sistema de gestão para e-commerce e Mercado Livre.
 
 Sua personalidade:
@@ -102,6 +106,41 @@ Regras de resposta:
 6. Mantenha respostas concisas mas completas — não enrole, mas também não omita informações importantes
 7. Se o usuário parecer frustrado, seja extra empática e ofereça alternativas`;
 
+function validateMessages(messages: unknown): { valid: boolean; error?: string; sanitized?: Array<{ role: string; content: string }> } {
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return { valid: false, error: "messages é obrigatório" };
+  }
+
+  if (messages.length > MAX_MESSAGES) {
+    return { valid: false, error: `Máximo de ${MAX_MESSAGES} mensagens por requisição` };
+  }
+
+  const sanitized: Array<{ role: string; content: string }> = [];
+
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object") {
+      return { valid: false, error: "Formato de mensagem inválido" };
+    }
+
+    const role = typeof msg.role === "string" ? msg.role : "";
+    if (!ALLOWED_ROLES.has(role)) {
+      return { valid: false, error: `Role inválido: ${role}. Use 'user' ou 'assistant'.` };
+    }
+
+    const content = typeof msg.content === "string" ? msg.content : "";
+    if (content.length === 0) {
+      return { valid: false, error: "Conteúdo da mensagem não pode ser vazio" };
+    }
+
+    sanitized.push({
+      role,
+      content: content.slice(0, MAX_MESSAGE_LENGTH),
+    });
+  }
+
+  return { valid: true, sanitized };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -131,10 +170,11 @@ serve(async (req) => {
       );
     }
 
-    const { messages } = await req.json();
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    const body = await req.json();
+    const validation = validateMessages(body?.messages);
+    if (!validation.valid) {
       return new Response(
-        JSON.stringify({ error: "messages é obrigatório" }),
+        JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -157,7 +197,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
+          ...validation.sanitized!,
         ],
         stream: true,
       }),

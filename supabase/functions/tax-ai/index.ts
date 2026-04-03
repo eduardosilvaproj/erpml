@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_MESSAGES = 50;
+const MAX_MESSAGE_LENGTH = 4000;
+const ALLOWED_ROLES = new Set(["user", "assistant"]);
+
 const SYSTEM_PROMPT = `Você é um especialista em tributação brasileira para e-commerce, com foco em vendedores do Mercado Livre.
 
 Sua função é analisar produtos e operações e orientar a forma MAIS EFICIENTE de tributação possível, sempre dentro da lei brasileira.
@@ -44,6 +48,41 @@ Em até 3 linhas, a melhor decisão tributária.
 
 Se o usuário fizer perguntas gerais sobre tributação, responda de forma clara e direta sem necessariamente seguir toda a estrutura acima.`;
 
+function validateMessages(messages: unknown): { valid: boolean; error?: string; sanitized?: Array<{ role: string; content: string }> } {
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    return { valid: false, error: "messages é obrigatório" };
+  }
+
+  if (messages.length > MAX_MESSAGES) {
+    return { valid: false, error: `Máximo de ${MAX_MESSAGES} mensagens por requisição` };
+  }
+
+  const sanitized: Array<{ role: string; content: string }> = [];
+
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object") {
+      return { valid: false, error: "Formato de mensagem inválido" };
+    }
+
+    const role = typeof msg.role === "string" ? msg.role : "";
+    if (!ALLOWED_ROLES.has(role)) {
+      return { valid: false, error: `Role inválido: ${role}. Use 'user' ou 'assistant'.` };
+    }
+
+    const content = typeof msg.content === "string" ? msg.content : "";
+    if (content.length === 0) {
+      return { valid: false, error: "Conteúdo da mensagem não pode ser vazio" };
+    }
+
+    sanitized.push({
+      role,
+      content: content.slice(0, MAX_MESSAGE_LENGTH),
+    });
+  }
+
+  return { valid: true, sanitized };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -73,10 +112,11 @@ serve(async (req) => {
       );
     }
 
-    const { messages } = await req.json();
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    const body = await req.json();
+    const validation = validateMessages(body?.messages);
+    if (!validation.valid) {
       return new Response(
-        JSON.stringify({ error: "messages é obrigatório" }),
+        JSON.stringify({ error: validation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -99,7 +139,7 @@ serve(async (req) => {
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          ...messages,
+          ...validation.sanitized!,
         ],
         stream: true,
       }),
