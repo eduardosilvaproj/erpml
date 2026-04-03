@@ -26,10 +26,14 @@ const CHART_COLORS = [
 ];
 
 const PainelHub = () => {
+  const [period, setPeriod] = useState<PeriodKey>("7d");
+  const selectedPeriod = PERIOD_OPTIONS.find((p) => p.key === period)!;
+
   const { data: productData } = useProducts({ pageSize: 999 });
   const { data: salesStats } = useSalesStats();
   const { data: recentSales } = useSales({ limit: 5 });
-  const { data: allSalesData } = useSales({ dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] });
+  const dateFrom = new Date(Date.now() - selectedPeriod.days * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const { data: allSalesData } = useSales({ dateFrom });
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
   const { data: mlConnection } = useMLConnection();
