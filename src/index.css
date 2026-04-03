@@ -107,7 +107,8 @@
     @apply transition-all duration-200 ease-out;
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-xl);
+    border-color: hsl(217 91% 60% / 0.3);
   }
 }
