@@ -9,7 +9,14 @@ import { useTransferOrders } from "@/hooks/useTransferData";
 import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders } from "@/hooks/useMLData";
 import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+
+type PeriodKey = "7d" | "15d" | "30d";
+const PERIOD_OPTIONS: { key: PeriodKey; label: string; days: number }[] = [
+  { key: "7d", label: "7 dias", days: 7 },
+  { key: "15d", label: "15 dias", days: 15 },
+  { key: "30d", label: "30 dias", days: 30 },
+];
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
