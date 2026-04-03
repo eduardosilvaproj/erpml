@@ -9,7 +9,14 @@ import { useTransferOrders } from "@/hooks/useTransferData";
 import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders } from "@/hooks/useMLData";
 import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+
+type PeriodKey = "7d" | "15d" | "30d";
+const PERIOD_OPTIONS: { key: PeriodKey; label: string; days: number }[] = [
+  { key: "7d", label: "7 dias", days: 7 },
+  { key: "15d", label: "15 dias", days: 15 },
+  { key: "30d", label: "30 dias", days: 30 },
+];
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -19,10 +26,14 @@ const CHART_COLORS = [
 ];
 
 const PainelHub = () => {
+  const [period, setPeriod] = useState<PeriodKey>("7d");
+  const selectedPeriod = PERIOD_OPTIONS.find((p) => p.key === period)!;
+
   const { data: productData } = useProducts({ pageSize: 999 });
   const { data: salesStats } = useSalesStats();
   const { data: recentSales } = useSales({ limit: 5 });
-  const { data: allSalesData } = useSales({ dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] });
+  const dateFrom = new Date(Date.now() - selectedPeriod.days * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const { data: allSalesData } = useSales({ dateFrom });
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
   const { data: mlConnection } = useMLConnection();
@@ -41,10 +52,10 @@ const PainelHub = () => {
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  // Sales chart data - last 7 days
+  // Sales chart data - dynamic period
   const salesChartData = useMemo(() => {
     const days: { date: string; label: string; vendas: number; faturamento: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = selectedPeriod.days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       const dateStr = d.toISOString().split("T")[0];
       const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -57,7 +68,7 @@ const PainelHub = () => {
       });
     }
     return days;
-  }, [allSalesData]);
+  }, [allSalesData, selectedPeriod.days]);
 
   // Financial metrics
   const financialMetrics = useMemo(() => {
@@ -119,9 +130,26 @@ const PainelHub = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Painel HUB</h1>
-        <p className="text-muted-foreground">Visão geral de vendas, estoque e financeiro</p>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Painel HUB</h1>
+          <p className="text-muted-foreground">Visão geral de vendas, estoque e financeiro</p>
+        </div>
+        <div className="flex gap-1 rounded-lg border border-border p-1 bg-muted/50">
+          {PERIOD_OPTIONS.map((opt) => (
+            <button
+              key={opt.key}
+              onClick={() => setPeriod(opt.key)}
+              className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+                period === opt.key
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* KPIs */}
@@ -153,7 +181,7 @@ const PainelHub = () => {
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              Vendas — Últimos 7 dias
+              Vendas — Últimos {selectedPeriod.label}
             </CardTitle>
           </CardHeader>
           <CardContent>
