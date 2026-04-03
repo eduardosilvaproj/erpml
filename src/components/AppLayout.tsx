@@ -7,11 +7,16 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center border-b bg-card px-4">
-            <SidebarTrigger className="mr-4" />
-            <span className="text-sm font-semibold text-muted-foreground">Sistema ERP</span>
+          <header className="h-14 flex items-center border-b border-border/50 bg-card/80 backdrop-blur-lg px-5 sticky top-0 z-30">
+            <SidebarTrigger className="mr-4 text-muted-foreground hover:text-foreground transition-colors" />
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-md bg-primary/10 flex items-center justify-center">
+                <span className="text-xs font-bold text-primary">E</span>
+              </div>
+              <span className="text-sm font-semibold text-foreground tracking-tight">ERP System</span>
+            </div>
           </header>
-          <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+          <main className="flex-1 p-4 sm:p-5 md:p-8 overflow-auto animate-fade-in">
             {children}
           </main>
         </div>
