@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export type CartItem = {
   productId: string;
@@ -13,14 +14,19 @@ export type CartItem = {
 };
 
 export function useSales(filters?: { dateFrom?: string; dateTo?: string; limit?: number }) {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["sales", filters],
+    queryKey: ["sales", filters, companyId],
     queryFn: async () => {
       let query = supabase
         .from("sales")
         .select("*, sale_items(*, products(id, name, sku)), customers(id, name)")
         .order("created_at", { ascending: false });
 
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
       if (filters?.dateFrom) {
         query = query.gte("created_at", filters.dateFrom);
       }
@@ -39,16 +45,24 @@ export function useSales(filters?: { dateFrom?: string; dateTo?: string; limit?:
 }
 
 export function useSalesStats() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["sales-stats"],
+    queryKey: ["sales-stats", companyId],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-      const { data: allSales, error } = await supabase
+      let query = supabase
         .from("sales")
         .select("total_value, created_at")
         .gte("created_at", thirtyDaysAgo);
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data: allSales, error } = await query;
       if (error) throw error;
 
       const todaySales = allSales?.filter((s) => s.created_at.startsWith(today)) || [];
@@ -68,6 +82,7 @@ export function useSalesStats() {
 export function useCreateSale() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async ({
@@ -84,7 +99,6 @@ export function useCreateSale() {
       const totalValue = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0) - (discount || 0);
       const saleNumber = `VND-${Date.now().toString(36).toUpperCase()}`;
 
-      // Create sale
       const { data: sale, error: saleError } = await supabase
         .from("sales")
         .insert({
@@ -94,12 +108,12 @@ export function useCreateSale() {
           discount: discount || 0,
           payment_method: paymentMethod,
           status: "finalizada",
+          company_id: companyId,
         })
         .select()
         .single();
       if (saleError) throw saleError;
 
-      // Create sale items
       const saleItems = items.map((item) => ({
         sale_id: sale.id,
         product_id: item.productId,
@@ -111,7 +125,6 @@ export function useCreateSale() {
       const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
       if (itemsError) throw itemsError;
 
-      // Deduct from physical stock
       for (const item of items) {
         const { data: current } = await supabase
           .from("products")

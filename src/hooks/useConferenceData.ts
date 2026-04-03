@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export interface ConferenceItem {
   id: string;
@@ -27,19 +28,25 @@ export interface Conference {
   finished_at: string | null;
   notes: string | null;
   created_at: string;
+  company_id: string | null;
   invoices?: { id: string; number: string; series: string | null; issuer_name: string | null; items_count: number };
   conference_items?: ConferenceItem[];
 }
 
 export function useConferences(filters?: { status?: string; dateFrom?: string; dateTo?: string }) {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["conferences", filters],
+    queryKey: ["conferences", filters, companyId],
     queryFn: async () => {
       let query = supabase
         .from("conferences")
         .select("*, invoices(id, number, series, issuer_name, items_count), conference_items(*, invoice_items(xml_code, xml_description, quantity, unit_value, products(id, name, sku, barcode)))")
         .order("created_at", { ascending: false });
 
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
       if (filters?.status && filters.status !== "all") {
         query = query.eq("status", filters.status);
       }
@@ -58,14 +65,22 @@ export function useConferences(filters?: { status?: string; dateFrom?: string; d
 }
 
 export function usePendingInvoices() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["pending-invoices-for-conference"],
+    queryKey: ["pending-invoices-for-conference", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select("*, invoice_items(*, products(id, name, sku, barcode))")
         .eq("status", "aguardando_conferencia")
         .order("created_at", { ascending: false });
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -75,25 +90,23 @@ export function usePendingInvoices() {
 export function useStartConference() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async (invoiceId: string) => {
-      // Get invoice items
       const { data: items, error: itemsErr } = await supabase
         .from("invoice_items")
         .select("*")
         .eq("invoice_id", invoiceId);
       if (itemsErr) throw itemsErr;
 
-      // Create conference
       const { data: conf, error: confErr } = await supabase
         .from("conferences")
-        .insert({ invoice_id: invoiceId, status: "em_andamento" })
+        .insert({ invoice_id: invoiceId, status: "em_andamento", company_id: companyId })
         .select()
         .single();
       if (confErr) throw confErr;
 
-      // Create conference items from invoice items
       const confItems = items.map((item) => ({
         conference_id: conf.id,
         invoice_item_id: item.id,
@@ -124,21 +137,18 @@ export function useScanItem() {
 
   return useMutation({
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
-      // Find conference item matching the barcode
       const { data: confItems, error } = await supabase
         .from("conference_items")
         .select("*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode))")
         .eq("conference_id", conferenceId);
       if (error) throw error;
 
-      // Match by barcode or SKU
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
         const prod = ci.invoice_items?.products;
         if (!prod) return false;
         return prod.barcode === barcode || prod.sku === barcode;
       });
 
-      // Also try matching by xml_code
       const matchByCode = !matched
         ? (confItems as unknown as ConferenceItem[]).find((ci) => ci.invoice_items?.xml_code === barcode)
         : null;
@@ -161,7 +171,7 @@ export function useScanItem() {
 
       return { itemId: target.id, newQty, expected: target.expected_quantity, status: newStatus, productName: target.invoice_items?.xml_description };
     },
-    onSuccess: (_, vars) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["conferences"] });
     },
   });
@@ -173,7 +183,6 @@ export function useFinishConference() {
 
   return useMutation({
     mutationFn: async (conferenceId: string) => {
-      // Check all items
       const { data: items, error } = await supabase
         .from("conference_items")
         .select("*")
@@ -183,13 +192,11 @@ export function useFinishConference() {
       const allOk = items.every((i) => i.status === "ok");
       const finalStatus = allOk ? "conferida" : "divergente";
 
-      // Update conference
       await supabase
         .from("conferences")
         .update({ status: finalStatus, finished_at: new Date().toISOString() })
         .eq("id", conferenceId);
 
-      // Get invoice_id to update invoice status
       const { data: conf } = await supabase
         .from("conferences")
         .select("invoice_id")

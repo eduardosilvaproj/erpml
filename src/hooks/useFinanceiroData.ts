@@ -1,14 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export function useInvoicesWithPayments() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["invoices-with-payments"],
+    queryKey: ["invoices-with-payments", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select("*, invoice_payments(*)")
         .order("created_at", { ascending: false });
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

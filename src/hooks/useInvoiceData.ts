@@ -3,15 +3,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MatchResult } from "@/lib/nfe-parser";
 import { enrichProduct } from "@/lib/enrich-product";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export function useInvoices() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["invoices"],
+    queryKey: ["invoices", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select("*, invoice_items(*, products(id, name, sku))")
         .order("created_at", { ascending: false });
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -19,10 +28,16 @@ export function useInvoices() {
 }
 
 export function useInvoiceStats() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["invoice-stats"],
+    queryKey: ["invoice-stats", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("invoices").select("status");
+      let query = supabase.from("invoices").select("status");
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return {
         total: data.length,
@@ -38,6 +53,7 @@ export function useInvoiceStats() {
 export function useImportInvoice() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async ({
@@ -49,7 +65,6 @@ export function useImportInvoice() {
       matches: MatchResult[];
       createNewProducts: boolean;
     }) => {
-      // 1. Create invoice record
       const { data: invoice, error: invError } = await supabase
         .from("invoices")
         .insert({
@@ -60,23 +75,21 @@ export function useImportInvoice() {
           total_value: nfeData.totalValue,
           status: "aguardando_conferencia",
           items_count: matches.length,
+          company_id: companyId,
         })
         .select()
         .single();
       if (invError) throw invError;
 
-      // 2. Process each item
       for (const match of matches) {
         let productId = match.matchedProductId;
 
-        // Create new product if no match and flag is set
         if (!productId && createNewProducts) {
           const xmlP = match.xmlProduct;
           const sku = xmlP.code || `XML-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
           const cost = xmlP.unitValue;
           const markup = 1.5;
 
-          // Try to enrich with AI (non-blocking - if it fails, use XML data only)
           let enrichedData: Partial<{
             description: string;
             weight_kg: number | null;
@@ -94,7 +107,7 @@ export function useImportInvoice() {
               unit: xmlP.unit || undefined,
             });
           } catch {
-            // AI enrichment failed, continue with XML data only
+            // AI enrichment failed
           }
 
           const description = enrichedData.description
@@ -119,6 +132,7 @@ export function useImportInvoice() {
               width: enrichedData.width_cm ?? null,
               height: enrichedData.height_cm ?? null,
               depth: enrichedData.depth_cm ?? null,
+              company_id: companyId,
             })
             .select()
             .single();
@@ -126,7 +140,6 @@ export function useImportInvoice() {
           productId = newProduct.id;
         }
 
-        // Insert invoice item
         await supabase.from("invoice_items").insert({
           invoice_id: invoice.id,
           product_id: productId,
@@ -144,7 +157,6 @@ export function useImportInvoice() {
           stock_updated: !!productId,
         });
 
-        // Update stock and enrich product data if matched
         if (productId) {
           const { data: current } = await supabase
             .from("products")
@@ -159,28 +171,20 @@ export function useImportInvoice() {
             const totalNewCost = xmlP.quantity * xmlP.unitValue;
             const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlP.unitValue;
 
-            // Build update with enriched data
             const updates: Record<string, any> = {
               stock_physical: newStock,
               cost: Math.round(avgCost * 100) / 100,
             };
 
-            // Fill barcode if missing
             if (!current.barcode && xmlP.ean) {
               updates.barcode = xmlP.ean;
             }
-
-            // Update description if empty or very short
             if (!current.description || current.description.length < 5) {
               updates.description = `NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;
             }
-
-            // Update price if it's 0 (never set)
             if (current.price === 0 && xmlP.unitValue > 0) {
               updates.price = Math.round(xmlP.unitValue * 1.5 * 100) / 100;
             }
-
-            // Set min_stock if it's 0
             if (current.min_stock === 0) {
               updates.min_stock = 1;
             }

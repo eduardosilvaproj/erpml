@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export interface TransferItem {
   productId: string;
@@ -22,6 +23,7 @@ export interface TransferOrder {
   sent_at: string | null;
   received_at: string | null;
   confirmed_at: string | null;
+  company_id: string | null;
   transfer_items?: {
     id: string;
     product_id: string;
@@ -31,13 +33,21 @@ export interface TransferOrder {
 }
 
 export function useTransferOrders() {
+  const companyId = useCompanyId();
+
   return useQuery({
-    queryKey: ["transfer-orders"],
+    queryKey: ["transfer-orders", companyId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("transfer_orders")
         .select("*, transfer_items(*, products(id, name, sku, barcode))")
         .order("created_at", { ascending: false });
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as TransferOrder[];
     },
@@ -47,10 +57,10 @@ export function useTransferOrders() {
 export function useCreateTransferOrder() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async (items: TransferItem[]) => {
-      // Validate stock
       for (const item of items) {
         const { data: product } = await supabase
           .from("products")
@@ -62,10 +72,8 @@ export function useCreateTransferOrder() {
         }
       }
 
-      // Generate order number
       const orderNumber = `TRF-${Date.now().toString(36).toUpperCase()}`;
 
-      // Create order
       const { data: order, error } = await supabase
         .from("transfer_orders")
         .insert({
@@ -73,12 +81,12 @@ export function useCreateTransferOrder() {
           status: "separando",
           total_items: items.length,
           total_quantity: items.reduce((sum, i) => sum + i.quantity, 0),
+          company_id: companyId,
         })
         .select()
         .single();
       if (error) throw error;
 
-      // Create items
       const transferItems = items.map((i) => ({
         transfer_order_id: order.id,
         product_id: i.productId,
@@ -87,7 +95,6 @@ export function useCreateTransferOrder() {
       const { error: itemsErr } = await supabase.from("transfer_items").insert(transferItems);
       if (itemsErr) throw itemsErr;
 
-      // Update stock: physical -X, full +X
       for (const item of items) {
         const { data: current } = await supabase
           .from("products")
