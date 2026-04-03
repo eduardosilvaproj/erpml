@@ -124,9 +124,8 @@ const CRM = () => {
               </TableHeader>
               <TableBody>
                 {customers.map((c) => (
-                  <>
+                  <Fragment key={c.id}>
                     <TableRow
-                      key={c.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedCustomerId(selectedCustomerId === c.id ? undefined : c.id)}
                     >
