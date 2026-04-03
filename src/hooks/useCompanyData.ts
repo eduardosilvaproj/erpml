@@ -254,41 +254,40 @@ export function useAllCompanies() {
   return useQuery({
     queryKey: ["all-companies"],
     queryFn: async (): Promise<(Company & { plan?: Plan; members_count?: number; owner_profile?: { full_name: string | null } })[]> => {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
+      // Fetch companies, plans, profiles, and all active members in parallel (no N+1)
+      const [companiesRes, plansRes, membersRes] = await Promise.all([
+        supabase.from("companies").select("*").order("created_at", { ascending: false }),
+        supabase.from("plans").select("*"),
+        supabase.from("company_members").select("company_id").eq("is_active", true),
+      ]);
 
-      const { data: plans } = await supabase.from("plans").select("*");
+      if (companiesRes.error) throw companiesRes.error;
+      const data = companiesRes.data || [];
+      const plans = plansRes.data || [];
 
-      // Get owner profiles
-      const ownerIds = [...new Set((data || []).map((c: any) => c.owner_id))];
+      // Get owner profiles in a single query
+      const ownerIds = [...new Set(data.map((c: any) => c.owner_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name")
         .in("id", ownerIds);
 
-      // Get member counts per company
-      const companiesWithData = await Promise.all(
-        (data || []).map(async (c: any) => {
-          const { count } = await supabase
-            .from("company_members")
-            .select("*", { count: "exact", head: true })
-            .eq("company_id", c.id);
+      // Count members per company client-side
+      const memberCountMap: Record<string, number> = {};
+      for (const m of membersRes.data || []) {
+        memberCountMap[m.company_id] = (memberCountMap[m.company_id] || 0) + 1;
+      }
 
-          const plan = plans?.find((p: any) => p.id === c.plan_id);
-          const ownerProfile = profiles?.find((p: any) => p.id === c.owner_id);
-          return {
-            ...c,
-            plan: plan ? { ...plan, features: Array.isArray(plan.features) ? plan.features : [] } : undefined,
-            members_count: count || 0,
-            owner_profile: ownerProfile || null,
-          };
-        })
-      );
-
-      return companiesWithData;
+      return data.map((c: any) => {
+        const plan = plans.find((p: any) => p.id === c.plan_id);
+        const ownerProfile = profiles?.find((p: any) => p.id === c.owner_id);
+        return {
+          ...c,
+          plan: plan ? { ...plan, features: Array.isArray(plan.features) ? plan.features : [] } : undefined,
+          members_count: memberCountMap[c.id] || 0,
+          owner_profile: ownerProfile || null,
+        };
+      });
     },
   });
 }
