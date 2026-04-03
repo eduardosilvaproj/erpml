@@ -48,20 +48,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-3">
         <SidebarGroup>
           <SidebarGroupLabel>
             {!collapsed && (
               <div className="flex items-center gap-2.5 px-1">
-                <div className="h-7 w-7 rounded-lg bg-sidebar-primary/20 flex items-center justify-center">
-                  <span className="text-sm font-bold text-sidebar-primary">E</span>
+                <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center shadow-glow">
+                  <span className="text-sm font-bold text-primary">E</span>
                 </div>
-                <span className="text-sm font-bold tracking-tight text-sidebar-foreground">ERP System</span>
+                <span className="text-sm font-bold tracking-tight text-foreground">ERP System</span>
               </div>
             )}
           </SidebarGroupLabel>
-          <SidebarGroupContent className="mt-4">
-            <SidebarMenu className="space-y-0.5">
+          <SidebarGroupContent className="mt-5">
+            <SidebarMenu className="space-y-0.5 px-2">
               {menuItems.map((item) => {
                 const allowed = isRouteAllowed(item.url);
                 
@@ -71,12 +71,12 @@ export function AppSidebar() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-muted-foreground/40 cursor-not-allowed select-none transition-colors">
-                              <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground/30 cursor-not-allowed select-none transition-colors">
+                              <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
                               {!collapsed && (
                                 <>
-                                  <span className="flex-1 truncate text-sm">{item.title}</span>
-                                  <Lock className="h-3 w-3 shrink-0 opacity-50" />
+                                  <span className="flex-1 truncate text-[13px]">{item.title}</span>
+                                  <Lock className="h-3 w-3 shrink-0 opacity-40" />
                                 </>
                               )}
                             </div>
@@ -96,11 +96,11 @@ export function AppSidebar() {
                       <NavLink
                         to={item.url}
                         end={item.url === "/"}
-                        className="hover:bg-sidebar-accent/60 rounded-lg transition-all duration-200"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium shadow-premium-xs"
+                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
+                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary shadow-glow"
                       >
-                        <item.icon className="mr-2.5 h-4 w-4" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-sm">{item.title}</span>}
+                        <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
+                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -112,11 +112,11 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to="/admin"
-                        className="hover:bg-sidebar-accent/60 rounded-lg transition-all duration-200"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
+                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                       >
-                        <ShieldCheck className="mr-2.5 h-4 w-4" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-sm">Admin</span>}
+                        <ShieldCheck className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
+                        {!collapsed && <span className="text-[13px]">Admin</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -124,11 +124,11 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to="/master-admin"
-                        className="hover:bg-sidebar-accent/60 rounded-lg transition-all duration-200"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
+                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
                       >
-                        <Crown className="mr-2.5 h-4 w-4" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-sm">Painel Master</span>}
+                        <Crown className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
+                        {!collapsed && <span className="text-[13px]">Painel Master</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -139,25 +139,25 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex flex-col gap-2.5 p-3 border-t border-sidebar-border/40">
-          <div className="flex items-center gap-2.5">
+        <div className="flex flex-col gap-3 p-3 border-t border-border/30">
+          <div className="flex items-center gap-3">
             <AvatarUpload size="sm" editable={!collapsed} />
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 {user?.email && (
-                  <span className="text-xs text-sidebar-foreground/70 truncate block leading-tight">{user.email}</span>
+                  <span className="text-xs text-muted-foreground truncate block leading-tight">{user.email}</span>
                 )}
                 {planName && (
-                  <Badge variant="outline" className="w-fit text-[10px] mt-1 border-sidebar-border/60 text-sidebar-foreground/60">
+                  <Badge variant="outline" className="w-fit text-[10px] mt-1.5 border-primary/30 text-primary/80 bg-primary/5">
                     {planName}
                   </Badge>
                 )}
               </div>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut} className="justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/60">
-            <LogOut className="h-4 w-4 mr-2" strokeWidth={1.75} />
-            {!collapsed && <span className="text-sm">Sair</span>}
+          <Button variant="ghost" size="sm" onClick={signOut} className="justify-start text-muted-foreground hover:text-foreground hover:bg-secondary/60 rounded-xl">
+            <LogOut className="h-4 w-4 mr-2.5" strokeWidth={1.75} />
+            {!collapsed && <span className="text-[13px]">Sair</span>}
           </Button>
         </div>
       </SidebarFooter>
