@@ -8,15 +8,15 @@
 
 @layer base {
   :root {
-    /* Background: deep dark #0F172A */
-    --background: 222 47% 11%;
+    /* Background: very deep #0C1322 */
+    --background: 222 48% 9%;
     --foreground: 210 40% 98%;
 
-    /* Cards: MUCH brighter ~#2A3A52 for real pop */
-    --card: 215 32% 25%;
+    /* Cards: dramatically brighter #2D3F58 */
+    --card: 214 32% 26%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 215 32% 25%;
+    --popover: 214 32% 26%;
     --popover-foreground: 210 40% 98%;
 
     /* Primary: #2563EB */
