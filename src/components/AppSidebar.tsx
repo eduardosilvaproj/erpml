@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
-  Users, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
+  Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
