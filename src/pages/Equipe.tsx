@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Loader2, Users, UserCheck, UserX, UserPlus, Trash2 } from "lucide-react";
+import { Loader2, Users, UserCheck, UserX, UserPlus, Trash2, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -87,6 +87,17 @@ export default function Equipe() {
       toast.error(error.message);
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    if (!company?.id) return;
+    try {
+      await callEdgeFunction("change-role", { memberId, newRole });
+      toast.success("Papel alterado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["company-members"] });
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
@@ -197,6 +208,7 @@ export default function Equipe() {
                   .toUpperCase();
                 const role = roleLabels[member.role] || { label: member.role, variant: "outline" as const };
                 const canRemove = isOwner && member.role !== "owner" && member.user_id !== user?.id && member.is_active;
+                const canChangeRole = isOwner && member.role !== "owner" && member.is_active;
 
                 return (
                   <Card key={member.id} className="flex items-center gap-4 p-4">
@@ -211,7 +223,22 @@ export default function Equipe() {
                         {member.profile?.full_name || "Sem nome"}
                       </p>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <Badge variant={role.variant}>{role.label}</Badge>
+                        {canChangeRole ? (
+                          <Select
+                            value={member.role}
+                            onValueChange={(val) => handleChangeRole(member.id, val)}
+                          >
+                            <SelectTrigger className="h-6 w-auto text-xs px-2 gap-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="member">Membro</SelectItem>
+                              <SelectItem value="manager">Gerente</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={role.variant}>{role.label}</Badge>
+                        )}
                         {member.is_active ? (
                           <Badge variant="outline" className="text-accent border-accent/30">
                             <UserCheck className="h-3 w-3 mr-1" /> Ativo
