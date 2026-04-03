@@ -63,7 +63,10 @@ export default function Onboarding() {
               >
                 <CardHeader className="text-center">
                   {plan.slug === "premium" && (
-                    <Badge className="self-center mb-2 bg-primary text-primary-foreground">Popular</Badge>
+                    <Badge className="self-center mb-2 bg-primary text-primary-foreground">Mais Popular</Badge>
+                  )}
+                  {plan.slug === "enterprise" && (
+                    <Badge variant="outline" className="self-center mb-2 border-primary text-primary">Completo</Badge>
                   )}
                   <CardTitle>{plan.name}</CardTitle>
                   <CardDescription>

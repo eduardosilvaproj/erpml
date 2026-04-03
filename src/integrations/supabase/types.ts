@@ -1113,7 +1113,7 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       company_role: "owner" | "manager" | "member"
       company_status: "active" | "suspended" | "cancelled"
-      plan_type: "free" | "basic" | "premium"
+      plan_type: "free" | "basic" | "premium" | "enterprise"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1244,7 +1244,7 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       company_role: ["owner", "manager", "member"],
       company_status: ["active", "suspended", "cancelled"],
-      plan_type: ["free", "basic", "premium"],
+      plan_type: ["free", "basic", "premium", "enterprise"],
     },
   },
 } as const
