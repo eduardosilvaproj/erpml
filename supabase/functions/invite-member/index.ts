@@ -25,7 +25,6 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify caller
     const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -42,15 +41,11 @@ serve(async (req) => {
     const callerId = claimsData.claims.sub;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Parse and validate input
-    const { email, companyId, role } = await req.json();
+    const url = new URL(req.url);
+    const action = url.searchParams.get("action") || "invite";
 
-    if (!email || typeof email !== "string" || !email.includes("@")) {
-      return new Response(
-        JSON.stringify({ error: "E-mail inválido" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const body = await req.json();
+    const { companyId } = body;
 
     if (!companyId || typeof companyId !== "string") {
       return new Response(
@@ -59,91 +54,160 @@ serve(async (req) => {
       );
     }
 
-    const validRoles = ["member", "manager"];
-    const memberRole = validRoles.includes(role) ? role : "member";
+    // Verify caller is owner or global admin
+    const [callerMembershipRes, isGlobalAdminRes] = await Promise.all([
+      adminClient
+        .from("company_members")
+        .select("role")
+        .eq("company_id", companyId)
+        .eq("user_id", callerId)
+        .eq("is_active", true)
+        .maybeSingle(),
+      adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", callerId)
+        .eq("role", "admin")
+        .maybeSingle(),
+    ]);
 
-    // Verify caller is owner or admin of the company
-    const { data: callerMembership } = await adminClient
-      .from("company_members")
-      .select("role")
-      .eq("company_id", companyId)
-      .eq("user_id", callerId)
-      .eq("is_active", true)
-      .maybeSingle();
+    const isOwner = callerMembershipRes.data?.role === "owner";
+    const isGlobalAdmin = !!isGlobalAdminRes.data;
 
-    const { data: isGlobalAdmin } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", callerId)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (!isGlobalAdmin && callerMembership?.role !== "owner") {
+    if (!isGlobalAdmin && !isOwner) {
       return new Response(
-        JSON.stringify({ error: "Apenas o proprietário ou administradores podem convidar membros" }),
+        JSON.stringify({ error: "Apenas o proprietário ou administradores podem gerenciar membros" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Find user by email using admin API
-    const { data: { users }, error: listError } = await adminClient.auth.admin.listUsers({
-      perPage: 1,
-    });
+    // === INVITE ===
+    if (action === "invite") {
+      const { email, role } = body;
 
-    // Search through all users for the email match
-    const { data: allUsers } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-    const targetUser = allUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
-    );
+      if (!email || typeof email !== "string" || !email.includes("@")) {
+        return new Response(
+          JSON.stringify({ error: "E-mail inválido" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (!targetUser) {
+      const validRoles = ["member", "manager"];
+      const memberRole = validRoles.includes(role) ? role : "member";
+
+      const { data: allUsers } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+      const targetUser = allUsers?.users?.find(
+        (u) => u.email?.toLowerCase() === email.trim().toLowerCase()
+      );
+
+      if (!targetUser) {
+        return new Response(
+          JSON.stringify({ error: "Usuário não encontrado. Peça para a pessoa criar uma conta primeiro." }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: existingMember } = await adminClient
+        .from("company_members")
+        .select("id, is_active")
+        .eq("company_id", companyId)
+        .eq("user_id", targetUser.id)
+        .maybeSingle();
+
+      if (existingMember) {
+        if (existingMember.is_active) {
+          return new Response(
+            JSON.stringify({ error: "Este usuário já é membro da empresa" }),
+            { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        await adminClient
+          .from("company_members")
+          .update({ is_active: true, role: memberRole })
+          .eq("id", existingMember.id);
+      } else {
+        const { error: insertError } = await adminClient
+          .from("company_members")
+          .insert({ company_id: companyId, user_id: targetUser.id, role: memberRole });
+
+        if (insertError) {
+          return new Response(
+            JSON.stringify({ error: "Erro ao adicionar membro" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       return new Response(
-        JSON.stringify({ error: "Usuário não encontrado. Peça para a pessoa criar uma conta primeiro." }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ success: true, message: "Membro adicionado com sucesso" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check if already a member
-    const { data: existingMember } = await adminClient
-      .from("company_members")
-      .select("id, is_active")
-      .eq("company_id", companyId)
-      .eq("user_id", targetUser.id)
-      .maybeSingle();
+    // === REMOVE ===
+    if (action === "remove") {
+      const { memberId } = body;
 
-    if (existingMember) {
-      if (existingMember.is_active) {
+      if (!memberId || typeof memberId !== "string") {
         return new Response(
-          JSON.stringify({ error: "Este usuário já é membro da empresa" }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "ID do membro é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      // Reactivate inactive member
-      await adminClient
-        .from("company_members")
-        .update({ is_active: true, role: memberRole })
-        .eq("id", existingMember.id);
-    } else {
-      // Add new member
-      const { error: insertError } = await adminClient
-        .from("company_members")
-        .insert({
-          company_id: companyId,
-          user_id: targetUser.id,
-          role: memberRole,
-        });
 
-      if (insertError) {
+      // Fetch the member to validate
+      const { data: member } = await adminClient
+        .from("company_members")
+        .select("id, user_id, role, company_id")
+        .eq("id", memberId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      if (!member) {
         return new Response(
-          JSON.stringify({ error: "Erro ao adicionar membro: " + insertError.message }),
+          JSON.stringify({ error: "Membro não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Cannot remove the owner
+      if (member.role === "owner") {
+        return new Response(
+          JSON.stringify({ error: "Não é possível remover o proprietário da empresa" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Cannot remove yourself
+      if (member.user_id === callerId) {
+        return new Response(
+          JSON.stringify({ error: "Não é possível remover a si mesmo" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Deactivate instead of hard delete
+      const { error: updateError } = await adminClient
+        .from("company_members")
+        .update({ is_active: false })
+        .eq("id", memberId);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: "Erro ao remover membro" }),
           { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Membro removido com sucesso" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: "Membro adicionado com sucesso" }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Ação inválida" }),
+      { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("invite-member error:", error);
