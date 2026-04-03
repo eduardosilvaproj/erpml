@@ -205,6 +205,64 @@ serve(async (req) => {
       );
     }
 
+    // === CHANGE ROLE ===
+    if (action === "change-role") {
+      const { memberId, newRole } = body;
+
+      if (!memberId || typeof memberId !== "string") {
+        return new Response(
+          JSON.stringify({ error: "ID do membro é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const validRoles = ["member", "manager"];
+      if (!validRoles.includes(newRole)) {
+        return new Response(
+          JSON.stringify({ error: "Papel inválido. Use 'member' ou 'manager'." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: member } = await adminClient
+        .from("company_members")
+        .select("id, user_id, role, company_id")
+        .eq("id", memberId)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      if (!member) {
+        return new Response(
+          JSON.stringify({ error: "Membro não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (member.role === "owner") {
+        return new Response(
+          JSON.stringify({ error: "Não é possível alterar o papel do proprietário" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { error: updateError } = await adminClient
+        .from("company_members")
+        .update({ role: newRole })
+        .eq("id", memberId);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: "Erro ao alterar papel" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Papel alterado com sucesso" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Ação inválida" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
