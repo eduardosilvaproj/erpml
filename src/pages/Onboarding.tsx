@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Loader2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 export default function Onboarding() {
   const { data: plans, isLoading } = usePlans();
   const createCompany = useCreateCompany();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [step, setStep] = useState<"plan" | "company">("plan");
   const [selectedPlan, setSelectedPlan] = useState<string>("");
@@ -25,6 +27,7 @@ export default function Onboarding() {
 
     try {
       await createCompany.mutateAsync({ name: companyName.trim(), plan_id: selectedPlan });
+      await queryClient.invalidateQueries({ queryKey: ["my-company"] });
       toast.success("Empresa criada com sucesso!");
       navigate("/boas-vindas");
     } catch (err: any) {
