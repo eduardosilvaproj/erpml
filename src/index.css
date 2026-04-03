@@ -12,8 +12,8 @@
     --background: 222 38% 12%;
     --foreground: 210 40% 98%;
 
-    /* Layer 3: Cards #1E293B+ slightly brighter */
-    --card: 217 32% 20%;
+    /* Layer 3: Cards #263449 — clearly brighter */
+    --card: 216 30% 22%;
     --card-foreground: 210 40% 98%;
 
     --popover: 217 32% 20%;
@@ -40,9 +40,9 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Borders: #334155 */
-    --border: 217 24% 30%;
-    --input: 217 24% 24%;
+    /* Borders: #3B475C — more visible */
+    --border: 216 22% 30%;
+    --input: 216 22% 26%;
     --ring: 217 91% 60%;
 
     --radius: 0.75rem;
@@ -58,12 +58,12 @@
     --sidebar-ring: 217 91% 60%;
 
     /* Shadows */
-    --shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.25), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
-    --shadow-md: 0 4px 8px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -2px hsl(0 0% 0% / 0.2);
-    --shadow-lg: 0 10px 20px -3px hsl(0 0% 0% / 0.4), 0 4px 8px -4px hsl(0 0% 0% / 0.25);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.4), 0 8px 10px -6px hsl(0 0% 0% / 0.3);
-    --shadow-primary: 0 4px 16px -2px hsl(217 91% 60% / 0.3);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.25);
+    --shadow-sm: 0 2px 6px 0 hsl(0 0% 0% / 0.3), 0 1px 3px -1px hsl(0 0% 0% / 0.25);
+    --shadow-md: 0 6px 16px -2px hsl(0 0% 0% / 0.4), 0 3px 6px -3px hsl(0 0% 0% / 0.3);
+    --shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.5), 0 5px 10px -5px hsl(0 0% 0% / 0.35);
+    --shadow-xl: 0 20px 35px -5px hsl(0 0% 0% / 0.5), 0 10px 15px -8px hsl(0 0% 0% / 0.35);
+    --shadow-primary: 0 4px 20px -2px hsl(217 91% 60% / 0.35);
     --shadow-glow: 0 0 24px -4px hsl(217 91% 60% / 0.15);
   }
 }
@@ -107,7 +107,8 @@
     @apply transition-all duration-200 ease-out;
   }
   .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-xl);
+    border-color: hsl(217 91% 60% / 0.3);
   }
 }
