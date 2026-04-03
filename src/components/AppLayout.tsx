@@ -22,6 +22,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </main>
         </div>
       </div>
+      <SupportChat />
     </SidebarProvider>
   );
 };
