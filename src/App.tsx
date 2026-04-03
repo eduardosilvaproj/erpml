@@ -30,6 +30,7 @@ import CompanyDashboard from "./pages/CompanyDashboard";
 import Onboarding from "./pages/Onboarding";
 import MasterAdmin from "./pages/MasterAdmin";
 import Upgrade from "./pages/Upgrade";
+import Equipe from "./pages/Equipe";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
                       <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
+                      <Route path="/equipe" element={<Equipe />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/master-admin" element={<MasterAdmin />} />
                       <Route path="/upgrade" element={<Upgrade />} />

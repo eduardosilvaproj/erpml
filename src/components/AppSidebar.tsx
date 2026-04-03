@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
-  Users, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
+  Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -23,6 +23,7 @@ import {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Minha Empresa", url: "/empresa", icon: Building2 },
+  { title: "Equipe", url: "/equipe", icon: UsersRound },
   { title: "Produtos", url: "/produtos", icon: Package },
   { title: "Entrada XML", url: "/entrada-xml", icon: FileText },
   { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
