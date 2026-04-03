@@ -126,19 +126,23 @@ const PDV = () => {
 
   const handleFinalizeSale = async () => {
     if (!selectedPayment || cart.length === 0) return;
-    await createSale.mutateAsync({
-      items: cart,
-      paymentMethod: selectedPayment,
-    });
-    setCart([]);
-    setLastScan(null);
-    setSelectedPayment(null);
-    setSaleComplete(true);
-    playBeep(1000, 200);
-    setTimeout(() => {
-      setSaleComplete(false);
-      scanInputRef.current?.focus();
-    }, 3000);
+    try {
+      await createSale.mutateAsync({
+        items: cart,
+        paymentMethod: selectedPayment,
+      });
+      setCart([]);
+      setLastScan(null);
+      setSelectedPayment(null);
+      setSaleComplete(true);
+      playBeep(1000, 200);
+      setTimeout(() => {
+        setSaleComplete(false);
+        scanInputRef.current?.focus();
+      }, 3000);
+    } catch {
+      // Error is handled by the mutation's onError callback
+    }
   };
 
   const newSale = () => {

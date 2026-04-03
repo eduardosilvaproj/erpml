@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import {
   DollarSign, FileText, CheckCircle2, Clock, AlertTriangle,
   Search, Loader2, CreditCard, Banknote,
@@ -275,9 +275,8 @@ export default function Financeiro() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((inv) => (
-                    <>
+                    <Fragment key={inv.id}>
                       <TableRow
-                        key={inv.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)}
                       >
@@ -381,7 +380,7 @@ export default function Financeiro() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>

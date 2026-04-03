@@ -217,7 +217,7 @@ const PainelHub = () => {
                 <div
                   key={i}
                   className={`flex items-center gap-3 rounded-lg p-3 ${
-                    alert.type === "error" ? "bg-destructive/5 border border-destructive/20" : "bg-amber-50 border border-amber-200"
+                    alert.type === "error" ? "bg-destructive/5 border border-destructive/20" : "bg-amber-500/10 border border-amber-500/20"
                   }`}
                 >
                   <AlertTriangle className={`h-4 w-4 shrink-0 ${alert.type === "error" ? "text-destructive" : "text-amber-600"}`} />

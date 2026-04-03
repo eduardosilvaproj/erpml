@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Users, Plus, Search, ShoppingBag, Pencil, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -124,9 +124,8 @@ const CRM = () => {
               </TableHeader>
               <TableBody>
                 {customers.map((c) => (
-                  <>
+                  <Fragment key={c.id}>
                     <TableRow
-                      key={c.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => setSelectedCustomerId(selectedCustomerId === c.id ? undefined : c.id)}
                     >
@@ -192,7 +191,7 @@ const CRM = () => {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

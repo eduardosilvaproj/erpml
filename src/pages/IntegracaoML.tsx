@@ -46,6 +46,7 @@ export default function IntegracaoML() {
     if (searchParams.get("connected") === "true") {
       toast({ title: "Conta ML conectada com sucesso!" });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleConnect = () => {
