@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useCompanyMembers, useMyCompany } from "@/hooks/useCompanyData";
+import { getAvatarUrl } from "@/components/AvatarUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
