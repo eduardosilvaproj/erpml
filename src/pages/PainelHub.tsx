@@ -52,10 +52,10 @@ const PainelHub = () => {
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  // Sales chart data - last 7 days
+  // Sales chart data - dynamic period
   const salesChartData = useMemo(() => {
     const days: { date: string; label: string; vendas: number; faturamento: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = selectedPeriod.days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
       const dateStr = d.toISOString().split("T")[0];
       const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
