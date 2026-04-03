@@ -1,4 +1,4 @@
-import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp } from "lucide-react";
+import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,11 +7,22 @@ import { useSalesStats, useSales } from "@/hooks/useSalesData";
 import { useInvoiceStats } from "@/hooks/useInvoiceData";
 import { useTransferOrders } from "@/hooks/useTransferData";
 import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders } from "@/hooks/useMLData";
+import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
+import { useMemo } from "react";
+
+const CHART_COLORS = [
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(var(--destructive))",
+  "hsl(var(--muted-foreground))",
+];
 
 const PainelHub = () => {
   const { data: productData } = useProducts({ pageSize: 999 });
   const { data: salesStats } = useSalesStats();
   const { data: recentSales } = useSales({ limit: 5 });
+  const { data: allSalesData } = useSales({ dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] });
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
   const { data: mlConnection } = useMLConnection();
@@ -19,6 +30,7 @@ const PainelHub = () => {
   const { data: mlItems } = useMLItems(mlEnabled);
   const { data: mlOrders } = useMLOrders(mlEnabled);
   const { data: mlLinked } = useMLLinkedProducts();
+  const { data: invoicesWithPayments } = useInvoicesWithPayments();
 
   const products = productData?.products || [];
   const totalPhysical = products.reduce((s, p) => s + p.stock_physical, 0);
@@ -29,6 +41,70 @@ const PainelHub = () => {
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
+  // Sales chart data - last 7 days
+  const salesChartData = useMemo(() => {
+    const days: { date: string; label: string; vendas: number; faturamento: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const dateStr = d.toISOString().split("T")[0];
+      const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+      const daySales = allSalesData?.filter((s: any) => s.created_at.startsWith(dateStr)) || [];
+      days.push({
+        date: dateStr,
+        label,
+        vendas: daySales.length,
+        faturamento: daySales.reduce((sum: number, s: any) => sum + Number(s.total_value), 0),
+      });
+    }
+    return days;
+  }, [allSalesData]);
+
+  // Financial metrics
+  const financialMetrics = useMemo(() => {
+    if (!invoicesWithPayments) return { totalPendente: 0, totalPago: 0, totalVencido: 0, contasPendentes: 0 };
+    const today = new Date().toISOString().split("T")[0];
+    let totalPendente = 0, totalPago = 0, totalVencido = 0, contasPendentes = 0;
+    for (const inv of invoicesWithPayments) {
+      for (const p of (inv as any).invoice_payments || []) {
+        if (p.status === "pago") {
+          totalPago += Number(p.amount);
+        } else {
+          totalPendente += Number(p.amount);
+          contasPendentes++;
+          if (p.due_date && p.due_date < today) {
+            totalVencido += Number(p.amount);
+          }
+        }
+      }
+    }
+    return { totalPendente, totalPago, totalVencido, contasPendentes };
+  }, [invoicesWithPayments]);
+
+  // Stock divergence data (top 10 products with biggest diff)
+  const stockDivergence = useMemo(() => {
+    return products
+      .map((p) => ({
+        name: p.name.length > 20 ? p.name.slice(0, 20) + "…" : p.name,
+        fisico: p.stock_physical,
+        full: p.stock_full,
+        diff: Math.abs(p.stock_physical - p.stock_full),
+      }))
+      .filter((p) => p.diff > 0)
+      .sort((a, b) => b.diff - a.diff)
+      .slice(0, 8);
+  }, [products]);
+
+  // Payment status pie data
+  const paymentPieData = useMemo(() => {
+    const { totalPago, totalPendente, totalVencido } = financialMetrics;
+    const pendenteSemVencido = totalPendente - totalVencido;
+    const data = [];
+    if (totalPago > 0) data.push({ name: "Pago", value: totalPago });
+    if (pendenteSemVencido > 0) data.push({ name: "Pendente", value: pendenteSemVencido });
+    if (totalVencido > 0) data.push({ name: "Vencido", value: totalVencido });
+    return data;
+  }, [financialMetrics]);
+
   const alerts: { message: string; type: "warning" | "error" }[] = [];
   lowStock.forEach((p) => alerts.push({ message: `${p.name} — estoque baixo (${p.stock_physical + p.stock_full}/${p.min_stock})`, type: "warning" }));
   if (invoiceStats && invoiceStats.divergente > 0) {
@@ -37,71 +113,174 @@ const PainelHub = () => {
   if (invoiceStats && invoiceStats.aguardando > 0) {
     alerts.push({ message: `${invoiceStats.aguardando} nota(s) aguardando conferência`, type: "warning" });
   }
+  if (financialMetrics.totalVencido > 0) {
+    alerts.push({ message: `${formatCurrency(financialMetrics.totalVencido)} em pagamentos vencidos`, type: "error" });
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Painel HUB</h1>
-        <p className="text-muted-foreground">Visão geral de pedidos, produtos e estoque</p>
+        <p className="text-muted-foreground">Visão geral de vendas, estoque e financeiro</p>
       </div>
 
-      {/* Vendas */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
-          <ShoppingBag className="h-5 w-5" />
-          Vendas
-        </h2>
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {[
-            { label: "Vendas Hoje", value: salesStats?.salesToday ?? 0 },
-            { label: "Faturamento Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0) },
-            { label: "Vendas 30d", value: salesStats?.sales30d ?? 0 },
-            { label: "Faturamento 30d", value: formatCurrency(salesStats?.revenue30d ?? 0) },
-          ].map((item) => (
-            <Card key={item.label}>
+      {/* KPIs */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+        {[
+          { label: "Vendas Hoje", value: salesStats?.salesToday ?? 0, icon: ShoppingBag },
+          { label: "Faturamento Hoje", value: formatCurrency(salesStats?.revenueToday ?? 0), icon: DollarSign },
+          { label: "Faturamento 30d", value: formatCurrency(salesStats?.revenue30d ?? 0), icon: TrendingUp },
+          { label: "Produtos", value: products.length, icon: Package },
+        ].map((item) => (
+          <Card key={item.label}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="text-xl font-bold mt-1">{item.value}</p>
+                </div>
+                <item.icon className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts row */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {/* Sales chart */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Vendas — Últimos 7 dias
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={salesChartData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                <XAxis dataKey="label" fontSize={12} className="fill-muted-foreground" />
+                <YAxis fontSize={12} className="fill-muted-foreground" />
+                <Tooltip
+                  formatter={(value: number, name: string) =>
+                    name === "faturamento" ? formatCurrency(value) : value
+                  }
+                  labelFormatter={(l) => `Data: ${l}`}
+                  contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                />
+                <Bar dataKey="vendas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Vendas" />
+                <Bar dataKey="faturamento" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} name="Faturamento" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Financial overview */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Financeiro
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <p className="text-xs text-muted-foreground">Pago</p>
+                <p className="text-lg font-bold text-primary">{formatCurrency(financialMetrics.totalPago)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-destructive/10">
+                <p className="text-xs text-muted-foreground">Pendente</p>
+                <p className="text-lg font-bold text-destructive">{formatCurrency(financialMetrics.totalPendente)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-destructive/10">
+                <p className="text-xs text-muted-foreground">Vencido</p>
+                <p className="text-lg font-bold text-destructive">{formatCurrency(financialMetrics.totalVencido)}</p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted">
+                <p className="text-xs text-muted-foreground">Contas Pendentes</p>
+                <p className="text-lg font-bold">{financialMetrics.contasPendentes}</p>
+              </div>
+            </div>
+            {paymentPieData.length > 0 && (
+              <ResponsiveContainer width="100%" height={120}>
+                <PieChart>
+                  <Pie data={paymentPieData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3}>
+                    {paymentPieData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                  <Legend fontSize={12} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Estoque row */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        <div>
+          <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
+            <Warehouse className="h-5 w-5" />
+            Estoque
+          </h2>
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-sm text-muted-foreground">{item.label}</p>
-                <p className="text-2xl font-bold">{item.value}</p>
+                <p className="text-sm text-muted-foreground">Produtos</p>
+                <p className="text-2xl font-bold">{products.length}</p>
               </CardContent>
             </Card>
-          ))}
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground">Físico</p>
+                <p className="text-2xl font-bold text-primary">{totalPhysical}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground">FULL</p>
+                <p className="text-2xl font-bold">{totalFull}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{totalPhysical + totalFull}</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
+
+        {/* Stock divergence chart */}
+        {stockDivergence.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Divergências Físico × FULL ({stockDivergence.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={stockDivergence} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis type="number" fontSize={12} className="fill-muted-foreground" />
+                  <YAxis dataKey="name" type="category" width={100} fontSize={11} className="fill-muted-foreground" />
+                  <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                  <Bar dataKey="fisico" fill="hsl(var(--primary))" name="Físico" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="full" fill="hsl(var(--accent))" name="FULL" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
-      {/* Estoque */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
-          <Warehouse className="h-5 w-5" />
-          Estoque
-        </h2>
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">Produtos</p>
-              <p className="text-3xl font-bold">{products.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">Físico</p>
-              <p className="text-3xl font-bold text-primary">{totalPhysical}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">FULL</p>
-              <p className="text-3xl font-bold text-accent">{totalFull}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-sm text-muted-foreground">Total</p>
-              <p className="text-3xl font-bold">{totalPhysical + totalFull}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
+      {/* Mercado Livre */}
       <div>
         <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
           <ShoppingBag className="h-5 w-5" />
