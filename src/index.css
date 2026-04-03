@@ -4,37 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium Dark ERP — High Contrast Layered System */
+/* Premium Dark ERP — Layered Depth System */
 
 @layer base {
   :root {
-    /* Layer 1: Deep background #0F172A */
-    --background: 222 47% 11%;
+    /* Layer 1: Background #131A2B — mid-dark for depth */
+    --background: 222 38% 12%;
     --foreground: 210 40% 98%;
 
-    /* Layer 3: Cards brighter #1E293B */
-    --card: 217 33% 17%;
+    /* Layer 3: Cards #1E293B+ slightly brighter */
+    --card: 217 32% 20%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 217 33% 17%;
+    --popover: 217 32% 20%;
     --popover-foreground: 210 40% 98%;
 
     /* Primary: #2563EB */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary surfaces */
-    --secondary: 215 28% 20%;
+    --secondary: 215 28% 22%;
     --secondary-foreground: 210 40% 98%;
 
-    /* Muted: #94A3B8 */
-    --muted: 215 28% 20%;
+    /* Muted text: #94A3B8 */
+    --muted: 215 28% 22%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 215 28% 22%;
+    --accent: 215 28% 24%;
     --accent-foreground: 210 40% 98%;
 
-    /* Status colors */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
@@ -42,7 +40,7 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Borders: #334155 — clearly visible */
+    /* Borders: #334155 */
     --border: 217 24% 30%;
     --input: 217 24% 24%;
     --ring: 217 91% 60%;
@@ -51,10 +49,10 @@
 
     /* Layer 2: Sidebar darkest #0B1220 */
     --sidebar-background: 222 55% 8%;
-    --sidebar-foreground: 215 20% 65%;
+    --sidebar-foreground: 215 20% 68%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 40% 15%;
+    --sidebar-accent: 217 38% 16%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 30% 16%;
     --sidebar-ring: 217 91% 60%;
