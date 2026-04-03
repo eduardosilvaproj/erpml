@@ -185,7 +185,7 @@ export function useUpdateCompany() {
     mutationFn: async ({ id, ...updates }: Partial<Company> & { id: string }) => {
       const { error } = await supabase
         .from("companies")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
       if (error) throw error;
 
