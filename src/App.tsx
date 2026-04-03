@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import CompanyDashboard from "./pages/CompanyDashboard";
 import Onboarding from "./pages/Onboarding";
 import MasterAdmin from "./pages/MasterAdmin";
+import Upgrade from "./pages/Upgrade";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/master-admin" element={<MasterAdmin />} />
+                      <Route path="/upgrade" element={<Upgrade />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

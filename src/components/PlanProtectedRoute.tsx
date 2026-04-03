@@ -35,7 +35,7 @@ export function PlanProtectedRoute({ children, path }: PlanProtectedRouteProps) 
   }
 
   if (!allowed) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/upgrade" replace />;
   }
 
   return <>{children}</>;
