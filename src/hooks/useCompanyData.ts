@@ -99,22 +99,19 @@ export function useMyCompany() {
 
       if (!membership) return null;
 
-      const { data: company, error } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", membership.company_id)
-        .single();
+      // Fetch company, plan, and member count in parallel
+      const [companyRes, countRes, plansRes] = await Promise.all([
+        supabase.from("companies").select("*").eq("id", membership.company_id).single(),
+        supabase.from("company_members").select("*", { count: "exact", head: true }).eq("company_id", membership.company_id).eq("is_active", true),
+        supabase.from("plans").select("*"),
+      ]);
 
-      if (error || !company) return null;
+      if (companyRes.error || !companyRes.data) return null;
+      const company = companyRes.data;
 
-      // Get plan
       let plan: Plan | undefined;
       if (company.plan_id) {
-        const { data: planData } = await supabase
-          .from("plans")
-          .select("*")
-          .eq("id", company.plan_id)
-          .single();
+        const planData = plansRes.data?.find((p: any) => p.id === company.plan_id);
         if (planData) {
           plan = {
             ...planData,
@@ -123,14 +120,7 @@ export function useMyCompany() {
         }
       }
 
-      // Get members count
-      const { count } = await supabase
-        .from("company_members")
-        .select("*", { count: "exact", head: true })
-        .eq("company_id", company.id)
-        .eq("is_active", true);
-
-      return { ...company, plan, members_count: count || 0 } as Company & { plan?: Plan; members_count?: number };
+      return { ...company, plan, members_count: countRes.count || 0 } as Company & { plan?: Plan; members_count?: number };
     },
   });
 }
