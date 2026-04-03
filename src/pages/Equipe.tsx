@@ -90,6 +90,17 @@ export default function Equipe() {
     }
   };
 
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    if (!company?.id) return;
+    try {
+      await callEdgeFunction("change-role", { memberId, newRole });
+      toast.success("Papel alterado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["company-members"] });
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
