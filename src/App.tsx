@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
@@ -55,13 +56,13 @@ const App = () => (
                       <Route path="/entrada-xml" element={<EntradaXML />} />
                       <Route path="/conferencia" element={<Conferencia />} />
                       <Route path="/estoque" element={<Estoque />} />
-                      <Route path="/movimentacao-full" element={<MovimentacaoFull />} />
-                      <Route path="/integracao-ml" element={<IntegracaoML />} />
+                      <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
+                      <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                       <Route path="/pdv" element={<PDV />} />
                       <Route path="/crm" element={<CRM />} />
-                      <Route path="/painel-hub" element={<PainelHub />} />
-                      <Route path="/financeiro" element={<Financeiro />} />
-                      <Route path="/ia-consulta" element={<IAConsulta />} />
+                      <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />
+                      <Route path="/financeiro" element={<PlanProtectedRoute path="/financeiro"><Financeiro /></PlanProtectedRoute>} />
+                      <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/onboarding" element={<Onboarding />} />
