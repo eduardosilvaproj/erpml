@@ -275,9 +275,8 @@ export default function Financeiro() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((inv) => (
-                    <>
+                    <Fragment key={inv.id}>
                       <TableRow
-                        key={inv.id}
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => setExpandedId(expandedId === inv.id ? null : inv.id)}
                       >
