@@ -2,18 +2,23 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown
+  Building2, Crown, Lock
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useAdminData";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -37,6 +42,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const { isRouteAllowed, planName } = usePlanFeatures();
 
   return (
     <Sidebar collapsible="icon">
@@ -49,21 +55,50 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink
-                      to={item.url}
-                      end={item.url === "/"}
-                      className="hover:bg-sidebar-accent/50"
-                      activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                const allowed = isRouteAllowed(item.url);
+                
+                if (!allowed) {
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-md text-muted-foreground/50 cursor-not-allowed select-none">
+                              <item.icon className="h-4 w-4 shrink-0" />
+                              {!collapsed && (
+                                <>
+                                  <span className="flex-1 truncate">{item.title}</span>
+                                  <Lock className="h-3 w-3 shrink-0" />
+                                </>
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p className="text-xs">Disponível nos planos superiores</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </SidebarMenuItem>
+                  );
+                }
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <NavLink
+                        to={item.url}
+                        end={item.url === "/"}
+                        className="hover:bg-sidebar-accent/50"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
               {isAdmin && (
                 <>
                   <SidebarMenuItem>
@@ -98,6 +133,11 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter>
         <div className="flex flex-col gap-2 p-2">
+          {!collapsed && planName && (
+            <Badge variant="outline" className="w-fit text-xs">
+              {planName}
+            </Badge>
+          )}
           {!collapsed && user?.email && (
             <span className="text-xs text-muted-foreground truncate">{user.email}</span>
           )}
