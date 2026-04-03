@@ -68,6 +68,7 @@ const App = () => (
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/master-admin" element={<MasterAdmin />} />
+                      <Route path="/upgrade" element={<Upgrade />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
