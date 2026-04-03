@@ -174,7 +174,7 @@ export function useCompanyAuditLog(companyId: string | undefined) {
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data || [];
+      return (data || []).map((d: any) => ({ ...d, details: d.details as Record<string, unknown> | null })) as AuditLogEntry[];
     },
   });
 }
