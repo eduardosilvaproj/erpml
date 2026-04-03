@@ -31,6 +31,7 @@ import Onboarding from "./pages/Onboarding";
 import MasterAdmin from "./pages/MasterAdmin";
 import Upgrade from "./pages/Upgrade";
 import Equipe from "./pages/Equipe";
+import BoasVindas from "./pages/BoasVindas";
 
 const queryClient = new QueryClient();
 
