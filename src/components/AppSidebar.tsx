@@ -46,6 +46,22 @@ export function AppSidebar() {
   const { data: isAdmin } = useIsAdmin();
   const { isRouteAllowed, planName } = usePlanFeatures();
 
+  const renderNavItem = (item: typeof menuItems[0], extraClass = "") => (
+    <SidebarMenuItem key={item.title}>
+      <SidebarMenuButton asChild>
+        <NavLink
+          to={item.url}
+          end={item.url === "/"}
+          className="hover:bg-sidebar-accent rounded-xl transition-all duration-200 py-2.5 px-3"
+          activeClassName="bg-primary/12 text-primary font-medium border-l-[3px] border-primary rounded-l-none"
+        >
+          <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
+          {!collapsed && <span className="text-[13px]">{item.title}</span>}
+        </NavLink>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="py-3">
@@ -71,7 +87,7 @@ export function AppSidebar() {
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground/30 cursor-not-allowed select-none transition-colors">
+                            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground/30 cursor-not-allowed select-none">
                               <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
                               {!collapsed && (
                                 <>
@@ -90,48 +106,12 @@ export function AppSidebar() {
                   );
                 }
 
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to={item.url}
-                        end={item.url === "/"}
-                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
-                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary shadow-glow"
-                      >
-                        <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
+                return renderNavItem(item);
               })}
               {isAdmin && (
                 <>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/admin"
-                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
-                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                      >
-                        <ShieldCheck className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-[13px]">Admin</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/master-admin"
-                        className="hover:bg-sidebar-accent/80 rounded-xl transition-all duration-200 py-2.5 px-3"
-                        activeClassName="bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                      >
-                        <Crown className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
-                        {!collapsed && <span className="text-[13px]">Painel Master</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  {renderNavItem({ title: "Admin", url: "/admin", icon: ShieldCheck })}
+                  {renderNavItem({ title: "Painel Master", url: "/master-admin", icon: Crown })}
                 </>
               )}
             </SidebarMenu>
@@ -139,7 +119,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex flex-col gap-3 p-3 border-t border-border/30">
+        <div className="flex flex-col gap-3 p-3 border-t border-sidebar-border/50">
           <div className="flex items-center gap-3">
             <AvatarUpload size="sm" editable={!collapsed} />
             {!collapsed && (
