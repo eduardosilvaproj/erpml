@@ -241,7 +241,7 @@ export default function MasterAdmin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companies?.map((c) => (
+                      {companies?.filter((c) => courtesyFilter === "all" ? true : courtesyFilter === "courtesy" ? c.is_courtesy : !c.is_courtesy).map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
