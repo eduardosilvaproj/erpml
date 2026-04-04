@@ -18,7 +18,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const clearRecording = useCallback(() => {
     if (audioUrl) URL.revokeObjectURL(audioUrl);
