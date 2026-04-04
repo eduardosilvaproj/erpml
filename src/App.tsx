@@ -39,6 +39,10 @@ import AnaliseConcorrencia from "./pages/AnaliseConcorrencia";
 import PrevisaoDemanda from "./pages/PrevisaoDemanda";
 import PrecoDinamico from "./pages/PrecoDinamico";
 import GeradorDescricoes from "./pages/GeradorDescricoes";
+import AnaliseRentabilidade from "./pages/AnaliseRentabilidade";
+import OtimizadorTitulos from "./pages/OtimizadorTitulos";
+import RespostaPerguntas from "./pages/RespostaPerguntas";
+import ChatIA from "./pages/ChatIA";
 
 const queryClient = new QueryClient();
 
