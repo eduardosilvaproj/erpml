@@ -915,6 +915,174 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "get-questions": {
+        const connection = await getConnection(serviceClient, userId);
+        if (!connection) {
+          throw new MlAuthError("not_connected", "Nenhuma conta do Mercado Livre está conectada.");
+        }
+
+        const limit = parsePositiveInt(params.limit, 50, 200);
+        const offset = parsePositiveInt(params.offset, 0, 1000);
+
+        const questionsRes = await fetchMlJson(
+          `${ML_API_BASE}/questions/search?seller_id=${connection.ml_user_id}&sort_fields=date_created&sort_types=DESC&limit=${limit}&offset=${offset}`,
+          { headers: mlHeaders },
+          "Erro ao buscar perguntas"
+        );
+
+        return jsonResponse(questionsRes);
+      }
+
+      case "sync-questions": {
+        const connection = await getConnection(serviceClient, userId);
+        if (!connection) {
+          throw new MlAuthError("not_connected", "Nenhuma conta do Mercado Livre está conectada.");
+        }
+
+        // Get company_id
+        const { data: memberData } = await serviceClient
+          .from("company_members")
+          .select("company_id")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        const companyId = memberData?.company_id ?? null;
+
+        // Fetch recent questions from ML
+        const maxQuestions = parsePositiveInt(params.limit, 100, 500);
+        let allQuestions: any[] = [];
+        let qOffset = 0;
+        let totalQuestions = 0;
+
+        do {
+          const page = await fetchMlJson(
+            `${ML_API_BASE}/questions/search?seller_id=${connection.ml_user_id}&sort_fields=date_created&sort_types=DESC&limit=50&offset=${qOffset}`,
+            { headers: mlHeaders },
+            "Erro ao buscar perguntas"
+          );
+          totalQuestions = Number(page?.total ?? 0);
+          const results = Array.isArray(page?.questions) ? page.questions : [];
+          allQuestions.push(...results);
+          if (!results.length) break;
+          qOffset += 50;
+        } while (qOffset < Math.min(totalQuestions, maxQuestions));
+
+        // Get existing questions
+        const mlQIds = allQuestions.map((q: any) => Number(q.id));
+        const { data: existingQs } = await serviceClient
+          .from("ml_questions")
+          .select("id, ml_question_id")
+          .eq("user_id", userId)
+          .in("ml_question_id", mlQIds);
+
+        const existingQMap = new Map<number, string>();
+        for (const eq of existingQs ?? []) {
+          existingQMap.set(Number(eq.ml_question_id), eq.id);
+        }
+
+        // Batch fetch item titles
+        const uniqueItemIds = [...new Set(allQuestions.map((q: any) => String(q.item_id)).filter(Boolean))];
+        const itemTitles = new Map<string, string>();
+        
+        for (let i = 0; i < uniqueItemIds.length; i += DETAIL_BATCH_SIZE) {
+          const batch = uniqueItemIds.slice(i, i + DETAIL_BATCH_SIZE);
+          try {
+            const details = await fetchMlJson(
+              `${ML_API_BASE}/items?ids=${batch.join(",")}&attributes=id,title`,
+              { headers: mlHeaders },
+              "Erro ao buscar títulos"
+            );
+            if (Array.isArray(details)) {
+              for (const d of details) {
+                if (d?.body?.id) itemTitles.set(String(d.body.id), d.body.title ?? "");
+              }
+            }
+          } catch { /* continue */ }
+        }
+
+        let inserted = 0;
+        let updated = 0;
+
+        for (const q of allQuestions) {
+          const mlQid = Number(q.id);
+          const row = {
+            user_id: userId,
+            company_id: companyId,
+            ml_question_id: mlQid,
+            ml_item_id: String(q.item_id ?? ""),
+            ml_item_title: itemTitles.get(String(q.item_id)) ?? null,
+            ml_from_id: q.from?.id ? Number(q.from.id) : null,
+            ml_from_nickname: q.from?.nickname ?? null,
+            question_text: q.text ?? "",
+            answer_text: q.answer?.text ?? null,
+            question_date: q.date_created ?? null,
+            answer_date: q.answer?.date_created ?? null,
+            status: q.status ?? (q.answer ? "answered" : "unanswered"),
+            ml_raw: q,
+            updated_at: new Date().toISOString(),
+          };
+
+          const existingId = existingQMap.get(mlQid);
+          if (existingId) {
+            await serviceClient.from("ml_questions").update(row).eq("id", existingId);
+            updated++;
+          } else {
+            await serviceClient.from("ml_questions").insert(row);
+            inserted++;
+          }
+        }
+
+        return jsonResponse({
+          total_fetched: allQuestions.length,
+          inserted,
+          updated,
+          total_in_ml: totalQuestions,
+        });
+      }
+
+      case "answer-question": {
+        const questionId = typeof params.questionId === "number" || typeof params.questionId === "string"
+          ? Number(params.questionId) : 0;
+        const answerText = typeof params.text === "string" ? params.text.trim() : "";
+
+        if (!questionId) {
+          return jsonResponse({ error: "ID da pergunta inválido." }, 400);
+        }
+        if (!answerText || answerText.length > 2000) {
+          return jsonResponse({ error: "Resposta inválida (1-2000 caracteres)." }, 400);
+        }
+
+        const result = await fetchMlJson(
+          `${ML_API_BASE}/answers`,
+          {
+            method: "POST",
+            headers: mlHeaders,
+            body: JSON.stringify({
+              question_id: questionId,
+              text: answerText,
+            }),
+          },
+          "Erro ao responder pergunta"
+        );
+
+        // Update local record
+        await serviceClient
+          .from("ml_questions")
+          .update({
+            answer_text: answerText,
+            answer_date: new Date().toISOString(),
+            status: "answered",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("user_id", userId)
+          .eq("ml_question_id", questionId);
+
+        return jsonResponse(result);
+      }
+
       default:
         return jsonResponse({ error: `Ação desconhecida: ${action}` }, 400);
     }
