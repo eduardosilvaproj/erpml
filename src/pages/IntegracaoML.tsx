@@ -14,10 +14,22 @@ import {
   BellRing,
   Trash2,
   Upload,
+  Unplug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +49,7 @@ import {
   useMLWebhookStatus,
   useRegisterMLWebhook,
   useUnregisterMLWebhook,
+  useDisconnectML,
 } from "@/hooks/useMLData";
 import { useSearchParams } from "react-router-dom";
 
@@ -57,6 +70,7 @@ export default function IntegracaoML() {
   const { data: authUrlData } = useMLAuthUrl();
   const { data: persistedOrders, isLoading: loadingPersisted } = usePersistedMLOrders();
   const { data: webhookStatus, isLoading: loadingWebhook } = useMLWebhookStatus(isConnected);
+  const disconnectML = useDisconnectML();
   const registerWebhook = useRegisterMLWebhook();
   const unregisterWebhook = useUnregisterMLWebhook();
 
@@ -85,6 +99,19 @@ export default function IntegracaoML() {
       }
 
       window.location.assign(authUrlData.url);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnectML.mutateAsync();
+      toast({ title: "Conta do Mercado Livre desconectada com sucesso!" });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao desconectar",
+        description: e.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -153,6 +180,39 @@ export default function IntegracaoML() {
               <RefreshCw className={`mr-2 h-4 w-4 ${syncCatalog.isPending ? "animate-spin" : ""}`} />
               Sincronizar catálogo
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={disconnectML.isPending}
+                >
+                  {disconnectML.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unplug className="h-4 w-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desconectar Mercado Livre?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso removerá a conexão com a conta <strong>{connection.seller_nickname}</strong> e todos os vínculos de produtos. Os pedidos já sincronizados serão mantidos. Você poderá reconectar a qualquer momento.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDisconnect}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Desconectar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <Button onClick={handleConnect} disabled={!authUrlData?.url}>

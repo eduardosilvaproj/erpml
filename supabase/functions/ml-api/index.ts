@@ -482,6 +482,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === "disconnect") {
+      const connection = await getConnection(serviceClient, userId);
+      if (!connection) {
+        return jsonResponse({ success: true, message: "Nenhuma conexão ativa encontrada." });
+      }
+
+      // Delete linked products
+      await serviceClient
+        .from("ml_linked_products")
+        .delete()
+        .eq("user_id", userId);
+
+      // Delete the connection
+      const { error: deleteError } = await serviceClient
+        .from("ml_connections")
+        .delete()
+        .eq("id", connection.id)
+        .eq("user_id", userId);
+
+      if (deleteError) {
+        throw new Error("Erro ao desconectar conta do Mercado Livre.");
+      }
+
+      return jsonResponse({ success: true, message: "Conta desconectada com sucesso." });
+    }
+
     const accessToken = await getValidToken(serviceClient, userId);
     const mlHeaders = {
       Authorization: `Bearer ${accessToken}`,
