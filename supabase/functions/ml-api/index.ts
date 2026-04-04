@@ -596,6 +596,114 @@ Deno.serve(async (req) => {
         return jsonResponse(result);
       }
 
+      case "sync-price": {
+        const itemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
+        const price = Number(params.price);
+
+        if (!itemId) {
+          return jsonResponse({ error: "ID do anúncio inválido." }, 400);
+        }
+        if (!Number.isFinite(price) || price < 0) {
+          return jsonResponse({ error: "Preço inválido." }, 400);
+        }
+
+        const result = await fetchMlJson(
+          `${ML_API_BASE}/items/${encodeURIComponent(itemId)}`,
+          {
+            method: "PUT",
+            headers: mlHeaders,
+            body: JSON.stringify({ price }),
+          },
+          "Erro ao sincronizar preço"
+        );
+
+        await serviceClient
+          .from("ml_linked_products")
+          .update({
+            last_synced_at: new Date().toISOString(),
+            sync_status: "synced",
+            ml_price: price,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("ml_item_id", itemId)
+          .eq("user_id", userId);
+
+        return jsonResponse(result);
+      }
+
+      case "sync-all-to-ml": {
+        // Bidirectional bulk sync: push ERP price + stock to ALL linked ML items
+        const { data: linkedProducts, error: lpError } = await serviceClient
+          .from("ml_linked_products")
+          .select("id, ml_item_id, product_id, products(stock_physical, stock_full, price)")
+          .eq("user_id", userId);
+
+        if (lpError) throw lpError;
+
+        if (!linkedProducts?.length) {
+          return jsonResponse({ synced: 0, errors: 0, message: "Nenhum produto vinculado." });
+        }
+
+        let synced = 0;
+        let errors = 0;
+        const errorDetails: string[] = [];
+
+        for (const lp of linkedProducts) {
+          const product = lp.products as any;
+          if (!product) {
+            errors++;
+            continue;
+          }
+
+          const stockToSync = product.stock_full ?? product.stock_physical ?? 0;
+          const priceToSync = product.price ?? 0;
+
+          try {
+            await fetchMlJson(
+              `${ML_API_BASE}/items/${encodeURIComponent(lp.ml_item_id)}`,
+              {
+                method: "PUT",
+                headers: mlHeaders,
+                body: JSON.stringify({
+                  price: priceToSync,
+                  available_quantity: stockToSync,
+                }),
+              },
+              `Erro ao sincronizar ${lp.ml_item_id}`
+            );
+
+            await serviceClient
+              .from("ml_linked_products")
+              .update({
+                last_synced_at: new Date().toISOString(),
+                sync_status: "synced",
+                ml_available_quantity: stockToSync,
+                ml_price: priceToSync,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", lp.id);
+
+            synced++;
+          } catch (err: any) {
+            errors++;
+            errorDetails.push(`${lp.ml_item_id}: ${err.message}`);
+          }
+        }
+
+        // Log the sync
+        await serviceClient.from("ml_sync_logs").insert({
+          user_id: userId,
+          sync_type: "erp_to_ml_bulk",
+          status: errors > 0 ? "partial" : "completed",
+          items_synced: synced,
+          finished_at: new Date().toISOString(),
+          details: errorDetails.length ? errorDetails.join("; ") : null,
+          error_message: errors > 0 ? `${errors} erro(s) ao sincronizar` : null,
+        });
+
+        return jsonResponse({ synced, errors, total: linkedProducts.length });
+      }
+
       case "sync-catalog": {
         const result = await syncCatalog(serviceClient, userId, accessToken);
         return jsonResponse(result);
