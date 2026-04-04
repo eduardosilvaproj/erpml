@@ -236,6 +236,10 @@ export default function IntegracaoML() {
             <TabsTrigger value="items">Anúncios</TabsTrigger>
             <TabsTrigger value="orders">Vendas</TabsTrigger>
             <TabsTrigger value="linked">Vinculados</TabsTrigger>
+            <TabsTrigger value="webhooks">
+              <Bell className="h-4 w-4 mr-1" />
+              Webhooks
+            </TabsTrigger>
           </TabsList>
 
           {/* Anúncios Tab */}
