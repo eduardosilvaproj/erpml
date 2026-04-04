@@ -10,6 +10,7 @@ import { useInvoiceStats } from "@/hooks/useInvoiceData";
 import { useTransferOrders } from "@/hooks/useTransferData";
 import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders, usePersistedMLOrders } from "@/hooks/useMLData";
 import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
+import { useMyCompany } from "@/hooks/useCompanyData";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
 import { useMemo, useState } from "react";
 
@@ -39,6 +40,7 @@ const PainelHub = () => {
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
   const { data: mlConnection } = useMLConnection();
+  const { data: myCompany } = useMyCompany();
   const mlEnabled = !!mlConnection && !mlConnection.needs_reauth;
   const { data: mlItems } = useMLItems(mlEnabled);
   const { data: mlOrders } = useMLOrders(mlEnabled);
@@ -416,6 +418,7 @@ const PainelHub = () => {
                     statusCounts,
                     shippingStatusCounts,
                     dailyData,
+                    companyName: myCompany?.name,
                   })
                 }
               >
