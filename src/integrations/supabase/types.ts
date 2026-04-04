@@ -660,6 +660,45 @@ export type Database = {
           },
         ]
       }
+      kit_items: {
+        Row: {
+          created_at: string
+          id: string
+          kit_id: string
+          product_id: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kit_id: string
+          product_id: string
+          quantity?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kit_id?: string
+          product_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kit_items_kit_id_fkey"
+            columns: ["kit_id"]
+            isOneToOne: false
+            referencedRelation: "product_kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kit_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ml_connections: {
         Row: {
           access_token: string
@@ -1055,6 +1094,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      product_kits: {
+        Row: {
+          active: boolean
+          company_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+          sku: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price?: number
+          sku: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          sku?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       product_suppliers: {
         Row: {

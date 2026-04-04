@@ -45,6 +45,7 @@ import RespostaPerguntas from "./pages/RespostaPerguntas";
 import ChatIA from "./pages/ChatIA";
 import AnaliseMercado from "./pages/AnaliseMercado";
 import GeradorEAN13 from "./pages/GeradorEAN13";
+import Kits from "./pages/Kits";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
                       <Route path="/conferencia" element={<Conferencia />} />
                       <Route path="/estoque" element={<Estoque />} />
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
+                      <Route path="/kits" element={<Kits />} />
                       <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                       <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
                       <Route path="/pdv" element={<PDV />} />
