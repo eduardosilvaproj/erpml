@@ -82,6 +82,8 @@ export default function IntegracaoML() {
   const disconnectML = useDisconnectML();
   const registerWebhook = useRegisterMLWebhook();
   const unregisterWebhook = useUnregisterMLWebhook();
+  const { data: mlSettings, isLoading: loadingSettings } = useMLSettings();
+  const updateSettings = useUpdateMLSettings();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
