@@ -49,6 +49,7 @@ export function AppSidebar() {
   const { data: pendingUsers } = usePendingUsers();
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const { isRouteAllowed, planName } = usePlanFeatures();
+  const unansweredQuestions = useUnansweredMLQuestionsCount();
 
   const renderNavItem = (item: typeof menuItems[0], extraClass = "") => (
     <SidebarMenuItem key={item.title}>
