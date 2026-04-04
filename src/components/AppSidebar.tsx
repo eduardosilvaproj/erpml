@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock
+  Building2, Crown, Lock, Megaphone
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
