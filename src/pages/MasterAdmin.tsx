@@ -103,7 +103,7 @@ export default function MasterAdmin() {
   // Gestão handlers
   const openEditCompany = (company: CompanyWithExtras) => {
     setSelectedCompany(company);
-    setCompanyForm({ name: company.name, cnpj: company.cnpj, email: company.email, phone: company.phone, address: company.address, city: company.city, state: company.state, zip_code: company.zip_code });
+    setCompanyForm({ name: company.name, cnpj: company.cnpj, email: company.email, phone: company.phone, address: company.address, city: company.city, state: company.state, zip_code: company.zip_code, is_courtesy: company.is_courtesy });
     setGestaoDialog("edit");
   };
 
