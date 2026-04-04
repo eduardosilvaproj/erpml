@@ -359,7 +359,7 @@ const PainelHub = () => {
             }
           }
         }
-        const topMLProducts = Array.from(productRevMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+        const topMLProducts = Array.from(productRevMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 10);
 
         // Daily revenue chart
         const dailyData: { label: string; receita: number; comissao: number; frete: number }[] = [];
