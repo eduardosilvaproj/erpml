@@ -48,10 +48,10 @@ export default function MasterAdmin() {
   const [companyForm, setCompanyForm] = useState<Partial<Company>>({});
   const [selectedPlanId, setSelectedPlanId] = useState("");
 
-  // Financial calculations
+  // Financial calculations - exclude courtesy companies
   const financialData = useMemo(() => {
     if (!companies || !plans) return null;
-    const activeCompanies = companies.filter((c) => c.status === "active");
+    const activeCompanies = companies.filter((c) => c.status === "active" && !c.is_courtesy);
     const revenueByPlan = plans.map((plan) => {
       const companiesOnPlan = activeCompanies.filter((c) => c.plan_id === plan.id);
       return { name: plan.name, empresas: companiesOnPlan.length, receita: companiesOnPlan.length * plan.price, preco: plan.price };
@@ -61,7 +61,8 @@ export default function MasterAdmin() {
     const totalActive = activeCompanies.length;
     const avgRevenuePerCompany = totalActive > 0 ? mrr / totalActive : 0;
     const planDistribution = revenueByPlan.filter((r) => r.empresas > 0).map((r) => ({ name: r.name, value: r.empresas }));
-    return { revenueByPlan, mrr, arr, totalActive, avgRevenuePerCompany, planDistribution };
+    const courtesyCount = companies.filter((c) => c.is_courtesy).length;
+    return { revenueByPlan, mrr, arr, totalActive, avgRevenuePerCompany, planDistribution, courtesyCount };
   }, [companies, plans]);
 
   if (checkingAdmin) {
