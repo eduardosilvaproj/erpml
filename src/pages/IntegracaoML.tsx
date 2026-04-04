@@ -50,6 +50,8 @@ export default function IntegracaoML() {
   const { data: orders, isLoading: loadingOrders } = useMLOrders(isConnected);
   const { data: linked, isLoading: loadingLinked } = useMLLinkedProducts();
   const syncStock = useSyncStock();
+  const syncPrice = useSyncPrice();
+  const syncAllToML = useSyncAllToML();
   const syncCatalog = useSyncMLCatalog();
   const syncOrders = useSyncMLOrders();
   const { data: authUrlData } = useMLAuthUrl();
