@@ -21,7 +21,21 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     },
   });
 
-  if (loading || (session && checkingCompany)) {
+  const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
+    queryKey: ["is-admin-route-check", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  if (loading || (session && (checkingCompany || checkingAdmin))) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -33,9 +47,15 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // Allow onboarding and boas-vindas pages without a company
+  // Admins can access admin routes without a company
+  const adminRoutes = ["/admin", "/master-admin"];
   const allowedWithoutCompany = ["/onboarding", "/boas-vindas"];
-  if (!hasCompany && !allowedWithoutCompany.includes(location.pathname)) {
+
+  if (!hasCompany && !isAdmin && !allowedWithoutCompany.includes(location.pathname)) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  if (!hasCompany && isAdmin && !allowedWithoutCompany.includes(location.pathname) && !adminRoutes.includes(location.pathname)) {
     return <Navigate to="/onboarding" replace />;
   }
 
