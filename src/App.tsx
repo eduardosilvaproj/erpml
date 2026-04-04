@@ -45,6 +45,7 @@ import RespostaPerguntas from "./pages/RespostaPerguntas";
 import ChatIA from "./pages/ChatIA";
 import AnaliseMercado from "./pages/AnaliseMercado";
 import GeradorEAN13 from "./pages/GeradorEAN13";
+import Kits from "./pages/Kits";
 
 const queryClient = new QueryClient();
 
