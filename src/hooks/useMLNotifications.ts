@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 export function useUnansweredMLQuestionsCount() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: dbCount } = useQuery({
     queryKey: ["ml-questions-unanswered-count", user?.id],
@@ -25,8 +24,17 @@ export function useUnansweredMLQuestionsCount() {
   useEffect(() => {
     if (!user) return;
 
+    const channelName = `ml-questions-rt-${user.id}`;
+
+    // Remove any existing channel with the same name to avoid
+    // "cannot add callbacks after subscribe()" errors on re-renders / HMR
+    const existing = supabase.getChannels().find((ch) => ch.topic === `realtime:${channelName}`);
+    if (existing) {
+      supabase.removeChannel(existing);
+    }
+
     const channel = supabase
-      .channel(`ml-questions-rt-${user.id}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -41,13 +49,9 @@ export function useUnansweredMLQuestionsCount() {
       )
       .subscribe();
 
-    channelRef.current = channel;
-
     return () => {
       supabase.removeChannel(channel);
-      channelRef.current = null;
     };
-    // queryClient is stable from the provider, safe to omit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
