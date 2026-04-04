@@ -81,6 +81,45 @@ export function useMLOrders(enabled: boolean) {
   });
 }
 
+export function usePersistedMLOrders() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["ml-persisted-orders", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ml_orders")
+        .select("*, ml_order_items(*, products(id, name, sku))")
+        .order("date_created", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSyncMLOrders() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return callML<{
+        total_fetched: number;
+        inserted: number;
+        updated: number;
+        total_in_ml: number;
+      }>("sync-orders", { limit: 200 });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-connection"] });
+    },
+  });
+}
+
 export function useMLLinkedProducts() {
   const { user } = useAuth();
 
