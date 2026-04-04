@@ -26,6 +26,7 @@ export interface Company {
   plan_id: string | null;
   status: string;
   owner_id: string;
+  is_courtesy: boolean;
   created_at: string;
   updated_at: string;
 }
