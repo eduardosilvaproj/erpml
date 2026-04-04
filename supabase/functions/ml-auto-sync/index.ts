@@ -257,6 +257,22 @@ Deno.serve(async (req) => {
   const results: any[] = [];
 
   for (const conn of connections ?? []) {
+    // Check user settings - skip if auto-sync stock is disabled
+    const { data: settings } = await supabase
+      .from("ml_settings")
+      .select("auto_sync_stock, auto_sync_price")
+      .eq("user_id", conn.user_id)
+      .maybeSingle();
+
+    const autoSyncStock = settings?.auto_sync_stock ?? true;
+    const autoSyncPrice = settings?.auto_sync_price ?? true;
+
+    // If both stock and price sync are disabled, skip this user entirely
+    if (!autoSyncStock && !autoSyncPrice) {
+      results.push({ user_id: conn.user_id, status: "skipped_by_settings" });
+      continue;
+    }
+
     const logId = crypto.randomUUID();
     await supabase.from("ml_sync_logs").insert({
       id: logId, user_id: conn.user_id, sync_type: "auto_catalog", status: "started",
