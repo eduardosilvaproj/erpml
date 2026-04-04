@@ -453,6 +453,7 @@ const MovimentacaoFull = () => {
                 <TableRow>
                   <TableHead>Ordem</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Kits</TableHead>
                   <TableHead className="text-center">Itens</TableHead>
                   <TableHead className="text-center">Qtd Total</TableHead>
                   <TableHead>Data</TableHead>
