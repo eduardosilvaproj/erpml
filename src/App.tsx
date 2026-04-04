@@ -75,6 +75,10 @@ const App = () => (
                       <Route path="/financeiro" element={<PlanProtectedRoute path="/financeiro"><Financeiro /></PlanProtectedRoute>} />
                       <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
                       <Route path="/ia-hub" element={<IAHub />} />
+                      <Route path="/ia-concorrencia" element={<PlanProtectedRoute path="/ia-concorrencia"><AnaliseConcorrencia /></PlanProtectedRoute>} />
+                      <Route path="/ia-demanda" element={<PlanProtectedRoute path="/ia-demanda"><PrevisaoDemanda /></PlanProtectedRoute>} />
+                      <Route path="/ia-preco" element={<PlanProtectedRoute path="/ia-preco"><PrecoDinamico /></PlanProtectedRoute>} />
+                      <Route path="/ia-descricoes" element={<GeradorDescricoes />} />
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
