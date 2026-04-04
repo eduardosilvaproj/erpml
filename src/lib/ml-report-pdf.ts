@@ -72,7 +72,7 @@ export async function generateMLReportPDF(data: MLReportData) {
   doc.setFont("helvetica", "normal");
   doc.text(`Período: Últimos ${data.periodLabel}`, textX, data.companyName ? 30 : 24);
   doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, textX, data.companyName ? 36 : 30);
-  y = 48;
+  y = 52;
 
   // --- KPIs ---
   doc.setTextColor(30, 30, 45);
