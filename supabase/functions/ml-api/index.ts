@@ -601,6 +601,68 @@ Deno.serve(async (req) => {
         return jsonResponse(result);
       }
 
+      case "register-webhook": {
+        const connection = await getConnection(serviceClient, userId);
+        if (!connection) {
+          throw new MlAuthError("not_connected", "Nenhuma conta do Mercado Livre está conectada.");
+        }
+
+        const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
+        const webhookUrl = `${supabaseUrl}/functions/v1/ml-webhook`;
+
+        // Register webhook with ML API for orders, items, and questions
+        const topics = ["orders_v2", "items", "questions"];
+        const results: any[] = [];
+
+        for (const topic of topics) {
+          try {
+            const res = await fetch(`${ML_API_BASE}/applications/${appId}/webhooks`, {
+              method: "POST",
+              headers: mlHeaders,
+              body: JSON.stringify({
+                topic,
+                callback_url: webhookUrl,
+              }),
+            });
+
+            const data = await res.json().catch(() => null);
+            results.push({ topic, status: res.status, data });
+          } catch (err) {
+            results.push({ topic, status: "error", error: String(err) });
+          }
+        }
+
+        return jsonResponse({ webhook_url: webhookUrl, results });
+      }
+
+      case "webhook-status": {
+        const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
+
+        const res = await fetchMlJson(
+          `${ML_API_BASE}/applications/${appId}/webhooks`,
+          { headers: mlHeaders },
+          "Erro ao consultar webhooks"
+        );
+
+        return jsonResponse(res);
+      }
+
+      case "unregister-webhook": {
+        const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
+        const webhookId = typeof params.webhookId === "string" ? params.webhookId.trim() : "";
+
+        if (!webhookId) {
+          return jsonResponse({ error: "ID do webhook inválido." }, 400);
+        }
+
+        const res = await fetch(`${ML_API_BASE}/applications/${appId}/webhooks/${encodeURIComponent(webhookId)}`, {
+          method: "DELETE",
+          headers: mlHeaders,
+        });
+
+        return jsonResponse({ deleted: res.ok, status: res.status });
+      }
+
       case "sync-orders": {
         const connection = await getConnection(serviceClient, userId);
         if (!connection) {
