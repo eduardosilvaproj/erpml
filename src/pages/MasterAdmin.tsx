@@ -208,8 +208,19 @@ export default function MasterAdmin() {
         <TabsContent value="empresas">
           <Card>
             <CardHeader>
-              <CardTitle>Todas as Empresas</CardTitle>
-              <CardDescription>{totalCompanies} empresa(s) cadastrada(s)</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle>Todas as Empresas</CardTitle>
+                  <CardDescription>{totalCompanies} empresa(s) cadastrada(s){financialData?.courtesyCount ? ` · ${financialData.courtesyCount} cortesia(s)` : ""}</CardDescription>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant={courtesyFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("all")}>Todas</Button>
+                  <Button variant={courtesyFilter === "paying" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("paying")}>Pagantes</Button>
+                  <Button variant={courtesyFilter === "courtesy" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("courtesy")}>
+                    <Gift className="h-3 w-3 mr-1" /> Cortesia
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loadingCompanies ? (
