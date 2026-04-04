@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock, Megaphone
+  Building2, Crown, Lock, Megaphone, MessageSquare
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
+import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,22 +49,32 @@ export function AppSidebar() {
   const { data: pendingUsers } = usePendingUsers();
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const { isRouteAllowed, planName } = usePlanFeatures();
+  const unansweredQuestions = useUnansweredMLQuestionsCount();
 
-  const renderNavItem = (item: typeof menuItems[0], extraClass = "") => (
-    <SidebarMenuItem key={item.title}>
-      <SidebarMenuButton asChild>
-        <NavLink
-          to={item.url}
-          end={item.url === "/"}
-          className="hover:bg-sidebar-accent rounded-xl transition-all duration-200 py-2.5 px-3"
-          activeClassName="bg-primary/12 text-primary font-medium border-l-[3px] border-primary rounded-l-none"
-        >
-          <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
-          {!collapsed && <span className="text-[13px]">{item.title}</span>}
-        </NavLink>
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
+  const renderNavItem = (item: typeof menuItems[0], extraClass = "") => {
+    const badgeCount = item.url === "/crm" ? unansweredQuestions : 0;
+
+    return (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton asChild>
+          <NavLink
+            to={item.url}
+            end={item.url === "/"}
+            className="hover:bg-sidebar-accent rounded-xl transition-all duration-200 py-2.5 px-3"
+            activeClassName="bg-primary/12 text-primary font-medium border-l-[3px] border-primary rounded-l-none"
+          >
+            <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
+            {!collapsed && <span className="text-[13px] flex-1">{item.title}</span>}
+            {badgeCount > 0 && (
+              <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
+                {badgeCount}
+              </Badge>
+            )}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon">
