@@ -74,6 +74,7 @@ const App = () => (
                       <Route path="/conferencia" element={<Conferencia />} />
                       <Route path="/estoque" element={<Estoque />} />
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
+                      <Route path="/kits" element={<Kits />} />
                       <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                       <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
                       <Route path="/pdv" element={<PDV />} />
