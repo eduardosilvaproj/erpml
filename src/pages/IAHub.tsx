@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
   Lock, ArrowRight, Crown, Zap, TrendingUp, FileText,
-  ShieldCheck, Bot
+  ShieldCheck, Bot, Swords, DollarSign
 } from "lucide-react";
 
 type AIFeature = {
@@ -30,6 +30,46 @@ const AI_FEATURES: AIFeature[] = [
     planGate: "IA Tributária",
     category: "consulta",
     tags: ["Tributação", "NCM", "Impostos"],
+  },
+  {
+    id: "concorrencia",
+    title: "Análise de Concorrência",
+    description: "IA analisa preços, posicionamento e estratégias dos concorrentes no Mercado Livre para seus produtos.",
+    icon: Swords,
+    route: "/ia-concorrencia",
+    planGate: "IA Tributária",
+    category: "pesquisa",
+    tags: ["Concorrentes", "Preços", "Estratégia"],
+  },
+  {
+    id: "demanda",
+    title: "Previsão de Demanda",
+    description: "IA prevê quais produtos terão mais demanda nos próximos dias e semanas com base em tendências.",
+    icon: TrendingUp,
+    route: "/ia-demanda",
+    planGate: "IA Tributária",
+    category: "pesquisa",
+    tags: ["Tendências", "Sazonalidade", "Estoque"],
+  },
+  {
+    id: "pricing",
+    title: "Preço Dinâmico",
+    description: "IA sugere preços otimizados para maximizar lucro considerando concorrência, margem e demanda.",
+    icon: DollarSign,
+    route: "/ia-preco",
+    planGate: "IA Tributária",
+    category: "operacional",
+    tags: ["Precificação", "Margem", "Otimização"],
+  },
+  {
+    id: "descricoes",
+    title: "Gerador de Descrições",
+    description: "IA gera descrições otimizadas para anúncios do Mercado Livre com SEO e palavras-chave relevantes.",
+    icon: FileText,
+    route: "/ia-descricoes",
+    planGate: null,
+    category: "operacional",
+    tags: ["Copywriting", "SEO", "Anúncios"],
   },
   {
     id: "pesquisa",

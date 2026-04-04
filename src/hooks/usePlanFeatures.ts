@@ -10,8 +10,10 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/movimentacao-full": ["Envio FULL"],
   "/painel-hub": ["Painel HUB"],
   "/ia-consulta": ["IA Tributária"],
+  "/ia-concorrencia": ["IA Tributária"],
+  "/ia-demanda": ["IA Tributária"],
+  "/ia-preco": ["IA Tributária"],
   "/financeiro": ["Financeiro avançado"],
-  "/ia-hub": ["IA Tributária"],
 };
 
 export function usePlanFeatures() {

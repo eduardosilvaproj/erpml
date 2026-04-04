@@ -1,0 +1,277 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json();
+    const { type, productName, products, message, history } = body;
+
+    if (!type || typeof type !== "string") {
+      return new Response(JSON.stringify({ error: "type is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let systemPrompt = "";
+    let userPrompt = "";
+    let useStreaming = false;
+
+    switch (type) {
+      case "competition": {
+        if (!productName || typeof productName !== "string" || productName.length > 500) {
+          return new Response(JSON.stringify({ error: "productName inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um analista de mercado especialista em e-commerce brasileiro, especialmente Mercado Livre.
+Analise a concorrência para o produto informado e forneça insights acionáveis.
+Sempre responda em português brasileiro.`;
+        userPrompt = `Analise a concorrência para o produto: "${productName}"
+
+Forneça:
+1. **Faixa de preço estimada** no Mercado Livre (mínimo, médio, máximo)
+2. **Nível de concorrência** (Baixa, Média, Alta, Muito Alta)
+3. **Pontos fortes** dos principais concorrentes
+4. **Oportunidades** para se destacar
+5. **Estratégias recomendadas** de posicionamento
+6. **Palavras-chave** mais relevantes para o anúncio`;
+        break;
+      }
+
+      case "demand": {
+        const productList = Array.isArray(products) ? products.slice(0, 20) : [];
+        if (productList.length === 0 && (!productName || typeof productName !== "string")) {
+          return new Response(JSON.stringify({ error: "productName ou products é obrigatório" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um especialista em previsão de demanda e tendências de mercado para e-commerce brasileiro.
+Analise padrões sazonais, tendências e projeções de demanda.
+Sempre responda em português brasileiro.`;
+        const items = productList.length > 0
+          ? productList.map((p: string) => `- ${p}`).join("\n")
+          : `- ${productName}`;
+        userPrompt = `Analise a previsão de demanda para os seguintes produtos:\n${items}
+
+Para cada produto forneça:
+1. **Tendência atual** (Em alta, Estável, Em baixa)
+2. **Sazonalidade** (meses de pico e de baixa)
+3. **Projeção para os próximos 30 dias** (Aumento, Estável, Queda)
+4. **Fatores de influência** (datas comemorativas, clima, etc.)
+5. **Recomendação de estoque** (Aumentar, Manter, Reduzir)`;
+        break;
+      }
+
+      case "pricing": {
+        if (!productName || typeof productName !== "string" || productName.length > 500) {
+          return new Response(JSON.stringify({ error: "productName inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { cost, currentPrice, category } = body;
+        systemPrompt = `Você é um especialista em precificação dinâmica para e-commerce brasileiro, especialmente Mercado Livre.
+Sugira preços otimizados considerando margem, concorrência e demanda.
+Sempre responda em português brasileiro.`;
+        userPrompt = `Sugira precificação para o produto: "${productName}"
+${cost ? `Custo: R$ ${cost}` : ""}
+${currentPrice ? `Preço atual: R$ ${currentPrice}` : ""}
+${category ? `Categoria: ${category}` : ""}
+
+Forneça:
+1. **Preço sugerido** (valor otimizado)
+2. **Faixa ideal** (mínimo e máximo)
+3. **Margem estimada** considerando taxas do ML (~16-19%)
+4. **Estratégia de preço** recomendada (penetração, competitivo, premium)
+5. **Impacto do frete** na decisão de compra
+6. **Sugestões de promoção** (desconto por quantidade, cupons)`;
+        break;
+      }
+
+      case "description": {
+        if (!productName || typeof productName !== "string" || productName.length > 500) {
+          return new Response(JSON.stringify({ error: "productName inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { features, tone } = body;
+        systemPrompt = `Você é um copywriter especialista em anúncios do Mercado Livre.
+Crie descrições otimizadas para SEO, persuasivas e completas.
+Sempre responda em português brasileiro.`;
+        userPrompt = `Crie uma descrição otimizada para o produto: "${productName}"
+${features ? `Características: ${features}` : ""}
+${tone ? `Tom desejado: ${tone}` : "Tom: Profissional e persuasivo"}
+
+Forneça:
+1. **Título otimizado** para o Mercado Livre (até 60 caracteres)
+2. **Descrição completa** (estruturada com seções)
+3. **Bullet points** com principais benefícios (5-8 itens)
+4. **Palavras-chave** para melhorar posicionamento (8-12)
+5. **Ficha técnica** sugerida
+6. **Dicas de foto** para o anúncio`;
+        break;
+      }
+
+      case "chat": {
+        useStreaming = true;
+        if (!message || typeof message !== "string" || message.length > 4000) {
+          return new Response(JSON.stringify({ error: "message inválida" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        break;
+      }
+
+      default:
+        return new Response(JSON.stringify({ error: "Tipo de análise não reconhecido" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+    }
+
+    if (useStreaming) {
+      const chatHistory = Array.isArray(history) ? history.slice(-30) : [];
+      const msgs = [
+        {
+          role: "system",
+          content: `Você é um assistente de IA especializado em e-commerce e Mercado Livre no Brasil.
+Você pode ajudar com: análise de concorrência, previsão de demanda, precificação dinâmica e criação de descrições.
+Seja prático, direto e forneça dados acionáveis. Responda sempre em português brasileiro.`,
+        },
+        ...chatHistory.map((m: { role: string; content: string }) => ({
+          role: m.role,
+          content: typeof m.content === "string" ? m.content.slice(0, 4000) : "",
+        })),
+        { role: "user", content: message },
+      ];
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages: msgs, stream: true }),
+      });
+
+      if (!response.ok) {
+        const status = response.status;
+        if (status === 429) {
+          return new Response(JSON.stringify({ error: "Limite de requisições excedido. Tente novamente em alguns segundos." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (status === 402) {
+          return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        console.error("AI gateway error:", status);
+        return new Response(JSON.stringify({ error: "Erro ao consultar IA" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(response.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
+    // Non-streaming: structured analysis
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Limite de requisições excedido." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (response.status === 402) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.error("AI gateway error:", response.status);
+      return new Response(JSON.stringify({ error: "Erro ao consultar IA" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return new Response(JSON.stringify({ error: "IA não retornou resposta" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true, content }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("ai-analysis error:", error);
+    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
