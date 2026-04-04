@@ -43,6 +43,7 @@ import AnaliseRentabilidade from "./pages/AnaliseRentabilidade";
 import OtimizadorTitulos from "./pages/OtimizadorTitulos";
 import RespostaPerguntas from "./pages/RespostaPerguntas";
 import ChatIA from "./pages/ChatIA";
+import AnaliseMercado from "./pages/AnaliseMercado";
 
 const queryClient = new QueryClient();
 
