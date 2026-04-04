@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
   Lock, ArrowRight, Crown, Zap, TrendingUp, FileText,
-  ShieldCheck, Bot, Swords, DollarSign
+  ShieldCheck, Bot, Swords, DollarSign, PieChart, Type, HelpCircle
 } from "lucide-react";
 
 type AIFeature = {
@@ -70,6 +70,46 @@ const AI_FEATURES: AIFeature[] = [
     planGate: null,
     category: "operacional",
     tags: ["Copywriting", "SEO", "Anúncios"],
+  },
+  {
+    id: "rentabilidade",
+    title: "Análise de Rentabilidade",
+    description: "IA calcula margem líquida, ROI, ponto de equilíbrio e simula cenários de lucro para seus produtos.",
+    icon: PieChart,
+    route: "/ia-rentabilidade",
+    planGate: "IA Tributária",
+    category: "pesquisa",
+    tags: ["Margem", "ROI", "Custos"],
+  },
+  {
+    id: "titulos",
+    title: "Otimizador de Títulos",
+    description: "IA cria títulos otimizados com SEO e palavras-chave para melhorar o posicionamento dos seus anúncios.",
+    icon: Type,
+    route: "/ia-titulos",
+    planGate: null,
+    category: "operacional",
+    tags: ["SEO", "Títulos", "Palavras-chave"],
+  },
+  {
+    id: "respostas",
+    title: "Resposta de Perguntas",
+    description: "IA gera respostas profissionais para perguntas de compradores no Mercado Livre com tom vendedor.",
+    icon: HelpCircle,
+    route: "/ia-respostas",
+    planGate: null,
+    category: "operacional",
+    tags: ["Perguntas", "Respostas", "Atendimento"],
+  },
+  {
+    id: "chat-ia",
+    title: "Chat IA",
+    description: "Converse livremente com a IA sobre concorrência, preços, demanda e estratégias de e-commerce.",
+    icon: MessageSquare,
+    route: "/ia-chat",
+    planGate: "IA Tributária",
+    category: "consulta",
+    tags: ["Chat", "Estratégia", "Livre"],
   },
   {
     id: "pesquisa",

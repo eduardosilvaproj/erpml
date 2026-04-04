@@ -157,6 +157,94 @@ Forneça:
         break;
       }
 
+      case "profitability": {
+        if (!productName || typeof productName !== "string" || productName.length > 500) {
+          return new Response(JSON.stringify({ error: "productName inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { cost: profCost, price: profPrice, mlFees, shippingCost: profShipping } = body;
+        systemPrompt = `Você é um analista financeiro especialista em e-commerce e Mercado Livre brasileiro.
+Analise a rentabilidade de produtos considerando todos os custos envolvidos.
+Sempre responda em português brasileiro com números precisos.`;
+        userPrompt = `Analise a rentabilidade do produto: "${productName}"
+${profCost ? `Custo de aquisição: R$ ${profCost}` : ""}
+${profPrice ? `Preço de venda: R$ ${profPrice}` : ""}
+${mlFees ? `Taxas do ML: ${mlFees}%` : "Considere taxas ML padrão (~16-19%)"}
+${profShipping ? `Custo de envio: R$ ${profShipping}` : ""}
+
+Forneça:
+1. **Margem líquida estimada** (em R$ e %)
+2. **Breakdown de custos** (produto, taxas ML, frete, impostos estimados)
+3. **Ponto de equilíbrio** (quantidade mínima para lucrar)
+4. **ROI estimado** por unidade
+5. **Comparação** com margens típicas da categoria
+6. **Sugestões** para melhorar a rentabilidade
+7. **Simulação** de cenários (otimista, realista, pessimista)`;
+        break;
+      }
+
+      case "title_optimizer": {
+        if (!productName || typeof productName !== "string" || productName.length > 500) {
+          return new Response(JSON.stringify({ error: "productName inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { currentTitle, targetCategory } = body;
+        systemPrompt = `Você é um especialista em SEO e otimização de títulos para o Mercado Livre.
+Conheça profundamente o algoritmo de busca do ML e as melhores práticas de títulos.
+Sempre responda em português brasileiro.`;
+        userPrompt = `Otimize o título para o produto: "${productName}"
+${currentTitle ? `Título atual: "${currentTitle}"` : ""}
+${targetCategory ? `Categoria alvo: ${targetCategory}` : ""}
+
+Forneça:
+1. **5 variações de título** otimizadas (até 60 caracteres cada)
+2. **Análise do título atual** (se fornecido) com pontos de melhoria
+3. **Palavras-chave primárias** que devem estar no título
+4. **Palavras-chave secundárias** para descrição
+5. **Ordem ideal** das palavras (marca, modelo, característica, benefício)
+6. **Erros comuns** a evitar
+7. **Score estimado** de cada variação (1-10)`;
+        break;
+      }
+
+      case "question_answer": {
+        const { question, productContext } = body;
+        if (!question || typeof question !== "string" || question.length > 2000) {
+          return new Response(JSON.stringify({ error: "question inválida" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um vendedor experiente do Mercado Livre.
+Responda perguntas de compradores de forma profissional, amigável e vendedora.
+Mantenha respostas curtas (máximo 3 frases), objetivas e que incentivem a compra.
+Nunca forneça informações falsas. Se não souber, diga que vai verificar.
+Sempre responda em português brasileiro.`;
+        userPrompt = `Pergunta do comprador: "${question}"
+${productContext ? `Contexto do produto: ${productContext}` : ""}
+
+Gere 3 opções de resposta:
+1. **Resposta direta** - objetiva e profissional
+2. **Resposta vendedora** - incentiva a compra
+3. **Resposta detalhada** - com mais informações técnicas`;
+        break;
+      }
+
+      case "smart_chat": {
+        useStreaming = true;
+        if (!message || typeof message !== "string" || message.length > 4000) {
+          return new Response(JSON.stringify({ error: "message inválida" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        break;
+      }
+
       case "chat": {
         useStreaming = true;
         if (!message || typeof message !== "string" || message.length > 4000) {

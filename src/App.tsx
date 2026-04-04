@@ -39,6 +39,10 @@ import AnaliseConcorrencia from "./pages/AnaliseConcorrencia";
 import PrevisaoDemanda from "./pages/PrevisaoDemanda";
 import PrecoDinamico from "./pages/PrecoDinamico";
 import GeradorDescricoes from "./pages/GeradorDescricoes";
+import AnaliseRentabilidade from "./pages/AnaliseRentabilidade";
+import OtimizadorTitulos from "./pages/OtimizadorTitulos";
+import RespostaPerguntas from "./pages/RespostaPerguntas";
+import ChatIA from "./pages/ChatIA";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +83,10 @@ const App = () => (
                       <Route path="/ia-demanda" element={<PlanProtectedRoute path="/ia-demanda"><PrevisaoDemanda /></PlanProtectedRoute>} />
                       <Route path="/ia-preco" element={<PlanProtectedRoute path="/ia-preco"><PrecoDinamico /></PlanProtectedRoute>} />
                       <Route path="/ia-descricoes" element={<GeradorDescricoes />} />
+                      <Route path="/ia-rentabilidade" element={<PlanProtectedRoute path="/ia-rentabilidade"><AnaliseRentabilidade /></PlanProtectedRoute>} />
+                      <Route path="/ia-titulos" element={<OtimizadorTitulos />} />
+                      <Route path="/ia-respostas" element={<RespostaPerguntas />} />
+                      <Route path="/ia-chat" element={<PlanProtectedRoute path="/ia-chat"><ChatIA /></PlanProtectedRoute>} />
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
