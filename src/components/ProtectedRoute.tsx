@@ -1,10 +1,27 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, loading, user } = useAuth();
+  const location = useLocation();
 
-  if (loading) {
+  const { data: hasCompany, isLoading: checkingCompany } = useQuery({
+    queryKey: ["has-company", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("company_members")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("is_active", true)
+        .limit(1);
+      return (data && data.length > 0);
+    },
+  });
+
+  if (loading || (session && checkingCompany)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -14,6 +31,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Allow onboarding and boas-vindas pages without a company
+  const allowedWithoutCompany = ["/onboarding", "/boas-vindas"];
+  if (!hasCompany && !allowedWithoutCompany.includes(location.pathname)) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;
