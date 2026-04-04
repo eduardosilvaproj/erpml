@@ -304,49 +304,84 @@ export default function IntegracaoML() {
           {/* Vendas Tab */}
           <TabsContent value="orders">
             <Card>
-              <CardHeader>
-                <CardTitle>Vendas Recentes</CardTitle>
-                <CardDescription>
-                  Últimas vendas no Mercado Livre
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Vendas do Mercado Livre</CardTitle>
+                  <CardDescription>
+                    Pedidos sincronizados e persistidos localmente
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const result = await syncOrders.mutateAsync();
+                      toast({
+                        title: "Pedidos sincronizados!",
+                        description: `${result.inserted} novos, ${result.updated} atualizados de ${result.total_in_ml} total no ML.`,
+                      });
+                    } catch (e: any) {
+                      toast({
+                        title: "Erro ao sincronizar pedidos",
+                        description: e.message,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={syncOrders.isPending || connection?.needs_reauth}
+                >
+                  <RefreshCw className={`h-3 w-3 mr-1 ${syncOrders.isPending ? "animate-spin" : ""}`} />
+                  Sincronizar Pedidos
+                </Button>
               </CardHeader>
               <CardContent>
-                {loadingOrders ? (
+                {loadingPersisted ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
-                ) : orders?.results?.length > 0 ? (
+                ) : persistedOrders?.length ? (
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Pedido</TableHead>
+                          <TableHead>Pedido ML</TableHead>
                           <TableHead>Data</TableHead>
                           <TableHead>Valor</TableHead>
+                          <TableHead>Frete</TableHead>
+                          <TableHead>Taxa ML</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Comprador</TableHead>
+                          <TableHead>Itens</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orders.results.map((order: any) => (
+                        {persistedOrders.map((order: any) => (
                           <TableRow key={order.id}>
+                            <TableCell className="font-mono text-xs">
+                              #{order.ml_order_id}
+                            </TableCell>
+                            <TableCell>
+                              {order.date_created
+                                ? new Date(order.date_created).toLocaleDateString("pt-BR")
+                                : "—"}
+                            </TableCell>
                             <TableCell className="font-medium">
-                              #{order.id}
+                              R$ {Number(order.total_amount).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              {new Date(
-                                order.date_created
-                              ).toLocaleDateString("pt-BR")}
+                              R$ {Number(order.shipping_cost || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
-                              R${" "}
-                              {Number(order.total_amount).toFixed(2)}
+                              R$ {Number(order.marketplace_fee || 0).toFixed(2)}
                             </TableCell>
                             <TableCell>
                               <Badge
                                 variant={
                                   order.status === "paid"
                                     ? "default"
+                                    : order.status === "cancelled"
+                                    ? "destructive"
                                     : "secondary"
                                 }
                               >
@@ -354,7 +389,10 @@ export default function IntegracaoML() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              {order.buyer?.nickname || "—"}
+                              {order.ml_buyer_nickname || "—"}
+                            </TableCell>
+                            <TableCell>
+                              {order.ml_order_items?.length ?? 0}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -362,9 +400,10 @@ export default function IntegracaoML() {
                     </Table>
                   </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhuma venda encontrada
-                  </p>
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>Nenhum pedido sincronizado ainda</p>
+                    <p className="text-xs mt-1">Clique em "Sincronizar Pedidos" para importar do ML</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
