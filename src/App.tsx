@@ -32,6 +32,7 @@ import MasterAdmin from "./pages/MasterAdmin";
 import Upgrade from "./pages/Upgrade";
 import Equipe from "./pages/Equipe";
 import BoasVindas from "./pages/BoasVindas";
+import Campanhas from "./pages/Campanhas";
 
 const queryClient = new QueryClient();
 
