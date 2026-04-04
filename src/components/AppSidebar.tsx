@@ -8,7 +8,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsAdmin } from "@/hooks/useAdminData";
+import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
