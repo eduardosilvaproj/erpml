@@ -22,6 +22,7 @@ const MovimentacaoFull = () => {
   const { toast } = useToast();
   const scanInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<TransferItem[]>([]);
+  const [usedKits, setUsedKits] = useState<string[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
