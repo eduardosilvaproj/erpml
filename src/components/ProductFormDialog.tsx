@@ -50,6 +50,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const updateProduct = useUpdateProduct();
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
