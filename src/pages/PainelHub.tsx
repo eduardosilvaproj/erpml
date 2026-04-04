@@ -40,6 +40,7 @@ const PainelHub = () => {
   const { data: invoiceStats } = useInvoiceStats();
   const { data: transfers } = useTransferOrders();
   const { data: mlConnection } = useMLConnection();
+  const { data: myCompany } = useMyCompany();
   const mlEnabled = !!mlConnection && !mlConnection.needs_reauth;
   const { data: mlItems } = useMLItems(mlEnabled);
   const { data: mlOrders } = useMLOrders(mlEnabled);
