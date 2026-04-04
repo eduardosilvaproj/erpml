@@ -119,6 +119,7 @@ const MovimentacaoFull = () => {
 
         if (!hasError) {
           setItems(updatedItems);
+          setUsedKits((prev) => prev.includes(matchedKit.name) ? prev : [...prev, matchedKit.name]);
           setLastScan({ success: true, message: `Kit "${matchedKit.name}" — ${addedNames.join(", ")}` });
           playBeep(800, 100);
         } else {
