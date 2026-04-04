@@ -418,6 +418,7 @@ const PainelHub = () => {
                     statusCounts,
                     shippingStatusCounts,
                     dailyData,
+                    companyName: myCompany?.name,
                   })
                 }
               >
