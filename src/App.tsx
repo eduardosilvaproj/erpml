@@ -88,6 +88,7 @@ const App = () => (
                       <Route path="/ia-titulos" element={<OtimizadorTitulos />} />
                       <Route path="/ia-respostas" element={<RespostaPerguntas />} />
                       <Route path="/ia-chat" element={<PlanProtectedRoute path="/ia-chat"><ChatIA /></PlanProtectedRoute>} />
+                      <Route path="/ia-mercado" element={<PlanProtectedRoute path="/ia-mercado"><AnaliseMercado /></PlanProtectedRoute>} />
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
