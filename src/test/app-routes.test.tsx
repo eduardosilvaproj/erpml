@@ -39,7 +39,7 @@ describe("Public Routes", () => {
 
   it("renders forgot password page", () => {
     renderWithProviders(<ForgotPassword />);
-    expect(screen.getByRole("heading", { name: "Recuperar senha" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Esqueci a senha" })).toBeInTheDocument();
     expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
   });
 
