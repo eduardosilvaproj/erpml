@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
   Lock, ArrowRight, Crown, Zap, TrendingUp, FileText,
-  ShieldCheck, Bot, Swords, DollarSign, PieChart, Type, HelpCircle, BarChart3
+  ShieldCheck, Bot, Swords, DollarSign, PieChart, Type, HelpCircle, BarChart3,
+  Barcode
 } from "lucide-react";
 
 type AIFeature = {
@@ -130,6 +131,16 @@ const AI_FEATURES: AIFeature[] = [
     planGate: null,
     category: "pesquisa",
     tags: ["Produtos", "Fornecedores", "Margem"],
+  },
+  {
+    id: "ean13",
+    title: "Gerador EAN-13",
+    description: "Gere códigos de barras EAN-13 válidos em massa com dígito verificador, copie ou exporte em CSV.",
+    icon: Barcode,
+    route: "/ia-ean13",
+    planGate: null,
+    category: "operacional",
+    tags: ["EAN-13", "Código de Barras", "Utilidade"],
   },
   {
     id: "campanhas",
