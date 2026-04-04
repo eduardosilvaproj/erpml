@@ -1,4 +1,4 @@
-import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3, Percent, Truck, ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3, Percent, Truck, ArrowDownRight, ArrowUpRight, Award, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
