@@ -126,3 +126,75 @@ export function useIsAdmin() {
     },
   });
 }
+
+interface PendingUser {
+  id: string;
+  email: string;
+  created_at: string;
+  email_confirmed_at: string | null;
+  full_name: string;
+}
+
+export function usePendingUsers() {
+  return useQuery({
+    queryKey: ["pending-users"],
+    queryFn: async (): Promise<PendingUser[]> => {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=list-pending-users`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao buscar usuários pendentes");
+      }
+
+      const result = await res.json();
+      return result.users;
+    },
+  });
+}
+
+export function useCreateCompanyForUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ targetUserId, companyName, planId }: { targetUserId: string; companyName: string; planId?: string }) => {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=create-company-for-user`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ targetUserId, companyName, planId }),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao criar empresa");
+      }
+
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pending-users"] });
+      queryClient.invalidateQueries({ queryKey: ["all-companies"] });
+    },
+  });
+}
