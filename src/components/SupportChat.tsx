@@ -282,6 +282,17 @@ export default function SupportChat() {
                 </div>
               ) : (
                 <div className="space-y-3">
+                  {/* Audio hint - shown once after first exchange */}
+                  {messages.length >= 2 && messages.length <= 4 && (
+                    <div className="flex justify-center">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                        <Mic className="h-3 w-3 text-primary/60" />
+                        <span className="text-[11px] text-muted-foreground">
+                          Se quiser, pode me mandar um áudio 🎤
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   {messages.map((msg, i) => (
                     <div
                       key={i}
