@@ -47,6 +47,7 @@ export default function MasterAdmin() {
   const [gestaoDialog, setGestaoDialog] = useState<"edit" | "plan" | "payment" | null>(null);
   const [companyForm, setCompanyForm] = useState<Partial<Company>>({});
   const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [courtesyFilter, setCourtesyFilter] = useState<"all" | "courtesy" | "paying">("all");
 
   // Financial calculations - exclude courtesy companies
   const financialData = useMemo(() => {
@@ -207,8 +208,19 @@ export default function MasterAdmin() {
         <TabsContent value="empresas">
           <Card>
             <CardHeader>
-              <CardTitle>Todas as Empresas</CardTitle>
-              <CardDescription>{totalCompanies} empresa(s) cadastrada(s)</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle>Todas as Empresas</CardTitle>
+                  <CardDescription>{totalCompanies} empresa(s) cadastrada(s){financialData?.courtesyCount ? ` · ${financialData.courtesyCount} cortesia(s)` : ""}</CardDescription>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant={courtesyFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("all")}>Todas</Button>
+                  <Button variant={courtesyFilter === "paying" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("paying")}>Pagantes</Button>
+                  <Button variant={courtesyFilter === "courtesy" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("courtesy")}>
+                    <Gift className="h-3 w-3 mr-1" /> Cortesia
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loadingCompanies ? (
@@ -229,7 +241,7 @@ export default function MasterAdmin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companies?.map((c) => (
+                      {companies?.filter((c) => courtesyFilter === "all" ? true : courtesyFilter === "courtesy" ? c.is_courtesy : !c.is_courtesy).map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
@@ -277,8 +289,19 @@ export default function MasterAdmin() {
         <TabsContent value="gestao">
           <Card>
             <CardHeader>
-              <CardTitle>Gestão de Empresas</CardTitle>
-              <CardDescription>Visualize administradores, edite cadastros, configure planos e formas de pagamento</CardDescription>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle>Gestão de Empresas</CardTitle>
+                  <CardDescription>Visualize administradores, edite cadastros, configure planos e formas de pagamento</CardDescription>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant={courtesyFilter === "all" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("all")}>Todas</Button>
+                  <Button variant={courtesyFilter === "paying" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("paying")}>Pagantes</Button>
+                  <Button variant={courtesyFilter === "courtesy" ? "default" : "outline"} size="sm" onClick={() => setCourtesyFilter("courtesy")}>
+                    <Gift className="h-3 w-3 mr-1" /> Cortesia
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {loadingCompanies ? (
@@ -298,7 +321,7 @@ export default function MasterAdmin() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {companies?.map((c) => (
+                      {companies?.filter((c) => courtesyFilter === "all" ? true : courtesyFilter === "courtesy" ? c.is_courtesy : !c.is_courtesy).map((c) => (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">
                             <div className="flex items-center gap-2">
