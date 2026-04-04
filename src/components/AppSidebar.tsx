@@ -110,6 +110,18 @@ export function AppSidebar() {
               })}
               {isAdmin && (
                 <>
+                  {!collapsed && (
+                    <li className="px-3 pt-4 pb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-px flex-1 bg-border" />
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive/80 bg-destructive/5 gap-1">
+                          <ShieldCheck className="h-3 w-3" />
+                          Admin
+                        </Badge>
+                        <div className="h-px flex-1 bg-border" />
+                      </div>
+                    </li>
+                  )}
                   {renderNavItem({ title: "Admin", url: "/admin", icon: ShieldCheck })}
                   {renderNavItem({ title: "Painel Master", url: "/master-admin", icon: Crown })}
                 </>
