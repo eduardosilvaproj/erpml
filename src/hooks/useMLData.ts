@@ -158,6 +158,47 @@ export function useSyncStock() {
   });
 }
 
+export function useSyncPrice() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      price,
+    }: {
+      itemId: string;
+      price: number;
+    }) => {
+      return callML("sync-price", { itemId, price });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-items"] });
+    },
+  });
+}
+
+export function useSyncAllToML() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return callML<{
+        synced: number;
+        errors: number;
+        total: number;
+      }>("sync-all-to-ml");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-items"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-connection"] });
+    },
+  });
+}
+
 export function useSyncMLCatalog() {
   const { callML } = useMLApi();
   const queryClient = useQueryClient();
