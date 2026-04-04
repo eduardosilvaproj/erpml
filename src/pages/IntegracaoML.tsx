@@ -51,6 +51,9 @@ export default function IntegracaoML() {
   const syncOrders = useSyncMLOrders();
   const { data: authUrlData } = useMLAuthUrl();
   const { data: persistedOrders, isLoading: loadingPersisted } = usePersistedMLOrders();
+  const { data: webhookStatus, isLoading: loadingWebhook } = useMLWebhookStatus(isConnected);
+  const registerWebhook = useRegisterMLWebhook();
+  const unregisterWebhook = useUnregisterMLWebhook();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
