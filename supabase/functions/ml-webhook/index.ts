@@ -248,6 +248,84 @@ async function handleItemNotification(
   }
 }
 
+async function handleQuestionNotification(
+  supabase: any,
+  connection: any,
+  accessToken: string,
+  resourcePath: string
+) {
+  // resourcePath is like /questions/123456
+  const questionId = resourcePath.split("/").pop();
+  if (!questionId) return;
+
+  const response = await fetch(`${ML_API_BASE}${resourcePath}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to fetch question ${resourcePath}:`, response.status);
+    return;
+  }
+
+  const q = await response.json();
+  const userId = connection.user_id;
+
+  // Get company_id
+  const { data: memberData } = await supabase
+    .from("company_members")
+    .select("company_id")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const companyId = memberData?.company_id ?? null;
+
+  const questionRow = {
+    user_id: userId,
+    company_id: companyId,
+    ml_question_id: Number(q.id),
+    ml_item_id: String(q.item_id ?? ""),
+    ml_from_id: q.from?.id ? Number(q.from.id) : null,
+    ml_from_nickname: q.from?.nickname ?? null,
+    question_text: q.text ?? "",
+    answer_text: q.answer?.text ?? null,
+    question_date: q.date_created ?? null,
+    answer_date: q.answer?.date_created ?? null,
+    status: q.status ?? (q.answer ? "answered" : "unanswered"),
+    ml_raw: q,
+    updated_at: new Date().toISOString(),
+  };
+
+  // Fetch item title
+  try {
+    const itemRes = await fetch(`${ML_API_BASE}/items/${q.item_id}?attributes=title`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (itemRes.ok) {
+      const item = await itemRes.json();
+      questionRow.ml_item_title = item.title ?? null;
+    }
+  } catch { /* ignore */ }
+
+  // Check if exists
+  const { data: existing } = await supabase
+    .from("ml_questions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("ml_question_id", Number(q.id))
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("ml_questions").update(questionRow).eq("id", existing.id);
+  } else {
+    await supabase.from("ml_questions").insert(questionRow);
+  }
+
+  console.log(`Question ${q.id} ${existing ? "updated" : "inserted"} via webhook`);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -330,8 +408,7 @@ Deno.serve(async (req) => {
       }
 
       case "questions": {
-        // Log for future CRM integration
-        console.log(`Question notification received: ${resource}`);
+        await handleQuestionNotification(supabase, connection, accessToken, resource);
         break;
       }
 

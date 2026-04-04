@@ -273,3 +273,55 @@ export function useUnregisterMLWebhook() {
     },
   });
 }
+
+export function useMLQuestions() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["ml-questions", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ml_questions")
+        .select("*")
+        .order("question_date", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSyncMLQuestions() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return callML<{
+        total_fetched: number;
+        inserted: number;
+        updated: number;
+        total_in_ml: number;
+      }>("sync-questions", { limit: 200 });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-connection"] });
+    },
+  });
+}
+
+export function useAnswerMLQuestion() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ questionId, text }: { questionId: number; text: string }) => {
+      return callML("answer-question", { questionId, text });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
+    },
+  });
+}

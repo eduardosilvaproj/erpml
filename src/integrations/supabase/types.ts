@@ -880,6 +880,71 @@ export type Database = {
           },
         ]
       }
+      ml_questions: {
+        Row: {
+          answer_date: string | null
+          answer_text: string | null
+          company_id: string | null
+          created_at: string
+          id: string
+          ml_from_id: number | null
+          ml_from_nickname: string | null
+          ml_item_id: string
+          ml_item_title: string | null
+          ml_question_id: number
+          ml_raw: Json | null
+          question_date: string | null
+          question_text: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answer_date?: string | null
+          answer_text?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          ml_from_id?: number | null
+          ml_from_nickname?: string | null
+          ml_item_id: string
+          ml_item_title?: string | null
+          ml_question_id: number
+          ml_raw?: Json | null
+          question_date?: string | null
+          question_text: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answer_date?: string | null
+          answer_text?: string | null
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          ml_from_id?: number | null
+          ml_from_nickname?: string | null
+          ml_item_id?: string
+          ml_item_title?: string | null
+          ml_question_id?: number
+          ml_raw?: Json | null
+          question_date?: string | null
+          question_text?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_questions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ml_sync_logs: {
         Row: {
           created_at: string
