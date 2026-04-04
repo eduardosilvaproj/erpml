@@ -59,6 +59,7 @@ import {
   useUnregisterMLWebhook,
   useDisconnectML,
 } from "@/hooks/useMLData";
+import { useMLSettings, useUpdateMLSettings } from "@/hooks/useMLSettings";
 import { useSearchParams } from "react-router-dom";
 
 export default function IntegracaoML() {
