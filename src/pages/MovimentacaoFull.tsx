@@ -416,6 +416,19 @@ const MovimentacaoFull = () => {
               </Table>
               </div>
 
+              {usedKits.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Boxes className="h-3.5 w-3.5" /> Kits nesta ordem:
+                  </span>
+                  {usedKits.map((name) => (
+                    <Badge key={name} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-2">
                 <p className="text-sm text-muted-foreground">
                   {items.length} produto(s) • {totalQty} unidade(s)
