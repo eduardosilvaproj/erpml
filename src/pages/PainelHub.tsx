@@ -42,6 +42,7 @@ const PainelHub = () => {
   const { data: mlOrders } = useMLOrders(mlEnabled);
   const { data: mlLinked } = useMLLinkedProducts();
   const { data: invoicesWithPayments } = useInvoicesWithPayments();
+  const { data: persistedOrders } = usePersistedMLOrders();
 
   const products = productData?.products || [];
   const totalPhysical = products.reduce((s, p) => s + p.stock_physical, 0);
