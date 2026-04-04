@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export function useUnansweredMLQuestionsCount() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [realtimeCount, setRealtimeCount] = useState<number | null>(null);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: dbCount } = useQuery({
     queryKey: ["ml-questions-unanswered-count", user?.id],
@@ -25,8 +25,15 @@ export function useUnansweredMLQuestionsCount() {
   useEffect(() => {
     if (!user) return;
 
+    // Remove any existing channel first
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
+    const channelName = `ml-questions-realtime-${Date.now()}`;
     const channel = supabase
-      .channel("ml-questions-realtime")
+      .channel(channelName)
       .on(
         "postgres_changes",
         {
@@ -35,17 +42,19 @@ export function useUnansweredMLQuestionsCount() {
           table: "ml_questions",
         },
         () => {
-          // Invalidate the count query to refetch
           queryClient.invalidateQueries({ queryKey: ["ml-questions-unanswered-count"] });
           queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
         }
       )
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
       supabase.removeChannel(channel);
+      channelRef.current = null;
     };
   }, [user, queryClient]);
 
-  return realtimeCount ?? dbCount ?? 0;
+  return dbCount ?? 0;
 }
