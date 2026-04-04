@@ -234,6 +234,60 @@ Gere 3 opções de resposta:
         break;
       }
 
+      case "market_analysis": {
+        const { niche, goal } = body;
+        if (!niche || typeof niche !== "string" || niche.length > 500) {
+          return new Response(JSON.stringify({ error: "niche inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um analista de mercado e pesquisador de fornecedores especializado em e-commerce brasileiro e Mercado Livre.
+Seu objetivo é identificar oportunidades de venda reais, produtos em alta, e sempre indicar fornecedores com dados de contato.
+IMPORTANTE: Para cada oportunidade ou produto sugerido, SEMPRE inclua pelo menos 2-3 fornecedores com:
+- Nome da empresa/fornecedor
+- Site ou marketplace onde encontrá-lo
+- Tipo de contato (WhatsApp, e-mail, telefone) quando disponível
+- Região/estado do fornecedor
+- Faixa de preço de custo estimada
+Priorize fornecedores nacionais (Brasil), mas inclua internacionais (AliExpress, 1688, Alibaba) quando relevante.
+Sempre responda em português brasileiro com dados práticos e acionáveis.`;
+        userPrompt = `Analise o mercado para o nicho/categoria: "${niche}"
+${goal ? `Objetivo específico: ${goal}` : ""}
+
+Forneça uma análise completa com:
+
+## 1. 📈 Tendências Atuais
+- Top 5 produtos mais vendidos neste nicho no Mercado Livre
+- Variação de demanda nos últimos meses (alta/estável/queda)
+- Sazonalidade relevante
+
+## 2. 💎 Oportunidades de Venda
+- 5 produtos com alto potencial e baixa concorrência
+- Para cada produto: faixa de preço de venda, margem estimada e nível de concorrência
+- Nichos adjacentes promissores
+
+## 3. 🏭 Fornecedores Recomendados
+Para CADA produto/oportunidade indicado, liste fornecedores com:
+- **Nome** da empresa ou loja
+- **Plataforma** (site próprio, Shopee, AliExpress, 1688, atacadista local)
+- **Contato** (WhatsApp, e-mail, telefone, link direto)
+- **Localização** (cidade/estado ou país)
+- **Preço de custo estimado** por unidade
+- **Quantidade mínima** de pedido (MOQ)
+
+## 4. 💰 Análise Financeira
+- Investimento inicial estimado para começar
+- ROI esperado no primeiro mês
+- Break-even point (ponto de equilíbrio)
+
+## 5. 🎯 Estratégia Recomendada
+- Melhor abordagem para entrar neste nicho
+- Diferenciação possível (kits, embalagem, brinde)
+- Erros comuns a evitar`;
+        break;
+      }
+
       case "smart_chat": {
         useStreaming = true;
         if (!message || typeof message !== "string" || message.length > 4000) {

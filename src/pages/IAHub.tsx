@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
   Lock, ArrowRight, Crown, Zap, TrendingUp, FileText,
-  ShieldCheck, Bot, Swords, DollarSign, PieChart, Type, HelpCircle
+  ShieldCheck, Bot, Swords, DollarSign, PieChart, Type, HelpCircle, BarChart3
 } from "lucide-react";
 
 type AIFeature = {
@@ -50,6 +50,16 @@ const AI_FEATURES: AIFeature[] = [
     planGate: "IA Tributária",
     category: "pesquisa",
     tags: ["Tendências", "Sazonalidade", "Estoque"],
+  },
+  {
+    id: "mercado",
+    title: "Análise de Mercado",
+    description: "Pesquise tendências, produtos mais vendidos e oportunidades com contato direto de fornecedores.",
+    icon: BarChart3,
+    route: "/ia-mercado",
+    planGate: "IA Tributária",
+    category: "pesquisa",
+    tags: ["Tendências", "Fornecedores", "Oportunidades"],
   },
   {
     id: "pricing",

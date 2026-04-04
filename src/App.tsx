@@ -43,6 +43,7 @@ import AnaliseRentabilidade from "./pages/AnaliseRentabilidade";
 import OtimizadorTitulos from "./pages/OtimizadorTitulos";
 import RespostaPerguntas from "./pages/RespostaPerguntas";
 import ChatIA from "./pages/ChatIA";
+import AnaliseMercado from "./pages/AnaliseMercado";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ const App = () => (
                       <Route path="/ia-titulos" element={<OtimizadorTitulos />} />
                       <Route path="/ia-respostas" element={<RespostaPerguntas />} />
                       <Route path="/ia-chat" element={<PlanProtectedRoute path="/ia-chat"><ChatIA /></PlanProtectedRoute>} />
+                      <Route path="/ia-mercado" element={<PlanProtectedRoute path="/ia-mercado"><AnaliseMercado /></PlanProtectedRoute>} />
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
