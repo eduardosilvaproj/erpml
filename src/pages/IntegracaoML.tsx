@@ -42,7 +42,9 @@ export default function IntegracaoML() {
   const { data: linked, isLoading: loadingLinked } = useMLLinkedProducts();
   const syncStock = useSyncStock();
   const syncCatalog = useSyncMLCatalog();
+  const syncOrders = useSyncMLOrders();
   const { data: authUrlData } = useMLAuthUrl();
+  const { data: persistedOrders, isLoading: loadingPersisted } = usePersistedMLOrders();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
