@@ -32,6 +32,7 @@ import MasterAdmin from "./pages/MasterAdmin";
 import Upgrade from "./pages/Upgrade";
 import Equipe from "./pages/Equipe";
 import BoasVindas from "./pages/BoasVindas";
+import Campanhas from "./pages/Campanhas";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const App = () => (
                       <Route path="/estoque" element={<Estoque />} />
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
                       <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
+                      <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
                       <Route path="/pdv" element={<PDV />} />
                       <Route path="/crm" element={<CRM />} />
                       <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />

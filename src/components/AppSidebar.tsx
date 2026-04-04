@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock
+  Building2, Crown, Lock, Megaphone
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -31,6 +31,7 @@ const menuItems = [
   { title: "Estoque", url: "/estoque", icon: Warehouse },
   { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft },
   { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag },
+  { title: "Campanhas", url: "/campanhas", icon: Megaphone },
   { title: "PDV", url: "/pdv", icon: Monitor },
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
