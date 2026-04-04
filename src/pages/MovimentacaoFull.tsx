@@ -207,6 +207,7 @@ const MovimentacaoFull = () => {
       updatedItems = result.items;
     }
     setItems(updatedItems);
+    setUsedKits((prev) => prev.includes(kit.name) ? prev : [...prev, kit.name]);
     toast({ title: `Kit "${kit.name}" adicionado à lista de envio!` });
   };
 
