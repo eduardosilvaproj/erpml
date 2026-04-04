@@ -468,6 +468,19 @@ const MovimentacaoFull = () => {
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-xs">{order.order_number}</TableCell>
                       <TableCell>{statusBadge(order.status)}</TableCell>
+                      <TableCell>
+                        {order.notes && order.notes.startsWith("Kits:") ? (
+                          <div className="flex flex-wrap gap-1">
+                            {order.notes.replace("Kits: ", "").split(", ").map((kit, i) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                                <Boxes className="h-3 w-3 mr-0.5" />{kit}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{order.total_items}</TableCell>
                       <TableCell className="text-center font-medium">{order.total_quantity}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
