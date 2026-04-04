@@ -190,7 +190,7 @@ const Kits = () => {
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-emerald-600">{kits?.filter((k) => k.active).length || 0}</div>
+            <div className="text-3xl font-bold text-primary">{kits?.filter((k) => k.active).length || 0}</div>
             <div className="text-sm text-muted-foreground">Kits Ativos</div>
           </CardContent>
         </Card>
