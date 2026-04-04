@@ -841,7 +841,12 @@ export default function IntegracaoML() {
                         Enviar estoque do ERP para o ML quando houver alteração
                       </p>
                     </div>
-                    <Switch id="auto-sync-stock" defaultChecked />
+                    <Switch
+                      id="auto-sync-stock"
+                      checked={mlSettings?.auto_sync_stock ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_stock: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
