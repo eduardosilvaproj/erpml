@@ -257,6 +257,11 @@ export default function MasterAdmin() {
           </Card>
         </TabsContent>
 
+        {/* Pendentes Tab */}
+        <TabsContent value="pendentes">
+          <PendingUsersTab />
+        </TabsContent>
+
         {/* Gestão Tab */}
         <TabsContent value="gestao">
           <Card>
