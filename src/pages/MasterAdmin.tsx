@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye } from "lucide-react";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus } from "lucide-react";
+import PendingUsersTab from "@/components/PendingUsersTab";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -192,8 +193,9 @@ export default function MasterAdmin() {
       </div>
 
       <Tabs defaultValue="empresas">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="empresas"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="pendentes"><UserPlus className="h-4 w-4 mr-1" /> Pendentes</TabsTrigger>
           <TabsTrigger value="gestao"><Settings className="h-4 w-4 mr-1" /> Gestão</TabsTrigger>
           <TabsTrigger value="financeiro"><DollarSign className="h-4 w-4 mr-1" /> Financeiro</TabsTrigger>
           <TabsTrigger value="planos"><CreditCard className="h-4 w-4 mr-1" /> Planos</TabsTrigger>
@@ -253,6 +255,11 @@ export default function MasterAdmin() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Pendentes Tab */}
+        <TabsContent value="pendentes">
+          <PendingUsersTab />
         </TabsContent>
 
         {/* Gestão Tab */}
