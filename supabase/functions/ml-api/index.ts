@@ -470,6 +470,34 @@ Deno.serve(async (req) => {
 
       const expiresAt = new Date(connection.token_expires_at).getTime();
       const tokenExpired = Number.isFinite(expiresAt) ? expiresAt <= Date.now() : true;
+
+      // Auto-refresh token if expired but refresh_token is available
+      if (tokenExpired && connection.refresh_token) {
+        const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
+        const clientSecret = Deno.env.get("MERCADO_LIVRE_CLIENT_SECRET");
+
+        if (appId && clientSecret) {
+          try {
+            await refreshToken(serviceClient, connection, appId, clientSecret);
+            // Re-fetch updated connection after refresh
+            const updated = await getConnection(serviceClient, userId);
+            if (updated) {
+              return jsonResponse({
+                seller_nickname: updated.seller_nickname,
+                ml_user_id: updated.ml_user_id,
+                token_expires_at: updated.token_expires_at,
+                is_active: updated.is_active,
+                has_refresh_token: Boolean(updated.refresh_token),
+                needs_reauth: false,
+              });
+            }
+          } catch (e) {
+            console.error("Auto-refresh failed during status check:", e);
+            // If refresh fails, fall through to needs_reauth
+          }
+        }
+      }
+
       const needsReauth = tokenExpired && !connection.refresh_token;
 
       return jsonResponse({
