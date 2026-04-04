@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import logoUrl from "@/assets/logo-erp.png";
 
 interface MLReportData {
   periodLabel: string;
@@ -16,28 +17,61 @@ interface MLReportData {
   statusCounts: Record<string, number>;
   shippingStatusCounts: Record<string, number>;
   dailyData: { label: string; receita: number; comissao: number; frete: number }[];
+  companyName?: string;
 }
 
 const fmt = (v: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-export function generateMLReportPDF(data: MLReportData) {
+async function loadImageAsDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function generateMLReportPDF(data: MLReportData) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
   let y = margin;
 
+  // Load logo
+  let logoDataUrl: string | null = null;
+  try {
+    logoDataUrl = await loadImageAsDataUrl(logoUrl);
+  } catch {
+    // proceed without logo
+  }
+
   // --- Header ---
   doc.setFillColor(30, 30, 45);
-  doc.rect(0, 0, pageW, 38, "F");
+  doc.rect(0, 0, pageW, 42, "F");
+
+  // Logo
+  if (logoDataUrl) {
+    doc.addImage(logoDataUrl, "PNG", margin, 4, 18, 18);
+  }
+
+  const textX = logoDataUrl ? margin + 22 : margin;
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont("helvetica", "bold");
-  doc.text("Relatório Mercado Livre", margin, 18);
-  doc.setFontSize(11);
+  doc.text("Relatório Mercado Livre", textX, 14);
+
+  if (data.companyName) {
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    doc.text(data.companyName, textX, 22);
+  }
+
+  doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text(`Período: Últimos ${data.periodLabel}`, margin, 28);
-  doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, margin, 34);
+  doc.text(`Período: Últimos ${data.periodLabel}`, textX, data.companyName ? 30 : 24);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, textX, data.companyName ? 36 : 30);
   y = 48;
 
   // --- KPIs ---
