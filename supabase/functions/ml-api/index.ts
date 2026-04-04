@@ -601,6 +601,150 @@ Deno.serve(async (req) => {
         return jsonResponse(result);
       }
 
+      case "sync-orders": {
+        const connection = await getConnection(serviceClient, userId);
+        if (!connection) {
+          throw new MlAuthError("not_connected", "Nenhuma conta do Mercado Livre está conectada.");
+        }
+
+        // Get user's company_id
+        const { data: memberData } = await serviceClient
+          .from("company_members")
+          .select("company_id")
+          .eq("user_id", userId)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        const companyId = memberData?.company_id ?? null;
+
+        // Fetch orders from ML API (last 90 days, up to 200)
+        const maxOrders = parsePositiveInt(params.limit, 200, 500);
+        let allOrders: any[] = [];
+        let orderOffset = 0;
+        let totalOrders = 0;
+
+        do {
+          const page = await fetchMlJson(
+            `${ML_API_BASE}/orders/search?seller=${connection.ml_user_id}&sort=date_desc&limit=50&offset=${orderOffset}`,
+            { headers: mlHeaders },
+            "Erro ao buscar pedidos"
+          );
+          totalOrders = Number(page?.paging?.total ?? 0);
+          const results = Array.isArray(page?.results) ? page.results : [];
+          allOrders.push(...results);
+          if (!results.length) break;
+          orderOffset += 50;
+        } while (orderOffset < Math.min(totalOrders, maxOrders));
+
+        // Get existing orders to detect updates vs inserts
+        const mlOrderIds = allOrders.map((o: any) => Number(o.id));
+        const { data: existingOrders } = await serviceClient
+          .from("ml_orders")
+          .select("id, ml_order_id")
+          .eq("user_id", userId)
+          .in("ml_order_id", mlOrderIds);
+
+        const existingMap = new Map<number, string>();
+        for (const eo of existingOrders ?? []) {
+          existingMap.set(Number(eo.ml_order_id), eo.id);
+        }
+
+        // Get products for SKU matching
+        const { data: products } = await serviceClient
+          .from("products")
+          .select("id, sku, id_ml");
+
+        const productsByIdMl = new Map<string, string>();
+        const productsBySku = new Map<string, string>();
+        for (const p of products ?? []) {
+          if (p.id_ml) productsByIdMl.set(normalizeText(p.id_ml), p.id);
+          if (p.sku) productsBySku.set(normalizeText(p.sku), p.id);
+        }
+
+        let inserted = 0;
+        let updated = 0;
+
+        for (const order of allOrders) {
+          const mlOid = Number(order.id);
+          const shippingCost = order.payments?.reduce((s: number, p: any) => s + (p.shipping_cost ?? 0), 0) ?? 0;
+          const marketplaceFee = order.payments?.reduce((s: number, p: any) => s + (p.marketplace_fee ?? 0), 0) ?? 0;
+
+          const orderRow = {
+            user_id: userId,
+            company_id: companyId,
+            ml_order_id: mlOid,
+            ml_buyer_nickname: order.buyer?.nickname ?? null,
+            ml_buyer_id: order.buyer?.id ? Number(order.buyer.id) : null,
+            status: order.status ?? "unknown",
+            total_amount: order.total_amount ?? 0,
+            currency_id: order.currency_id ?? "BRL",
+            shipping_cost: shippingCost,
+            marketplace_fee: marketplaceFee,
+            date_created: order.date_created ?? null,
+            date_closed: order.date_closed ?? null,
+            shipping_status: order.shipping?.status ?? null,
+            shipping_id: order.shipping?.id ? Number(order.shipping.id) : null,
+            pack_id: order.pack_id ? Number(order.pack_id) : null,
+            ml_raw: order,
+            updated_at: new Date().toISOString(),
+          };
+
+          let localOrderId = existingMap.get(mlOid);
+
+          if (localOrderId) {
+            await serviceClient.from("ml_orders").update(orderRow).eq("id", localOrderId);
+            updated++;
+          } else {
+            const { data: ins } = await serviceClient
+              .from("ml_orders")
+              .insert(orderRow)
+              .select("id")
+              .single();
+            localOrderId = ins?.id;
+            inserted++;
+          }
+
+          if (!localOrderId) continue;
+
+          // Upsert order items
+          const orderItems = Array.isArray(order.order_items) ? order.order_items : [];
+          if (orderItems.length > 0) {
+            // Delete existing items for this order and re-insert
+            await serviceClient.from("ml_order_items").delete().eq("ml_order_id", localOrderId);
+
+            const itemRows = orderItems.map((oi: any) => {
+              const itemId = String(oi.item?.id ?? "");
+              const sellerSku = normalizeText(oi.item?.seller_sku || oi.item?.seller_custom_field);
+              const productId = productsByIdMl.get(normalizeText(itemId))
+                || (sellerSku ? productsBySku.get(sellerSku) : undefined)
+                || null;
+
+              return {
+                ml_order_id: localOrderId,
+                ml_item_id: itemId,
+                ml_item_title: oi.item?.title ?? null,
+                quantity: oi.quantity ?? 1,
+                unit_price: oi.unit_price ?? 0,
+                total_price: (oi.unit_price ?? 0) * (oi.quantity ?? 1),
+                sku: sellerSku || null,
+                product_id: productId,
+              };
+            });
+
+            await serviceClient.from("ml_order_items").insert(itemRows);
+          }
+        }
+
+        return jsonResponse({
+          total_fetched: allOrders.length,
+          inserted,
+          updated,
+          total_in_ml: totalOrders,
+        });
+      }
+
       default:
         return jsonResponse({ error: `Ação desconhecida: ${action}` }, 400);
     }
