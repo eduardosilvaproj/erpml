@@ -16,6 +16,7 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/financeiro": ["Financeiro avançado"],
   "/ia-rentabilidade": ["IA Tributária"],
   "/ia-chat": ["IA Tributária"],
+  "/ia-mercado": ["IA Tributária"],
 };
 
 export function usePlanFeatures() {
