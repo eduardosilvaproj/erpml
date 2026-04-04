@@ -184,7 +184,27 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 <FormField control={form.control} name="barcode" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Código de Barras</FormLabel>
-                    <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
+                    <div className="flex gap-2">
+                      <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Gerar EAN-13"
+                        onClick={() => {
+                          const ean = generateEAN13();
+                          form.setValue("barcode", ean);
+                          toast({ title: "EAN-13 gerado!", description: ean });
+                        }}
+                      >
+                        <Wand2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {field.value && field.value.length === 13 && (
+                      <p className={`text-xs ${isValidEAN13(field.value) ? "text-green-600" : "text-destructive"}`}>
+                        {isValidEAN13(field.value) ? "✓ EAN-13 válido" : "✗ EAN-13 inválido"}
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )} />
