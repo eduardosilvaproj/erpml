@@ -33,6 +33,7 @@ import Upgrade from "./pages/Upgrade";
 import Equipe from "./pages/Equipe";
 import BoasVindas from "./pages/BoasVindas";
 import Campanhas from "./pages/Campanhas";
+import PesquisaInteligente from "./pages/PesquisaInteligente";
 
 const queryClient = new QueryClient();
 
