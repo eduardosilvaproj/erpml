@@ -38,6 +38,7 @@ const menuItems = [
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "IA Tributária", url: "/ia-consulta", icon: Sparkles },
+  { title: "Pesquisa Intel.", url: "/pesquisa", icon: Search },
 ];
 
 export function AppSidebar() {
