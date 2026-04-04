@@ -31,6 +31,7 @@ const menuItems = [
   { title: "Estoque", url: "/estoque", icon: Warehouse },
   { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft },
   { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag },
+  { title: "Campanhas", url: "/campanhas", icon: Megaphone },
   { title: "PDV", url: "/pdv", icon: Monitor },
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
