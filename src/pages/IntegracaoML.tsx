@@ -15,6 +15,11 @@ import {
   Trash2,
   Upload,
   Unplug,
+  Settings,
+  Clock,
+  User,
+  CalendarDays,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -32,6 +37,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -304,6 +312,10 @@ export default function IntegracaoML() {
             <TabsTrigger value="webhooks">
               <Bell className="h-4 w-4 mr-1" />
               Webhooks
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" />
+              Configurações
             </TabsTrigger>
           </TabsList>
 
@@ -754,6 +766,198 @@ export default function IntegracaoML() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+          {/* Configurações Tab */}
+          <TabsContent value="settings">
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Informações da Conta */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Informações da Conta
+                  </CardTitle>
+                  <CardDescription>
+                    Detalhes da conta do Mercado Livre conectada
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Vendedor</span>
+                    <span className="text-sm font-medium">{connection?.seller_nickname || "—"}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">ID do Usuário ML</span>
+                    <span className="text-sm font-mono">{connection?.ml_user_id || "—"}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Status da Conexão</span>
+                    <Badge variant={connection?.is_active ? "default" : "destructive"}>
+                      {connection?.is_active ? "Ativa" : "Inativa"}
+                    </Badge>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Token Expira em</span>
+                    <span className="text-sm flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                      {connection?.token_expires_at
+                        ? new Date(connection.token_expires_at).toLocaleString("pt-BR")
+                        : "—"}
+                    </span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Refresh Token</span>
+                    <Badge variant={connection?.has_refresh_token ? "default" : "secondary"}>
+                      <Shield className="h-3 w-3 mr-1" />
+                      {connection?.has_refresh_token ? "Disponível" : "Ausente"}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Preferências de Sincronização */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5" />
+                    Preferências de Sincronização
+                  </CardTitle>
+                  <CardDescription>
+                    Configure como os dados são sincronizados entre ERP e Mercado Livre
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-sync-stock">Sincronizar Estoque Automaticamente</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Enviar estoque do ERP para o ML quando houver alteração
+                      </p>
+                    </div>
+                    <Switch id="auto-sync-stock" defaultChecked />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-sync-price">Sincronizar Preços Automaticamente</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Atualizar preços no ML quando alterados no ERP
+                      </p>
+                    </div>
+                    <Switch id="auto-sync-price" defaultChecked />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-sync-orders">Importar Pedidos Automaticamente</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Sincronizar novos pedidos via webhook em tempo real
+                      </p>
+                    </div>
+                    <Switch id="auto-sync-orders" defaultChecked />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-answer">Sugestão Automática de Respostas</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Gerar sugestões de resposta com IA para perguntas de compradores
+                      </p>
+                    </div>
+                    <Switch id="auto-answer" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Estatísticas de Sincronização */}
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Resumo da Integração
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{linked?.length ?? 0}</p>
+                      <p className="text-xs text-muted-foreground">Produtos Vinculados</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{items?.total ?? 0}</p>
+                      <p className="text-xs text-muted-foreground">Anúncios no ML</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{persistedOrders?.length ?? 0}</p>
+                      <p className="text-xs text-muted-foreground">Pedidos Sincronizados</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">
+                        {Array.isArray(webhookStatus) ? webhookStatus.length : 0}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Webhooks Ativos</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Zona de Perigo */}
+              <Card className="md:col-span-2 border-destructive/30">
+                <CardHeader>
+                  <CardTitle className="text-destructive">Zona de Perigo</CardTitle>
+                  <CardDescription>
+                    Ações irreversíveis que afetam sua integração com o Mercado Livre
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-sm">Desconectar Conta</p>
+                      <p className="text-xs text-muted-foreground">
+                        Remove a conexão e todos os vínculos de produtos. Pedidos sincronizados serão mantidos.
+                      </p>
+                    </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          disabled={disconnectML.isPending}
+                        >
+                          {disconnectML.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Unplug className="h-4 w-4 mr-2" />
+                          )}
+                          Desconectar
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Desconectar Mercado Livre?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Isso removerá a conexão com a conta <strong>{connection?.seller_nickname}</strong> e todos os vínculos de produtos. Pedidos já sincronizados serão mantidos.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDisconnect}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Desconectar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       )}
