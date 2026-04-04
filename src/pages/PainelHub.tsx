@@ -1,4 +1,4 @@
-import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3 } from "lucide-react";
+import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3, Percent, Truck, ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,7 +6,7 @@ import { useProducts } from "@/hooks/useProductData";
 import { useSalesStats, useSales } from "@/hooks/useSalesData";
 import { useInvoiceStats } from "@/hooks/useInvoiceData";
 import { useTransferOrders } from "@/hooks/useTransferData";
-import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders } from "@/hooks/useMLData";
+import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders, usePersistedMLOrders } from "@/hooks/useMLData";
 import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
 import { useMemo, useState } from "react";
