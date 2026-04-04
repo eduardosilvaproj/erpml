@@ -213,8 +213,10 @@ const MovimentacaoFull = () => {
 
   const handleCreateOrder = async () => {
     if (items.length === 0) return;
-    await createOrder.mutateAsync(items);
+    const notes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : undefined;
+    await createOrder.mutateAsync({ items, notes });
     setItems([]);
+    setUsedKits([]);
     setLastScan(null);
   };
 
