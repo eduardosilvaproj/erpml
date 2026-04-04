@@ -33,6 +33,7 @@ import Upgrade from "./pages/Upgrade";
 import Equipe from "./pages/Equipe";
 import BoasVindas from "./pages/BoasVindas";
 import Campanhas from "./pages/Campanhas";
+import PesquisaInteligente from "./pages/PesquisaInteligente";
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
                       <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />
                       <Route path="/financeiro" element={<PlanProtectedRoute path="/financeiro"><Financeiro /></PlanProtectedRoute>} />
                       <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
+                      <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/equipe" element={<Equipe />} />
