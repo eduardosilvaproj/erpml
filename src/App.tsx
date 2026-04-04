@@ -44,6 +44,7 @@ import OtimizadorTitulos from "./pages/OtimizadorTitulos";
 import RespostaPerguntas from "./pages/RespostaPerguntas";
 import ChatIA from "./pages/ChatIA";
 import AnaliseMercado from "./pages/AnaliseMercado";
+import GeradorEAN13 from "./pages/GeradorEAN13";
 
 const queryClient = new QueryClient();
 
