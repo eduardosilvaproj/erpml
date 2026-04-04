@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowRight, ScanBarcode, Package, Truck, Loader2, Plus, Minus,
-  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle
+  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   useTransferOrders, useCreateTransferOrder, useUpdateTransferStatus,
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
+import { useKits, type Kit } from "@/hooks/useKitData";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const MovimentacaoFull = () => {
@@ -25,6 +26,7 @@ const MovimentacaoFull = () => {
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
   const { data: orders } = useTransferOrders();
+  const { data: kits } = useKits();
   const createOrder = useCreateTransferOrder();
   const updateStatus = useUpdateTransferStatus();
 
@@ -33,19 +35,109 @@ const MovimentacaoFull = () => {
     scanInputRef.current?.focus();
   }, []);
 
+  const addOrIncrementItem = (
+    currentItems: TransferItem[],
+    product: { id: string; name: string; sku: string; barcode: string | null; stock_physical: number },
+    qty: number
+  ): { items: TransferItem[]; added: boolean; message: string } => {
+    const existing = currentItems.find((i) => i.productId === product.id);
+    if (existing) {
+      const maxQty = product.stock_physical;
+      const newQty = Math.min(existing.quantity + qty, maxQty);
+      if (existing.quantity >= maxQty) {
+        return { items: currentItems, added: false, message: `Estoque máximo atingido para "${product.name}" (${maxQty}).` };
+      }
+      return {
+        items: currentItems.map((i) => i.productId === product.id ? { ...i, quantity: newQty } : i),
+        added: true,
+        message: `${product.name} — ${newQty} un.`,
+      };
+    }
+    return {
+      items: [...currentItems, {
+        productId: product.id,
+        productName: product.name,
+        productSku: product.sku,
+        barcode: product.barcode,
+        quantity: qty,
+        stockPhysical: product.stock_physical,
+      }],
+      added: true,
+      message: `${product.name} adicionado — ${qty} un.`,
+    };
+  };
+
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
+    const trimmed = code.trim();
 
     try {
-      // Find product by barcode or SKU
+      // 1. Check if code matches a Kit SKU
+      const matchedKit = kits?.find((k) => k.sku.toLowerCase() === trimmed.toLowerCase() && k.active);
+      if (matchedKit && matchedKit.kit_items && matchedKit.kit_items.length > 0) {
+        // Fetch fresh stock for all kit products
+        const productIds = matchedKit.kit_items.map((ki) => ki.product_id);
+        const { data: kitProducts } = await supabase
+          .from("products")
+          .select("id, name, sku, barcode, stock_physical")
+          .in("id", productIds);
+
+        if (!kitProducts || kitProducts.length === 0) {
+          setLastScan({ success: false, message: `Produtos do kit "${matchedKit.name}" não encontrados.` });
+          playBeep(200, 400);
+          setScanBuffer("");
+          setTimeout(() => scanInputRef.current?.focus(), 50);
+          return;
+        }
+
+        let updatedItems = [...items];
+        const addedNames: string[] = [];
+        let hasError = false;
+
+        for (const kitItem of matchedKit.kit_items) {
+          const product = kitProducts.find((p) => p.id === kitItem.product_id);
+          if (!product) {
+            hasError = true;
+            setLastScan({ success: false, message: `Produto do kit não encontrado.` });
+            break;
+          }
+          if (product.stock_physical < kitItem.quantity) {
+            hasError = true;
+            setLastScan({ success: false, message: `"${product.name}" sem estoque suficiente (necessário: ${kitItem.quantity}, disponível: ${product.stock_physical}).` });
+            break;
+          }
+          const result = addOrIncrementItem(updatedItems, product, kitItem.quantity);
+          if (!result.added) {
+            hasError = true;
+            setLastScan({ success: false, message: result.message });
+            break;
+          }
+          updatedItems = result.items;
+          addedNames.push(`${product.name} (${kitItem.quantity}x)`);
+        }
+
+        if (!hasError) {
+          setItems(updatedItems);
+          setLastScan({ success: true, message: `Kit "${matchedKit.name}" — ${addedNames.join(", ")}` });
+          playBeep(800, 100);
+        } else {
+          playBeep(200, 400);
+        }
+
+        setScanBuffer("");
+        setTimeout(() => scanInputRef.current?.focus(), 50);
+        return;
+      }
+
+      // 2. Regular product scan
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, barcode, stock_physical")
-        .or(`barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
+        .or(`barcode.eq.${trimmed},sku.eq.${trimmed}`);
 
       const product = products?.[0];
       if (!product) {
-        setLastScan({ success: false, message: `Produto "${code}" não encontrado.` });
+        setLastScan({ success: false, message: `Produto "${trimmed}" não encontrado.` });
         playBeep(200, 400);
         setScanBuffer("");
         setTimeout(() => scanInputRef.current?.focus(), 50);
@@ -60,39 +152,17 @@ const MovimentacaoFull = () => {
         return;
       }
 
-      // Check if already in list
-      const existing = items.find((i) => i.productId === product.id);
-      if (existing) {
-        const maxQty = product.stock_physical;
-        if (existing.quantity >= maxQty) {
-          setLastScan({ success: false, message: `Estoque máximo atingido para "${product.name}" (${maxQty}).` });
-          playBeep(300, 300);
-        } else {
-          setItems(items.map((i) =>
-            i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
-          ));
-          setLastScan({ success: true, message: `${product.name} — ${existing.quantity + 1} un.` });
-          playBeep(800, 100);
-        }
-      } else {
-        setItems([...items, {
-          productId: product.id,
-          productName: product.name,
-          productSku: product.sku,
-          barcode: product.barcode,
-          quantity: 1,
-          stockPhysical: product.stock_physical,
-        }]);
-        setLastScan({ success: true, message: `${product.name} adicionado — 1 un.` });
-        playBeep(800, 100);
-      }
+      const result = addOrIncrementItem(items, product, 1);
+      setItems(result.items);
+      setLastScan({ success: result.added, message: result.message });
+      playBeep(result.added ? 800 : 300, result.added ? 100 : 300);
     } catch (err: any) {
       setLastScan({ success: false, message: err.message });
     }
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [items]);
+  }, [items, kits]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -111,6 +181,31 @@ const MovimentacaoFull = () => {
 
   const removeItem = (productId: string) => {
     setItems(items.filter((i) => i.productId !== productId));
+  };
+
+  const handleAddKit = async (kit: Kit) => {
+    if (!kit.kit_items || kit.kit_items.length === 0) {
+      toast({ title: "Kit sem itens cadastrados.", variant: "destructive" });
+      return;
+    }
+
+    const productIds = kit.kit_items.map((ki) => ki.product_id);
+    const { data: kitProducts } = await supabase
+      .from("products")
+      .select("id, name, sku, barcode, stock_physical")
+      .in("id", productIds);
+
+    if (!kitProducts) return;
+
+    let updatedItems = [...items];
+    for (const kitItem of kit.kit_items) {
+      const product = kitProducts.find((p) => p.id === kitItem.product_id);
+      if (!product) continue;
+      const result = addOrIncrementItem(updatedItems, product, kitItem.quantity);
+      updatedItems = result.items;
+    }
+    setItems(updatedItems);
+    toast({ title: `Kit "${kit.name}" adicionado à lista de envio!` });
   };
 
   const handleCreateOrder = async () => {
@@ -135,6 +230,7 @@ const MovimentacaoFull = () => {
   };
 
   const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+  const activeKits = kits?.filter((k) => k.active && k.kit_items && k.kit_items.length > 0) || [];
 
   const statusFlow: Record<string, { next: string; label: string }> = {
     separando: { next: "enviado", label: "Marcar Enviado" },
@@ -221,7 +317,7 @@ const MovimentacaoFull = () => {
                 value={scanBuffer}
                 onChange={(e) => setScanBuffer(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Bipe o código de barras do produto..."
+                placeholder="Bipe código de barras, SKU do produto ou SKU do kit..."
                 className="pl-11 text-lg h-14 font-mono"
                 autoFocus
                 autoComplete="off"
@@ -232,6 +328,32 @@ const MovimentacaoFull = () => {
             </Button>
             <BarcodeScanner onScan={(code) => handleScan(code)} />
           </div>
+
+          {/* Quick kit buttons */}
+          {activeKits.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Boxes className="h-3.5 w-3.5" /> Adicionar Kit Rápido:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {activeKits.map((kit) => (
+                  <Button
+                    key={kit.id}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => handleAddKit(kit)}
+                  >
+                    <Boxes className="h-3 w-3 mr-1" />
+                    {kit.name}
+                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 h-4">
+                      {kit.kit_items?.length || 0} itens
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Last scan feedback */}
           {lastScan && (
@@ -307,7 +429,7 @@ const MovimentacaoFull = () => {
 
           {items.length === 0 && !lastScan && (
             <p className="text-center text-sm text-muted-foreground py-4">
-              Bipe produtos para adicionar à ordem de envio
+              Bipe produtos ou SKU de kits para adicionar à ordem de envio
             </p>
           )}
         </CardContent>
