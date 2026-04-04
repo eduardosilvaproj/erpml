@@ -192,6 +192,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                         type="button"
                         variant="outline"
                         size="icon"
+                        title="Escanear via câmera"
+                        onClick={() => setShowScanner((v) => !v)}
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
                         title="Gerar EAN-13"
                         onClick={() => {
                           const ean = generateEAN13();
@@ -211,6 +220,19 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   </FormItem>
                 )} />
               </div>
+
+              {showScanner && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Escanear código de barras</p>
+                  <BarcodeScanner
+                    onScan={(code) => {
+                      form.setValue("barcode", code);
+                      setShowScanner(false);
+                      toast({ title: "Código escaneado!", description: code });
+                    }}
+                  />
+                </div>
+              )}
 
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
