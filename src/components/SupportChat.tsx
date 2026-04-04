@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,12 +11,21 @@ import {
   User,
   Loader2,
   Lightbulb,
+  Mic,
+  Square,
+  Play,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { motion, AnimatePresence } from "framer-motion";
+import { useVoiceRecorder } from "@/hooks/useVoiceRecorder";
 
-type Message = { role: "user" | "assistant"; content: string };
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+  audioUrl?: string;
+};
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/support-ai`;
 
@@ -35,6 +44,20 @@ export default function SupportChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  const {
+    isRecording,
+    audioUrl,
+    transcript,
+    startRecording,
+    stopRecording,
+    clearRecording,
+  } = useVoiceRecorder();
+
+  // Sync transcript into input
+  useEffect(() => {
+    if (transcript) setInput(transcript);
+  }, [transcript]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -51,19 +74,33 @@ export default function SupportChat() {
     const messageText = text || input.trim();
     if (!messageText || isLoading) return;
 
-    const userMsg: Message = { role: "user", content: messageText };
+    const capturedAudioUrl = audioUrl || undefined;
+    const userMsg: Message = {
+      role: "user",
+      content: messageText,
+      audioUrl: capturedAudioUrl,
+    };
+
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
+    clearRecording();
     setIsLoading(true);
 
     let assistantSoFar = "";
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error("Você precisa estar logado para usar o suporte.");
       }
+
+      const apiMessages = newMessages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -71,7 +108,7 @@ export default function SupportChat() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ messages: newMessages }),
+        body: JSON.stringify({ messages: apiMessages }),
       });
 
       if (!resp.ok) {
@@ -146,6 +183,18 @@ export default function SupportChat() {
     }
   };
 
+  const handleMicClick = async () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      try {
+        await startRecording();
+      } catch {
+        toast.error("Não foi possível acessar o microfone.");
+      }
+    }
+  };
+
   return (
     <>
       {/* Floating button */}
@@ -189,7 +238,7 @@ export default function SupportChat() {
                     Ana — Suporte
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Tire suas dúvidas do sistema
+                    Texto ou voz • Tire suas dúvidas
                   </p>
                 </div>
               </div>
@@ -215,8 +264,8 @@ export default function SupportChat() {
                       Olá! Eu sou a Ana 👋
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 max-w-[260px]">
-                      Posso te ajudar com qualquer dúvida sobre o sistema.
-                      Pergunte o que quiser!
+                      Posso te ajudar com qualquer dúvida. Digite ou use o
+                      microfone 🎤
                     </p>
                   </div>
                   <div className="flex flex-col gap-1.5 w-full mt-1">
@@ -259,6 +308,13 @@ export default function SupportChat() {
                         ) : (
                           <p className="whitespace-pre-wrap">{msg.content}</p>
                         )}
+                        {msg.audioUrl && (
+                          <audio
+                            src={msg.audioUrl}
+                            controls
+                            className="mt-2 w-full h-8 [&::-webkit-media-controls-panel]:bg-primary/20 rounded-lg"
+                          />
+                        )}
                       </div>
                       {msg.role === "user" && (
                         <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center shrink-0 mt-0.5">
@@ -286,11 +342,67 @@ export default function SupportChat() {
               )}
             </ScrollArea>
 
+            {/* Recording preview */}
+            <AnimatePresence>
+              {(isRecording || audioUrl) && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t px-3 py-2 bg-muted/30 overflow-hidden"
+                >
+                  {isRecording ? (
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive/75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-destructive" />
+                      </span>
+                      <span className="text-xs text-destructive font-medium">
+                        Gravando...
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-auto truncate max-w-[180px]">
+                        {transcript || "Fale algo..."}
+                      </span>
+                    </div>
+                  ) : audioUrl ? (
+                    <div className="flex items-center gap-2">
+                      <audio
+                        src={audioUrl}
+                        controls
+                        className="h-7 flex-1 [&::-webkit-media-controls-panel]:bg-transparent"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                        onClick={clearRecording}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : null}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Input */}
-            <div className="border-t px-3 py-2.5 flex gap-2">
+            <div className="border-t px-3 py-2.5 flex gap-2 items-end">
+              <Button
+                variant={isRecording ? "destructive" : "outline"}
+                size="icon"
+                className="shrink-0 h-[38px] w-[38px] rounded-xl transition-colors"
+                onClick={handleMicClick}
+                disabled={isLoading}
+              >
+                {isRecording ? (
+                  <Square className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
+              </Button>
               <Textarea
                 ref={inputRef}
-                placeholder="Digite sua dúvida..."
+                placeholder="Digite ou grave sua dúvida..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
