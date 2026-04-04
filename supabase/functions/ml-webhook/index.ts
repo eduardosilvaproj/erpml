@@ -326,6 +326,21 @@ async function handleQuestionNotification(
   console.log(`Question ${q.id} ${existing ? "updated" : "inserted"} via webhook`);
 }
 
+async function getUserSettings(supabase: any, userId: string) {
+  const { data } = await supabase
+    .from("ml_settings")
+    .select("auto_sync_stock, auto_sync_price, auto_sync_orders, auto_suggest_answers")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  return {
+    auto_sync_stock: data?.auto_sync_stock ?? true,
+    auto_sync_price: data?.auto_sync_price ?? true,
+    auto_sync_orders: data?.auto_sync_orders ?? true,
+    auto_suggest_answers: data?.auto_suggest_answers ?? false,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -377,6 +392,19 @@ Deno.serve(async (req) => {
     if (connError || !connection) {
       console.warn(`No active connection for ML user ${mlUserId}`);
       return jsonResponse({ status: "no_connection" });
+    }
+
+    // Check user preferences before processing
+    const settings = await getUserSettings(supabase, connection.user_id);
+
+    // Skip processing if user has disabled this type
+    if (
+      ((topic === "orders_v2" || topic === "orders") && !settings.auto_sync_orders) ||
+      (topic === "items" && !settings.auto_sync_stock) ||
+      (topic === "questions" && !settings.auto_sync_orders)
+    ) {
+      console.log(`Webhook ${topic} skipped for user ${connection.user_id} — disabled in settings`);
+      return jsonResponse({ status: "skipped_by_settings" });
     }
 
     // Refresh token if needed

@@ -658,6 +658,20 @@ Deno.serve(async (req) => {
       }
 
       case "sync-all-to-ml": {
+        // Check user sync preferences
+        const { data: userSettings } = await serviceClient
+          .from("ml_settings")
+          .select("auto_sync_stock, auto_sync_price")
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        const shouldSyncStock = userSettings?.auto_sync_stock ?? true;
+        const shouldSyncPrice = userSettings?.auto_sync_price ?? true;
+
+        if (!shouldSyncStock && !shouldSyncPrice) {
+          return jsonResponse({ synced: 0, errors: 0, total: 0, message: "Sincronização de estoque e preço desativada nas configurações." });
+        }
+
         // Bidirectional bulk sync: push ERP price + stock to ALL linked ML items
         const { data: linkedProducts, error: lpError } = await serviceClient
           .from("ml_linked_products")
@@ -684,29 +698,33 @@ Deno.serve(async (req) => {
           const stockToSync = product.stock_full ?? product.stock_physical ?? 0;
           const priceToSync = product.price ?? 0;
 
+          // Build update payload based on settings
+          const updatePayload: Record<string, any> = {};
+          if (shouldSyncStock) updatePayload.available_quantity = stockToSync;
+          if (shouldSyncPrice) updatePayload.price = priceToSync;
+
           try {
             await fetchMlJson(
               `${ML_API_BASE}/items/${encodeURIComponent(lp.ml_item_id)}`,
               {
                 method: "PUT",
                 headers: mlHeaders,
-                body: JSON.stringify({
-                  price: priceToSync,
-                  available_quantity: stockToSync,
-                }),
+                body: JSON.stringify(updatePayload),
               },
               `Erro ao sincronizar ${lp.ml_item_id}`
             );
 
+            const linkUpdate: Record<string, any> = {
+              last_synced_at: new Date().toISOString(),
+              sync_status: "synced",
+              updated_at: new Date().toISOString(),
+            };
+            if (shouldSyncStock) linkUpdate.ml_available_quantity = stockToSync;
+            if (shouldSyncPrice) linkUpdate.ml_price = priceToSync;
+
             await serviceClient
               .from("ml_linked_products")
-              .update({
-                last_synced_at: new Date().toISOString(),
-                sync_status: "synced",
-                ml_available_quantity: stockToSync,
-                ml_price: priceToSync,
-                updated_at: new Date().toISOString(),
-              })
+              .update(linkUpdate)
               .eq("id", lp.id);
 
             synced++;
