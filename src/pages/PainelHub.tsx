@@ -384,7 +384,7 @@ const PainelHub = () => {
 
         const TrendIcon = ({ value }: { value: number }) => 
           value >= 0 
-            ? <span className="flex items-center text-xs text-green-600"><ArrowUpRight className="h-3 w-3" />{value}%</span>
+            ? <span className="flex items-center text-xs text-primary"><ArrowUpRight className="h-3 w-3" />{value}%</span>
             : <span className="flex items-center text-xs text-destructive"><ArrowDownRight className="h-3 w-3" />{Math.abs(value)}%</span>;
 
         return (
