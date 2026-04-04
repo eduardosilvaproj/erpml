@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useSuppliers, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Camera } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
