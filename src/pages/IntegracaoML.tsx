@@ -856,7 +856,12 @@ export default function IntegracaoML() {
                         Atualizar preços no ML quando alterados no ERP
                       </p>
                     </div>
-                    <Switch id="auto-sync-price" defaultChecked />
+                    <Switch
+                      id="auto-sync-price"
+                      checked={mlSettings?.auto_sync_price ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_price: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
