@@ -390,11 +390,39 @@ const PainelHub = () => {
             : <span className="flex items-center text-xs text-destructive"><ArrowDownRight className="h-3 w-3" />{Math.abs(value)}%</span>;
 
         return (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5" />
-              Mercado Livre — Últimos {selectedPeriod.label}
-            </h2>
+           <div className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5" />
+                Mercado Livre — Últimos {selectedPeriod.label}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={() =>
+                  generateMLReportPDF({
+                    periodLabel: selectedPeriod.label,
+                    periodDays,
+                    grossRevenue,
+                    totalFees,
+                    totalShipping,
+                    netRevenue,
+                    margin,
+                    avgTicket: avgTicketML,
+                    totalOrders: periodOrders.length,
+                    revenueTrend,
+                    topProducts: topMLProducts,
+                    statusCounts,
+                    shippingStatusCounts,
+                    dailyData,
+                  })
+                }
+              >
+                <FileDown className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+            </div>
 
             {/* ML KPIs */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
