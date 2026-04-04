@@ -1098,6 +1098,59 @@ export type Database = {
           },
         ]
       }
+      product_watchlist: {
+        Row: {
+          avg_cost: number | null
+          category: string | null
+          company_id: string | null
+          created_at: string
+          demand_level: string | null
+          id: string
+          margin_percent: number | null
+          notes: string | null
+          product_name: string
+          suggested_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_cost?: number | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string
+          demand_level?: string | null
+          id?: string
+          margin_percent?: number | null
+          notes?: string | null
+          product_name: string
+          suggested_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_cost?: number | null
+          category?: string | null
+          company_id?: string | null
+          created_at?: string
+          demand_level?: string | null
+          id?: string
+          margin_percent?: number | null
+          notes?: string | null
+          product_name?: string
+          suggested_price?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_watchlist_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           active: boolean
