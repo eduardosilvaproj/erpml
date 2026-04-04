@@ -309,28 +309,265 @@ const PainelHub = () => {
         )}
       </div>
 
-      {/* Mercado Livre */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold flex items-center gap-2">
-          <ShoppingBag className="h-5 w-5" />
-          Mercado Livre
-        </h2>
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-          {[
-            { label: "Conta", value: mlConnection ? (mlConnection.needs_reauth ? "Reconectar" : "Conectada") : "Desconectada" },
-            { label: "Pedidos ML", value: mlOrders?.paging?.total ?? 0 },
-            { label: "Anúncios ML", value: mlItems?.total ?? 0 },
-            { label: "Vinculados", value: mlLinked?.length ?? 0 },
-          ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className="p-4 text-center">
-                <p className="text-sm text-muted-foreground">{item.label}</p>
-                <p className="text-2xl font-bold">{item.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      {/* Mercado Livre Financial Metrics */}
+      {(() => {
+        const orders = persistedOrders ?? [];
+        const periodDays = selectedPeriod.days;
+        const cutoff = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString();
+        const prevCutoff = new Date(Date.now() - periodDays * 2 * 24 * 60 * 60 * 1000).toISOString();
+        
+        const periodOrders = orders.filter((o: any) => o.date_created && o.date_created >= cutoff);
+        const prevPeriodOrders = orders.filter((o: any) => o.date_created && o.date_created >= prevCutoff && o.date_created < cutoff);
+        
+        const grossRevenue = periodOrders.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+        const prevGrossRevenue = prevPeriodOrders.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+        const totalFees = periodOrders.reduce((s: number, o: any) => s + Number(o.marketplace_fee || 0), 0);
+        const totalShipping = periodOrders.reduce((s: number, o: any) => s + Number(o.shipping_cost || 0), 0);
+        const netRevenue = grossRevenue - totalFees - totalShipping;
+        const margin = grossRevenue > 0 ? (netRevenue / grossRevenue) * 100 : 0;
+        const avgTicketML = periodOrders.length > 0 ? grossRevenue / periodOrders.length : 0;
+
+        const revenueTrend = prevGrossRevenue > 0 ? Math.round(((grossRevenue - prevGrossRevenue) / prevGrossRevenue) * 100) : (grossRevenue > 0 ? 100 : 0);
+
+        const statusCounts: Record<string, number> = {};
+        for (const o of periodOrders) {
+          const s = (o as any).status || "unknown";
+          statusCounts[s] = (statusCounts[s] || 0) + 1;
+        }
+
+        const shippingStatusCounts: Record<string, number> = {};
+        for (const o of periodOrders) {
+          const s = (o as any).shipping_status || "unknown";
+          shippingStatusCounts[s] = (shippingStatusCounts[s] || 0) + 1;
+        }
+
+        // Top ML products by revenue
+        const productRevMap = new Map<string, { title: string; qty: number; revenue: number }>();
+        for (const o of periodOrders) {
+          for (const item of ((o as any).ml_order_items || [])) {
+            const key = item.ml_item_id;
+            const existing = productRevMap.get(key);
+            if (existing) {
+              existing.qty += item.quantity;
+              existing.revenue += Number(item.total_price || 0);
+            } else {
+              productRevMap.set(key, {
+                title: item.ml_item_title || item.products?.name || key,
+                qty: item.quantity,
+                revenue: Number(item.total_price || 0),
+              });
+            }
+          }
+        }
+        const topMLProducts = Array.from(productRevMap.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+        // Daily revenue chart
+        const dailyData: { label: string; receita: number; comissao: number; frete: number }[] = [];
+        for (let i = periodDays - 1; i >= 0; i--) {
+          const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+          const dateStr = d.toISOString().split("T")[0];
+          const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+          const dayOrders = periodOrders.filter((o: any) => o.date_created?.startsWith(dateStr));
+          dailyData.push({
+            label,
+            receita: dayOrders.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0),
+            comissao: dayOrders.reduce((s: number, o: any) => s + Number(o.marketplace_fee || 0), 0),
+            frete: dayOrders.reduce((s: number, o: any) => s + Number(o.shipping_cost || 0), 0),
+          });
+        }
+
+        const feePieData = [
+          { name: "Líquido", value: Math.max(netRevenue, 0) },
+          { name: "Comissão ML", value: totalFees },
+          { name: "Frete", value: totalShipping },
+        ].filter(d => d.value > 0);
+
+        const TrendIcon = ({ value }: { value: number }) => 
+          value >= 0 
+            ? <span className="flex items-center text-xs text-green-600"><ArrowUpRight className="h-3 w-3" />{value}%</span>
+            : <span className="flex items-center text-xs text-destructive"><ArrowDownRight className="h-3 w-3" />{Math.abs(value)}%</span>;
+
+        return (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5" />
+              Mercado Livre — Últimos {selectedPeriod.label}
+            </h2>
+
+            {/* ML KPIs */}
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Receita Bruta</p>
+                  <p className="text-lg font-bold text-primary">{formatCurrency(grossRevenue)}</p>
+                  <TrendIcon value={revenueTrend} />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Comissão ML</p>
+                  <p className="text-lg font-bold text-destructive">{formatCurrency(totalFees)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Frete</p>
+                  <p className="text-lg font-bold">{formatCurrency(totalShipping)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Lucro Líquido</p>
+                  <p className={`text-lg font-bold ${netRevenue >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(netRevenue)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Margem</p>
+                  <p className="text-lg font-bold">{margin.toFixed(1)}%</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground">Ticket Médio</p>
+                  <p className="text-lg font-bold">{formatCurrency(avgTicketML)}</p>
+                  <p className="text-xs text-muted-foreground">{periodOrders.length} pedidos</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+              {/* Revenue breakdown chart */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Receita ML por Dia
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={dailyData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis dataKey="label" fontSize={12} className="fill-muted-foreground" />
+                      <YAxis fontSize={12} className="fill-muted-foreground" />
+                      <Tooltip
+                        formatter={(value: number) => formatCurrency(value)}
+                        contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }}
+                      />
+                      <Bar dataKey="receita" fill="hsl(var(--primary))" name="Receita" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="comissao" fill="hsl(var(--destructive))" name="Comissão" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="frete" fill="hsl(var(--muted-foreground))" name="Frete" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Fee breakdown pie */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Percent className="h-4 w-4" />
+                    Composição da Receita
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {feePieData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie data={feePieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                          {feePieData.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(v: number) => formatCurrency(v)} contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">Sem dados no período</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Top ML Products & Status */}
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+              {topMLProducts.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Top Produtos ML</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {topMLProducts.map((p, i) => (
+                        <div key={i} className="flex items-center justify-between rounded-lg p-2 border">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
+                            <span className="text-sm truncate">{p.title.length > 40 ? p.title.slice(0, 40) + "…" : p.title}</span>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className="text-sm font-bold">{formatCurrency(p.revenue)}</p>
+                            <p className="text-xs text-muted-foreground">{p.qty} un.</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Truck className="h-4 w-4" />
+                    Status dos Pedidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(statusCounts).map(([status, count]) => (
+                      <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                        <Badge variant="outline" className="text-xs">{status}</Badge>
+                        <span className="font-bold">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {Object.keys(shippingStatusCounts).length > 0 && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-muted-foreground mb-2">Envios</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(shippingStatusCounts).map(([status, count]) => (
+                          <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-xs">{status}</span>
+                            <span className="font-bold text-sm">{count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Connection quick stats */}
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+              {[
+                { label: "Conta", value: mlConnection ? (mlConnection.needs_reauth ? "Reconectar" : "Conectada") : "Desconectada" },
+                { label: "Pedidos ML", value: mlOrders?.paging?.total ?? 0 },
+                { label: "Anúncios ML", value: mlItems?.total ?? 0 },
+                { label: "Vinculados", value: mlLinked?.length ?? 0 },
+              ].map((item) => (
+                <Card key={item.label}>
+                  <CardContent className="p-4 text-center">
+                    <p className="text-sm text-muted-foreground">{item.label}</p>
+                    <p className="text-2xl font-bold">{item.value}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Transferências pendentes */}
       {pendingTransfers.length > 0 && (
