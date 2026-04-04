@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
   Lock, ArrowRight, Crown, Zap, TrendingUp, FileText,
-  ShieldCheck, Bot
+  ShieldCheck, Bot, Swords, DollarSign
 } from "lucide-react";
 
 type AIFeature = {
