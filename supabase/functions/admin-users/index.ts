@@ -172,6 +172,101 @@ serve(async (req) => {
       });
     }
 
+    // List pending users (no company)
+    if (action === "list-pending-users") {
+      const { data: { users }, error } = await adminClient.auth.admin.listUsers({ perPage: 100 });
+      if (error) {
+        return new Response(
+          JSON.stringify({ error: error.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: members } = await adminClient.from("company_members").select("user_id");
+      const { data: profiles } = await adminClient.from("profiles").select("*");
+      const memberUserIds = new Set((members || []).map((m) => m.user_id));
+
+      const pendingUsers = users
+        .filter((u) => !memberUserIds.has(u.id))
+        .map((u) => ({
+          id: u.id,
+          email: u.email,
+          created_at: u.created_at,
+          email_confirmed_at: u.email_confirmed_at,
+          full_name: profiles?.find((p) => p.id === u.id)?.full_name || "",
+        }));
+
+      return new Response(JSON.stringify({ users: pendingUsers }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Create company for a pending user
+    if (action === "create-company-for-user") {
+      const { targetUserId, companyName, planId } = await req.json();
+
+      if (!targetUserId || !companyName?.trim()) {
+        return new Response(
+          JSON.stringify({ error: "targetUserId e companyName são obrigatórios" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check user doesn't already have a company
+      const { data: existingMember } = await adminClient
+        .from("company_members")
+        .select("id")
+        .eq("user_id", targetUserId)
+        .maybeSingle();
+
+      if (existingMember) {
+        return new Response(
+          JSON.stringify({ error: "Usuário já possui uma empresa" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Create company
+      const { data: company, error: companyError } = await adminClient
+        .from("companies")
+        .insert({
+          name: companyName.trim(),
+          owner_id: targetUserId,
+          plan_id: planId || null,
+          status: "active",
+        })
+        .select()
+        .single();
+
+      if (companyError) {
+        return new Response(
+          JSON.stringify({ error: companyError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Add user as owner member
+      const { error: memberError } = await adminClient
+        .from("company_members")
+        .insert({
+          company_id: company.id,
+          user_id: targetUserId,
+          role: "owner",
+          is_active: true,
+        });
+
+      if (memberError) {
+        return new Response(
+          JSON.stringify({ error: memberError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(JSON.stringify({ created: true, company }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
       JSON.stringify({ error: "Ação inválida" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
