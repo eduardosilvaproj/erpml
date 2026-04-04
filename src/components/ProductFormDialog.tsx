@@ -11,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useSuppliers, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Camera } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
@@ -49,6 +50,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const updateProduct = useUpdateProduct();
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
@@ -190,6 +192,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                         type="button"
                         variant="outline"
                         size="icon"
+                        title="Escanear via câmera"
+                        onClick={() => setShowScanner((v) => !v)}
+                      >
+                        <Camera className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
                         title="Gerar EAN-13"
                         onClick={() => {
                           const ean = generateEAN13();
@@ -209,6 +220,19 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   </FormItem>
                 )} />
               </div>
+
+              {showScanner && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-sm font-medium text-muted-foreground">Escanear código de barras</p>
+                  <BarcodeScanner
+                    onScan={(code) => {
+                      form.setValue("barcode", code);
+                      setShowScanner(false);
+                      toast({ title: "Código escaneado!", description: code });
+                    }}
+                  />
+                </div>
+              )}
 
               <FormField control={form.control} name="name" render={({ field }) => (
                 <FormItem>
