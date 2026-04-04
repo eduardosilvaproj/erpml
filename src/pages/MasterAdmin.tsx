@@ -617,6 +617,18 @@ export default function MasterAdmin() {
                 <Input value={companyForm.zip_code || ""} onChange={(e) => setCompanyForm({ ...companyForm, zip_code: e.target.value })} />
               </div>
             </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-amber-500" /> Cortesia
+                </Label>
+                <p className="text-xs text-muted-foreground">Empresa cortesia não é contabilizada nos relatórios de receita</p>
+              </div>
+              <Switch
+                checked={!!companyForm.is_courtesy}
+                onCheckedChange={(checked) => setCompanyForm({ ...companyForm, is_courtesy: checked })}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGestaoDialog(null)}>Cancelar</Button>
