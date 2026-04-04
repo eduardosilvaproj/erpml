@@ -193,8 +193,9 @@ export default function MasterAdmin() {
       </div>
 
       <Tabs defaultValue="empresas">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="empresas"><Building2 className="h-4 w-4 mr-1" /> Empresas</TabsTrigger>
+          <TabsTrigger value="pendentes"><UserPlus className="h-4 w-4 mr-1" /> Pendentes</TabsTrigger>
           <TabsTrigger value="gestao"><Settings className="h-4 w-4 mr-1" /> Gestão</TabsTrigger>
           <TabsTrigger value="financeiro"><DollarSign className="h-4 w-4 mr-1" /> Financeiro</TabsTrigger>
           <TabsTrigger value="planos"><CreditCard className="h-4 w-4 mr-1" /> Planos</TabsTrigger>
