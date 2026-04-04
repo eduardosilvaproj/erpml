@@ -207,6 +207,7 @@ export default function SupportChat() {
             className="fixed bottom-6 right-6 z-50"
           >
             <Button
+              data-support-chat-trigger
               onClick={() => setOpen(true)}
               size="lg"
               className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow p-0"

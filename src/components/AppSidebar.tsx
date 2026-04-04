@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock, Megaphone, MessageSquare, Search
+  Building2, Crown, Lock, Megaphone, MessageSquare
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -37,8 +37,7 @@ const menuItems = [
   { title: "CRM", url: "/crm", icon: Users },
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
-  { title: "IA Tributária", url: "/ia-consulta", icon: Sparkles },
-  { title: "Pesquisa Intel.", url: "/pesquisa", icon: Search },
+  { title: "Central de IA", url: "/ia-hub", icon: Sparkles },
 ];
 
 export function AppSidebar() {

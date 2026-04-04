@@ -20,6 +20,7 @@ import PainelHub from "./pages/PainelHub";
 import AdminPanel from "./pages/AdminPanel";
 import Financeiro from "./pages/Financeiro";
 import IAConsulta from "./pages/IAConsulta";
+import IAHub from "./pages/IAHub";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -69,6 +70,7 @@ const App = () => (
                       <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />
                       <Route path="/financeiro" element={<PlanProtectedRoute path="/financeiro"><Financeiro /></PlanProtectedRoute>} />
                       <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
+                      <Route path="/ia-hub" element={<IAHub />} />
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/admin" element={<AdminPanel />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
