@@ -180,6 +180,39 @@ export default function IntegracaoML() {
               <RefreshCw className={`mr-2 h-4 w-4 ${syncCatalog.isPending ? "animate-spin" : ""}`} />
               Sincronizar catálogo
             </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={disconnectML.isPending}
+                >
+                  {disconnectML.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unplug className="h-4 w-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desconectar Mercado Livre?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Isso removerá a conexão com a conta <strong>{connection.seller_nickname}</strong> e todos os vínculos de produtos. Os pedidos já sincronizados serão mantidos. Você poderá reconectar a qualquer momento.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDisconnect}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Desconectar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         ) : (
           <Button onClick={handleConnect} disabled={!authUrlData?.url}>
