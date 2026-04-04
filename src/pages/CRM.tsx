@@ -1,5 +1,5 @@
 import { useState, Fragment } from "react";
-import { Users, Plus, Search, ShoppingBag, Pencil, Trash2, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Users, Plus, Search, ShoppingBag, Pencil, Trash2, ChevronDown, ChevronUp, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   useCustomers, useCustomerStats, useCreateCustomer, useUpdateCustomer,
   useDeleteCustomer, useCustomerWithPurchases, type Customer
 } from "@/hooks/useCustomerData";
+import MLQuestionsTab from "@/components/MLQuestionsTab";
 
 const CRM = () => {
   const [search, setSearch] = useState("");
