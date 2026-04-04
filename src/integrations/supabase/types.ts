@@ -752,6 +752,134 @@ export type Database = {
           },
         ]
       }
+      ml_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          ml_item_id: string
+          ml_item_title: string | null
+          ml_order_id: string
+          product_id: string | null
+          quantity: number
+          sku: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ml_item_id: string
+          ml_item_title?: string | null
+          ml_order_id: string
+          product_id?: string | null
+          quantity?: number
+          sku?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ml_item_id?: string
+          ml_item_title?: string | null
+          ml_order_id?: string
+          product_id?: string | null
+          quantity?: number
+          sku?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_order_items_ml_order_id_fkey"
+            columns: ["ml_order_id"]
+            isOneToOne: false
+            referencedRelation: "ml_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ml_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ml_orders: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          currency_id: string | null
+          date_closed: string | null
+          date_created: string | null
+          id: string
+          marketplace_fee: number | null
+          ml_buyer_id: number | null
+          ml_buyer_nickname: string | null
+          ml_order_id: number
+          ml_raw: Json | null
+          pack_id: number | null
+          shipping_cost: number | null
+          shipping_id: number | null
+          shipping_status: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          currency_id?: string | null
+          date_closed?: string | null
+          date_created?: string | null
+          id?: string
+          marketplace_fee?: number | null
+          ml_buyer_id?: number | null
+          ml_buyer_nickname?: string | null
+          ml_order_id: number
+          ml_raw?: Json | null
+          pack_id?: number | null
+          shipping_cost?: number | null
+          shipping_id?: number | null
+          shipping_status?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          currency_id?: string | null
+          date_closed?: string | null
+          date_created?: string | null
+          id?: string
+          marketplace_fee?: number | null
+          ml_buyer_id?: number | null
+          ml_buyer_nickname?: string | null
+          ml_order_id?: number
+          ml_raw?: Json | null
+          pack_id?: number | null
+          shipping_cost?: number | null
+          shipping_id?: number | null
+          shipping_status?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ml_sync_logs: {
         Row: {
           created_at: string
