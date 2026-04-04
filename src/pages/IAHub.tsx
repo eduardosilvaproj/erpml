@@ -133,6 +133,16 @@ const AI_FEATURES: AIFeature[] = [
     tags: ["Produtos", "Fornecedores", "Margem"],
   },
   {
+    id: "ean13",
+    title: "Gerador EAN-13",
+    description: "Gere códigos de barras EAN-13 válidos em massa com dígito verificador, copie ou exporte em CSV.",
+    icon: Barcode,
+    route: "/ia-ean13",
+    planGate: null,
+    category: "operacional",
+    tags: ["EAN-13", "Código de Barras", "Utilidade"],
+  },
+  {
     id: "campanhas",
     title: "Campanhas com IA",
     description: "Gere descrições otimizadas, categorize produtos e crie anúncios em massa usando inteligência artificial.",
