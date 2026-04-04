@@ -25,15 +25,8 @@ export function useUnansweredMLQuestionsCount() {
   useEffect(() => {
     if (!user) return;
 
-    // Remove any existing channel first
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    const channelName = `ml-questions-realtime-${Date.now()}`;
     const channel = supabase
-      .channel(channelName)
+      .channel(`ml-questions-rt-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -54,7 +47,9 @@ export function useUnansweredMLQuestionsCount() {
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [user, queryClient]);
+    // queryClient is stable from the provider, safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return dbCount ?? 0;
 }
