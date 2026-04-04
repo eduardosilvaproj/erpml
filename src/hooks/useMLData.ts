@@ -193,3 +193,42 @@ export function useMLAuthUrl() {
     retry: 1,
   });
 }
+
+export function useMLWebhookStatus(enabled: boolean) {
+  const { callML } = useMLApi();
+
+  return useQuery({
+    queryKey: ["ml-webhook-status"],
+    enabled,
+    queryFn: () => callML("webhook-status"),
+    retry: false,
+  });
+}
+
+export function useRegisterMLWebhook() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return callML("register-webhook");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-webhook-status"] });
+    },
+  });
+}
+
+export function useUnregisterMLWebhook() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (webhookId: string) => {
+      return callML("unregister-webhook", { webhookId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-webhook-status"] });
+    },
+  });
+}
