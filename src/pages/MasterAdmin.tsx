@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift } from "lucide-react";
 import PendingUsersTab from "@/components/PendingUsersTab";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
@@ -47,10 +48,10 @@ export default function MasterAdmin() {
   const [companyForm, setCompanyForm] = useState<Partial<Company>>({});
   const [selectedPlanId, setSelectedPlanId] = useState("");
 
-  // Financial calculations
+  // Financial calculations - exclude courtesy companies
   const financialData = useMemo(() => {
     if (!companies || !plans) return null;
-    const activeCompanies = companies.filter((c) => c.status === "active");
+    const activeCompanies = companies.filter((c) => c.status === "active" && !c.is_courtesy);
     const revenueByPlan = plans.map((plan) => {
       const companiesOnPlan = activeCompanies.filter((c) => c.plan_id === plan.id);
       return { name: plan.name, empresas: companiesOnPlan.length, receita: companiesOnPlan.length * plan.price, preco: plan.price };
@@ -60,7 +61,8 @@ export default function MasterAdmin() {
     const totalActive = activeCompanies.length;
     const avgRevenuePerCompany = totalActive > 0 ? mrr / totalActive : 0;
     const planDistribution = revenueByPlan.filter((r) => r.empresas > 0).map((r) => ({ name: r.name, value: r.empresas }));
-    return { revenueByPlan, mrr, arr, totalActive, avgRevenuePerCompany, planDistribution };
+    const courtesyCount = companies.filter((c) => c.is_courtesy).length;
+    return { revenueByPlan, mrr, arr, totalActive, avgRevenuePerCompany, planDistribution, courtesyCount };
   }, [companies, plans]);
 
   if (checkingAdmin) {
@@ -101,7 +103,7 @@ export default function MasterAdmin() {
   // Gestão handlers
   const openEditCompany = (company: CompanyWithExtras) => {
     setSelectedCompany(company);
-    setCompanyForm({ name: company.name, cnpj: company.cnpj, email: company.email, phone: company.phone, address: company.address, city: company.city, state: company.state, zip_code: company.zip_code });
+    setCompanyForm({ name: company.name, cnpj: company.cnpj, email: company.email, phone: company.phone, address: company.address, city: company.city, state: company.state, zip_code: company.zip_code, is_courtesy: company.is_courtesy });
     setGestaoDialog("edit");
   };
 
@@ -229,7 +231,16 @@ export default function MasterAdmin() {
                     <TableBody>
                       {companies?.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {c.name}
+                              {c.is_courtesy && (
+                                <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                                  <Gift className="h-3 w-3 mr-0.5" /> Cortesia
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>{c.cnpj || "—"}</TableCell>
                           <TableCell><Badge variant="outline">{c.plan?.name || "—"}</Badge></TableCell>
                           <TableCell>{c.plan ? formatCurrency(c.plan.price) : "—"}</TableCell>
@@ -289,7 +300,16 @@ export default function MasterAdmin() {
                     <TableBody>
                       {companies?.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {c.name}
+                              {c.is_courtesy && (
+                                <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                                  <Gift className="h-3 w-3 mr-0.5" /> Cortesia
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Users className="h-3 w-3 text-muted-foreground" />
@@ -596,6 +616,18 @@ export default function MasterAdmin() {
                 <Label>CEP</Label>
                 <Input value={companyForm.zip_code || ""} onChange={(e) => setCompanyForm({ ...companyForm, zip_code: e.target.value })} />
               </div>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border border-border p-3">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-amber-500" /> Cortesia
+                </Label>
+                <p className="text-xs text-muted-foreground">Empresa cortesia não é contabilizada nos relatórios de receita</p>
+              </div>
+              <Switch
+                checked={!!companyForm.is_courtesy}
+                onCheckedChange={(checked) => setCompanyForm({ ...companyForm, is_courtesy: checked })}
+              />
             </div>
           </div>
           <DialogFooter>
