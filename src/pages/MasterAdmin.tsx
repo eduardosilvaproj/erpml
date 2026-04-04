@@ -162,7 +162,7 @@ export default function MasterAdmin() {
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Empresas</CardTitle>
@@ -172,10 +172,23 @@ export default function MasterAdmin() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Empresas Ativas</CardTitle>
+            <CardTitle className="text-sm font-medium">Empresas Pagantes</CardTitle>
             <Power className="h-4 w-4 text-accent" />
           </CardHeader>
-          <CardContent><div className="text-2xl font-bold">{activeCompaniesCount}</div></CardContent>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeCompaniesCount - (financialData?.courtesyCount || 0)}</div>
+            <p className="text-xs text-muted-foreground">Ativas gerando receita</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cortesia</CardTitle>
+            <Gift className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{financialData?.courtesyCount || 0}</div>
+            <p className="text-xs text-muted-foreground">Sem cobrança</p>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -191,6 +204,7 @@ export default function MasterAdmin() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(financialData?.mrr || 0)}</div>
+            <p className="text-xs text-muted-foreground">Exclui cortesias</p>
           </CardContent>
         </Card>
       </div>
