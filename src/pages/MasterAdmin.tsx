@@ -47,6 +47,7 @@ export default function MasterAdmin() {
   const [gestaoDialog, setGestaoDialog] = useState<"edit" | "plan" | "payment" | null>(null);
   const [companyForm, setCompanyForm] = useState<Partial<Company>>({});
   const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [courtesyFilter, setCourtesyFilter] = useState<"all" | "courtesy" | "paying">("all");
 
   // Financial calculations - exclude courtesy companies
   const financialData = useMemo(() => {
