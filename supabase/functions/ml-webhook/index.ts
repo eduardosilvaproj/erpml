@@ -330,8 +330,7 @@ Deno.serve(async (req) => {
       }
 
       case "questions": {
-        // Log for future CRM integration
-        console.log(`Question notification received: ${resource}`);
+        await handleQuestionNotification(supabase, connection, accessToken, resource);
         break;
       }
 
