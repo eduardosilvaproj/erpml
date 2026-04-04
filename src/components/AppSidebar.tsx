@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock, Megaphone
+  Building2, Crown, Lock, Megaphone, MessageSquare
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
+import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
