@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useSuppliers, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Wand2 } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
+import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
@@ -183,7 +184,27 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                 <FormField control={form.control} name="barcode" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Código de Barras</FormLabel>
-                    <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
+                    <div className="flex gap-2">
+                      <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        title="Gerar EAN-13"
+                        onClick={() => {
+                          const ean = generateEAN13();
+                          form.setValue("barcode", ean);
+                          toast({ title: "EAN-13 gerado!", description: ean });
+                        }}
+                      >
+                        <Wand2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {field.value && field.value.length === 13 && (
+                      <p className={`text-xs ${isValidEAN13(field.value) ? "text-green-600" : "text-destructive"}`}>
+                        {isValidEAN13(field.value) ? "✓ EAN-13 válido" : "✗ EAN-13 inválido"}
+                      </p>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )} />
