@@ -886,7 +886,12 @@ export default function IntegracaoML() {
                         Gerar sugestões de resposta com IA para perguntas de compradores
                       </p>
                     </div>
-                    <Switch id="auto-answer" />
+                    <Switch
+                      id="auto-answer"
+                      checked={mlSettings?.auto_suggest_answers ?? false}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_suggest_answers: checked })}
+                    />
                   </div>
                 </CardContent>
               </Card>
