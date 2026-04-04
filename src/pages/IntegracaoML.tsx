@@ -871,7 +871,12 @@ export default function IntegracaoML() {
                         Sincronizar novos pedidos via webhook em tempo real
                       </p>
                     </div>
-                    <Switch id="auto-sync-orders" defaultChecked />
+                    <Switch
+                      id="auto-sync-orders"
+                      checked={mlSettings?.auto_sync_orders ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_orders: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
