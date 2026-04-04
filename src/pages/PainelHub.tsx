@@ -490,64 +490,104 @@ const PainelHub = () => {
               </Card>
             </div>
 
-            {/* Top ML Products & Status */}
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-              {topMLProducts.length > 0 && (
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Top Produtos ML</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {topMLProducts.map((p, i) => (
-                        <div key={i} className="flex items-center justify-between rounded-lg p-2 border">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-bold text-muted-foreground w-5">{i + 1}.</span>
-                            <span className="text-sm truncate">{p.title.length > 40 ? p.title.slice(0, 40) + "…" : p.title}</span>
-                          </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <p className="text-sm font-bold">{formatCurrency(p.revenue)}</p>
-                            <p className="text-xs text-muted-foreground">{p.qty} un.</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
+            {/* Product Performance Dashboard */}
+            {topMLProducts.length > 0 && (
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Truck className="h-4 w-4" />
-                    Status dos Pedidos
+                    <Award className="h-4 w-4" />
+                    Performance por Produto ML
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {Object.entries(statusCounts).map(([status, count]) => (
-                      <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                        <Badge variant="outline" className="text-xs">{status}</Badge>
-                        <span className="font-bold">{count}</span>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-8">#</TableHead>
+                          <TableHead>Produto</TableHead>
+                          <TableHead className="text-right">Receita</TableHead>
+                          <TableHead className="text-right">Qtd</TableHead>
+                          <TableHead className="text-right">Ticket Médio</TableHead>
+                          <TableHead className="text-right">
+                            <span className="flex items-center justify-end gap-1"><Zap className="h-3 w-3" />Veloc./dia</span>
+                          </TableHead>
+                          <TableHead className="text-right">% Receita</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {topMLProducts.map((p, i) => {
+                          const avgTicket = p.qty > 0 ? p.revenue / p.qty : 0;
+                          const velocity = periodDays > 0 ? p.qty / periodDays : 0;
+                          const revenueShare = grossRevenue > 0 ? (p.revenue / grossRevenue) * 100 : 0;
+                          return (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <span className={`text-xs font-bold ${i === 0 ? "text-yellow-500" : i === 1 ? "text-muted-foreground" : i === 2 ? "text-amber-700" : "text-muted-foreground"}`}>
+                                  {i + 1}
+                                </span>
+                              </TableCell>
+                              <TableCell className="max-w-[200px]">
+                                <span className="text-sm truncate block">{p.title.length > 50 ? p.title.slice(0, 50) + "…" : p.title}</span>
+                              </TableCell>
+                              <TableCell className="text-right font-bold text-primary">{formatCurrency(p.revenue)}</TableCell>
+                              <TableCell className="text-right">{p.qty}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(avgTicket)}</TableCell>
+                              <TableCell className="text-right">
+                                <span className={`font-medium ${velocity >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+                                  {velocity.toFixed(1)}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
+                                    <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(revenueShare, 100)}%` }} />
+                                  </div>
+                                  <span className="text-xs w-10 text-right">{revenueShare.toFixed(1)}%</span>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
                   </div>
-                  {Object.keys(shippingStatusCounts).length > 0 && (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs text-muted-foreground mb-2">Envios</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.entries(shippingStatusCounts).map(([status, count]) => (
-                          <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                            <span className="text-xs">{status}</span>
-                            <span className="font-bold text-sm">{count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
-            </div>
+            )}
+
+            {/* Order & Shipping Status */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  Status dos Pedidos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(statusCounts).map(([status, count]) => (
+                    <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                      <Badge variant="outline" className="text-xs">{status}</Badge>
+                      <span className="font-bold">{count}</span>
+                    </div>
+                  ))}
+                </div>
+                {Object.keys(shippingStatusCounts).length > 0 && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">Envios</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.entries(shippingStatusCounts).map(([status, count]) => (
+                        <div key={status} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                          <span className="text-xs">{status}</span>
+                          <span className="font-bold text-sm">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Connection quick stats */}
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
