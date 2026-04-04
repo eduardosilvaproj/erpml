@@ -1,6 +1,8 @@
 import { ShoppingBag, Package, AlertTriangle, Warehouse, TrendingUp, DollarSign, BarChart3, Percent, Truck, ArrowDownRight, ArrowUpRight, Award, Zap, FileDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { generateMLReportPDF } from "@/lib/ml-report-pdf";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useProducts } from "@/hooks/useProductData";
 import { useSalesStats, useSales } from "@/hooks/useSalesData";
