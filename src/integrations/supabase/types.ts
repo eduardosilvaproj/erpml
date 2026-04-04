@@ -14,6 +14,160 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_items: {
+        Row: {
+          ai_category: string | null
+          ai_cost_tokens: number | null
+          ai_description: string | null
+          ai_specs: Json | null
+          ai_tags: string[] | null
+          campaign_id: string
+          created_at: string
+          id: string
+          image_urls: string[] | null
+          original_description: string | null
+          price: number
+          product_name: string
+          quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_category?: string | null
+          ai_cost_tokens?: number | null
+          ai_description?: string | null
+          ai_specs?: Json | null
+          ai_tags?: string[] | null
+          campaign_id: string
+          created_at?: string
+          id?: string
+          image_urls?: string[] | null
+          original_description?: string | null
+          price?: number
+          product_name: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_category?: string | null
+          ai_cost_tokens?: number | null
+          ai_description?: string | null
+          ai_specs?: Json | null
+          ai_tags?: string[] | null
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          image_urls?: string[] | null
+          original_description?: string | null
+          price?: number
+          product_name?: string
+          quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_templates: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          description_prompt: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          description_prompt: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          description_prompt?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_templates_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          items_processed: number
+          name: string
+          published_at: string | null
+          scheduled_at: string | null
+          status: string
+          template_id: string | null
+          total_items: number
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          items_processed?: number
+          name: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_items?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          items_processed?: number
+          name?: string
+          published_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          template_id?: string | null
+          total_items?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           company_id: string | null
