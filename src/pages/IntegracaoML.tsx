@@ -102,6 +102,19 @@ export default function IntegracaoML() {
     }
   };
 
+  const handleDisconnect = async () => {
+    try {
+      await disconnectML.mutateAsync();
+      toast({ title: "Conta do Mercado Livre desconectada com sucesso!" });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao desconectar",
+        description: e.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSyncStock = async (itemId: string, quantity: number) => {
     try {
       await syncStock.mutateAsync({ itemId, quantity });
