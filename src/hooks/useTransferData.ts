@@ -60,7 +60,7 @@ export function useCreateTransferOrder() {
   const companyId = useCompanyId();
 
   return useMutation({
-    mutationFn: async (items: TransferItem[]) => {
+    mutationFn: async ({ items, notes }: { items: TransferItem[]; notes?: string }) => {
       for (const item of items) {
         const { data: product } = await supabase
           .from("products")
@@ -82,6 +82,7 @@ export function useCreateTransferOrder() {
           total_items: items.length,
           total_quantity: items.reduce((sum, i) => sum + i.quantity, 0),
           company_id: companyId,
+          notes: notes || null,
         })
         .select()
         .single();

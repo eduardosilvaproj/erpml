@@ -22,6 +22,7 @@ const MovimentacaoFull = () => {
   const { toast } = useToast();
   const scanInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<TransferItem[]>([]);
+  const [usedKits, setUsedKits] = useState<string[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -118,6 +119,7 @@ const MovimentacaoFull = () => {
 
         if (!hasError) {
           setItems(updatedItems);
+          setUsedKits((prev) => prev.includes(matchedKit.name) ? prev : [...prev, matchedKit.name]);
           setLastScan({ success: true, message: `Kit "${matchedKit.name}" — ${addedNames.join(", ")}` });
           playBeep(800, 100);
         } else {
@@ -205,13 +207,16 @@ const MovimentacaoFull = () => {
       updatedItems = result.items;
     }
     setItems(updatedItems);
+    setUsedKits((prev) => prev.includes(kit.name) ? prev : [...prev, kit.name]);
     toast({ title: `Kit "${kit.name}" adicionado à lista de envio!` });
   };
 
   const handleCreateOrder = async () => {
     if (items.length === 0) return;
-    await createOrder.mutateAsync(items);
+    const notes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : undefined;
+    await createOrder.mutateAsync({ items, notes });
     setItems([]);
+    setUsedKits([]);
     setLastScan(null);
   };
 
@@ -411,6 +416,19 @@ const MovimentacaoFull = () => {
               </Table>
               </div>
 
+              {usedKits.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Boxes className="h-3.5 w-3.5" /> Kits nesta ordem:
+                  </span>
+                  {usedKits.map((name) => (
+                    <Badge key={name} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                      {name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-center justify-between pt-2">
                 <p className="text-sm text-muted-foreground">
                   {items.length} produto(s) • {totalQty} unidade(s)
@@ -448,6 +466,7 @@ const MovimentacaoFull = () => {
                 <TableRow>
                   <TableHead>Ordem</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Kits</TableHead>
                   <TableHead className="text-center">Itens</TableHead>
                   <TableHead className="text-center">Qtd Total</TableHead>
                   <TableHead>Data</TableHead>
@@ -462,6 +481,19 @@ const MovimentacaoFull = () => {
                     <TableRow key={order.id}>
                       <TableCell className="font-mono text-xs">{order.order_number}</TableCell>
                       <TableCell>{statusBadge(order.status)}</TableCell>
+                      <TableCell>
+                        {order.notes && order.notes.startsWith("Kits:") ? (
+                          <div className="flex flex-wrap gap-1">
+                            {order.notes.replace("Kits: ", "").split(", ").map((kit, i) => (
+                              <Badge key={i} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                                <Boxes className="h-3 w-3 mr-0.5" />{kit}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{order.total_items}</TableCell>
                       <TableCell className="text-center font-medium">{order.total_quantity}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
