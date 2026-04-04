@@ -158,7 +158,7 @@ export default function IntegracaoML() {
             <div>
               <p className="text-sm text-muted-foreground">Pedidos ML</p>
               <p className="text-2xl font-bold">
-                {orders?.paging?.total ?? 0}
+                {persistedOrders?.length ?? orders?.paging?.total ?? 0}
               </p>
             </div>
           </CardContent>
