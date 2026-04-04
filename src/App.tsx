@@ -35,6 +35,10 @@ import Equipe from "./pages/Equipe";
 import BoasVindas from "./pages/BoasVindas";
 import Campanhas from "./pages/Campanhas";
 import PesquisaInteligente from "./pages/PesquisaInteligente";
+import AnaliseConcorrencia from "./pages/AnaliseConcorrencia";
+import PrevisaoDemanda from "./pages/PrevisaoDemanda";
+import PrecoDinamico from "./pages/PrecoDinamico";
+import GeradorDescricoes from "./pages/GeradorDescricoes";
 
 const queryClient = new QueryClient();
 
