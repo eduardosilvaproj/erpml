@@ -43,6 +43,26 @@ export function useMLConnection() {
   });
 }
 
+export function useDisconnectML() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      return callML<{ success: boolean; message: string }>("disconnect");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-connection"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-items"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-webhook-status"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
+    },
+  });
+}
+
 export function useMLApi() {
   const callML = async <T = any>(action: string, params?: unknown): Promise<T> => {
     const { data, error } = await supabase.functions.invoke("ml-api", {
