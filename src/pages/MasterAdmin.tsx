@@ -231,7 +231,16 @@ export default function MasterAdmin() {
                     <TableBody>
                       {companies?.map((c) => (
                         <TableRow key={c.id}>
-                          <TableCell className="font-medium">{c.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {c.name}
+                              {c.is_courtesy && (
+                                <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
+                                  <Gift className="h-3 w-3 mr-0.5" /> Cortesia
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell>{c.cnpj || "—"}</TableCell>
                           <TableCell><Badge variant="outline">{c.plan?.name || "—"}</Badge></TableCell>
                           <TableCell>{c.plan ? formatCurrency(c.plan.price) : "—"}</TableCell>
