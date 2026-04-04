@@ -1043,6 +1043,81 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "suggest-answer": {
+        const questionText = typeof params.questionText === "string" ? params.questionText.trim() : "";
+        const itemTitle = typeof params.itemTitle === "string" ? params.itemTitle.trim() : "";
+        const itemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
+
+        if (!questionText) {
+          return jsonResponse({ error: "Texto da pergunta é obrigatório." }, 400);
+        }
+
+        // Fetch product info from catalog if we have itemId
+        let productContext = "";
+        if (itemId) {
+          const { data: linkedProduct } = await serviceClient
+            .from("ml_linked_products")
+            .select("product_id, products(name, description, price, stock_physical, stock_full, barcode, sku)")
+            .eq("ml_item_id", itemId)
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (linkedProduct?.products) {
+            const p = linkedProduct.products as any;
+            const stockInfo = p.stock_full ?? p.stock_physical ?? 0;
+            productContext = `\n\nInformações do produto no catálogo:\n- Nome: ${p.name}\n- Descrição: ${p.description || "N/A"}\n- Preço: R$ ${p.price?.toFixed(2) || "N/A"}\n- Estoque disponível: ${stockInfo} unidades\n- SKU: ${p.sku || "N/A"}`;
+          }
+        }
+
+        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+        if (!LOVABLE_API_KEY) {
+          return jsonResponse({ error: "Chave de IA não configurada." }, 500);
+        }
+
+        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              {
+                role: "system",
+                content: `Você é um assistente de vendas do Mercado Livre. Gere uma resposta profissional, educada e objetiva para a pergunta de um comprador. A resposta deve:
+- Ser em português brasileiro
+- Ter no máximo 350 caracteres (limite do Mercado Livre)
+- Ser direta e útil
+- Não incluir links ou informações de contato externo
+- Não prometer prazos de entrega específicos (diga "conforme prazo informado no anúncio")
+- Agradecer ao comprador quando apropriado
+- Se não tiver informação suficiente, diga que pode ajudar com mais detalhes`,
+              },
+              {
+                role: "user",
+                content: `Anúncio: ${itemTitle || "Produto"}${productContext}\n\nPergunta do comprador: "${questionText}"\n\nGere uma resposta adequada:`,
+              },
+            ],
+          }),
+        });
+
+        if (!aiResponse.ok) {
+          if (aiResponse.status === 429) {
+            return jsonResponse({ error: "Limite de requisições de IA excedido. Tente novamente em instantes." }, 429);
+          }
+          if (aiResponse.status === 402) {
+            return jsonResponse({ error: "Créditos de IA esgotados. Adicione créditos na sua conta." }, 402);
+          }
+          return jsonResponse({ error: "Erro ao gerar sugestão de IA." }, 500);
+        }
+
+        const aiData = await aiResponse.json();
+        const suggestion = aiData?.choices?.[0]?.message?.content?.trim() ?? "";
+
+        return jsonResponse({ suggestion });
+      }
+
       case "answer-question": {
         const questionId = typeof params.questionId === "number" || typeof params.questionId === "string"
           ? Number(params.questionId) : 0;

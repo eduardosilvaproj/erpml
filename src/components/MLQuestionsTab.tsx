@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { MessageSquare, Send, RefreshCw, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { MessageSquare, Send, RefreshCw, Loader2, CheckCircle2, Clock, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useMLQuestions, useSyncMLQuestions, useAnswerMLQuestion } from "@/hooks/useMLData";
+import { useMLQuestions, useSyncMLQuestions, useAnswerMLQuestion, useSuggestMLAnswer } from "@/hooks/useMLData";
 
 export default function MLQuestionsTab() {
   const { toast } = useToast();
   const { data: questions, isLoading } = useMLQuestions();
   const syncQuestions = useSyncMLQuestions();
   const answerQuestion = useAnswerMLQuestion();
+  const suggestAnswer = useSuggestMLAnswer();
   const [answeringId, setAnsweringId] = useState<number | null>(null);
   const [answerText, setAnswerText] = useState("");
 
@@ -36,6 +37,23 @@ export default function MLQuestionsTab() {
       setAnswerText("");
     } catch (err: any) {
       toast({ title: "Erro ao responder", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleSuggestAnswer = async (q: any) => {
+    try {
+      const result = await suggestAnswer.mutateAsync({
+        questionText: q.question_text,
+        itemTitle: q.ml_item_title ?? undefined,
+        itemId: q.ml_item_id ?? undefined,
+      });
+      if (result.suggestion) {
+        setAnswerText(result.suggestion);
+        setAnsweringId(q.ml_question_id);
+        toast({ title: "Sugestão gerada!", description: "Revise e edite antes de enviar." });
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao gerar sugestão", description: err.message, variant: "destructive" });
     }
   };
 
@@ -111,6 +129,19 @@ export default function MLQuestionsTab() {
                           </Button>
                           <Button
                             size="sm"
+                            variant="outline"
+                            onClick={() => handleSuggestAnswer(q)}
+                            disabled={suggestAnswer.isPending}
+                          >
+                            {suggestAnswer.isPending ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="mr-2 h-4 w-4" />
+                            )}
+                            Sugerir com IA
+                          </Button>
+                          <Button
+                            size="sm"
                             onClick={() => handleAnswer(q.ml_question_id)}
                             disabled={!answerText.trim() || answerQuestion.isPending}
                           >
@@ -124,14 +155,29 @@ export default function MLQuestionsTab() {
                         </div>
                       </div>
                     ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => { setAnsweringId(q.ml_question_id); setAnswerText(""); }}
-                      >
-                        <Send className="mr-2 h-4 w-4" />
-                        Responder
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSuggestAnswer(q)}
+                          disabled={suggestAnswer.isPending}
+                        >
+                          {suggestAnswer.isPending ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                          )}
+                          Sugerir com IA
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setAnsweringId(q.ml_question_id); setAnswerText(""); }}
+                        >
+                          <Send className="mr-2 h-4 w-4" />
+                          Responder
+                        </Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

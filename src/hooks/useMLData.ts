@@ -325,3 +325,13 @@ export function useAnswerMLQuestion() {
     },
   });
 }
+
+export function useSuggestMLAnswer() {
+  const { callML } = useMLApi();
+
+  return useMutation({
+    mutationFn: async ({ questionText, itemTitle, itemId }: { questionText: string; itemTitle?: string; itemId?: string }) => {
+      return callML<{ suggestion: string }>("suggest-answer", { questionText, itemTitle, itemId });
+    },
+  });
+}
