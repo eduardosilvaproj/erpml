@@ -945,6 +945,39 @@ export type Database = {
           },
         ]
       }
+      ml_settings: {
+        Row: {
+          auto_suggest_answers: boolean
+          auto_sync_orders: boolean
+          auto_sync_price: boolean
+          auto_sync_stock: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_suggest_answers?: boolean
+          auto_sync_orders?: boolean
+          auto_sync_price?: boolean
+          auto_sync_stock?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_suggest_answers?: boolean
+          auto_sync_orders?: boolean
+          auto_sync_price?: boolean
+          auto_sync_stock?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ml_sync_logs: {
         Row: {
           created_at: string
