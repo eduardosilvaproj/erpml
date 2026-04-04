@@ -313,6 +313,10 @@ export default function IntegracaoML() {
               <Bell className="h-4 w-4 mr-1" />
               Webhooks
             </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" />
+              Configurações
+            </TabsTrigger>
           </TabsList>
 
           {/* Anúncios Tab */}
