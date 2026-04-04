@@ -28,6 +28,8 @@ import {
   useMLOrders,
   useMLLinkedProducts,
   useSyncStock,
+  useSyncPrice,
+  useSyncAllToML,
   useSyncMLCatalog,
   useMLAuthUrl,
   usePersistedMLOrders,
