@@ -44,6 +44,8 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const { data: pendingUsers } = usePendingUsers();
+  const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const { isRouteAllowed, planName } = usePlanFeatures();
 
   const renderNavItem = (item: typeof menuItems[0], extraClass = "") => (
