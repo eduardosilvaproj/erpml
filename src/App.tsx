@@ -20,6 +20,7 @@ import PainelHub from "./pages/PainelHub";
 import AdminPanel from "./pages/AdminPanel";
 import Financeiro from "./pages/Financeiro";
 import IAConsulta from "./pages/IAConsulta";
+import IAHub from "./pages/IAHub";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";

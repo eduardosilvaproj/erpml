@@ -11,6 +11,7 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/painel-hub": ["Painel HUB"],
   "/ia-consulta": ["IA Tributária"],
   "/financeiro": ["Financeiro avançado"],
+  "/ia-hub": ["IA Tributária"],
 };
 
 export function usePlanFeatures() {
