@@ -59,6 +59,7 @@ import {
   useUnregisterMLWebhook,
   useDisconnectML,
 } from "@/hooks/useMLData";
+import { useMLSettings, useUpdateMLSettings } from "@/hooks/useMLSettings";
 import { useSearchParams } from "react-router-dom";
 
 export default function IntegracaoML() {
@@ -81,6 +82,8 @@ export default function IntegracaoML() {
   const disconnectML = useDisconnectML();
   const registerWebhook = useRegisterMLWebhook();
   const unregisterWebhook = useUnregisterMLWebhook();
+  const { data: mlSettings, isLoading: loadingSettings } = useMLSettings();
+  const updateSettings = useUpdateMLSettings();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
@@ -838,7 +841,12 @@ export default function IntegracaoML() {
                         Enviar estoque do ERP para o ML quando houver alteração
                       </p>
                     </div>
-                    <Switch id="auto-sync-stock" defaultChecked />
+                    <Switch
+                      id="auto-sync-stock"
+                      checked={mlSettings?.auto_sync_stock ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_stock: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
@@ -848,7 +856,12 @@ export default function IntegracaoML() {
                         Atualizar preços no ML quando alterados no ERP
                       </p>
                     </div>
-                    <Switch id="auto-sync-price" defaultChecked />
+                    <Switch
+                      id="auto-sync-price"
+                      checked={mlSettings?.auto_sync_price ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_price: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
@@ -858,7 +871,12 @@ export default function IntegracaoML() {
                         Sincronizar novos pedidos via webhook em tempo real
                       </p>
                     </div>
-                    <Switch id="auto-sync-orders" defaultChecked />
+                    <Switch
+                      id="auto-sync-orders"
+                      checked={mlSettings?.auto_sync_orders ?? true}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_sync_orders: checked })}
+                    />
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
@@ -868,7 +886,12 @@ export default function IntegracaoML() {
                         Gerar sugestões de resposta com IA para perguntas de compradores
                       </p>
                     </div>
-                    <Switch id="auto-answer" />
+                    <Switch
+                      id="auto-answer"
+                      checked={mlSettings?.auto_suggest_answers ?? false}
+                      disabled={updateSettings.isPending || loadingSettings}
+                      onCheckedChange={(checked) => updateSettings.mutate({ auto_suggest_answers: checked })}
+                    />
                   </div>
                 </CardContent>
               </Card>
