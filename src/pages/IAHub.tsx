@@ -52,6 +52,16 @@ const AI_FEATURES: AIFeature[] = [
     tags: ["Tendências", "Sazonalidade", "Estoque"],
   },
   {
+    id: "mercado",
+    title: "Análise de Mercado",
+    description: "Pesquise tendências, produtos mais vendidos e oportunidades com contato direto de fornecedores.",
+    icon: BarChart3,
+    route: "/ia-mercado",
+    planGate: "IA Tributária",
+    category: "pesquisa",
+    tags: ["Tendências", "Fornecedores", "Oportunidades"],
+  },
+  {
     id: "pricing",
     title: "Preço Dinâmico",
     description: "IA sugere preços otimizados para maximizar lucro considerando concorrência, margem e demanda.",
