@@ -10,6 +10,9 @@ import {
   Loader2,
   ExternalLink,
   ArrowRightLeft,
+  Bell,
+  BellRing,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -28,6 +31,9 @@ import {
   useMLAuthUrl,
   usePersistedMLOrders,
   useSyncMLOrders,
+  useMLWebhookStatus,
+  useRegisterMLWebhook,
+  useUnregisterMLWebhook,
 } from "@/hooks/useMLData";
 import { useSearchParams } from "react-router-dom";
 
@@ -45,6 +51,9 @@ export default function IntegracaoML() {
   const syncOrders = useSyncMLOrders();
   const { data: authUrlData } = useMLAuthUrl();
   const { data: persistedOrders, isLoading: loadingPersisted } = usePersistedMLOrders();
+  const { data: webhookStatus, isLoading: loadingWebhook } = useMLWebhookStatus(isConnected);
+  const registerWebhook = useRegisterMLWebhook();
+  const unregisterWebhook = useUnregisterMLWebhook();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
@@ -227,6 +236,10 @@ export default function IntegracaoML() {
             <TabsTrigger value="items">Anúncios</TabsTrigger>
             <TabsTrigger value="orders">Vendas</TabsTrigger>
             <TabsTrigger value="linked">Vinculados</TabsTrigger>
+            <TabsTrigger value="webhooks">
+              <Bell className="h-4 w-4 mr-1" />
+              Webhooks
+            </TabsTrigger>
           </TabsList>
 
           {/* Anúncios Tab */}
@@ -497,6 +510,118 @@ export default function IntegracaoML() {
                   <p className="text-center text-muted-foreground py-8">
                     Nenhum produto vinculado ainda
                   </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Webhooks Tab */}
+          <TabsContent value="webhooks">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BellRing className="h-5 w-5" />
+                  Notificações em Tempo Real
+                </CardTitle>
+                <CardDescription>
+                  Configure webhooks para receber atualizações automáticas de pedidos, anúncios e perguntas do Mercado Livre.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const result = await registerWebhook.mutateAsync();
+                        toast({
+                          title: "Webhooks registrados!",
+                          description: `${result.results?.length ?? 0} tópico(s) configurado(s) para notificação em tempo real.`,
+                        });
+                      } catch (e: any) {
+                        toast({
+                          title: "Erro ao registrar webhooks",
+                          description: e.message,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={registerWebhook.isPending || connection?.needs_reauth}
+                  >
+                    {registerWebhook.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <BellRing className="mr-2 h-4 w-4" />
+                    )}
+                    Ativar Webhooks
+                  </Button>
+                </div>
+
+                {loadingWebhook ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : Array.isArray(webhookStatus) && webhookStatus.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Tópico</TableHead>
+                          <TableHead>URL de Callback</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {webhookStatus.map((wh: any, idx: number) => (
+                          <TableRow key={wh.id ?? idx}>
+                            <TableCell>
+                              <Badge variant="secondary">{wh.topic ?? "—"}</Badge>
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate">
+                              {wh.callback_url ?? "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default" className="bg-accent text-accent-foreground">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Ativo
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={async () => {
+                                  try {
+                                    await unregisterWebhook.mutateAsync(String(wh.id));
+                                    toast({ title: `Webhook "${wh.topic}" removido.` });
+                                  } catch (e: any) {
+                                    toast({
+                                      title: "Erro ao remover webhook",
+                                      description: e.message,
+                                      variant: "destructive",
+                                    });
+                                  }
+                                }}
+                                disabled={unregisterWebhook.isPending}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 space-y-2">
+                    <Bell className="h-10 w-10 mx-auto text-muted-foreground opacity-30" />
+                    <p className="text-muted-foreground">
+                      Nenhum webhook ativo. Ative para receber notificações em tempo real.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Com webhooks ativos, pedidos e alterações de anúncios são sincronizados automaticamente.
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>
