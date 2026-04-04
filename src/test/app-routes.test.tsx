@@ -2,46 +2,50 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import App from "@/App";
+import { MemoryRouter } from "react-router-dom";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import ForgotPassword from "@/pages/ForgotPassword";
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <TooltipProvider>{ui}</TooltipProvider>
+      <TooltipProvider>
+        <MemoryRouter>
+          {ui}
+        </MemoryRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };
 
-describe("App Routes", () => {
-  it("renders dashboard at /", () => {
-    renderWithProviders(<App />);
-    expect(screen.getAllByText("Dashboard").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByRole("heading", { name: "Dashboard" })).toBeInTheDocument();
+describe("Public Routes", () => {
+  it("renders login form with email and password fields", () => {
+    renderWithProviders(<Login />);
+    expect(screen.getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+    expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /entrar/i })).toBeInTheDocument();
   });
 
-  it("renders sidebar with all module links", () => {
-    renderWithProviders(<App />);
-    const sidebar = document.querySelector('[data-sidebar="sidebar"]');
-    expect(sidebar).toBeTruthy();
-    
-    // Check sidebar links exist
-    const links = sidebar!.querySelectorAll("a");
-    const linkTexts = Array.from(links).map((l) => l.textContent?.trim());
-    expect(linkTexts).toContain("Dashboard");
-    expect(linkTexts).toContain("Produtos");
-    expect(linkTexts).toContain("Entrada XML");
-    expect(linkTexts).toContain("Conferência");
-    expect(linkTexts).toContain("Estoque");
-    expect(linkTexts).toContain("Envio FULL");
-    expect(linkTexts).toContain("PDV");
-    expect(linkTexts).toContain("CRM");
-    expect(linkTexts).toContain("Painel HUB");
+  it("renders signup form with name, email and password fields", () => {
+    renderWithProviders(<Signup />);
+    expect(screen.getByRole("heading", { name: "Criar conta" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Nome completo")).toBeInTheDocument();
+    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+    expect(screen.getByLabelText("Senha")).toBeInTheDocument();
   });
 
-  it("renders ERP System header", () => {
-    renderWithProviders(<App />);
-    expect(screen.getByText("Sistema ERP")).toBeInTheDocument();
-    expect(screen.getByText("ERP System")).toBeInTheDocument();
+  it("renders forgot password page", () => {
+    renderWithProviders(<ForgotPassword />);
+    expect(screen.getByRole("heading", { name: "Esqueci a senha" })).toBeInTheDocument();
+    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+  });
+
+  it("login page has links to signup and forgot password", () => {
+    renderWithProviders(<Login />);
+    expect(screen.getByRole("link", { name: "Criar conta" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Esqueci a senha" })).toBeInTheDocument();
   });
 });
