@@ -13,6 +13,7 @@ import {
   Bell,
   BellRing,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -27,6 +28,8 @@ import {
   useMLOrders,
   useMLLinkedProducts,
   useSyncStock,
+  useSyncPrice,
+  useSyncAllToML,
   useSyncMLCatalog,
   useMLAuthUrl,
   usePersistedMLOrders,
@@ -47,6 +50,8 @@ export default function IntegracaoML() {
   const { data: orders, isLoading: loadingOrders } = useMLOrders(isConnected);
   const { data: linked, isLoading: loadingLinked } = useMLLinkedProducts();
   const syncStock = useSyncStock();
+  const syncPrice = useSyncPrice();
+  const syncAllToML = useSyncAllToML();
   const syncCatalog = useSyncMLCatalog();
   const syncOrders = useSyncMLOrders();
   const { data: authUrlData } = useMLAuthUrl();
@@ -425,11 +430,38 @@ export default function IntegracaoML() {
           {/* Vinculados Tab */}
           <TabsContent value="linked">
             <Card>
-              <CardHeader>
-                <CardTitle>Produtos Vinculados</CardTitle>
-                <CardDescription>
-                  Produtos locais vinculados a anúncios ML
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Produtos Vinculados</CardTitle>
+                  <CardDescription>
+                    Produtos locais vinculados a anúncios ML — sincronize preço e estoque para o Mercado Livre
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const result = await syncAllToML.mutateAsync();
+                      toast({
+                        title: "Sincronização ERP → ML concluída!",
+                        description: `${result.synced} produto(s) atualizados${result.errors ? `, ${result.errors} erro(s)` : ""}.`,
+                      });
+                    } catch (e: any) {
+                      toast({
+                        title: "Erro na sincronização em massa",
+                        description: e.message,
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={syncAllToML.isPending || !linked?.length || connection?.needs_reauth}
+                >
+                  {syncAllToML.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  Enviar Tudo → ML
+                </Button>
               </CardHeader>
               <CardContent>
                 {loadingLinked ? (
@@ -444,65 +476,102 @@ export default function IntegracaoML() {
                           <TableHead>Produto Local</TableHead>
                           <TableHead>SKU</TableHead>
                           <TableHead>ID ML</TableHead>
-                          <TableHead>Título ML</TableHead>
-                          <TableHead>Estoque Físico</TableHead>
+                          <TableHead>Preço ERP</TableHead>
+                          <TableHead>Preço ML</TableHead>
+                          <TableHead>Estoque ERP</TableHead>
                           <TableHead>Estoque ML</TableHead>
-                          <TableHead>Status Sync</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {linked.map((lp: any) => (
-                          <TableRow key={lp.id}>
-                            <TableCell className="font-medium">
-                              {lp.products?.name || "—"}
-                            </TableCell>
-                            <TableCell>{lp.products?.sku || "—"}</TableCell>
-                            <TableCell className="font-mono text-xs">
-                              {lp.ml_item_id}
-                            </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              {lp.ml_title || "—"}
-                            </TableCell>
-                            <TableCell>
-                              {lp.products?.stock_physical ?? 0}
-                            </TableCell>
-                            <TableCell>
-                              {lp.ml_available_quantity ?? "—"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  lp.sync_status === "synced"
-                                    ? "default"
-                                    : "secondary"
-                                }
-                              >
-                                {lp.sync_status || "pending"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  handleSyncStock(
-                                    lp.ml_item_id,
-                                    lp.products?.stock_physical ?? 0
-                                  )
-                                }
-                                disabled={syncStock.isPending}
-                              >
-                                <RefreshCw
-                                  className={`h-3 w-3 mr-1 ${
-                                    syncStock.isPending ? "animate-spin" : ""
-                                  }`}
-                                />
-                                Sync
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {linked.map((lp: any) => {
+                          const erpPrice = lp.products?.price ?? 0;
+                          const mlPrice = lp.ml_price ?? 0;
+                          const erpStock = lp.products?.stock_physical ?? 0;
+                          const mlStock = lp.ml_available_quantity ?? 0;
+                          const priceDiff = Math.abs(erpPrice - mlPrice) > 0.01;
+                          const stockDiff = erpStock !== mlStock;
+
+                          return (
+                            <TableRow key={lp.id}>
+                              <TableCell className="font-medium">
+                                {lp.products?.name || "—"}
+                              </TableCell>
+                              <TableCell>{lp.products?.sku || "—"}</TableCell>
+                              <TableCell className="font-mono text-xs">
+                                {lp.ml_item_id}
+                              </TableCell>
+                              <TableCell className={priceDiff ? "font-semibold text-primary" : ""}>
+                                R$ {erpPrice.toFixed(2)}
+                              </TableCell>
+                              <TableCell className={priceDiff ? "text-muted-foreground" : ""}>
+                                R$ {mlPrice.toFixed(2)}
+                                {priceDiff && (
+                                  <Badge variant="outline" className="ml-1 text-[10px]">
+                                    diferente
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className={stockDiff ? "font-semibold text-primary" : ""}>
+                                {erpStock}
+                              </TableCell>
+                              <TableCell className={stockDiff ? "text-muted-foreground" : ""}>
+                                {mlStock}
+                                {stockDiff && (
+                                  <Badge variant="outline" className="ml-1 text-[10px]">
+                                    diferente
+                                  </Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={lp.sync_status === "synced" ? "default" : "secondary"}
+                                >
+                                  {lp.sync_status || "pending"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    title="Enviar estoque ERP → ML"
+                                    onClick={() => handleSyncStock(lp.ml_item_id, erpStock)}
+                                    disabled={syncStock.isPending || !stockDiff}
+                                  >
+                                    <Package className="h-3 w-3 mr-1" />
+                                    Estoque
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    title="Enviar preço ERP → ML"
+                                    onClick={async () => {
+                                      try {
+                                        await syncPrice.mutateAsync({
+                                          itemId: lp.ml_item_id,
+                                          price: erpPrice,
+                                        });
+                                        toast({ title: "Preço sincronizado no ML!" });
+                                      } catch (e: any) {
+                                        toast({
+                                          title: "Erro ao sincronizar preço",
+                                          description: e.message,
+                                          variant: "destructive",
+                                        });
+                                      }
+                                    }}
+                                    disabled={syncPrice.isPending || !priceDiff}
+                                  >
+                                    <DollarSign className="h-3 w-3 mr-1" />
+                                    Preço
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
