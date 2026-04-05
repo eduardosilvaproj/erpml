@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Crown, Star, Zap, ArrowLeft } from "lucide-react";
+import { Check, X, Crown, Star, Zap, ArrowLeft, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
@@ -9,64 +9,76 @@ const plans = [
   {
     slug: "basic",
     name: "Básico",
-    price: "R$ 99,90",
-    period: "/mês",
-    description: "Essencial para pequenos negócios",
+    price: "Grátis",
+    period: "",
+    description: "O essencial para começar a organizar seu negócio, sem custo.",
     icon: Zap,
+    badge: null,
     features: [
-      { name: "Cadastro de Produtos", included: true },
+      { name: "Dashboard completo", included: true },
+      { name: "Cadastro de até 100 produtos", included: true },
+      { name: "PDV básico", included: true },
+      { name: "Controle de Estoque", included: true },
       { name: "Entrada XML (NF-e)", included: true },
       { name: "Conferência de Mercadorias", included: true },
-      { name: "Controle de Estoque", included: true },
-      { name: "PDV (Ponto de Venda)", included: true },
-      { name: "CRM Básico", included: true },
-      { name: "Até 3 usuários", included: true },
-      { name: "Até 500 produtos", included: true },
+      { name: "CRM básico", included: true },
+      { name: "Até 2 usuários", included: true },
       { name: "Integração Mercado Livre", included: false },
-      { name: "Envio FULL", included: false },
-      { name: "Painel HUB", included: false },
-      { name: "IA Tributária", included: false },
       { name: "Financeiro Avançado", included: false },
+      { name: "Recursos de IA", included: false },
+      { name: "Suporte prioritário", included: false },
     ],
   },
   {
     slug: "premium",
     name: "Premium",
-    price: "R$ 249,90",
+    price: "R$ 197,90",
     period: "/mês",
-    description: "Para negócios em crescimento",
+    description: "Gerenciamento avançado com integrações de marketplace, relatórios e suporte prioritário.",
     icon: Star,
     highlight: true,
+    badge: "Mais popular",
     features: [
       { name: "Tudo do Básico", included: true },
+      { name: "Até 5.000 produtos", included: true },
+      { name: "Até 10 usuários", included: true },
       { name: "Integração Mercado Livre", included: true },
       { name: "Envio FULL", included: true },
       { name: "Painel HUB", included: true },
-      { name: "IA Tributária", included: true },
       { name: "Financeiro Avançado", included: true },
-      { name: "Até 15 usuários", included: true },
-      { name: "Até 5.000 produtos", included: true },
+      { name: "Campanhas de Anúncios", included: true },
+      { name: "Kits de Produtos", included: true },
+      { name: "Relatórios completos", included: true },
       { name: "Suporte prioritário", included: true },
-      { name: "Multi-filial", included: false },
-      { name: "API dedicada", included: false },
+      { name: "Recursos de IA completos", included: false },
+      { name: "Multi-filiais", included: false },
     ],
   },
   {
     slug: "enterprise",
     name: "Enterprise",
-    price: "R$ 599,00",
+    price: "R$ 497,90",
     period: "/mês",
-    description: "Para grandes operações",
+    description: "Todos os recursos desbloqueados, incluindo IA avançada, automações e suporte dedicado.",
     icon: Crown,
+    badge: "Mais completo",
     features: [
       { name: "Tudo do Premium", included: true },
-      { name: "Multi-filial", included: true },
-      { name: "API dedicada", included: true },
-      { name: "Usuários ilimitados", included: true },
       { name: "Produtos ilimitados", included: true },
+      { name: "Usuários ilimitados", included: true },
+      { name: "IA Tributária & Chat IA", included: true },
+      { name: "Análise de Concorrência IA", included: true },
+      { name: "Previsão de Demanda IA", included: true },
+      { name: "Preço Dinâmico IA", included: true },
+      { name: "Análise de Mercado IA", included: true },
+      { name: "Análise de Rentabilidade IA", included: true },
+      { name: "Gerador de Descrições IA", included: true },
+      { name: "Sugestão de Respostas IA", included: true },
+      { name: "Multi-filiais", included: true },
+      { name: "API dedicada", included: true },
       { name: "Suporte dedicado 24/7", included: true },
       { name: "SLA garantido", included: true },
-      { name: "Treinamento personalizado", included: true },
+      { name: "Consultoria personalizada", included: true },
     ],
   },
 ];
@@ -93,7 +105,7 @@ export default function Upgrade() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
-          const isCurrent = plan.slug === currentSlug;
+          const isCurrent = plan.slug === currentSlug || (plan.slug === "basic" && currentSlug === "free");
           const Icon = plan.icon;
 
           return (
@@ -102,24 +114,47 @@ export default function Upgrade() {
               className={`relative flex flex-col ${
                 plan.highlight
                   ? "border-primary shadow-lg ring-2 ring-primary/20"
+                  : plan.slug === "enterprise"
+                  ? "border-amber-500/40 shadow-md ring-1 ring-amber-500/10"
                   : ""
               }`}
             >
-              {plan.highlight && (
+              {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary text-primary-foreground">Mais popular</Badge>
+                  <Badge
+                    className={
+                      plan.slug === "enterprise"
+                        ? "bg-amber-500 text-white hover:bg-amber-600"
+                        : "bg-primary text-primary-foreground"
+                    }
+                  >
+                    {plan.slug === "enterprise" && <Sparkles className="h-3 w-3 mr-1" />}
+                    {plan.badge}
+                  </Badge>
                 </div>
               )}
 
               <CardHeader className="text-center pb-2">
-                <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                  <Icon className="h-6 w-6 text-primary" />
+                <div
+                  className={`mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full ${
+                    plan.slug === "enterprise"
+                      ? "bg-amber-500/15"
+                      : "bg-primary/10"
+                  }`}
+                >
+                  <Icon
+                    className={`h-6 w-6 ${
+                      plan.slug === "enterprise" ? "text-amber-500" : "text-primary"
+                    }`}
+                  />
                 </div>
                 <CardTitle className="text-xl">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardDescription className="min-h-[40px]">{plan.description}</CardDescription>
                 <div className="mt-2">
                   <span className="text-3xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+                  {plan.period && (
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  )}
                 </div>
               </CardHeader>
 
@@ -145,8 +180,12 @@ export default function Upgrade() {
                   </Button>
                 ) : (
                   <Button
-                    className="w-full"
-                    variant={plan.highlight ? "default" : "outline"}
+                    className={`w-full ${
+                      plan.slug === "enterprise"
+                        ? "bg-amber-500 hover:bg-amber-600 text-white"
+                        : ""
+                    }`}
+                    variant={plan.highlight ? "default" : plan.slug === "enterprise" ? "default" : "outline"}
                     onClick={() =>
                       window.open(
                         `https://wa.me/5500000000000?text=${encodeURIComponent(
