@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,21 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { LogIn, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
+
+  // Redirect when session becomes available (after onAuthStateChange fires)
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate("/", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,10 +31,9 @@ export default function Login() {
 
     if (error) {
       toast.error(error.message);
-    } else {
-      navigate("/");
+      setLoading(false);
     }
-    setLoading(false);
+    // Don't navigate here — the useEffect above handles it after state updates
   };
 
   return (
