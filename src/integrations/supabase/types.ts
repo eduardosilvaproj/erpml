@@ -1056,6 +1056,60 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_logs: {
+        Row: {
+          asaas_payment_id: string | null
+          company_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payment_method: string | null
+          raw_data: Json | null
+          status: string
+          subscription_id: string | null
+          value: number | null
+        }
+        Insert: {
+          asaas_payment_id?: string | null
+          company_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          status: string
+          subscription_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          asaas_payment_id?: string | null
+          company_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payment_method?: string | null
+          raw_data?: Json | null
+          status?: string
+          subscription_id?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string
@@ -1443,6 +1497,75 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_payment_id: string | null
+          asaas_subscription_id: string | null
+          billing_type: string | null
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          next_due_date: string | null
+          paid_at: string | null
+          payment_method: string | null
+          plan_id: string
+          status: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          next_due_date?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          plan_id: string
+          status?: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_payment_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          next_due_date?: string | null
+          paid_at?: string | null
+          payment_method?: string | null
+          plan_id?: string
+          status?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
