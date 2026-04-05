@@ -140,7 +140,7 @@ function validateMessages(messages: unknown): { valid: boolean; error?: string; 
   return { valid: true, sanitized };
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
