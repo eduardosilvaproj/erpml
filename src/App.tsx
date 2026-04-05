@@ -71,6 +71,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/upgrade" element={<Upgrade />} />
             <Route
               path="/*"
               element={
@@ -108,7 +109,7 @@ const App = () => (
                       <Route path="/equipe" element={<Equipe />} />
                       <Route path="/onboarding" element={<Onboarding />} />
                       <Route path="/master-admin" element={<MasterAdmin />} />
-                      <Route path="/upgrade" element={<Upgrade />} />
+                      
                       <Route path="/boas-vindas" element={<BoasVindas />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
