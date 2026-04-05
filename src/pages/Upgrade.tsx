@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Crown, Star, Zap, ArrowLeft, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
+import { useAuth } from "@/contexts/AuthContext";
+import { AsaasCheckoutDialog } from "@/components/AsaasCheckoutDialog";
 
 const plans = [
   {
@@ -86,8 +89,20 @@ const plans = [
 export default function Upgrade() {
   const navigate = useNavigate();
   const { planName } = usePlanFeatures();
+  const { user } = useAuth();
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ slug: string; name: string; price: string } | null>(null);
 
   const currentSlug = planName?.toLowerCase() || "free";
+
+  const handleUpgrade = (plan: typeof plans[number]) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    setSelectedPlan({ slug: plan.slug, name: plan.name, price: plan.price });
+    setCheckoutOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -178,6 +193,10 @@ export default function Upgrade() {
                   <Button disabled className="w-full">
                     Plano atual
                   </Button>
+                ) : plan.slug === "basic" ? (
+                  <Button disabled variant="outline" className="w-full">
+                    Plano gratuito
+                  </Button>
                 ) : (
                   <Button
                     className={`w-full ${
@@ -185,17 +204,10 @@ export default function Upgrade() {
                         ? "bg-amber-500 hover:bg-amber-600 text-white"
                         : ""
                     }`}
-                    variant={plan.highlight ? "default" : plan.slug === "enterprise" ? "default" : "outline"}
-                    onClick={() =>
-                      window.open(
-                        `https://wa.me/5500000000000?text=${encodeURIComponent(
-                          `Olá! Gostaria de fazer upgrade para o plano ${plan.name}.`
-                        )}`,
-                        "_blank"
-                      )
-                    }
+                    variant={plan.highlight ? "default" : "default"}
+                    onClick={() => handleUpgrade(plan)}
                   >
-                    {plan.slug === "enterprise" ? "Fale conosco" : "Fazer upgrade"}
+                    Fazer upgrade
                   </Button>
                 )}
               </CardContent>
@@ -203,6 +215,16 @@ export default function Upgrade() {
           );
         })}
       </div>
+
+      {selectedPlan && (
+        <AsaasCheckoutDialog
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          planSlug={selectedPlan.slug}
+          planName={selectedPlan.name}
+          planPrice={selectedPlan.price}
+        />
+      )}
     </div>
   );
 }
