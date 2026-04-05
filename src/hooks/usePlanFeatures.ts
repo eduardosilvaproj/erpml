@@ -4,19 +4,25 @@ import { useMemo } from "react";
 /**
  * Maps sidebar route paths to the plan feature strings that grant access.
  * Items not listed here are available on ALL plans.
+ *
+ * - Básico: funcionalidades essenciais gratuitas
+ * - Premium: marketplace, financeiro, campanhas, relatórios, suporte prioritário
+ * - Enterprise: TUDO + todos os recursos de IA
  */
 const FEATURE_GATE: Record<string, string[]> = {
+  // Premium gates
   "/integracao-ml": ["Integração Mercado Livre"],
   "/movimentacao-full": ["Envio FULL"],
   "/painel-hub": ["Painel HUB"],
-  "/ia-consulta": ["IA Tributária"],
-  "/ia-concorrencia": ["IA Tributária"],
-  "/ia-demanda": ["IA Tributária"],
-  "/ia-preco": ["IA Tributária"],
   "/financeiro": ["Financeiro avançado"],
-  "/ia-rentabilidade": ["IA Tributária"],
-  "/ia-chat": ["IA Tributária"],
-  "/ia-mercado": ["IA Tributária"],
+  // Enterprise gates (IA features)
+  "/ia-consulta": ["IA Tributária"],
+  "/ia-concorrencia": ["Análise de Concorrência IA"],
+  "/ia-demanda": ["Previsão de Demanda IA"],
+  "/ia-preco": ["Preço Dinâmico IA"],
+  "/ia-rentabilidade": ["Análise de Rentabilidade IA"],
+  "/ia-chat": ["Chat com IA"],
+  "/ia-mercado": ["Análise de Mercado IA"],
 };
 
 export function usePlanFeatures() {
@@ -31,24 +37,14 @@ export function usePlanFeatures() {
   const isRouteAllowed = (path: string): boolean => {
     const required = FEATURE_GATE[path];
     if (!required) return true; // no gate = always allowed
-    // "Tudo do Básico" / "Tudo do Premium" inherit everything
-    const hasTudoBasico = features.some((f) => f.startsWith("Tudo do"));
-    if (hasTudoBasico && required.every((r) => isInheritedFeature(r, features))) return true;
-    return required.some((r) => features.includes(r));
+    // Direct feature match
+    if (required.some((r) => features.includes(r))) return true;
+    // "Tudo do Premium" inherits all Premium features (which includes Básico)
+    if (features.includes("Tudo do Premium")) return true;
+    // "Tudo do Básico" only inherits basic features (not ML/FULL/HUB/IA/Financeiro)
+    if (features.includes("Tudo do Básico")) return false;
+    return false;
   };
 
   return { features, isRouteAllowed, isLoading, planName: company?.plan?.name };
-}
-
-/** Features that are inherited through "Tudo do X" chains */
-function isInheritedFeature(feature: string, planFeatures: string[]): boolean {
-  // If directly present
-  if (planFeatures.includes(feature)) return true;
-  // "Tudo do Premium" inherits premium features which include ML, FULL, HUB, IA, Financeiro
-  if (planFeatures.includes("Tudo do Premium")) return true;
-  if (planFeatures.includes("Tudo do Básico")) {
-    // Basic features don't include ML/FULL/HUB/IA/Financeiro avançado
-    return false;
-  }
-  return false;
 }
