@@ -47,7 +47,16 @@ import AnaliseMercado from "./pages/AnaliseMercado";
 import GeradorEAN13 from "./pages/GeradorEAN13";
 import Kits from "./pages/Kits";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,        // 30s — avoid refetches on every navigation
+      gcTime: 5 * 60 * 1000,    // 5min — keep unused cache before GC
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
