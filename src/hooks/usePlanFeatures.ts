@@ -9,6 +9,15 @@ import { useMemo } from "react";
  * - Premium: marketplace, financeiro, campanhas, relatórios, suporte prioritário
  * - Enterprise: TUDO + todos os recursos de IA
  */
+const PREMIUM_ROUTES = new Set([
+  "/integracao-ml", "/movimentacao-full", "/painel-hub", "/financeiro", "/mentor-vendas",
+]);
+
+const ENTERPRISE_ROUTES = new Set([
+  "/ia-consulta", "/ia-concorrencia", "/ia-demanda", "/ia-preco",
+  "/ia-rentabilidade", "/ia-chat", "/ia-mercado",
+]);
+
 const FEATURE_GATE: Record<string, string[]> = {
   // Premium gates
   "/integracao-ml": ["Integração Mercado Livre"],
@@ -25,6 +34,13 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/ia-chat": ["Chat com IA"],
   "/ia-mercado": ["Análise de Mercado IA"],
 };
+
+/** Returns the minimum plan name required for a given route */
+export function getRequiredPlan(path: string): string | null {
+  if (ENTERPRISE_ROUTES.has(path)) return "Enterprise";
+  if (PREMIUM_ROUTES.has(path)) return "Premium";
+  return null;
+}
 
 export function usePlanFeatures() {
   const { data: company, isLoading } = useMyCompany();
