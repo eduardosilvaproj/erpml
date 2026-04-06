@@ -46,6 +46,7 @@ import ChatIA from "./pages/ChatIA";
 import AnaliseMercado from "./pages/AnaliseMercado";
 import GeradorEAN13 from "./pages/GeradorEAN13";
 import Kits from "./pages/Kits";
+import MentorVendasML from "./pages/MentorVendasML";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -105,6 +106,7 @@ const App = () => (
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/ia-ean13" element={<GeradorEAN13 />} />
                       <Route path="/admin" element={<AdminPanel />} />
+                      <Route path="/mentor-vendas" element={<MentorVendasML />} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/equipe" element={<Equipe />} />
                       <Route path="/onboarding" element={<Onboarding />} />
