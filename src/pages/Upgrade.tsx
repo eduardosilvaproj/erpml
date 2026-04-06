@@ -2,11 +2,26 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Crown, Star, Zap, ArrowLeft, Sparkles } from "lucide-react";
+import { Check, X, Crown, Star, Zap, ArrowLeft, Sparkles, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMyCompany } from "@/hooks/useCompanyData";
+import { useAsaasPayment } from "@/hooks/useAsaasPayment";
 import { AsaasCheckoutDialog } from "@/components/AsaasCheckoutDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const plans = [
   {
@@ -90,10 +105,14 @@ export default function Upgrade() {
   const navigate = useNavigate();
   const { planName } = usePlanFeatures();
   const { user } = useAuth();
+  const { data: company } = useMyCompany();
+  const { cancelSubscription, loading: cancelLoading } = useAsaasPayment();
+  const queryClient = useQueryClient();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<{ slug: string; name: string; price: string } | null>(null);
 
   const currentSlug = planName?.toLowerCase() || "free";
+  const isPaidPlan = currentSlug !== "free" && currentSlug !== "basic";
 
   const handleUpgrade = (plan: typeof plans[number]) => {
     if (!user) {
@@ -102,6 +121,15 @@ export default function Upgrade() {
     }
     setSelectedPlan({ slug: plan.slug, name: plan.name, price: plan.price });
     setCheckoutOpen(true);
+  };
+
+  const handleCancel = async () => {
+    if (!company?.id) return;
+    const success = await cancelSubscription(company.id);
+    if (success) {
+      toast.success("Assinatura cancelada com sucesso. Seu plano foi alterado para Básico.");
+      queryClient.invalidateQueries({ queryKey: ["my-company"] });
+    }
   };
 
   return (
@@ -117,6 +145,48 @@ export default function Upgrade() {
           </p>
         </div>
       </div>
+
+      {isPaidPlan && user && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="font-medium text-sm">Cancelar assinatura</p>
+                <p className="text-xs text-muted-foreground">
+                  Ao cancelar, seu plano será alterado para Básico (gratuito).
+                </p>
+              </div>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={cancelLoading}>
+                  {cancelLoading ? "Cancelando..." : "Cancelar plano"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cancelar assinatura?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja cancelar sua assinatura do plano <strong>{planName}</strong>?
+                    Você perderá acesso a todos os recursos exclusivos e será rebaixado ao plano Básico (gratuito).
+                    Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Manter plano</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleCancel}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Confirmar cancelamento
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {

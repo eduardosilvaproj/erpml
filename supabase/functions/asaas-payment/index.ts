@@ -55,6 +55,8 @@ Deno.serve(async (req) => {
       return await createSubscription(body, supabaseAdmin, userId, ASAAS_API_KEY);
     } else if (action === "create-payment") {
       return await createPayment(body, supabaseAdmin, userId, ASAAS_API_KEY);
+    } else if (action === "cancel-subscription") {
+      return await cancelSubscription(body, supabaseAdmin, userId, ASAAS_API_KEY);
     } else {
       return new Response(JSON.stringify({ error: "Invalid action" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -328,4 +330,119 @@ async function createPayment(
     }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
   );
+}
+
+async function cancelSubscription(
+  body: { companyId: string },
+  supabaseAdmin: ReturnType<typeof createClient>,
+  userId: string,
+  apiKey: string
+) {
+  const { companyId } = body;
+
+  if (!companyId || typeof companyId !== "string") {
+    return new Response(JSON.stringify({ error: "Missing companyId" }), {
+      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Verify company membership
+  const { data: memberCheck } = await supabaseAdmin.rpc("is_company_member", {
+    _user_id: userId,
+    _company_id: companyId,
+  });
+  if (!memberCheck) {
+    return new Response(JSON.stringify({ error: "Not a company member" }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Verify user is the company owner
+  const { data: company } = await supabaseAdmin
+    .from("companies")
+    .select("owner_id")
+    .eq("id", companyId)
+    .single();
+
+  if (!company || company.owner_id !== userId) {
+    return new Response(JSON.stringify({ error: "Apenas o proprietário pode cancelar a assinatura" }), {
+      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Find active subscription
+  const { data: subscription } = await supabaseAdmin
+    .from("subscriptions")
+    .select("*")
+    .eq("company_id", companyId)
+    .in("status", ["active", "pending", "overdue"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!subscription) {
+    return new Response(JSON.stringify({ error: "Nenhuma assinatura ativa encontrada" }), {
+      status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Cancel in Asaas if there's a subscription ID
+  if (subscription.asaas_subscription_id) {
+    const response = await fetch(
+      `${ASAAS_API_URL}/subscriptions/${subscription.asaas_subscription_id}`,
+      {
+        method: "DELETE",
+        headers: { access_token: apiKey },
+      }
+    );
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      console.error("Asaas cancel error:", JSON.stringify(errData));
+      return new Response(JSON.stringify({ error: "Erro ao cancelar assinatura no gateway" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
+
+  // Update subscription status in DB
+  await supabaseAdmin
+    .from("subscriptions")
+    .update({ status: "cancelled", updated_at: new Date().toISOString() })
+    .eq("id", subscription.id);
+
+  // Downgrade company to free plan
+  const { data: freePlan } = await supabaseAdmin
+    .from("plans")
+    .select("id")
+    .eq("slug", "free")
+    .single();
+
+  if (freePlan) {
+    await supabaseAdmin
+      .from("companies")
+      .update({ plan_id: freePlan.id })
+      .eq("id", companyId);
+  }
+
+  // Log the cancellation
+  await supabaseAdmin.from("payment_logs").insert({
+    company_id: companyId,
+    event_type: "SUBSCRIPTION_CANCELLED",
+    status: "cancelled",
+    subscription_id: subscription.id,
+    value: subscription.value,
+    payment_method: subscription.payment_method,
+  });
+
+  // Audit log
+  await supabaseAdmin.from("company_audit_log").insert({
+    company_id: companyId,
+    user_id: userId,
+    action: "subscription_cancelled",
+    details: { subscription_id: subscription.id, plan_id: subscription.plan_id },
+  });
+
+  return new Response(JSON.stringify({ cancelled: true }), {
+    status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
 }
