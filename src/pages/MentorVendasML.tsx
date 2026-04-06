@@ -9,14 +9,17 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   LayoutDashboard, Search, Star, TrendingUp, Sparkles, Target, CheckCircle2,
   ArrowRight, DollarSign, AlertTriangle, Lightbulb, Trophy, Zap, BarChart3,
-  ShieldCheck, Megaphone, Calculator, Package, Loader2
+  ShieldCheck, Megaphone, Calculator, Package, Loader2, ShoppingCart, Users,
+  Clock, Award
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { useAuth } from "@/contexts/AuthContext";
 import ReactMarkdown from "react-markdown";
 
 const STORAGE_KEY_DIAG = "mentor_diagnostico";
