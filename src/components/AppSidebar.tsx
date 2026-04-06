@@ -67,6 +67,11 @@ export function AppSidebar() {
           >
             <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
             {!collapsed && <span className="text-[13px] flex-1">{item.title}</span>}
+            {!collapsed && item.premium && (
+              <Badge variant="outline" className="ml-auto h-4 px-1.5 text-[9px] font-medium border-primary/30 text-primary/70 bg-primary/5">
+                Premium
+              </Badge>
+            )}
             {badgeCount > 0 && (
               <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
                 {badgeCount}
