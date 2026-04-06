@@ -15,6 +15,7 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/movimentacao-full": ["Envio FULL"],
   "/painel-hub": ["Painel HUB"],
   "/financeiro": ["Financeiro avançado"],
+  "/mentor-vendas": ["Mentor de Vendas ML"],
   // Enterprise gates (IA features)
   "/ia-consulta": ["IA Tributária"],
   "/ia-concorrencia": ["Análise de Concorrência IA"],
