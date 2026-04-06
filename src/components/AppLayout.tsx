@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
+import MaxMentorChat from "@/components/MaxMentorChat";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +43,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
       <SupportChat />
+      <MaxMentorChat />
     </SidebarProvider>
   );
 };
