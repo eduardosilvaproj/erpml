@@ -31,15 +31,15 @@ const menuItems = [
   { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
   { title: "Estoque", url: "/estoque", icon: Warehouse },
   { title: "Kits", url: "/kits", icon: Boxes },
-  { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft },
-  { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag },
+  { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, premium: true },
+  { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag, premium: true },
   { title: "Campanhas", url: "/campanhas", icon: Megaphone },
   { title: "PDV", url: "/pdv", icon: Monitor },
   { title: "CRM", url: "/crm", icon: Users },
-  { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
-  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+  { title: "Painel HUB", url: "/painel-hub", icon: BarChart3, premium: true },
+  { title: "Financeiro", url: "/financeiro", icon: DollarSign, premium: true },
   { title: "Central de IA", url: "/ia-hub", icon: Sparkles },
-  { title: "Mentor de Vendas", url: "/mentor-vendas", icon: GraduationCap },
+  { title: "Mentor de Vendas", url: "/mentor-vendas", icon: GraduationCap, premium: true },
 ];
 
 export function AppSidebar() {
@@ -67,6 +67,11 @@ export function AppSidebar() {
           >
             <item.icon className="mr-3 h-[18px] w-[18px]" strokeWidth={1.75} />
             {!collapsed && <span className="text-[13px] flex-1">{item.title}</span>}
+            {!collapsed && item.premium && (
+              <Badge variant="outline" className="ml-auto h-4 px-1.5 text-[9px] font-medium border-primary/30 text-primary/70 bg-primary/5">
+                Premium
+              </Badge>
+            )}
             {badgeCount > 0 && (
               <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
                 {badgeCount}
