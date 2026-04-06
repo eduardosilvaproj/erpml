@@ -79,5 +79,23 @@ export function useAsaasPayment() {
     }
   };
 
-  return { createCustomer, createSubscription, createPayment, loading };
+  const cancelSubscription = async (companyId: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("asaas-payment", {
+        body: { action: "cancel-subscription", companyId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return true;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao cancelar assinatura";
+      toast.error(message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { createCustomer, createSubscription, createPayment, cancelSubscription, loading };
 }
