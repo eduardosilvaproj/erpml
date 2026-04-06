@@ -423,16 +423,40 @@ function DiagnosticoTab() {
   );
 }
 
-/* ─── Tab 3: Otimização de Anúncios ─── */
+/* ─── Tab 3: Otimização de Anúncios (com produtos reais) ─── */
 function OtimizacaoTab() {
+  const companyId = useCompanyId();
+  const { user } = useAuth();
   const [product, setProduct] = useState("");
   const [titles, setTitles] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [realProducts, setRealProducts] = useState<{ name: string; cost: number; price: number }[]>([]);
+
+  // Load real products for quick selection
+  useEffect(() => {
+    if (!companyId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("name, cost, price")
+        .eq("company_id", companyId)
+        .eq("active", true)
+        .order("name")
+        .limit(50);
+      if (data) setRealProducts(data);
+    })();
+  }, [companyId]);
 
   // Calculator
   const [cost, setCost] = useState("");
   const [taxRate, setTaxRate] = useState("16");
   const [margin, setMargin] = useState("30");
+
+  const selectProduct = (name: string) => {
+    setProduct(name);
+    const found = realProducts.find(p => p.name === name);
+    if (found && found.cost > 0) setCost(String(found.cost));
+  };
 
   const calcPrice = () => {
     const c = parseFloat(cost);
