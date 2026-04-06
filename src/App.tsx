@@ -106,7 +106,7 @@ const App = () => (
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/ia-ean13" element={<GeradorEAN13 />} />
                       <Route path="/admin" element={<AdminPanel />} />
-                      <Route path="/mentor-vendas" element={<MentorVendasML />} />
+                      <Route path="/mentor-vendas" element={<PlanProtectedRoute path="/mentor-vendas"><MentorVendasML /></PlanProtectedRoute>} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/equipe" element={<Equipe />} />
                       <Route path="/onboarding" element={<Onboarding />} />
