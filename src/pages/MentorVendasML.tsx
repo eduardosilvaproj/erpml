@@ -510,9 +510,20 @@ Formate de forma clara com números.`;
 
 /* ─── Tab 4: Reputação & Performance ─── */
 function ReputacaoTab() {
-  const [sales, setSales] = useState("100");
-  const [delays, setDelays] = useState("2");
-  const [complaints, setComplaints] = useState("1");
+  const companyId = useCompanyId();
+  const [sales, setSales] = useState("0");
+  const [delays, setDelays] = useState("0");
+  const [complaints, setComplaints] = useState("0");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!companyId || loaded) return;
+    (async () => {
+      const { count } = await supabase.from("ml_orders").select("*", { count: "exact", head: true }).eq("company_id", companyId);
+      if (count && count > 0) setSales(String(count));
+      setLoaded(true);
+    })();
+  }, [companyId, loaded]);
 
   const totalSales = parseInt(sales) || 0;
   const totalDelays = parseInt(delays) || 0;
