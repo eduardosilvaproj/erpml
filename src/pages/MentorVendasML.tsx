@@ -232,14 +232,17 @@ function DashboardTab() {
   );
 }
 
-/* ─── Tab 2: Diagnóstico Inteligente ─── */
+/* ─── Tab 2: Diagnóstico Inteligente (com contexto real) ─── */
 function DiagnosticoTab() {
+  const companyId = useCompanyId();
+  const { user } = useAuth();
   const [level, setLevel] = useState("");
   const [productType, setProductType] = useState("");
   const [goal, setGoal] = useState("");
   const [plan, setPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
+  const [realContext, setRealContext] = useState("");
 
   useEffect(() => {
     try {
@@ -251,6 +254,28 @@ function DiagnosticoTab() {
       }
     } catch {}
   }, []);
+
+  // Load real context for AI prompt enrichment
+  useEffect(() => {
+    if (!companyId || !user) return;
+    (async () => {
+      const [{ count: prodCount }, { data: mlOrders }, { data: mlQuestions }] = await Promise.all([
+        supabase.from("products").select("*", { count: "exact", head: true }).eq("company_id", companyId),
+        supabase.from("ml_orders").select("total_amount, marketplace_fee, shipping_cost, status").eq("company_id", companyId),
+        supabase.from("ml_questions").select("status").eq("company_id", companyId).eq("status", "unanswered"),
+      ]);
+      const orders = mlOrders || [];
+      const revenue = orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+      const fees = orders.reduce((s, o) => s + (o.marketplace_fee || 0), 0);
+      const profit = revenue - fees;
+      const unanswered = mlQuestions?.length || 0;
+      setRealContext(
+        `Contexto real do vendedor: ${prodCount || 0} produtos cadastrados, ${orders.length} vendas ML, ` +
+        `faturamento R$${revenue.toFixed(2)}, lucro R$${profit.toFixed(2)}, ` +
+        `${unanswered} perguntas sem resposta.`
+      );
+    })();
+  }, [companyId, user]);
 
   const saveDiag = (p: string, c: Record<string, boolean>) => {
     localStorage.setItem(STORAGE_KEY_DIAG, JSON.stringify({ plan: p, checklist: c }));
@@ -264,7 +289,7 @@ function DiagnosticoTab() {
       if (!session) throw new Error("Login necessário");
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mentor-ai`;
-      const prompt = `Crie um plano de ação detalhado em formato de checklist (com itens numerados) para um vendedor de nível "${level}" que vende "${productType}" e quer "${goal}". Máximo 8 itens, cada um com uma frase curta e acionável.`;
+      const prompt = `${realContext ? realContext + "\n\n" : ""}Crie um plano de ação detalhado em formato de checklist (com itens numerados) para um vendedor de nível "${level}" que vende "${productType}" e quer "${goal}". Máximo 8 itens, cada um com uma frase curta e acionável. Considere os dados reais do vendedor se disponíveis.`;
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -320,6 +345,19 @@ function DiagnosticoTab() {
 
   return (
     <div className="space-y-6">
+      {realContext && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <BarChart3 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm mb-1">Dados Reais Detectados</p>
+              <p className="text-xs text-muted-foreground">{realContext}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Esses dados serão usados pela IA para personalizar seu plano.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Search className="h-5 w-5 text-primary" /> Diagnóstico do Vendedor</CardTitle>
