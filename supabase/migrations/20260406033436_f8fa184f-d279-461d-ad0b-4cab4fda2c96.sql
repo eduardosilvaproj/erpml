@@ -1,0 +1,1 @@
+UPDATE plans SET features = features || '["Mentor de Vendas ML"]'::jsonb WHERE slug IN ('premium', 'enterprise') AND NOT (features @> '["Mentor de Vendas ML"]'::jsonb);
