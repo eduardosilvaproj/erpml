@@ -24,64 +24,174 @@ import ReactMarkdown from "react-markdown";
 
 const STORAGE_KEY_DIAG = "mentor_diagnostico";
 
-/* ─── Tab 1: Dashboard do Vendedor ─── */
+/* ─── Tab 1: Dashboard do Vendedor (dados reais ML) ─── */
 function DashboardTab() {
   const companyId = useCompanyId();
-  const [stats, setStats] = useState({ totalProducts: 0, totalSales: 0, revenue: 0 });
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalProducts: 0, totalSales: 0, revenue: 0,
+    mlOrders: 0, mlRevenue: 0, mlFees: 0, mlShipping: 0,
+    ticketMedio: 0, pendingOrders: 0, questionsUnanswered: 0,
+    topProducts: [] as { title: string; qty: number; revenue: number }[],
+  });
 
   useEffect(() => {
-    if (!companyId) return;
+    if (!companyId || !user) return;
     (async () => {
-      const [{ count: prodCount }, { data: sales }] = await Promise.all([
-        supabase.from("products").select("*", { count: "exact", head: true }).eq("company_id", companyId),
-        supabase.from("sales").select("total_value").eq("company_id", companyId).eq("status", "completed"),
-      ]);
-      setStats({
-        totalProducts: prodCount || 0,
-        totalSales: sales?.length || 0,
-        revenue: sales?.reduce((s, v) => s + (v.total_value || 0), 0) || 0,
-      });
-    })();
-  }, [companyId]);
+      setLoading(true);
+      try {
+        const [
+          { count: prodCount },
+          { data: sales },
+          { data: mlOrders },
+          { data: mlOrderItems },
+          { data: mlQuestions },
+          { data: mlLinked },
+        ] = await Promise.all([
+          supabase.from("products").select("*", { count: "exact", head: true }).eq("company_id", companyId),
+          supabase.from("sales").select("total_value").eq("company_id", companyId).eq("status", "completed"),
+          supabase.from("ml_orders").select("total_amount, marketplace_fee, shipping_cost, status").eq("company_id", companyId),
+          supabase.from("ml_order_items").select("ml_item_title, quantity, total_price, ml_order_id").order("total_price", { ascending: false }),
+          supabase.from("ml_questions").select("status").eq("company_id", companyId).eq("status", "unanswered"),
+          supabase.from("ml_linked_products").select("ml_title").eq("user_id", user.id),
+        ]);
 
-  const progress = Math.min(100, Math.round((stats.totalSales / 50) * 100));
+        const mlOrderList = mlOrders || [];
+        const mlRevenue = mlOrderList.reduce((s, o) => s + (o.total_amount || 0), 0);
+        const mlFees = mlOrderList.reduce((s, o) => s + (o.marketplace_fee || 0), 0);
+        const mlShipping = mlOrderList.reduce((s, o) => s + (o.shipping_cost || 0), 0);
+        const pendingOrders = mlOrderList.filter(o => o.status === "payment_required" || o.status === "payment_in_process").length;
+
+        // Top products from ML order items
+        const productMap = new Map<string, { qty: number; revenue: number }>();
+        (mlOrderItems || []).forEach(item => {
+          const title = item.ml_item_title || "Sem título";
+          const existing = productMap.get(title) || { qty: 0, revenue: 0 };
+          productMap.set(title, { qty: existing.qty + (item.quantity || 0), revenue: existing.revenue + (item.total_price || 0) });
+        });
+        const topProducts = Array.from(productMap.entries())
+          .map(([title, d]) => ({ title, ...d }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
+
+        setStats({
+          totalProducts: prodCount || 0,
+          totalSales: (sales?.length || 0) + mlOrderList.length,
+          revenue: (sales?.reduce((s, v) => s + (v.total_value || 0), 0) || 0) + mlRevenue,
+          mlOrders: mlOrderList.length,
+          mlRevenue,
+          mlFees,
+          mlShipping,
+          ticketMedio: mlOrderList.length > 0 ? mlRevenue / mlOrderList.length : 0,
+          pendingOrders,
+          questionsUnanswered: mlQuestions?.length || 0,
+          topProducts,
+        });
+      } catch (e) {
+        console.error("Error loading mentor stats:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [companyId, user]);
+
+  const progress = Math.min(100, Math.round((stats.mlOrders / 100) * 100));
+  const lucroLiquido = stats.mlRevenue - stats.mlFees - stats.mlShipping;
+  const margemLucro = stats.mlRevenue > 0 ? (lucroLiquido / stats.mlRevenue) * 100 : 0;
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+        <Skeleton className="h-32 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Primary ML Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Produtos Cadastrados", value: stats.totalProducts, icon: Package, color: "text-blue-500" },
-          { label: "Vendas Realizadas", value: stats.totalSales, icon: TrendingUp, color: "text-green-500" },
-          { label: "Faturamento", value: `R$ ${stats.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-amber-500" },
+          { label: "Vendas ML", value: stats.mlOrders, icon: ShoppingCart, color: "text-blue-500", sub: `${stats.pendingOrders} pendentes` },
+          { label: "Faturamento ML", value: `R$ ${stats.mlRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-green-500", sub: `Ticket: R$ ${stats.ticketMedio.toFixed(2)}` },
+          { label: "Lucro Líquido", value: `R$ ${lucroLiquido.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: margemLucro >= 0 ? "text-emerald-500" : "text-red-500", sub: `Margem: ${margemLucro.toFixed(1)}%` },
+          { label: "Perguntas Abertas", value: stats.questionsUnanswered, icon: Users, color: "text-amber-500", sub: `${stats.totalProducts} produtos` },
         ].map(s => (
           <Card key={s.label}>
-            <CardContent className="p-5 flex items-center gap-4">
-              <div className={`h-12 w-12 rounded-xl bg-muted flex items-center justify-center ${s.color}`}>
-                <s.icon className="h-6 w-6" />
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`h-11 w-11 rounded-xl bg-muted flex items-center justify-center ${s.color}`}>
+                <s.icon className="h-5 w-5" />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
-                <p className="text-xl font-bold">{s.value}</p>
+              <div className="min-w-0">
+                <p className="text-[11px] text-muted-foreground truncate">{s.label}</p>
+                <p className="text-lg font-bold leading-tight">{s.value}</p>
+                <p className="text-[10px] text-muted-foreground">{s.sub}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
+      {/* Financial Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Comissões ML</p>
+            <p className="text-xl font-bold text-red-500">- R$ {stats.mlFees.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Frete</p>
+            <p className="text-xl font-bold text-orange-500">- R$ {stats.mlShipping.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Vendas PDV</p>
+            <p className="text-xl font-bold text-primary">R$ {((stats.revenue - stats.mlRevenue) > 0 ? stats.revenue - stats.mlRevenue : 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Progress */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2"><Trophy className="h-5 w-5 text-amber-500" /> Progresso do Vendedor</CardTitle>
-          <CardDescription>Meta: 50 vendas para o próximo nível</CardDescription>
+          <CardDescription>Meta: 100 vendas ML para o próximo nível</CardDescription>
         </CardHeader>
         <CardContent>
           <Progress value={progress} className="h-3" />
-          <p className="text-xs text-muted-foreground mt-2">{stats.totalSales}/50 vendas — {progress}%</p>
+          <p className="text-xs text-muted-foreground mt-2">{stats.mlOrders}/100 vendas ML — {progress}%</p>
         </CardContent>
       </Card>
 
-      {/* Opportunity & Action */}
+      {/* Top Products */}
+      {stats.topProducts.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2"><Award className="h-5 w-5 text-primary" /> Top Produtos ML</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {stats.topProducts.map((p, i) => (
+                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                  <Badge variant="outline" className="h-6 w-6 p-0 flex items-center justify-center text-xs shrink-0">{i + 1}</Badge>
+                  <span className="text-sm flex-1 truncate">{p.title}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{p.qty}x</span>
+                  <span className="text-sm font-medium shrink-0">R$ {p.revenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Smart Recommendations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900/50">
           <CardContent className="p-5">
@@ -89,7 +199,13 @@ function DashboardTab() {
               <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold text-sm mb-1">Oportunidade de Melhoria</p>
-                <p className="text-sm text-muted-foreground">Otimize os títulos dos seus anúncios com palavras-chave relevantes para aumentar a visibilidade em até 40%.</p>
+                <p className="text-sm text-muted-foreground">
+                  {stats.questionsUnanswered > 0
+                    ? `Você tem ${stats.questionsUnanswered} perguntas sem resposta. Responda rápido para melhorar sua conversão e reputação!`
+                    : margemLucro < 15
+                      ? "Sua margem está abaixo de 15%. Revise seus custos e considere ajustar preços."
+                      : "Otimize os títulos dos seus anúncios com palavras-chave para aumentar a visibilidade em até 40%."}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -100,7 +216,13 @@ function DashboardTab() {
               <Target className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
               <div>
                 <p className="font-semibold text-sm mb-1">Próxima Ação Recomendada</p>
-                <p className="text-sm text-muted-foreground">Revise a precificação dos seus 5 produtos mais vendidos para garantir margem competitiva.</p>
+                <p className="text-sm text-muted-foreground">
+                  {stats.pendingOrders > 0
+                    ? `Atenção: ${stats.pendingOrders} pedidos aguardando pagamento. Monitore e prepare o envio.`
+                    : stats.mlOrders === 0
+                      ? "Vincule seus produtos ao Mercado Livre na aba Integração ML para começar a vender."
+                      : "Revise a precificação dos seus produtos mais vendidos para maximizar a margem."}
+                </p>
               </div>
             </div>
           </CardContent>
