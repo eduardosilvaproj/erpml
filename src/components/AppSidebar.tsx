@@ -103,6 +103,7 @@ export function AppSidebar() {
                 const allowed = isRouteAllowed(item.url);
                 
                 if (!allowed) {
+                  const requiredPlan = getRequiredPlan(item.url) || "Superior";
                   return (
                     <SidebarMenuItem key={item.title}>
                       <TooltipProvider delayDuration={200}>
@@ -118,8 +119,9 @@ export function AppSidebar() {
                               )}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="right" className="text-xs">
-                            Disponível nos planos superiores
+                          <TooltipContent side="right" className="text-xs max-w-[200px] space-y-1 p-3">
+                            <p className="font-medium">🔒 Recurso do plano {requiredPlan}</p>
+                            <p className="text-muted-foreground">Faça upgrade para desbloquear esta funcionalidade.</p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
