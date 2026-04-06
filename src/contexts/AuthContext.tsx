@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -24,31 +24,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const isReady = useRef(false);
 
   useEffect(() => {
-    // Set up listener FIRST to catch all events
+    // 1. Restore session from storage FIRST
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      isReady.current = true;
+      setLoading(false);
+    });
+
+    // 2. Listen for subsequent auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Skip INITIAL_SESSION — getSession already handles it
+        if (event === "INITIAL_SESSION") return;
+
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
 
-        // Only invalidate queries on actual sign-in/sign-out, not on initial load
+        // Only mark ready if getSession hasn't done it yet
+        if (!isReady.current) {
+          isReady.current = true;
+          setLoading(false);
+        }
+
+        // Invalidate queries on real auth events, deferred to next tick
         if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "TOKEN_REFRESHED") {
-          // Defer invalidation to next tick so the session state is committed first
           setTimeout(() => {
             queryClient.invalidateQueries();
           }, 0);
         }
       }
     );
-
-    // Then restore session from storage
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, [queryClient]);
