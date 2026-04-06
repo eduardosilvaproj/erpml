@@ -23,7 +23,7 @@ const STORAGE_KEY_DIAG = "mentor_diagnostico";
 
 /* ─── Tab 1: Dashboard do Vendedor ─── */
 function DashboardTab() {
-  const { companyId } = useCompanyId();
+  const companyId = useCompanyId();
   const [stats, setStats] = useState({ totalProducts: 0, totalSales: 0, revenue: 0 });
 
   useEffect(() => {
