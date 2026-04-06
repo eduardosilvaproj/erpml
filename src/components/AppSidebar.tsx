@@ -2,7 +2,7 @@ import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
-  Building2, Crown, Lock, Megaphone, MessageSquare, Boxes
+  Building2, Crown, Lock, Megaphone, MessageSquare, Boxes, GraduationCap
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -39,6 +39,7 @@ const menuItems = [
   { title: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
   { title: "Financeiro", url: "/financeiro", icon: DollarSign },
   { title: "Central de IA", url: "/ia-hub", icon: Sparkles },
+  { title: "Mentor de Vendas", url: "/mentor-vendas", icon: GraduationCap },
 ];
 
 export function AppSidebar() {
