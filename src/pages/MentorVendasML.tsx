@@ -232,14 +232,17 @@ function DashboardTab() {
   );
 }
 
-/* ─── Tab 2: Diagnóstico Inteligente ─── */
+/* ─── Tab 2: Diagnóstico Inteligente (com contexto real) ─── */
 function DiagnosticoTab() {
+  const companyId = useCompanyId();
+  const { user } = useAuth();
   const [level, setLevel] = useState("");
   const [productType, setProductType] = useState("");
   const [goal, setGoal] = useState("");
   const [plan, setPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
+  const [realContext, setRealContext] = useState("");
 
   useEffect(() => {
     try {
@@ -251,6 +254,28 @@ function DiagnosticoTab() {
       }
     } catch {}
   }, []);
+
+  // Load real context for AI prompt enrichment
+  useEffect(() => {
+    if (!companyId || !user) return;
+    (async () => {
+      const [{ count: prodCount }, { data: mlOrders }, { data: mlQuestions }] = await Promise.all([
+        supabase.from("products").select("*", { count: "exact", head: true }).eq("company_id", companyId),
+        supabase.from("ml_orders").select("total_amount, marketplace_fee, shipping_cost, status").eq("company_id", companyId),
+        supabase.from("ml_questions").select("status").eq("company_id", companyId).eq("status", "unanswered"),
+      ]);
+      const orders = mlOrders || [];
+      const revenue = orders.reduce((s, o) => s + (o.total_amount || 0), 0);
+      const fees = orders.reduce((s, o) => s + (o.marketplace_fee || 0), 0);
+      const profit = revenue - fees;
+      const unanswered = mlQuestions?.length || 0;
+      setRealContext(
+        `Contexto real do vendedor: ${prodCount || 0} produtos cadastrados, ${orders.length} vendas ML, ` +
+        `faturamento R$${revenue.toFixed(2)}, lucro R$${profit.toFixed(2)}, ` +
+        `${unanswered} perguntas sem resposta.`
+      );
+    })();
+  }, [companyId, user]);
 
   const saveDiag = (p: string, c: Record<string, boolean>) => {
     localStorage.setItem(STORAGE_KEY_DIAG, JSON.stringify({ plan: p, checklist: c }));
@@ -264,7 +289,7 @@ function DiagnosticoTab() {
       if (!session) throw new Error("Login necessário");
 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mentor-ai`;
-      const prompt = `Crie um plano de ação detalhado em formato de checklist (com itens numerados) para um vendedor de nível "${level}" que vende "${productType}" e quer "${goal}". Máximo 8 itens, cada um com uma frase curta e acionável.`;
+      const prompt = `${realContext ? realContext + "\n\n" : ""}Crie um plano de ação detalhado em formato de checklist (com itens numerados) para um vendedor de nível "${level}" que vende "${productType}" e quer "${goal}". Máximo 8 itens, cada um com uma frase curta e acionável. Considere os dados reais do vendedor se disponíveis.`;
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -320,6 +345,19 @@ function DiagnosticoTab() {
 
   return (
     <div className="space-y-6">
+      {realContext && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <BarChart3 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="font-semibold text-sm mb-1">Dados Reais Detectados</p>
+              <p className="text-xs text-muted-foreground">{realContext}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Esses dados serão usados pela IA para personalizar seu plano.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2"><Search className="h-5 w-5 text-primary" /> Diagnóstico do Vendedor</CardTitle>
@@ -385,16 +423,40 @@ function DiagnosticoTab() {
   );
 }
 
-/* ─── Tab 3: Otimização de Anúncios ─── */
+/* ─── Tab 3: Otimização de Anúncios (com produtos reais) ─── */
 function OtimizacaoTab() {
+  const companyId = useCompanyId();
+  const { user } = useAuth();
   const [product, setProduct] = useState("");
   const [titles, setTitles] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [realProducts, setRealProducts] = useState<{ name: string; cost: number; price: number }[]>([]);
+
+  // Load real products for quick selection
+  useEffect(() => {
+    if (!companyId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("products")
+        .select("name, cost, price")
+        .eq("company_id", companyId)
+        .eq("active", true)
+        .order("name")
+        .limit(50);
+      if (data) setRealProducts(data);
+    })();
+  }, [companyId]);
 
   // Calculator
   const [cost, setCost] = useState("");
   const [taxRate, setTaxRate] = useState("16");
   const [margin, setMargin] = useState("30");
+
+  const selectProduct = (name: string) => {
+    setProduct(name);
+    const found = realProducts.find(p => p.name === name);
+    if (found && found.cost > 0) setCost(String(found.cost));
+  };
 
   const calcPrice = () => {
     const c = parseFloat(cost);
@@ -454,6 +516,23 @@ Formate de forma clara com números.`;
           <CardDescription>Gere títulos otimizados e dicas de melhoria para seus produtos</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {realProducts.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Selecione um produto cadastrado:</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {realProducts.slice(0, 10).map(p => (
+                  <Badge
+                    key={p.name}
+                    variant={product === p.name ? "default" : "outline"}
+                    className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                    onClick={() => selectProduct(p.name)}
+                  >
+                    {p.name.length > 25 ? p.name.slice(0, 25) + "…" : p.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <Input value={product} onChange={e => setProduct(e.target.value)} placeholder="Nome do produto..." className="flex-1"
               onKeyDown={e => { if (e.key === "Enter") generateTitles(); }} />
