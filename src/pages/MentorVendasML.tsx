@@ -516,6 +516,23 @@ Formate de forma clara com números.`;
           <CardDescription>Gere títulos otimizados e dicas de melhoria para seus produtos</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {realProducts.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Selecione um produto cadastrado:</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {realProducts.slice(0, 10).map(p => (
+                  <Badge
+                    key={p.name}
+                    variant={product === p.name ? "default" : "outline"}
+                    className="cursor-pointer text-xs hover:bg-primary/10 transition-colors"
+                    onClick={() => selectProduct(p.name)}
+                  >
+                    {p.name.length > 25 ? p.name.slice(0, 25) + "…" : p.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="flex gap-2">
             <Input value={product} onChange={e => setProduct(e.target.value)} placeholder="Nome do produto..." className="flex-1"
               onKeyDown={e => { if (e.key === "Enter") generateTitles(); }} />
