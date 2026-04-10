@@ -244,10 +244,18 @@ export function AppSidebar() {
             }`}
           />
         </CollapsibleTrigger>
-        <CollapsibleContent>
+        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
           <div className="ml-[18px] border-l border-sidebar-border/60 pl-2.5 py-0.5 space-y-0.5">
             <SidebarMenu>
-              {group.items.map(renderNavItem)}
+              {group.items.map((item, i) => (
+                <div
+                  key={item.title}
+                  className="animate-fade-in"
+                  style={{ animationDelay: `${i * 40}ms`, animationFillMode: "backwards" }}
+                >
+                  {renderNavItem(item)}
+                </div>
+              ))}
             </SidebarMenu>
           </div>
         </CollapsibleContent>
