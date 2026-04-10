@@ -4,7 +4,7 @@ import {
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock, Megaphone, Boxes, GraduationCap, ClipboardList,
-  ChevronRight, Store, Brain, TrendingUp
+  ChevronRight, Store, Brain, TrendingUp, CameraIcon
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -66,6 +66,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { title: "Estoque", url: "/estoque", icon: Warehouse },
       { title: "Entrada XML", url: "/entrada-xml", icon: FileText },
+      { title: "Entrada Nota", url: "/entrada-nota", icon: CameraIcon },
       { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
       { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList },
       { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, premium: true },
