@@ -102,7 +102,7 @@ const Produtos = () => {
           }
 
           if (Object.keys(updates).length > 0) {
-            await supabase.from("products").update(updates).eq("id", prod.id);
+            await supabase.from("products").update(updates as any).eq("id", prod.id);
             successCount++;
           }
         } catch {

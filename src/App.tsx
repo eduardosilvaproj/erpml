@@ -47,6 +47,7 @@ import AnaliseMercado from "./pages/AnaliseMercado";
 import GeradorEAN13 from "./pages/GeradorEAN13";
 import Kits from "./pages/Kits";
 import MentorVendasML from "./pages/MentorVendasML";
+import BalancoEstoque from "./pages/BalancoEstoque";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +85,7 @@ const App = () => (
                       <Route path="/entrada-xml" element={<EntradaXML />} />
                       <Route path="/conferencia" element={<Conferencia />} />
                       <Route path="/estoque" element={<Estoque />} />
+                      <Route path="/balanco-estoque" element={<BalancoEstoque />} />
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
                       <Route path="/kits" element={<Kits />} />
                       <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />

@@ -137,7 +137,7 @@ export function useUpdateTransferStatus() {
       if (status === "recebido_full") updates.received_at = new Date().toISOString();
       if (status === "conferido_full") updates.confirmed_at = new Date().toISOString();
 
-      const { error } = await supabase.from("transfer_orders").update(updates).eq("id", id);
+      const { error } = await supabase.from("transfer_orders").update(updates as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

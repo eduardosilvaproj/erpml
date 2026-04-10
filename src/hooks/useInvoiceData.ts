@@ -191,7 +191,7 @@ export function useImportInvoice() {
 
             await supabase
               .from("products")
-              .update(updates)
+              .update(updates as any)
               .eq("id", productId);
           }
         }
