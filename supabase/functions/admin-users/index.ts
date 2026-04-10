@@ -266,6 +266,45 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Reset password for a user (sends recovery email)
+    if (action === "reset-password") {
+      const { targetUserId } = await req.json();
+
+      if (!targetUserId) {
+        return new Response(
+          JSON.stringify({ error: "targetUserId é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get user email
+      const { data: { user: targetUser }, error: getUserError } = await adminClient.auth.admin.getUserById(targetUserId);
+
+      if (getUserError || !targetUser?.email) {
+        return new Response(
+          JSON.stringify({ error: "Usuário não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate a password reset link
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "recovery",
+        email: targetUser.email,
+      });
+
+      if (linkError) {
+        return new Response(
+          JSON.stringify({ error: linkError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(JSON.stringify({ sent: true, email: targetUser.email }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(
       JSON.stringify({ error: "Ação inválida" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
