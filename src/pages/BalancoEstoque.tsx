@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ClipboardList, Search, Loader2, AlertTriangle, CheckCircle2,
-  FileText, Download, Plus, Minus, Save, RotateCcw, PackageCheck
+  FileText, Download, Plus, Minus, RotateCcw, PackageCheck, ScanBarcode, Camera, Volume2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,11 +17,7 @@ import { useProducts, useCategories } from "@/hooks/useProductData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
-
-interface CountItem {
-  productId: string;
-  counted: number | null;
-}
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const BalancoEstoque = () => {
   const { toast } = useToast();
@@ -32,6 +28,11 @@ const BalancoEstoque = () => {
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [isCounting, setIsCounting] = useState(false);
   const [monthsBack, setMonthsBack] = useState("3");
+  const [bipMode, setBipMode] = useState(false);
+  const [lastScanned, setLastScanned] = useState<{ name: string; sku: string; count: number } | null>(null);
+  const bipInputRef = useRef<HTMLInputElement>(null);
+  const bipBufferRef = useRef("");
+  const bipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading } = useProducts({
     search: search || undefined,
@@ -71,7 +72,6 @@ const BalancoEstoque = () => {
         .in("invoice_id", invoiceIds)
         .not("product_id", "is", null);
 
-      // Aggregate quantities per product from invoices
       const byProduct: Record<string, { totalQty: number; invoiceCount: number; descriptions: string[] }> = {};
       for (const item of items || []) {
         if (!item.product_id) continue;
@@ -97,17 +97,85 @@ const BalancoEstoque = () => {
     const initial: Record<string, number | null> = {};
     products.forEach((p) => { initial[p.id] = null; });
     setCounts(initial);
-    toast({ title: "Balanço iniciado", description: "Insira a contagem física de cada produto." });
+    toast({ title: "Balanço iniciado", description: "Insira a contagem física ou use o bip/câmera." });
   };
 
   const resetCounting = () => {
     setIsCounting(false);
     setCounts({});
+    setBipMode(false);
+    setLastScanned(null);
   };
 
   const updateCount = (productId: string, value: string) => {
     const num = value === "" ? null : parseInt(value, 10);
     setCounts((prev) => ({ ...prev, [productId]: isNaN(num as number) ? null : num }));
+  };
+
+  // Handle barcode scan (from bip or camera) — increment count by 1
+  const handleBarcodeScan = useCallback((code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed || !isCounting) return;
+
+    // Find product by barcode, sku, or sku_ml
+    const product = products.find(
+      (p) => p.barcode === trimmed || p.sku === trimmed || p.sku_ml === trimmed
+    );
+
+    if (!product) {
+      toast({
+        title: "Produto não encontrado",
+        description: `Código "${trimmed}" não corresponde a nenhum produto cadastrado.`,
+        variant: "destructive",
+      });
+      setLastScanned(null);
+      return;
+    }
+
+    setCounts((prev) => {
+      const current = prev[product.id] ?? 0;
+      const newCount = current + 1;
+      setLastScanned({ name: product.name, sku: product.sku, count: newCount });
+      return { ...prev, [product.id]: newCount };
+    });
+
+    toast({
+      title: `✓ ${product.name}`,
+      description: `Contagem: ${(counts[product.id] ?? 0) + 1}`,
+    });
+  }, [isCounting, products, counts, toast]);
+
+  // Hardware bip: auto-focus input and process keyboard-emulated barcode
+  useEffect(() => {
+    if (bipMode && isCounting && bipInputRef.current) {
+      bipInputRef.current.focus();
+    }
+  }, [bipMode, isCounting]);
+
+  const handleBipKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const code = bipBufferRef.current.trim();
+      if (code) {
+        handleBarcodeScan(code);
+      }
+      bipBufferRef.current = "";
+      if (bipInputRef.current) bipInputRef.current.value = "";
+    }
+  };
+
+  const handleBipInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    bipBufferRef.current = e.target.value;
+    // Auto-submit after 300ms of no input (for fast scanners)
+    if (bipTimerRef.current) clearTimeout(bipTimerRef.current);
+    bipTimerRef.current = setTimeout(() => {
+      const code = bipBufferRef.current.trim();
+      if (code.length >= 4) {
+        handleBarcodeScan(code);
+        bipBufferRef.current = "";
+        if (bipInputRef.current) bipInputRef.current.value = "";
+      }
+    }, 300);
   };
 
   // Compute divergences
@@ -140,7 +208,6 @@ const BalancoEstoque = () => {
   }, [products, counts, isCounting, invoiceData]);
 
   const divergentItems = divergences.filter((d) => d.diff !== 0);
-  const matchedItems = divergences.filter((d) => d.diff === 0);
   const totalCounted = divergences.length;
   const totalDivergent = divergentItems.length;
   const totalSurplus = divergentItems.filter((d) => d.diff > 0).reduce((s, d) => s + d.diff, 0);
@@ -153,7 +220,6 @@ const BalancoEstoque = () => {
       toast({ title: "Nenhum dado", description: "Realize a contagem primeiro.", variant: "destructive" });
       return;
     }
-
     const lines = [
       "SKU,Produto,Estoque Registrado,Contagem Física,Diferença,Entrada NF (últimos meses),Status",
       ...divergences.map((d) =>
@@ -201,6 +267,73 @@ const BalancoEstoque = () => {
         </div>
       </div>
 
+      {/* Bip / Camera scanner section — only visible when counting */}
+      {isCounting && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ScanBarcode className="h-5 w-5 text-primary" />
+              Coleta por Código de Barras
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="bip-mode"
+                  checked={bipMode}
+                  onCheckedChange={(v) => {
+                    setBipMode(v);
+                    if (v) setTimeout(() => bipInputRef.current?.focus(), 100);
+                  }}
+                />
+                <Label htmlFor="bip-mode" className="text-sm cursor-pointer flex items-center gap-1.5">
+                  <ScanBarcode className="h-4 w-4" />
+                  Modo Bip (Scanner)
+                </Label>
+              </div>
+              <BarcodeScanner onScan={handleBarcodeScan} disabled={!isCounting} />
+            </div>
+
+            {/* Hardware bip input field */}
+            {bipMode && (
+              <div className="space-y-2">
+                <div className="relative">
+                  <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-primary" />
+                  <Input
+                    ref={bipInputRef}
+                    className="pl-11 h-14 text-lg font-mono border-primary/40 focus:border-primary bg-background"
+                    placeholder="Aguardando leitura do bip..."
+                    onKeyDown={handleBipKeyDown}
+                    onChange={handleBipInput}
+                    autoFocus
+                    autoComplete="off"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Volume2 className="h-3 w-3" />
+                  Aponte o leitor de código de barras para o produto. A leitura será registrada automaticamente.
+                </p>
+              </div>
+            )}
+
+            {/* Last scanned feedback */}
+            {lastScanned && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-background border border-primary/20">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{lastScanned.name}</p>
+                  <p className="text-xs text-muted-foreground">SKU: {lastScanned.sku}</p>
+                </div>
+                <Badge className="bg-primary/15 text-primary text-lg px-3 py-1">
+                  {lastScanned.count}
+                </Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
@@ -227,23 +360,23 @@ const BalancoEstoque = () => {
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-emerald-500/10 p-2">
-              <Plus className="h-5 w-5 text-emerald-600" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Plus className="h-5 w-5 text-primary" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Sobras</p>
-              <p className="text-2xl font-bold text-emerald-600">+{totalSurplus}</p>
+              <p className="text-2xl font-bold text-primary">+{totalSurplus}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="flex items-center gap-3 p-4">
-            <div className="rounded-lg bg-amber-500/10 p-2">
-              <Minus className="h-5 w-5 text-amber-600" />
+            <div className="rounded-lg bg-destructive/10 p-2">
+              <Minus className="h-5 w-5 text-destructive" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Faltas</p>
-              <p className="text-2xl font-bold text-amber-600">-{totalDeficit}</p>
+              <p className="text-2xl font-bold text-destructive">-{totalDeficit}</p>
             </div>
           </CardContent>
         </Card>
@@ -307,8 +440,12 @@ const BalancoEstoque = () => {
                         const counted = counts[p.id];
                         const diff = counted != null ? counted - p.stock_physical : null;
                         const invoiceInfo = invoiceData?.byProduct?.[p.id];
+                        const isLastScanned = lastScanned?.sku === p.sku;
                         return (
-                          <TableRow key={p.id} className={diff != null && diff !== 0 ? "bg-destructive/5" : ""}>
+                          <TableRow
+                            key={p.id}
+                            className={`${diff != null && diff !== 0 ? "bg-destructive/5" : ""} ${isLastScanned ? "ring-2 ring-primary/30 bg-primary/5" : ""}`}
+                          >
                             <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                             <TableCell className="font-medium">{p.name}</TableCell>
                             <TableCell className="text-center font-bold">{p.stock_physical}</TableCell>
@@ -330,7 +467,7 @@ const BalancoEstoque = () => {
                             {isCounting && (
                               <TableCell className="text-center font-bold">
                                 {diff != null ? (
-                                  <span className={diff === 0 ? "text-emerald-600" : "text-destructive"}>
+                                  <span className={diff === 0 ? "text-primary" : "text-destructive"}>
                                     {diff > 0 ? `+${diff}` : diff}
                                   </span>
                                 ) : "—"}
@@ -341,11 +478,11 @@ const BalancoEstoque = () => {
                                 {diff == null ? (
                                   <Badge variant="secondary">Pendente</Badge>
                                 ) : diff === 0 ? (
-                                  <Badge className="bg-emerald-500/15 text-emerald-700 gap-1">
+                                  <Badge className="bg-primary/15 text-primary gap-1">
                                     <CheckCircle2 className="h-3 w-3" /> OK
                                   </Badge>
                                 ) : diff > 0 ? (
-                                  <Badge className="bg-blue-500/15 text-blue-700 gap-1">
+                                  <Badge className="bg-accent/15 text-accent-foreground gap-1">
                                     <Plus className="h-3 w-3" /> Sobra
                                   </Badge>
                                 ) : (
@@ -423,7 +560,7 @@ const BalancoEstoque = () => {
                           <TableCell className="text-center">{d.registered}</TableCell>
                           <TableCell className="text-center font-bold">{d.counted}</TableCell>
                           <TableCell className="text-center font-bold">
-                            <span className={d.diff === 0 ? "text-emerald-600" : "text-destructive"}>
+                            <span className={d.diff === 0 ? "text-primary" : "text-destructive"}>
                               {d.diff > 0 ? `+${d.diff}` : d.diff}
                             </span>
                           </TableCell>
@@ -432,9 +569,9 @@ const BalancoEstoque = () => {
                           </TableCell>
                           <TableCell>
                             {d.diff === 0 ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-700">OK</Badge>
+                              <Badge className="bg-primary/15 text-primary">OK</Badge>
                             ) : d.diff > 0 ? (
-                              <Badge className="bg-blue-500/15 text-blue-700">Sobra</Badge>
+                              <Badge className="bg-accent/15 text-accent-foreground">Sobra</Badge>
                             ) : (
                               <Badge variant="destructive">Falta</Badge>
                             )}
@@ -523,7 +660,7 @@ const BalancoEstoque = () => {
           <div className="rounded-lg bg-muted p-4 text-center">
             <p className="text-sm font-medium text-foreground">Como funciona o Balanço de Estoque</p>
             <p className="text-xs text-muted-foreground mt-1">
-              1. Inicie o balanço • 2. Insira a contagem física de cada produto • 3. Compare com o estoque registrado e as NFs de entrada • 4. Exporte o relatório CSV
+              1. Inicie o balanço • 2. Use o bip, câmera ou digitação manual • 3. Cada leitura incrementa +1 na contagem • 4. Compare e exporte o relatório CSV
             </p>
           </div>
         </CardContent>
