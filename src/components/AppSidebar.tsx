@@ -123,7 +123,13 @@ export function AppSidebar() {
     return null;
   };
 
+  const STORAGE_KEY = "erp-sidebar-open-groups";
+
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return new Set(JSON.parse(saved) as string[]);
+    } catch {}
     const active = findActiveGroup();
     return active ? new Set([active]) : new Set<string>();
   });
@@ -133,6 +139,7 @@ export function AppSidebar() {
       const next = new Set(prev);
       if (next.has(label)) next.delete(label);
       else next.add(label);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch {}
       return next;
     });
   };
