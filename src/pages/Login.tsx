@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { LogIn, Loader2 } from "lucide-react";
+import { PasswordInput } from "@/components/PasswordInput";
 import { useAuth } from "@/contexts/AuthContext";
 import { translateAuthError } from "@/lib/auth-errors";
 
@@ -101,9 +102,8 @@ export default function Login() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => handlePasswordChange(e.target.value)}

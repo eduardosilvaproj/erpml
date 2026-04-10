@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { UserPlus, Loader2 } from "lucide-react";
+import { PasswordInput } from "@/components/PasswordInput";
 import { translateAuthError } from "@/lib/auth-errors";
 import { PasswordStrength } from "@/components/PasswordStrength";
 
@@ -130,9 +131,8 @@ export default function Signup() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => handleChange("password", e.target.value)}
