@@ -8,6 +8,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { LogIn, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,7 +31,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
       setLoading(false);
     }
     // Don't navigate here — the useEffect above handles it after state updates

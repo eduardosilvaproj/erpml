@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { KeyRound, Loader2 } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -28,7 +29,7 @@ export default function ResetPassword() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
     } else {
       toast.success("Senha atualizada com sucesso!");
       navigate("/");

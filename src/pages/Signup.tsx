@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { UserPlus, Loader2 } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
@@ -28,7 +29,7 @@ export default function Signup() {
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
     } else {
       toast.success("Conta criada! Verifique seu e-mail para confirmar.");
     }
