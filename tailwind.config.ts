@@ -104,6 +104,16 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "bounce-x": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "50%": { transform: "translateX(4px)" },
+        },
+        "swipe-hint": {
+          "0%": { transform: "translateX(-100%) translateY(-50%)", opacity: "0" },
+          "15%": { transform: "translateX(0) translateY(-50%)", opacity: "1" },
+          "85%": { transform: "translateX(0) translateY(-50%)", opacity: "1" },
+          "100%": { transform: "translateX(-100%) translateY(-50%)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
