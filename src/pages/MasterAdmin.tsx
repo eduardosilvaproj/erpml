@@ -38,6 +38,7 @@ export default function MasterAdmin() {
   const updatePlan = useUpdatePlan();
   const adminUpdateCompany = useAdminUpdateCompany();
   const adminChangePlan = useAdminChangeCompanyPlan();
+  const adminResetPassword = useAdminResetPassword();
 
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [planForm, setPlanForm] = useState<Partial<Plan>>({});
@@ -358,7 +359,7 @@ export default function MasterAdmin() {
                           <TableCell><Badge variant="outline">{c.plan?.name || "—"}</Badge></TableCell>
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
+                            <div className="flex gap-1 justify-end flex-wrap">
                               <Button variant="outline" size="sm" onClick={() => openEditCompany(c as CompanyWithExtras)} title="Editar cadastro">
                                 <Pencil className="h-3 w-3 mr-1" /> Cadastro
                               </Button>
@@ -367,6 +368,22 @@ export default function MasterAdmin() {
                               </Button>
                               <Button variant="outline" size="sm" onClick={() => openPayment(c as CompanyWithExtras)} title="Formas de pagamento">
                                 <DollarSign className="h-3 w-3 mr-1" /> Pagamento
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                title="Enviar e-mail de recuperação de senha ao dono"
+                                disabled={adminResetPassword.isPending}
+                                onClick={async () => {
+                                  try {
+                                    await adminResetPassword.mutateAsync(c.owner_id);
+                                    toast.success("E-mail de recuperação enviado ao dono da empresa!");
+                                  } catch (e: any) {
+                                    toast.error(e.message);
+                                  }
+                                }}
+                              >
+                                <KeyRound className="h-3 w-3 mr-1" /> Senha
                               </Button>
                             </div>
                           </TableCell>
