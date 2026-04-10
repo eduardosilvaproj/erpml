@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { UserPlus, Loader2 } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
+import { PasswordStrength } from "@/components/PasswordStrength";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
@@ -140,6 +141,7 @@ export default function Signup() {
                 autoComplete="new-password"
               />
               <FieldError message={errors.password} />
+              <PasswordStrength password={password} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
