@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { KeyRound, Loader2 } from "lucide-react";
+import { PasswordInput } from "@/components/PasswordInput";
 import { translateAuthError } from "@/lib/auth-errors";
 import { PasswordStrength } from "@/components/PasswordStrength";
 
@@ -93,9 +94,8 @@ export default function ResetPassword() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password">Nova senha</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
@@ -108,9 +108,8 @@ export default function ResetPassword() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirmar senha</Label>
-              <Input
+              <PasswordInput
                 id="confirm"
-                type="password"
                 placeholder="Repita a senha"
                 value={confirm}
                 onChange={(e) => handleConfirmChange(e.target.value)}
