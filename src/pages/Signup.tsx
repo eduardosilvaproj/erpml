@@ -141,6 +141,7 @@ export default function Signup() {
                 autoComplete="new-password"
               />
               <FieldError message={errors.password} />
+              <PasswordStrength password={password} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">

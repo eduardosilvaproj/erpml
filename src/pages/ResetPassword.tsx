@@ -104,6 +104,7 @@ export default function ResetPassword() {
                 autoComplete="new-password"
               />
               <FieldError message={errors.password} />
+              <PasswordStrength password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirmar senha</Label>
