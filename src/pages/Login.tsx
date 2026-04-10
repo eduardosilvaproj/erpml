@@ -103,6 +103,24 @@ export default function Login() {
     }
   };
 
+  const handleAppleLogin = async () => {
+    setAppleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Erro ao entrar com Apple. Tente novamente.");
+        setAppleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+    } catch {
+      toast.error("Erro ao entrar com Apple. Tente novamente.");
+      setAppleLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-md">
