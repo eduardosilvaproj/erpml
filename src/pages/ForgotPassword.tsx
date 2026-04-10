@@ -9,20 +9,47 @@ import { toast } from "sonner";
 import { Mail, Loader2 } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
+}
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>();
+  const [touched, setTouched] = useState(false);
+
+  const validate = (v: string) => {
+    if (!v.trim()) return "Informe seu e-mail";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "Formato de e-mail inválido";
+    return undefined;
+  };
+
+  const handleChange = (v: string) => {
+    setEmail(v);
+    if (touched) setError(validate(v));
+  };
+
+  const handleBlur = () => {
+    setTouched(true);
+    setError(validate(email));
+  };
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const err = validate(email);
+    setError(err);
+    setTouched(true);
+    if (err) return;
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    setLoading(true);
+    const { error: apiError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
 
-    if (error) {
-      toast.error(translateAuthError(error.message));
+    if (apiError) {
+      toast.error(translateAuthError(apiError.message));
     } else {
       toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
     }
@@ -36,7 +63,7 @@ export default function ForgotPassword() {
           <CardTitle className="text-2xl font-bold text-foreground">Esqueci a senha</CardTitle>
           <CardDescription>Informe seu e-mail para recuperar o acesso</CardDescription>
         </CardHeader>
-        <form onSubmit={handleReset}>
+        <form onSubmit={handleReset} noValidate>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -45,9 +72,12 @@ export default function ForgotPassword() {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => handleChange(e.target.value)}
+                onBlur={handleBlur}
+                className={error ? "border-destructive focus-visible:ring-destructive" : ""}
+                autoComplete="email"
               />
+              <FieldError message={error} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">

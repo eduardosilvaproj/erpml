@@ -10,31 +10,70 @@ import { LogIn, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { translateAuthError } from "@/lib/auth-errors";
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-sm text-destructive mt-1">{message}</p>;
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [touched, setTouched] = useState<{ email?: boolean; password?: boolean }>({});
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
 
-  // Redirect when session becomes available (after onAuthStateChange fires)
   useEffect(() => {
     if (!authLoading && session) {
       navigate("/", { replace: true });
     }
   }, [session, authLoading, navigate]);
 
+  const validateEmail = (value: string) => {
+    if (!value.trim()) return "Informe seu e-mail";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Formato de e-mail inválido";
+    return undefined;
+  };
+
+  const validatePassword = (value: string) => {
+    if (!value) return "Informe sua senha";
+    if (value.length < 6) return "A senha deve ter no mínimo 6 caracteres";
+    return undefined;
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (touched.email) setErrors(prev => ({ ...prev, email: validateEmail(value) }));
+  };
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (touched.password) setErrors(prev => ({ ...prev, password: validatePassword(value) }));
+  };
+
+  const handleBlur = (field: "email" | "password") => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const val = field === "email" ? email : password;
+    const validator = field === "email" ? validateEmail : validatePassword;
+    setErrors(prev => ({ ...prev, [field]: validator(val) }));
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const emailErr = validateEmail(email);
+    const passwordErr = validatePassword(password);
+    setErrors({ email: emailErr, password: passwordErr });
+    setTouched({ email: true, password: true });
+    if (emailErr || passwordErr) return;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
 
     if (error) {
       toast.error(translateAuthError(error.message));
       setLoading(false);
     }
-    // Don't navigate here — the useEffect above handles it after state updates
   };
 
   return (
@@ -44,7 +83,7 @@ export default function Login() {
           <CardTitle className="text-2xl font-bold text-foreground">Entrar</CardTitle>
           <CardDescription>Acesse sua conta para continuar</CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} noValidate>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
@@ -53,9 +92,12 @@ export default function Login() {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                onChange={(e) => handleEmailChange(e.target.value)}
+                onBlur={() => handleBlur("email")}
+                className={errors.email ? "border-destructive focus-visible:ring-destructive" : ""}
+                autoComplete="email"
               />
+              <FieldError message={errors.email} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -64,9 +106,12 @@ export default function Login() {
                 type="password"
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                onBlur={() => handleBlur("password")}
+                className={errors.password ? "border-destructive focus-visible:ring-destructive" : ""}
+                autoComplete="current-password"
               />
+              <FieldError message={errors.password} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
