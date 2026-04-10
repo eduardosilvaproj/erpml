@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { usePlanFeatures, getRequiredPlan } from "@/hooks/usePlanFeatures";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +38,7 @@ interface MenuItem {
 interface MenuGroup {
   label: string;
   icon: any;
-  color: string; // tailwind color class for the group accent
+  color: string;
   items: MenuItem[];
 }
 
@@ -101,7 +102,7 @@ const menuGroups: MenuGroup[] = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { signOut, user } = useAuth();
@@ -110,6 +111,7 @@ export function AppSidebar() {
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const { isRouteAllowed, planName } = usePlanFeatures();
   const unansweredQuestions = useUnansweredMLQuestionsCount();
+  const isMobile = useIsMobile();
 
   const isPathActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
@@ -144,6 +146,12 @@ export function AppSidebar() {
     });
   };
 
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const renderNavItem = (item: MenuItem) => {
     const allowed = isRouteAllowed(item.url);
     const badgeCount = item.url === "/crm" ? unansweredQuestions : 0;
@@ -155,12 +163,12 @@ export function AppSidebar() {
           <TooltipProvider delayDuration={200}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center gap-3 px-3 py-1.5 rounded-md text-muted-foreground/25 cursor-not-allowed select-none">
-                  <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                <div className="flex items-center gap-3 px-3 min-h-[44px] py-2 rounded-lg text-muted-foreground/25 cursor-not-allowed select-none">
+                  <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
                   {!collapsed && (
                     <>
-                      <span className="flex-1 truncate text-[13px]">{item.title}</span>
-                      <Lock className="h-3 w-3 shrink-0 opacity-40" />
+                      <span className="flex-1 truncate text-sm">{item.title}</span>
+                      <Lock className="h-3.5 w-3.5 shrink-0 opacity-40" />
                     </>
                   )}
                 </div>
@@ -183,15 +191,16 @@ export function AppSidebar() {
           <NavLink
             to={item.url}
             end={item.url === "/"}
-            className={`flex items-center rounded-md transition-all duration-150 py-1.5 px-3 hover:bg-sidebar-accent/80 ${
+            onClick={handleNavClick}
+            className={`flex items-center rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98] hover:bg-sidebar-accent/80 ${
               active ? "bg-primary/10 text-primary font-medium" : "text-sidebar-foreground"
             }`}
             activeClassName=""
           >
-            <item.icon className="mr-3 h-4 w-4 shrink-0" strokeWidth={1.75} />
-            {!collapsed && <span className="text-[13px] flex-1 truncate">{item.title}</span>}
+            <item.icon className="mr-3 h-5 w-5 shrink-0" strokeWidth={1.75} />
+            {!collapsed && <span className="text-sm flex-1 truncate">{item.title}</span>}
             {!collapsed && item.premium && (
-              <Badge variant="outline" className="ml-auto h-4 px-1.5 text-[9px] font-medium border-primary/30 text-primary/70 bg-primary/5">
+              <Badge variant="outline" className="ml-auto h-5 px-1.5 text-[10px] font-medium border-primary/30 text-primary/70 bg-primary/5">
                 Pro
               </Badge>
             )}
@@ -212,7 +221,7 @@ export function AppSidebar() {
 
     if (collapsed) {
       return (
-        <div key={group.label} className="space-y-0.5">
+        <div key={group.label} className="space-y-1">
           {group.items.map(renderNavItem)}
         </div>
       );
@@ -221,7 +230,7 @@ export function AppSidebar() {
     return (
       <Collapsible key={group.label} open={isOpen} onOpenChange={() => toggleGroup(group.label)}>
         <CollapsibleTrigger
-          className={`flex items-center w-full gap-2.5 px-3 py-2 rounded-md text-[11px] font-semibold uppercase tracking-widest transition-all duration-150 group
+          className={`flex items-center w-full gap-2.5 px-3 min-h-[44px] py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all duration-150 group active:scale-[0.98]
             ${hasActiveRoute && !isOpen
               ? "text-sidebar-foreground/80"
               : isOpen
@@ -231,21 +240,21 @@ export function AppSidebar() {
             hover:bg-sidebar-accent/40
           `}
         >
-          <div className={`flex items-center justify-center h-5 w-5 rounded ${group.color}`}>
-            <group.icon className="h-3.5 w-3.5" strokeWidth={2} />
+          <div className={`flex items-center justify-center h-6 w-6 rounded-md ${group.color}`}>
+            <group.icon className="h-4 w-4" strokeWidth={2} />
           </div>
           <span className="flex-1 text-left">{group.label}</span>
           {hasActiveRoute && !isOpen && (
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
           )}
           <ChevronRight
-            className={`h-3 w-3 text-sidebar-foreground/30 transition-transform duration-200 group-hover:text-sidebar-foreground/50 ${
+            className={`h-3.5 w-3.5 text-sidebar-foreground/30 transition-transform duration-200 group-hover:text-sidebar-foreground/50 ${
               isOpen ? "rotate-90" : "rotate-0"
             }`}
           />
         </CollapsibleTrigger>
         <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-          <div className="ml-[18px] border-l border-sidebar-border/60 pl-2.5 py-0.5 space-y-0.5">
+          <div className="ml-5 border-l-2 border-sidebar-border/50 pl-3 py-1 space-y-0.5">
             <SidebarMenu>
               {group.items.map((item, i) => (
                 <div
@@ -270,8 +279,8 @@ export function AppSidebar() {
           <SidebarGroupLabel>
             {!collapsed && (
               <div className="flex items-center gap-2.5 px-2 mb-1">
-                <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center shadow-[var(--shadow-glow)]">
-                  <span className="text-sm font-bold text-primary">E</span>
+                <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shadow-[var(--shadow-glow)]">
+                  <span className="text-base font-bold text-primary">E</span>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-bold tracking-tight text-foreground leading-none">ERP System</span>
@@ -289,21 +298,21 @@ export function AppSidebar() {
 
             {/* Separator */}
             {!collapsed && (
-              <div className="mx-4 my-2.5">
+              <div className="mx-4 my-3">
                 <div className="h-px bg-sidebar-border/50" />
               </div>
             )}
 
             {/* Grouped sections */}
-            <div className="space-y-0.5 px-2">
+            <div className="space-y-1 px-2">
               {menuGroups.map(renderGroup)}
             </div>
 
             {/* Admin section */}
             {isAdmin && (
-              <div className="px-2 mt-2">
+              <div className="px-2 mt-3">
                 {!collapsed && (
-                  <div className="flex items-center gap-2 px-3 py-1.5">
+                  <div className="flex items-center gap-2 px-3 py-2">
                     <div className="h-px flex-1 bg-destructive/20" />
                     <Badge variant="outline" className="text-[9px] border-destructive/30 text-destructive/70 bg-destructive/5 gap-1 font-semibold">
                       <ShieldCheck className="h-2.5 w-2.5" />
@@ -318,12 +327,13 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <NavLink
                         to="/master-admin"
-                        className="hover:bg-sidebar-accent/80 rounded-md transition-all duration-150 py-1.5 px-3"
+                        onClick={handleNavClick}
+                        className="hover:bg-sidebar-accent/80 rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98]"
                         activeClassName="bg-primary/10 text-primary font-medium"
                       >
-                        <Crown className="mr-3 h-4 w-4" strokeWidth={1.75} />
+                        <Crown className="mr-3 h-5 w-5" strokeWidth={1.75} />
                         {!collapsed && (
-                          <span className="text-[13px] flex-1">Painel Master</span>
+                          <span className="text-sm flex-1">Painel Master</span>
                         )}
                         {pendingCount > 0 && (
                           <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
@@ -341,13 +351,13 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex flex-col gap-2.5 p-3 border-t border-sidebar-border/40">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 p-3 border-t border-sidebar-border/40">
+          <div className="flex items-center gap-3 min-h-[44px]">
             <AvatarUpload size="sm" editable={!collapsed} />
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 {user?.email && (
-                  <span className="text-[11px] text-muted-foreground/70 truncate block leading-tight">{user.email}</span>
+                  <span className="text-xs text-muted-foreground/70 truncate block leading-tight">{user.email}</span>
                 )}
                 {planName && (
                   <Badge variant="outline" className="w-fit text-[9px] mt-1 border-primary/25 text-primary/70 bg-primary/5">
@@ -361,10 +371,10 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="justify-start text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-md h-8"
+            className="justify-start text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 rounded-lg min-h-[44px] active:scale-[0.98]"
           >
-            <LogOut className="h-3.5 w-3.5 mr-2.5" strokeWidth={1.75} />
-            {!collapsed && <span className="text-[12px]">Sair</span>}
+            <LogOut className="h-4 w-4 mr-2.5" strokeWidth={1.75} />
+            {!collapsed && <span className="text-sm">Sair</span>}
           </Button>
         </div>
       </SidebarFooter>
