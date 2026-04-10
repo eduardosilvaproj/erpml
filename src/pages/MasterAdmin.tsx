@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan } from "@/hooks/useCompanyData";
+import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword } from "@/hooks/useCompanyData";
 import { useIsAdmin } from "@/hooks/useAdminData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift } from "lucide-react";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound } from "lucide-react";
 import PendingUsersTab from "@/components/PendingUsersTab";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";

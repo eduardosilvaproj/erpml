@@ -362,3 +362,35 @@ export function useUpdatePlan() {
     },
   });
 }
+
+export function useAdminResetPassword() {
+  return useMutation({
+    mutationFn: async (targetUserId: string) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const res = await supabase.functions.invoke("admin-users", {
+        body: { targetUserId },
+        headers: { "x-action": "reset-password" },
+      });
+
+      // edge function uses query param, so let's call with fetch directly
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=reset-password`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ targetUserId }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Erro ao enviar e-mail de recuperação");
+      }
+
+      return response.json();
+    },
+  });
+}
