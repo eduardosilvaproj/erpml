@@ -135,13 +135,15 @@ interface PendingUser {
   full_name: string;
 }
 
-export function usePendingUsers() {
+export function usePendingUsers(enabled = true) {
   return useQuery({
     queryKey: ["pending-users"],
-    refetchInterval: 30000,
+    refetchInterval: enabled ? 30000 : false,
+    enabled,
     queryFn: async (): Promise<PendingUser[]> => {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
+      if (!token) return [];
 
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=list-pending-users`,
@@ -153,6 +155,10 @@ export function usePendingUsers() {
           },
         }
       );
+
+      if (res.status === 403 || res.status === 401) {
+        return [];
+      }
 
       if (!res.ok) {
         const err = await res.json();

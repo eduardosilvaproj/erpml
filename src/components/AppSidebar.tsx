@@ -49,7 +49,7 @@ export function AppSidebar() {
   const location = useLocation();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useIsAdmin();
-  const { data: pendingUsers } = usePendingUsers();
+  const { data: pendingUsers } = usePendingUsers(!!isAdmin);
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const { isRouteAllowed, planName } = usePlanFeatures();
   const unansweredQuestions = useUnansweredMLQuestionsCount();
