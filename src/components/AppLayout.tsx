@@ -3,9 +3,54 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
 import MaxMentorChat from "@/components/MaxMentorChat";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState, useEffect } from "react";
+
+function SwipeIndicator() {
+  const { openMobile } = useSidebar();
+  const isMobile = useIsMobile();
+  const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!isMobile || dismissed) return;
+    const key = "erp-swipe-hint-seen";
+    const seen = localStorage.getItem(key);
+    if (seen) {
+      setDismissed(true);
+      return;
+    }
+    // Show after a short delay on first visit
+    const timer = setTimeout(() => setVisible(true), 1500);
+    // Auto-hide after 4s and mark as seen
+    const hideTimer = setTimeout(() => {
+      setVisible(false);
+      setDismissed(true);
+      localStorage.setItem(key, "1");
+    }, 5500);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(hideTimer);
+    };
+  }, [isMobile, dismissed]);
+
+  if (!isMobile || openMobile || dismissed || !visible) return null;
+
+  return (
+    <div
+      className="fixed left-0 top-1/2 -translate-y-1/2 z-40 pointer-events-none animate-fade-in"
+      aria-hidden="true"
+    >
+      <div className="flex items-center gap-1 bg-primary/90 text-primary-foreground pl-2 pr-3 py-2.5 rounded-r-xl shadow-lg animate-[swipe-hint_1.5s_ease-in-out_infinite]">
+        <ChevronRight className="h-4 w-4 animate-[bounce-x_1s_ease-in-out_infinite]" />
+        <span className="text-xs font-medium whitespace-nowrap">Deslize para menu</span>
+      </div>
+    </div>
+  );
+}
 
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const unansweredCount = useUnansweredMLQuestionsCount();
@@ -51,6 +96,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <SwipeIndicator />
     </div>
   );
 }
