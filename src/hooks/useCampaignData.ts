@@ -109,7 +109,7 @@ export function useUpdateCampaign() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
-      const { error } = await supabase.from("campaigns").update(data).eq("id", id);
+      const { error } = await supabase.from("campaigns").update(data as any).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
