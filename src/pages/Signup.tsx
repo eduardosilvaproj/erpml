@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { UserPlus, Loader2 } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
+import { PasswordStrength } from "@/components/PasswordStrength";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
