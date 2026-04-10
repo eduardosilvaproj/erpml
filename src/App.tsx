@@ -48,6 +48,7 @@ import GeradorEAN13 from "./pages/GeradorEAN13";
 import Kits from "./pages/Kits";
 import MentorVendasML from "./pages/MentorVendasML";
 import BalancoEstoque from "./pages/BalancoEstoque";
+import EntradaNota from "./pages/EntradaNota";
 
 const queryClient = new QueryClient({
   defaultOptions: {
