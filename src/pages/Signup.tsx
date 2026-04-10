@@ -29,7 +29,7 @@ export default function Signup() {
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
     } else {
       toast.success("Conta criada! Verifique seu e-mail para confirmar.");
     }

@@ -22,7 +22,7 @@ export default function ForgotPassword() {
     });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
     } else {
       toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada.");
     }

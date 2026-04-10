@@ -31,7 +31,7 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      toast.error(error.message);
+      toast.error(translateAuthError(error.message));
       setLoading(false);
     }
     // Don't navigate here — the useEffect above handles it after state updates
