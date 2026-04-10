@@ -26,6 +26,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [errors, setErrors] = useState<Fields>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -112,6 +113,24 @@ export default function Signup() {
     } catch {
       toast.error("Erro ao cadastrar com Google. Tente novamente.");
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    setAppleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("apple", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error("Erro ao cadastrar com Apple. Tente novamente.");
+        setAppleLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+    } catch {
+      toast.error("Erro ao cadastrar com Apple. Tente novamente.");
+      setAppleLoading(false);
     }
   };
 
