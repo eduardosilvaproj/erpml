@@ -37,6 +37,9 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
