@@ -126,6 +126,7 @@ const App = () => (
               }
             />
           </Routes>
+          </HelpProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
