@@ -97,6 +97,7 @@ export default function Signup() {
       email: validators.email(email),
       password: validators.password(password),
       confirm: validators.confirm(confirm),
+      terms: !acceptedTerms ? "Você deve aceitar os termos de uso" : undefined,
     };
     setErrors(newErrors);
     setTouched({ fullName: true, email: true, password: true, confirm: true });
