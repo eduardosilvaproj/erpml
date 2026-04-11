@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -594,10 +595,58 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <footer className="py-8 border-t border-border">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} ERP Mercado Livre — Todos os direitos reservados
+        <div className="max-w-6xl mx-auto px-4 flex flex-col items-center gap-3">
+          <div className="flex gap-4 text-sm">
+            <button onClick={() => setShowTerms(true)} className="text-primary underline hover:text-primary/80">
+              Termos de Uso
+            </button>
+            <button onClick={() => setShowPrivacy(true)} className="text-primary underline hover:text-primary/80">
+              Política de Privacidade
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} ERP Mercado Livre — Todos os direitos reservados
+          </p>
         </div>
       </footer>
+
+      {/* Termos de Uso Dialog */}
+      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Termos de Uso</DialogTitle>
+            <DialogDescription>Última atualização: Abril de 2026</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <p><strong className="text-foreground">1. Aceitação dos Termos</strong><br />Ao utilizar o ERP System, você concorda com estes Termos de Uso. Caso não concorde, não utilize a plataforma.</p>
+            <p><strong className="text-foreground">2. Descrição do Serviço</strong><br />O ERP System é uma plataforma de gestão empresarial que oferece funcionalidades de controle de estoque, vendas, financeiro e integrações com marketplaces.</p>
+            <p><strong className="text-foreground">3. Cadastro e Conta</strong><br />Você é responsável por manter a confidencialidade de suas credenciais de acesso. Todas as atividades realizadas sob sua conta são de sua responsabilidade.</p>
+            <p><strong className="text-foreground">4. Uso Aceitável</strong><br />Você concorda em utilizar a plataforma apenas para fins lícitos e de acordo com a legislação vigente. É proibido qualquer uso que possa prejudicar o serviço ou outros usuários.</p>
+            <p><strong className="text-foreground">5. Propriedade Intelectual</strong><br />Todo o conteúdo, design e código da plataforma são de propriedade do ERP System. É proibida a reprodução sem autorização prévia.</p>
+            <p><strong className="text-foreground">6. Limitação de Responsabilidade</strong><br />O ERP System não se responsabiliza por perdas decorrentes do uso da plataforma, incluindo perda de dados ou interrupções no serviço.</p>
+            <p><strong className="text-foreground">7. Modificações</strong><br />Reservamo-nos o direito de alterar estes termos a qualquer momento. As alterações serão comunicadas através da plataforma.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Política de Privacidade Dialog */}
+      <Dialog open={showPrivacy} onOpenChange={setShowPrivacy}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Política de Privacidade</DialogTitle>
+            <DialogDescription>Última atualização: Abril de 2026</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 text-sm text-muted-foreground">
+            <p><strong className="text-foreground">1. Dados Coletados</strong><br />Coletamos informações fornecidas durante o cadastro (nome, e-mail) e dados de uso da plataforma para melhorar nossos serviços.</p>
+            <p><strong className="text-foreground">2. Uso dos Dados</strong><br />Seus dados são utilizados para: fornecer e melhorar o serviço, comunicação sobre atualizações, suporte ao cliente e análises internas.</p>
+            <p><strong className="text-foreground">3. Compartilhamento</strong><br />Não vendemos seus dados pessoais. Podemos compartilhá-los com prestadores de serviço necessários para o funcionamento da plataforma.</p>
+            <p><strong className="text-foreground">4. Segurança</strong><br />Empregamos medidas técnicas e organizacionais para proteger seus dados, incluindo criptografia e controle de acesso.</p>
+            <p><strong className="text-foreground">5. Retenção</strong><br />Seus dados são mantidos enquanto sua conta estiver ativa. Após exclusão da conta, os dados serão removidos em até 30 dias.</p>
+            <p><strong className="text-foreground">6. Seus Direitos</strong><br />Você pode solicitar acesso, correção ou exclusão de seus dados a qualquer momento através do suporte da plataforma.</p>
+            <p><strong className="text-foreground">7. Cookies</strong><br />Utilizamos cookies essenciais para o funcionamento da plataforma e cookies analíticos para melhoria contínua do serviço.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* BOTÃO WHATSAPP FIXO */}
       <a
