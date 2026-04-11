@@ -21,7 +21,7 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive mt-1">{message}</p>;
 }
 
-type Fields = { fullName?: string; email?: string; password?: string; confirm?: string };
+type Fields = { fullName?: string; email?: string; password?: string; confirm?: string; terms?: string };
 
 export default function Signup() {
   const navigate = useNavigate();
