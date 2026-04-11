@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { HelpProvider } from "@/contexts/HelpContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 import AppLayout from "@/components/AppLayout";
@@ -68,6 +69,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <HelpProvider>
           <Routes>
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
@@ -124,6 +126,7 @@ const App = () => (
               }
             />
           </Routes>
+          </HelpProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
