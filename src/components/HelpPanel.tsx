@@ -353,8 +353,8 @@ export default function HelpPanel() {
                     onCheckedChange={setHelpEnabled}
                   />
                 </div>
-                <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                <div className="p-3 rounded-xl bg-accent/50 border border-border">
+                  <p className="text-xs text-muted-foreground">
                     💡 Se desabilitar a ajuda, você pode reativá-la a qualquer momento acessando <strong>Minha Empresa</strong> ou limpando os dados do navegador.
                   </p>
                 </div>
