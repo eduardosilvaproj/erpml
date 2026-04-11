@@ -23,6 +23,16 @@ function FieldError({ message }: { message?: string }) {
 type Fields = { fullName?: string; email?: string; password?: string; confirm?: string };
 
 export default function Signup() {
+  const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate("/", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
+
+  const [fullName, setFullName] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
