@@ -1,7 +1,6 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
-import MaxMentorChat from "@/components/MaxMentorChat";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { MessageSquare, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -106,7 +105,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
     <SidebarProvider>
       <AppLayoutInner>{children}</AppLayoutInner>
       <SupportChat />
-      <MaxMentorChat />
     </SidebarProvider>
   );
 };
