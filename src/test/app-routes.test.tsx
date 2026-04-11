@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MemoryRouter } from "react-router-dom";
@@ -22,30 +22,30 @@ const renderWithProviders = (ui: React.ReactElement) => {
 
 describe("Public Routes", () => {
   it("renders login form with email and password fields", () => {
-    renderWithProviders(<Login />);
-    expect(screen.getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
-    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
-    expect(screen.getByLabelText("Senha")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /entrar/i })).toBeInTheDocument();
+    const { getByRole, getByLabelText } = renderWithProviders(<Login />);
+    expect(getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
+    expect(getByLabelText("E-mail")).toBeInTheDocument();
+    expect(getByLabelText("Senha")).toBeInTheDocument();
+    expect(getByRole("button", { name: /entrar/i })).toBeInTheDocument();
   });
 
   it("renders signup form with name, email and password fields", () => {
-    renderWithProviders(<Signup />);
-    expect(screen.getByRole("heading", { name: "Criar conta" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Nome completo")).toBeInTheDocument();
-    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
-    expect(screen.getByLabelText("Senha")).toBeInTheDocument();
+    const { getByRole, getByLabelText } = renderWithProviders(<Signup />);
+    expect(getByRole("heading", { name: "Criar conta" })).toBeInTheDocument();
+    expect(getByLabelText("Nome completo")).toBeInTheDocument();
+    expect(getByLabelText("E-mail")).toBeInTheDocument();
+    expect(getByLabelText("Senha")).toBeInTheDocument();
   });
 
   it("renders forgot password page", () => {
-    renderWithProviders(<ForgotPassword />);
-    expect(screen.getByRole("heading", { name: "Esqueci a senha" })).toBeInTheDocument();
-    expect(screen.getByLabelText("E-mail")).toBeInTheDocument();
+    const { getByRole, getByLabelText } = renderWithProviders(<ForgotPassword />);
+    expect(getByRole("heading", { name: "Esqueci a senha" })).toBeInTheDocument();
+    expect(getByLabelText("E-mail")).toBeInTheDocument();
   });
 
   it("login page has links to signup and forgot password", () => {
-    renderWithProviders(<Login />);
-    expect(screen.getByRole("link", { name: "Criar conta" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Esqueci a senha" })).toBeInTheDocument();
+    const { getByRole } = renderWithProviders(<Login />);
+    expect(getByRole("link", { name: "Criar conta" })).toBeInTheDocument();
+    expect(getByRole("link", { name: "Esqueci a senha" })).toBeInTheDocument();
   });
 });
