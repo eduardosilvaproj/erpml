@@ -18,12 +18,13 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive mt-1">{message}</p>;
 }
 
-type Fields = { fullName?: string; email?: string; password?: string };
+type Fields = { fullName?: string; email?: string; password?: string; confirm?: string };
 
 export default function Signup() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -46,18 +47,27 @@ export default function Signup() {
       if (v.length < 6) return "A senha deve ter no mínimo 6 caracteres";
       return undefined;
     },
+    confirm: (v) => {
+      if (!v) return "Confirme sua senha";
+      if (v !== password) return "As senhas não coincidem";
+      return undefined;
+    },
   };
 
-  const values: Record<string, string> = { fullName, email, password };
+  const values: Record<string, string> = { fullName, email, password, confirm };
   const setters: Record<string, (v: string) => void> = {
     fullName: setFullName,
     email: setEmail,
     password: setPassword,
+    confirm: setConfirm,
   };
 
   const handleChange = (field: string, value: string) => {
     setters[field](value);
     if (touched[field]) setErrors(prev => ({ ...prev, [field]: validators[field](value) }));
+    if (field === "password" && touched.confirm && confirm) {
+      setErrors(prev => ({ ...prev, confirm: value !== confirm ? "As senhas não coincidem" : undefined }));
+    }
   };
 
   const handleBlur = (field: string) => {
@@ -71,9 +81,10 @@ export default function Signup() {
       fullName: validators.fullName(fullName),
       email: validators.email(email),
       password: validators.password(password),
+      confirm: validators.confirm(confirm),
     };
     setErrors(newErrors);
-    setTouched({ fullName: true, email: true, password: true });
+    setTouched({ fullName: true, email: true, password: true, confirm: true });
     if (Object.values(newErrors).some(Boolean)) return;
 
     setLoading(true);
@@ -233,6 +244,19 @@ export default function Signup() {
               />
               <FieldError message={errors.password} />
               <PasswordStrength password={password} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm">Confirmar senha</Label>
+              <PasswordInput
+                id="confirm"
+                placeholder="Repita a senha"
+                value={confirm}
+                onChange={(e) => handleChange("confirm", e.target.value)}
+                onBlur={() => handleBlur("confirm")}
+                className={fieldClass("confirm")}
+                autoComplete="new-password"
+              />
+              <FieldError message={errors.confirm} />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
