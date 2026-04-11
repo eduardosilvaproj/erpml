@@ -33,7 +33,6 @@ export default function Signup() {
   }, [session, authLoading, navigate]);
 
   const [fullName, setFullName] = useState("");
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
