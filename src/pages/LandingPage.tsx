@@ -153,6 +153,8 @@ const WHATSAPP_URL = "https://wa.me/5511999999999?text=Ol%C3%A1!%20Quero%20saber
 export default function LandingPage() {
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   const handleCTA = () => navigate("/signup");
 
