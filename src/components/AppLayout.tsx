@@ -90,6 +90,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-destructive animate-pulse" />
               </button>
             )}
+            <HelpPanel />
           </div>
         </header>
         <main className="flex-1 p-3 sm:p-5 md:p-8 overflow-auto animate-fade-in">
