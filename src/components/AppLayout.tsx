@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
+import HelpPanel from "@/components/HelpPanel";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { MessageSquare, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
