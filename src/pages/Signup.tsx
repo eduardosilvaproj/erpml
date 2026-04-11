@@ -13,6 +13,8 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { translateAuthError } from "@/lib/auth-errors";
 import { PasswordStrength } from "@/components/PasswordStrength";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
