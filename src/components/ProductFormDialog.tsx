@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useSuppliers, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Wand2, Camera } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Camera, AlertTriangle } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { supabase } from "@/integrations/supabase/client";
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
@@ -42,6 +43,15 @@ interface ProductFormDialogProps {
   product?: Product | null;
 }
 
+function generateAlternativeSku(baseSku: string): string {
+  const match = baseSku.match(/^(.+?)[-_]?(\d+)$/);
+  if (match) {
+    const num = parseInt(match[2], 10) + 1;
+    return `${match[1]}-${String(num).padStart(match[2].length, "0")}`;
+  }
+  return `${baseSku}-2`;
+}
+
 export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
   const { toast } = useToast();
   const { data: categories } = useCategories();
@@ -51,6 +61,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [isEnriching, setIsEnriching] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
@@ -74,17 +85,26 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     defaultValues: getDefaults(product),
   });
 
-  // Reset form and suppliers when product changes or dialog opens
   useEffect(() => {
     if (open) {
       form.reset(getDefaults(product));
       setSelectedSuppliers(product?.product_suppliers?.map((ps) => ps.supplier_id) || []);
+      setSkuConflict(null);
     }
   }, [open, product]);
 
   const isLoading = createProduct.isPending || updateProduct.isPending;
 
-  const onSubmit = async (values: FormValues) => {
+  const checkSkuExists = async (sku: string, excludeId?: string): Promise<boolean> => {
+    let query = supabase.from("products").select("id").eq("sku", sku).limit(1);
+    if (excludeId) {
+      query = query.neq("id", excludeId);
+    }
+    const { data } = await query;
+    return (data && data.length > 0) || false;
+  };
+
+  const submitProduct = async (values: FormValues) => {
     const formData: ProductFormData = {
       sku: values.sku,
       barcode: values.barcode || undefined,
@@ -113,6 +133,30 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     setSelectedSuppliers([]);
   };
 
+  const onSubmit = async (values: FormValues) => {
+    const exists = await checkSkuExists(values.sku, product?.id);
+    if (exists) {
+      const suggested = generateAlternativeSku(values.sku);
+      setSkuConflict({ suggestedSku: suggested, pendingValues: values });
+      return;
+    }
+    await submitProduct(values);
+  };
+
+  const handleUseSuggestedSku = async () => {
+    if (!skuConflict) return;
+    const newValues = { ...skuConflict.pendingValues, sku: skuConflict.suggestedSku };
+    form.setValue("sku", skuConflict.suggestedSku);
+    setSkuConflict(null);
+    await submitProduct(newValues);
+  };
+
+  const handleEditSkuManually = () => {
+    if (!skuConflict) return;
+    setSkuConflict(null);
+    form.setFocus("sku");
+  };
+
   const toggleSupplier = (supplierId: string) => {
     setSelectedSuppliers((prev) =>
       prev.includes(supplierId) ? prev.filter((id) => id !== supplierId) : [...prev, supplierId]
@@ -131,7 +175,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
         productName: name,
         ean: form.getValues("barcode") || undefined,
       });
-      // Only fill empty fields
       if (data.description && !form.getValues("description")) {
         form.setValue("description", data.description);
       }
@@ -150,7 +193,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       if (data.suggested_price_brl != null && form.getValues("price") === 0) {
         form.setValue("price", data.suggested_price_brl);
       }
-      // Try to match suggested category
       if (data.suggested_category && !form.getValues("category_id") && categories) {
         const match = categories.find(
           (c) => c.name.toLowerCase() === data.suggested_category!.toLowerCase()
@@ -166,228 +208,258 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[70vh] pr-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Basic info */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="sku" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SKU *</FormLabel>
-                    <FormControl><Input {...field} placeholder="SKU-001" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="barcode" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Código de Barras</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        title="Escanear via câmera"
-                        onClick={() => setShowScanner((v) => !v)}
-                      >
-                        <Camera className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        title="Gerar EAN-13"
-                        onClick={() => {
-                          const ean = generateEAN13();
-                          form.setValue("barcode", ean);
-                          toast({ title: "EAN-13 gerado!", description: ean });
-                        }}
-                      >
-                        <Wand2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {field.value && field.value.length === 13 && (
-                      <p className={`text-xs ${isValidEAN13(field.value) ? "text-green-600" : "text-destructive"}`}>
-                        {isValidEAN13(field.value) ? "✓ EAN-13 válido" : "✗ EAN-13 inválido"}
-                      </p>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
-
-              {showScanner && (
-                <div className="rounded-lg border p-3 space-y-2">
-                  <p className="text-sm font-medium text-muted-foreground">Escanear código de barras</p>
-                  <BarcodeScanner
-                    onScan={(code) => {
-                      form.setValue("barcode", code);
-                      setShowScanner(false);
-                      toast({ title: "Código escaneado!", description: code });
-                    }}
-                  />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                {/* Basic info */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="sku" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SKU *</FormLabel>
+                      <FormControl><Input {...field} placeholder="SKU-001" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="barcode" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código de Barras</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Escanear via câmera"
+                          onClick={() => setShowScanner((v) => !v)}
+                        >
+                          <Camera className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Gerar EAN-13"
+                          onClick={() => {
+                            const ean = generateEAN13();
+                            form.setValue("barcode", ean);
+                            toast({ title: "EAN-13 gerado!", description: ean });
+                          }}
+                        >
+                          <Wand2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {field.value && field.value.length === 13 && (
+                        <p className={`text-xs ${isValidEAN13(field.value) ? "text-green-600" : "text-destructive"}`}>
+                          {isValidEAN13(field.value) ? "✓ EAN-13 válido" : "✗ EAN-13 inválido"}
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
-              )}
 
-              <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Produto *</FormLabel>
-                  <FormControl><Input {...field} placeholder="Nome do produto" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleEnrich}
-                disabled={isEnriching}
-                className="w-full"
-              >
-                {isEnriching ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
+                {showScanner && (
+                  <div className="rounded-lg border p-3 space-y-2">
+                    <p className="text-sm font-medium text-muted-foreground">Escanear código de barras</p>
+                    <BarcodeScanner
+                      onScan={(code) => {
+                        form.setValue("barcode", code);
+                        setShowScanner(false);
+                        toast({ title: "Código escaneado!", description: code });
+                      }}
+                    />
+                  </div>
                 )}
-                {isEnriching ? "Buscando dados com IA..." : "Preencher com IA"}
-              </Button>
 
-              <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl><Textarea {...field} placeholder="Descrição do produto" rows={3} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="category_id" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categories?.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              {/* Pricing */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="cost" render={({ field }) => (
+                <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Custo (R$) *</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormLabel>Nome do Produto *</FormLabel>
+                    <FormControl><Input {...field} placeholder="Nome do produto" /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="price" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço Venda (R$) *</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </div>
 
-              {/* Dimensions */}
-              <div className="grid grid-cols-4 gap-4">
-                <FormField control={form.control} name="weight" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Peso (kg)</FormLabel>
-                    <FormControl><Input type="number" step="0.001" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="width" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Largura (cm)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="height" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Altura (cm)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="depth" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Prof. (cm)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-
-              {/* ML fields */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="sku_ml" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SKU ML</FormLabel>
-                    <FormControl><Input {...field} placeholder="SKU Mercado Livre" /></FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="id_ml" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>ID ML</FormLabel>
-                    <FormControl><Input {...field} placeholder="MLB123456" /></FormControl>
-                  </FormItem>
-                )} />
-              </div>
-
-              <FormField control={form.control} name="min_stock" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque Mínimo</FormLabel>
-                  <FormControl><Input type="number" {...field} /></FormControl>
-                </FormItem>
-              )} />
-
-              {/* Suppliers multi-select */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Fornecedores</label>
-                <div className="rounded-md border p-3 space-y-2 max-h-40 overflow-y-auto">
-                  {suppliers && suppliers.length > 0 ? (
-                    suppliers.map((sup) => (
-                      <label key={sup.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted rounded px-2 py-1">
-                        <Checkbox
-                          checked={selectedSuppliers.includes(sup.id)}
-                          onCheckedChange={() => toggleSupplier(sup.id)}
-                        />
-                        <span className="text-sm">{sup.name}</span>
-                        {sup.cnpj && <span className="text-xs text-muted-foreground">({sup.cnpj})</span>}
-                      </label>
-                    ))
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEnrich}
+                  disabled={isEnriching}
+                  className="w-full"
+                >
+                  {isEnriching ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <p className="text-sm text-muted-foreground">Nenhum fornecedor cadastrado</p>
+                    <Sparkles className="mr-2 h-4 w-4" />
                   )}
-                </div>
-              </div>
+                  {isEnriching ? "Buscando dados com IA..." : "Preencher com IA"}
+                </Button>
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {product ? "Salvar" : "Criar Produto"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+                <FormField control={form.control} name="description" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl><Textarea {...field} placeholder="Descrição do produto" rows={3} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="category_id" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {categories?.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                {/* Pricing */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="cost" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Custo (R$) *</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="price" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Venda (R$) *</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+                {/* Dimensions */}
+                <div className="grid grid-cols-4 gap-4">
+                  <FormField control={form.control} name="weight" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Peso (kg)</FormLabel>
+                      <FormControl><Input type="number" step="0.001" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="width" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Largura (cm)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="height" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Altura (cm)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="depth" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Prof. (cm)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+
+                {/* ML fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="sku_ml" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SKU ML</FormLabel>
+                      <FormControl><Input {...field} placeholder="SKU Mercado Livre" /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="id_ml" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ID ML</FormLabel>
+                      <FormControl><Input {...field} placeholder="MLB123456" /></FormControl>
+                    </FormItem>
+                  )} />
+                </div>
+
+                <FormField control={form.control} name="min_stock" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estoque Mínimo</FormLabel>
+                    <FormControl><Input type="number" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+
+                {/* Suppliers multi-select */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Fornecedores</label>
+                  <div className="rounded-md border p-3 space-y-2 max-h-40 overflow-y-auto">
+                    {suppliers && suppliers.length > 0 ? (
+                      suppliers.map((sup) => (
+                        <label key={sup.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted rounded px-2 py-1">
+                          <Checkbox
+                            checked={selectedSuppliers.includes(sup.id)}
+                            onCheckedChange={() => toggleSupplier(sup.id)}
+                          />
+                          <span className="text-sm">{sup.name}</span>
+                          {sup.cnpj && <span className="text-xs text-muted-foreground">({sup.cnpj})</span>}
+                        </label>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum fornecedor cadastrado</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {product ? "Salvar" : "Criar Produto"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* SKU Duplicate Modal */}
+      <Dialog open={!!skuConflict} onOpenChange={(v) => { if (!v) setSkuConflict(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              SKU Duplicado
+            </DialogTitle>
+            <DialogDescription>
+              Já existe um produto com o SKU <strong className="text-foreground">{skuConflict?.pendingValues.sku}</strong>.
+              Deseja usar o SKU alternativo sugerido ou editar manualmente?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border bg-muted/50 p-3 text-center">
+            <p className="text-sm text-muted-foreground">SKU sugerido:</p>
+            <p className="text-lg font-semibold">{skuConflict?.suggestedSku}</p>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" onClick={handleEditSkuManually}>
+              Editar manualmente
+            </Button>
+            <Button onClick={handleUseSuggestedSku}>
+              Usar sugerido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
