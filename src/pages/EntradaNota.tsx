@@ -86,12 +86,13 @@ const EntradaNota = () => {
     setStep("saving");
 
     try {
-      // Check if invoice already exists
+      // Check if invoice already exists by number + CNPJ + company
       const { data: existing } = await supabase
         .from("invoices")
         .select("id")
         .eq("number", nfeData.numero)
         .eq("issuer_cnpj", nfeData.cnpjEmitente)
+        .eq("company_id", companyId)
         .maybeSingle();
 
       if (existing) {
@@ -113,7 +114,15 @@ const EntradaNota = () => {
           company_id: companyId,
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        // Handle duplicate key constraint violation gracefully
+        if (insertError.code === "23505") {
+          toast({ title: "Nota já importada", description: `NF-e nº ${nfeData.numero} já existe no sistema.`, variant: "destructive" });
+          setStep("preview");
+          return;
+        }
+        throw insertError;
+      }
 
       await queryClient.invalidateQueries({ queryKey: ["invoices"] });
       await queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
@@ -121,7 +130,7 @@ const EntradaNota = () => {
       setStep("done");
       toast({ title: "Nota registrada!", description: `NF-e nº ${nfeData.numero} salva com sucesso.` });
     } catch (err: any) {
-      setErrorMsg(err.message || "Erro ao salvar nota fiscal.");
+      setErrorMsg("Erro ao salvar nota fiscal. Tente novamente.");
       setStep("error");
     }
   };
