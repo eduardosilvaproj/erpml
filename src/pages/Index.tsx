@@ -1,10 +1,9 @@
 import { useState } from "react";
 import {
   Package, ShoppingBag, Warehouse, Users, TrendingUp,
-  ArrowRightLeft, FileText, ScanBarcode, Monitor, ArrowUpRight,
-  ArrowDownRight, Sparkles, DollarSign, Percent,
+  ArrowUpRight, ArrowDownRight, Sparkles, DollarSign, Percent,
   Truck, Send, UserPlus, Trophy, AlertCircle, Clock, Star,
-  ShoppingCart, Target, BarChart3, ChevronRight
+  ShoppingCart, Target, Store
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,15 +19,11 @@ const periodLabels: Record<PeriodFilter, string> = {
   "30d": "30 dias",
 };
 
-const allModules = [
-  { id: "produtos", title: "Produtos", desc: "Cadastro e gestão", icon: Package, url: "/produtos" },
-  { id: "entrada-nota", title: "Entrada Nota", desc: "Importar notas", icon: FileText, url: "/entrada-nota" },
-  { id: "conferencia", title: "Conferência", desc: "Bip de recebimento", icon: ScanBarcode, url: "/conferencia" },
-  { id: "estoque", title: "Estoque", desc: "Físico + FULL", icon: Warehouse, url: "/estoque" },
-  { id: "envio-full", title: "Envio FULL", desc: "Movimentações", icon: ArrowRightLeft, url: "/movimentacao-full" },
-  { id: "pdv", title: "PDV", desc: "Ponto de Venda", icon: Monitor, url: "/pdv" },
-  { id: "crm", title: "CRM", desc: "Clientes", icon: Users, url: "/crm" },
-  { id: "vendas-ml", title: "Vendas ML", desc: "Mercado Livre", icon: ShoppingBag, url: "/integracao-ml" },
+const quickAccessSections = [
+  { id: "cadastros", title: "Cadastros", desc: "Produtos, kits, equipe e CRM", icon: Package, url: "/produtos" },
+  { id: "estoque", title: "Estoque", desc: "Saldos, notas e conferência", icon: Warehouse, url: "/estoque" },
+  { id: "vendas", title: "Vendas", desc: "PDV, campanhas e integrações", icon: Store, url: "/pdv" },
+  { id: "gestao", title: "Gestão", desc: "Relatórios e financeiro", icon: TrendingUp, url: "/painel-hub" },
 ];
 
 const formatCurrency = (v: number) =>
@@ -56,13 +51,15 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
 }) {
   return (
     <Card className="hover-lift border-border/50">
-      <CardContent className="p-5 flex flex-col gap-3">
+      <CardContent className="p-5">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
         </div>
-        <p className="text-2xl font-bold text-foreground leading-none">{value}</p>
-        {trend !== undefined && <TrendBadge value={trend} />}
+        <p className="text-3xl font-bold text-foreground leading-none mt-3">{value}</p>
+        <div className="mt-3">
+          {trend !== undefined && <TrendBadge value={trend} />}
+        </div>
       </CardContent>
     </Card>
   );
@@ -192,20 +189,20 @@ const Index = () => {
             </Card>
           </div>
 
-          {/* Quick Access Modules */}
+          {/* Quick Access */}
           <div>
             <h2 className="text-sm font-semibold text-foreground mb-4">Acesso Rápido</h2>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-              {allModules.map((mod) => (
-                <Link key={mod.id} to={mod.url}>
-                  <Card className="hover-lift cursor-pointer group h-full border-border/40 bg-card/60 hover:border-primary/30 transition-all">
-                    <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                      <div className="rounded-2xl bg-primary/8 p-3.5 group-hover:bg-primary/15 transition-colors">
-                        <mod.icon className="h-8 w-8 text-primary" strokeWidth={1.5} />
+              {quickAccessSections.map((sec) => (
+                <Link key={sec.id} to={sec.url}>
+                  <Card className="hover-lift cursor-pointer group h-full min-h-[140px] border-border/40 bg-card/60 hover:border-primary/30 transition-all">
+                    <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-3 h-full">
+                      <div className="rounded-2xl bg-primary/10 p-4 group-hover:bg-primary/15 transition-colors">
+                        <sec.icon className="h-12 w-12 text-primary" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <p className="font-semibold text-foreground text-sm">{mod.title}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{mod.desc}</p>
+                        <p className="font-semibold text-foreground text-base">{sec.title}</p>
+                        <p className="text-sm text-muted-foreground mt-0.5">{sec.desc}</p>
                       </div>
                     </CardContent>
                   </Card>
