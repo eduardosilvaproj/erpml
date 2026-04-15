@@ -209,21 +209,8 @@ const CRM = () => {
     return result;
   }, [customers, filterType, sortType, purchaseTotals]);
 
-  const getCustomerTotals = (id: string) => {
-    if (MOCK_PURCHASE_TOTALS[id]) return MOCK_PURCHASE_TOTALS[id];
-    return purchaseTotals?.[id] || { total: 0, count: 0, lastDate: "" };
-  };
+  const getCustomerTotals = (id: string) => purchaseTotals?.[id] || { total: 0, count: 0, lastDate: "" };
 
-  // Merge mock customer into list
-  const allCustomers = useMemo(() => {
-    const real = filteredCustomers || [];
-    const hasMock = real.some((c) => c.id === MOCK_CUSTOMER.id);
-    if (hasMock) return real;
-    return [MOCK_CUSTOMER, ...real];
-  }, [filteredCustomers]);
-
-  // Use mock purchases when viewing mock customer
-  const displayPurchases = profileCustomer?.id === "mock-maria-silva" ? MOCK_PURCHASES : purchases;
 
   // ===== PROFILE VIEW =====
   if (profileCustomer) {
