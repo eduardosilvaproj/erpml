@@ -81,10 +81,10 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
 }
 
 const quickActions = [
-  { id: "entrada", title: "Entrada de Mercadoria", desc: "Receber produtos com NF", icon: PackageOpen, color: "text-emerald-400", hoverBorder: "hover:border-emerald-500/50", route: "/entrada-nota", tooltip: "Recebi produtos novos e quero dar entrada no estoque" },
-  { id: "venda", title: "Nova Venda", desc: "Abrir PDV e registrar venda", icon: Monitor, color: "text-sky-400", hoverBorder: "hover:border-sky-500/50", route: "/pdv", tooltip: "Quero registrar uma venda agora no balcão" },
-  { id: "conferencia", title: "Conferência", desc: "Bipar e conferir estoque", icon: ScanLine, color: "text-amber-400", hoverBorder: "hover:border-amber-500/50", route: "/conferencia", tooltip: "Quero verificar se o estoque físico está correto" },
-  { id: "novo-produto", title: "Novo Produto", desc: "Cadastrar produto no catálogo", icon: PlusCircle, color: "text-violet-400", hoverBorder: "hover:border-violet-500/50", route: null, tooltip: "Quero cadastrar um produto novo no sistema" },
+  { id: "entrada", title: "Entrada de Mercadoria", desc: "Receber produtos com NF", icon: PackageOpen, color: "text-emerald-400", borderColor: "border-l-[#34D399]", hoverBg: "hover:bg-emerald-500/5", route: "/entrada-nota", tooltip: "Recebi produtos novos e quero dar entrada no estoque" },
+  { id: "venda", title: "Nova Venda", desc: "Abrir PDV e registrar venda", icon: Monitor, color: "text-sky-400", borderColor: "border-l-[#60A5FA]", hoverBg: "hover:bg-sky-500/5", route: "/pdv", tooltip: "Quero registrar uma venda agora no balcão" },
+  { id: "conferencia", title: "Conferência", desc: "Bipar e conferir estoque", icon: ScanLine, color: "text-amber-400", borderColor: "border-l-[#FBBF24]", hoverBg: "hover:bg-amber-500/5", route: "/conferencia", tooltip: "Quero verificar se o estoque físico está correto" },
+  { id: "novo-produto", title: "Novo Produto", desc: "Cadastrar produto no catálogo", icon: PlusCircle, color: "text-violet-400", borderColor: "border-l-[#A78BFA]", hoverBg: "hover:bg-violet-500/5", route: null, tooltip: "Quero cadastrar um produto novo no sistema" },
 ];
 
 const Index = () => {
@@ -140,21 +140,24 @@ const Index = () => {
 
           {/* Ações Rápidas */}
           <div>
-            <h2 className="text-sm font-semibold text-foreground mb-4">Ações Rápidas</h2>
+            <div className="mb-4">
+              <h2 className="text-base font-semibold text-foreground">Ações Rápidas</h2>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">Suas tarefas mais frequentes</p>
+            </div>
             <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
               {quickActions.map((action) => (
                 <Tooltip key={action.id}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => action.route ? navigate(action.route) : setShowNewProduct(true)}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/30 backdrop-blur transition-all hover:bg-muted/60 ${action.hoverBorder} text-left group`}
+                      className={`flex items-center gap-4 p-5 min-h-[80px] rounded-xl border border-border/30 border-l-[3px] ${action.borderColor} bg-muted/30 backdrop-blur transition-all duration-150 ${action.hoverBg} hover:scale-[1.02] text-left group cursor-pointer`}
                     >
-                      <div className={`shrink-0 rounded-lg bg-background/60 p-2 ${action.color}`}>
-                        <action.icon className="h-5 w-5" strokeWidth={1.75} />
+                      <div className={`shrink-0 rounded-lg bg-background/60 p-2.5 ${action.color}`}>
+                        <action.icon className="h-6 w-6" strokeWidth={1.75} />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{action.title}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
+                        <p className="text-base font-semibold text-foreground truncate">{action.title}</p>
+                        <p className="text-sm text-muted-foreground truncate">{action.desc}</p>
                       </div>
                     </button>
                   </TooltipTrigger>
@@ -163,6 +166,9 @@ const Index = () => {
               ))}
             </div>
           </div>
+
+          {/* Divisor */}
+          <div className="border-t border-border/30" />
 
           {/* Quick Access */}
           <div>
