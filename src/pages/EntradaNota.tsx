@@ -316,8 +316,10 @@ const EntradaNota = () => {
         // Batch: ask conference mode
         setBatchConferenceMode(null);
         setCompletedSteps((p) => new Set([...p, 1]));
-      } else if (nfeData) {
-        const items: ConferenceItem[] = matches.map((m) => ({
+      } else if (batchNfes.length === 1) {
+        // Single NF
+        const singleNf = batchNfes[0];
+        const items: ConferenceItem[] = singleNf.matches.map((m) => ({
           xmlProduct: m.xmlProduct,
           matchedProductId: m.matchedProductId,
           matchedProductName: m.matchedProductName,
@@ -327,6 +329,8 @@ const EntradaNota = () => {
           status: "pending",
         }));
         setConferenceItems(items);
+        setNfeData(singleNf.nfeData);
+        setMatches(singleNf.matches);
         setCompletedSteps((p) => new Set([...p, 1]));
       }
     }
@@ -856,8 +860,7 @@ const EntradaNota = () => {
   const canGoToStep = (step: number) => {
     if (step === 1) return true;
     if (step === 2) {
-      if (isBatchMode) return selectedBatchNfes.length > 0;
-      return !!nfeData && matches.length > 0;
+      return batchNfes.length > 0 && (isBatchMode ? selectedBatchNfes.length > 0 : batchNfes[0]?.matches?.length > 0);
     }
     if (step === 3) return completedSteps.has(2);
     if (step === 4) return completedSteps.has(2);
