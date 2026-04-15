@@ -56,6 +56,7 @@ import MinhaLojaProdutos from "./pages/MinhaLojaProdutos";
 import MinhaLojaPedidos from "./pages/MinhaLojaPedidos";
 import LojaPublica from "./pages/LojaPublica";
 import LojaCheckout from "./pages/LojaCheckout";
+import DuplicadorAnuncios from "./pages/DuplicadorAnuncios";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -102,6 +103,7 @@ const App = () => (
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
                       <Route path="/kits" element={<Kits />} />
                       <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
+                      <Route path="/duplicador-anuncios" element={<PlanProtectedRoute path="/integracao-ml"><DuplicadorAnuncios /></PlanProtectedRoute>} />
                       <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
                       <Route path="/pdv" element={<PDV />} />
                       <Route path="/crm" element={<CRM />} />
