@@ -436,7 +436,7 @@ const EntradaNota = () => {
     setBipAlert({ type: "success", msg: `📦 ${total} unidades adicionadas via caixa!` });
     setTimeout(() => bipRef.current?.focus(), 50);
   };
-
+                      <TableHead className="w-[40px]" />
 
   const conferenceProgress = conferenceItems.length > 0
     ? conferenceItems.filter((i) => i.status === "ok").length
@@ -1236,7 +1236,23 @@ const EntradaNota = () => {
                                 <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
                               </TableCell>
                             )}
-                            <TableCell>
+                            <TableCell className="text-center">
+                              <button
+                                onClick={() => {
+                                  if (item.matchedProductId) {
+                                    setUnknownGtinDialog({ code: "" });
+                                    setUnknownGtinProduct(item.matchedProductId);
+                                    setUnknownGtinQty(1);
+                                    setUnknownGtinBoxes(1);
+                                    setUnknownGtinSave(true);
+                                  }
+                                }}
+                                className={`text-lg transition-colors ${item.boxBadge ? "text-primary" : "text-muted-foreground/40 hover:text-primary"}`}
+                                title="Configurar entrada em caixa"
+                              >
+                                📦
+                              </button>
+                            </TableCell>
                               <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
                                 <Package className="h-4 w-4 text-muted-foreground/40" />
                               </div>
