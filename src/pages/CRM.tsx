@@ -88,6 +88,30 @@ function maskPhone(value: string) {
 type FilterType = "all" | "active" | "no_purchases";
 type SortType = "name" | "most_purchases" | "most_recent";
 
+// Mock customer for layout preview
+const MOCK_CUSTOMER: Customer = {
+  id: "mock-maria-silva",
+  name: "Maria Silva",
+  cpf: "123.456.789-00",
+  phone: "(11) 99999-9999",
+  email: "maria@email.com",
+  address: null,
+  notes: null,
+  company_id: null,
+  created_at: "2026-03-01T00:00:00Z",
+  updated_at: "2026-04-10T00:00:00Z",
+};
+
+const MOCK_PURCHASE_TOTALS: Record<string, { total: number; count: number; lastDate: string }> = {
+  "mock-maria-silva": { total: 1250, count: 3, lastDate: "2026-04-10T00:00:00Z" },
+};
+
+const MOCK_PURCHASES = [
+  { id: "m1", sale_number: "VND-001", created_at: "2026-04-10T00:00:00Z", total_value: 450, payment_method: "PIX", sale_items: [{ id: "mi1", quantity: 3, product_name: "Camiseta Premium" }] },
+  { id: "m2", sale_number: "VND-002", created_at: "2026-03-22T00:00:00Z", total_value: 520, payment_method: "Cartão", sale_items: [{ id: "mi2", quantity: 2, product_name: "Calça Jeans Slim" }] },
+  { id: "m3", sale_number: "VND-003", created_at: "2026-03-10T00:00:00Z", total_value: 280, payment_method: "PIX", sale_items: [{ id: "mi3", quantity: 1, product_name: "Tênis Esportivo" }] },
+];
+
 // Hook for customer purchase totals
 function useCustomerPurchaseTotals() {
   const companyId = useCompanyId();
@@ -208,7 +232,21 @@ const CRM = () => {
     return result;
   }, [customers, filterType, sortType, purchaseTotals]);
 
-  const getCustomerTotals = (id: string) => purchaseTotals?.[id] || { total: 0, count: 0, lastDate: "" };
+  const getCustomerTotals = (id: string) => {
+    if (MOCK_PURCHASE_TOTALS[id]) return MOCK_PURCHASE_TOTALS[id];
+    return purchaseTotals?.[id] || { total: 0, count: 0, lastDate: "" };
+  };
+
+  // Merge mock customer into list
+  const allCustomers = useMemo(() => {
+    const real = filteredCustomers || [];
+    const hasMock = real.some((c) => c.id === MOCK_CUSTOMER.id);
+    if (hasMock) return real;
+    return [MOCK_CUSTOMER, ...real];
+  }, [filteredCustomers]);
+
+  // Use mock purchases when viewing mock customer
+  const displayPurchases = profileCustomer?.id === "mock-maria-silva" ? MOCK_PURCHASES : purchases;
 
   // ===== PROFILE VIEW =====
   if (profileCustomer) {
@@ -297,9 +335,9 @@ const CRM = () => {
             <CardTitle className="text-base">Histórico de Compras</CardTitle>
           </CardHeader>
           <CardContent>
-            {purchases && purchases.length > 0 ? (
+              {displayPurchases && displayPurchases.length > 0 ? (
               <div className="space-y-3">
-                {purchases.map((sale: any) => (
+                {displayPurchases.map((sale: any) => (
                   <div key={sale.id} className="flex items-center justify-between rounded-xl bg-muted/30 p-4 border border-border/40">
                     <div>
                       <p className="font-medium text-sm">{sale.sale_number}</p>
@@ -503,7 +541,7 @@ const CRM = () => {
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : filteredCustomers.length > 0 ? (
+              ) : allCustomers.length > 0 ? (
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <Table>
                     <TableHeader>
@@ -518,7 +556,7 @@ const CRM = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCustomers.map((c) => {
+                      {allCustomers.map((c) => {
                         const totals = getCustomerTotals(c.id);
                         return (
                           <TableRow key={c.id} className="hover:bg-muted/30">
