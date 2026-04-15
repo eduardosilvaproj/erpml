@@ -1295,12 +1295,14 @@ export type Database = {
         Row: {
           active: boolean
           barcode: string | null
+          box_quantity: number | null
           category_id: string | null
           company_id: string | null
           cost: number
           created_at: string
           depth: number | null
           description: string | null
+          gtin_cx: string | null
           height: number | null
           id: string
           id_ml: string | null
@@ -1319,12 +1321,14 @@ export type Database = {
         Insert: {
           active?: boolean
           barcode?: string | null
+          box_quantity?: number | null
           category_id?: string | null
           company_id?: string | null
           cost?: number
           created_at?: string
           depth?: number | null
           description?: string | null
+          gtin_cx?: string | null
           height?: number | null
           id?: string
           id_ml?: string | null
@@ -1343,12 +1347,14 @@ export type Database = {
         Update: {
           active?: boolean
           barcode?: string | null
+          box_quantity?: number | null
           category_id?: string | null
           company_id?: string | null
           cost?: number
           created_at?: string
           depth?: number | null
           description?: string | null
+          gtin_cx?: string | null
           height?: number | null
           id?: string
           id_ml?: string | null

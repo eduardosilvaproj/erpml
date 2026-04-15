@@ -43,6 +43,8 @@ const schema = z.object({
   min_stock: z.coerce.number().int().min(0).optional(),
   stock_initial: z.coerce.number().int().min(0).optional(),
   active: z.boolean().optional(),
+  gtin_cx: z.string().max(50).optional().or(z.literal("")),
+  box_quantity: z.coerce.number().int().min(0).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -102,6 +104,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     min_stock: p?.min_stock || 0,
     stock_initial: 0,
     active: p?.active ?? true,
+    gtin_cx: (p as any)?.gtin_cx || "",
+    box_quantity: (p as any)?.box_quantity ?? "",
   });
 
   const form = useForm<FormValues>({
@@ -194,6 +198,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       min_stock: values.min_stock,
       supplier_ids: [],
       image_url: imageUrl || undefined,
+      gtin_cx: values.gtin_cx || undefined,
+      box_quantity: typeof values.box_quantity === "number" ? values.box_quantity : undefined,
     };
 
     if (product) {
@@ -471,7 +477,31 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   </div>
                 )}
 
-                {/* Category */}
+                {/* GTIN CX (Box barcode) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="gtin_cx" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        📦 GTIN CX
+                        <span className="text-[10px] text-muted-foreground ml-1" title="Código de barras da caixa fechada. Usado para dar entrada em lote.">(caixa)</span>
+                      </FormLabel>
+                      <FormControl><Input {...field} placeholder="Código da caixa fechada" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="box_quantity" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        Qtd por caixa
+                        <span className="text-[10px] text-muted-foreground ml-1" title="Quantidade de unidades dentro de cada caixa fechada.">(un)</span>
+                      </FormLabel>
+                      <FormControl><Input type="number" {...field} placeholder="Ex: 12" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+
                 <FormField control={form.control} name="category_id" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
   Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check,
@@ -34,7 +34,17 @@ interface ConferenceItem {
   expectedQty: number;
   scannedQty: number;
   status: "pending" | "partial" | "ok" | "excess" | "not_found";
-  nfNumber?: string; // which NF this item belongs to (batch mode)
+  nfNumber?: string;
+  boxBadge?: string; // e.g. "📦 3 cx × 12 un = 36"
+}
+
+interface BoxConfig {
+  gtinCx: string;
+  qtyPerBox: number;
+  boxesReceived: number;
+  saveGtin: boolean;
+  savedGtin?: string; // pre-filled from DB
+  savedQtyPerBox?: number;
 }
 
 // Batch mode types
@@ -100,6 +110,15 @@ const EntradaNota = () => {
   const [flashIdx, setFlashIdx] = useState<number | null>(null);
   const [batchConferenceMode, setBatchConferenceMode] = useState<"together" | "one_by_one" | null>(null);
   const [currentBatchNfIdx, setCurrentBatchNfIdx] = useState(0);
+
+  // Box mode
+  const [boxModeEnabled, setBoxModeEnabled] = useState(false);
+  const [expandedBoxIdx, setExpandedBoxIdx] = useState<number | null>(null);
+  const [boxConfigs, setBoxConfigs] = useState<Record<number, BoxConfig>>({});
+  const [boxBipDialog, setBoxBipDialog] = useState<{ code: string; productIdx?: number; productName?: string; qtyPerBox?: number } | null>(null);
+  const [unknownGtinDialog, setUnknownGtinDialog] = useState<{ code: string } | null>(null);
+  const [unknownGtinProduct, setUnknownGtinProduct] = useState("");
+  const [unknownGtinQty, setUnknownGtinQty] = useState(1);
 
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
@@ -416,7 +435,7 @@ const EntradaNota = () => {
     } catch {}
   };
 
-  const handleBip = (code: string) => {
+  const handleBip = async (code: string) => {
     if (!code.trim()) return;
     setBipInput("");
     setBipAlert(null);
@@ -425,41 +444,116 @@ const EntradaNota = () => {
       (i) => i.xmlProduct.ean === code || i.xmlProduct.code === code
     );
 
-    if (idx === -1) {
-      setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
-      playBeep(200, 400);
+    if (idx !== -1) {
+      setFlashIdx(idx);
+      setTimeout(() => setFlashIdx(null), 1000);
+
+      setConferenceItems((prev) => {
+        const updated = [...prev];
+        const item = { ...updated[idx] };
+        item.scannedQty += 1;
+        if (item.scannedQty === item.expectedQty) {
+          item.status = "ok";
+          setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
+          playBeep(800, 100);
+        } else if (item.scannedQty > item.expectedQty) {
+          item.status = "excess";
+          setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
+          playBeep(200, 150);
+          setTimeout(() => playBeep(200, 150), 200);
+        } else {
+          item.status = "partial";
+          setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
+          playBeep(600, 100);
+        }
+        updated[idx] = item;
+        return updated;
+      });
       setTimeout(() => bipRef.current?.focus(), 50);
       return;
     }
 
-    setFlashIdx(idx);
-    setTimeout(() => setFlashIdx(null), 1000);
+    // Check GTIN CX if box mode enabled
+    if (boxModeEnabled) {
+      try {
+        const { data: boxProduct } = await supabase
+          .from("products")
+          .select("id, name, gtin_cx, box_quantity")
+          .eq("gtin_cx", code)
+          .limit(1);
+
+        if (boxProduct && boxProduct.length > 0) {
+          const bp = boxProduct[0];
+          const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
+          if (productIdx !== -1) {
+            setBoxBipDialog({
+              code,
+              productIdx,
+              productName: bp.name,
+              qtyPerBox: (bp as any).box_quantity || 1,
+            });
+            playBeep(600, 100);
+            return;
+          }
+        }
+        // Unknown GTIN CX
+        setUnknownGtinDialog({ code });
+        playBeep(200, 400);
+        return;
+      } catch { /* fall through */ }
+    }
+
+    setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
+    playBeep(200, 400);
+    setTimeout(() => bipRef.current?.focus(), 50);
+  };
+
+  const applyBoxBip = (productIdx: number, boxes: number, qtyPerBox: number) => {
+    const total = boxes * qtyPerBox;
+    setConferenceItems((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[productIdx] };
+      item.scannedQty += total;
+      item.boxBadge = `📦 ${boxes} cx × ${qtyPerBox} un = ${total}`;
+      if (item.scannedQty === item.expectedQty) item.status = "ok";
+      else if (item.scannedQty > item.expectedQty) item.status = "excess";
+      else item.status = "partial";
+      updated[productIdx] = item;
+      return updated;
+    });
+    setBoxBipDialog(null);
+    playBeep(800, 100);
+    setBipAlert({ type: "success", msg: `📦 ${total} unidades adicionadas via caixa!` });
+    setTimeout(() => bipRef.current?.focus(), 50);
+  };
+
+  const applyBoxConfig = async (idx: number) => {
+    const config = boxConfigs[idx];
+    if (!config) return;
+    const total = config.boxesReceived * config.qtyPerBox;
 
     setConferenceItems((prev) => {
       const updated = [...prev];
       const item = { ...updated[idx] };
-      item.scannedQty += 1;
-
-      if (item.scannedQty === item.expectedQty) {
-        item.status = "ok";
-        setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
-        playBeep(800, 100);
-      } else if (item.scannedQty > item.expectedQty) {
-        item.status = "excess";
-        setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
-        playBeep(200, 150);
-        setTimeout(() => playBeep(200, 150), 200);
-      } else {
-        item.status = "partial";
-        setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
-        playBeep(600, 100);
-      }
-
+      item.scannedQty = total;
+      item.boxBadge = `📦 ${config.boxesReceived} cx × ${config.qtyPerBox} un = ${total}`;
+      if (item.scannedQty === item.expectedQty) item.status = "ok";
+      else if (item.scannedQty > item.expectedQty) item.status = "excess";
+      else if (item.scannedQty > 0) item.status = "partial";
+      else item.status = "pending";
       updated[idx] = item;
       return updated;
     });
 
-    setTimeout(() => bipRef.current?.focus(), 50);
+    if (config.saveGtin && config.gtinCx && conferenceItems[idx]?.matchedProductId) {
+      await supabase.from("products").update({
+        gtin_cx: config.gtinCx,
+        box_quantity: config.qtyPerBox,
+      }).eq("id", conferenceItems[idx].matchedProductId!);
+      toast({ title: "GTIN CX salvo no cadastro!" });
+    }
+
+    setExpandedBoxIdx(null);
   };
 
   const conferenceProgress = conferenceItems.length > 0
@@ -752,6 +846,11 @@ const EntradaNota = () => {
     setCurrentBatchNfIdx(0);
     setBatchSelectedForConfirm(new Set());
     setBatchConfirmResult(null);
+    setBoxModeEnabled(false);
+    setExpandedBoxIdx(null);
+    setBoxConfigs({});
+    setBoxBipDialog(null);
+    setUnknownGtinDialog(null);
   };
 
   const canGoToStep = (step: number) => {
@@ -1258,6 +1357,17 @@ const EntradaNota = () => {
           {/* Conference content (shared for single & batch once mode is selected) */}
           {(!batchMode || batchConferenceMode) && (
             <>
+              {/* Box mode toggle */}
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                <Checkbox
+                  checked={boxModeEnabled}
+                  onCheckedChange={(v) => setBoxModeEnabled(!!v)}
+                  id="box-mode"
+                />
+                <label htmlFor="box-mode" className="text-sm font-medium cursor-pointer">
+                  📦 Esta nota contém produtos em caixa
+                </label>
+              </div>
               {/* Bip Input */}
               <Card>
                 <CardContent className="p-4 space-y-3">
@@ -1317,6 +1427,7 @@ const EntradaNota = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       {batchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      {boxModeEnabled && <TableHead className="w-[40px]" />}
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
                       <TableHead>SKU / Código</TableHead>
@@ -1329,79 +1440,198 @@ const EntradaNota = () => {
                   <TableBody>
                     {conferenceItems.map((item, i) => {
                       const pct = item.expectedQty > 0 ? Math.min(100, (item.scannedQty / item.expectedQty) * 100) : 0;
+                      const isBoxExpanded = expandedBoxIdx === i;
+                      const boxCfg = boxConfigs[i] || { gtinCx: "", qtyPerBox: 1, boxesReceived: 0, saveGtin: false };
+                      const boxTotal = boxCfg.qtyPerBox * boxCfg.boxesReceived;
                       return (
-                        <TableRow key={i} className={`transition-all duration-500 ${
-                          flashIdx === i ? "!bg-emerald-500/20" :
-                          item.status === "ok" ? "bg-emerald-500/5" :
-                          item.status === "excess" ? "bg-destructive/5" :
-                          item.status === "partial" ? "bg-amber-500/5" : ""
-                        }`}>
-                          {batchMode && batchConferenceMode === "together" && (
+                        <React.Fragment key={i}>
+                          <TableRow className={`transition-all duration-500 ${
+                            flashIdx === i ? "!bg-emerald-500/20" :
+                            item.status === "ok" ? "bg-emerald-500/5" :
+                            item.status === "excess" ? "bg-destructive/5" :
+                            item.status === "partial" ? "bg-amber-500/5" : ""
+                          }`}>
+                            {batchMode && batchConferenceMode === "together" && (
+                              <TableCell>
+                                <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
+                              </TableCell>
+                            )}
+                            {boxModeEnabled && (
+                              <TableCell>
+                                <button
+                                  onClick={() => {
+                                    if (isBoxExpanded) {
+                                      setExpandedBoxIdx(null);
+                                    } else {
+                                      setExpandedBoxIdx(i);
+                                      // Pre-fill from product if available
+                                      if (!boxConfigs[i] && item.matchedProductId) {
+                                        supabase.from("products").select("gtin_cx, box_quantity").eq("id", item.matchedProductId).single().then(({ data }) => {
+                                          if (data) {
+                                            setBoxConfigs((prev) => ({
+                                              ...prev,
+                                              [i]: {
+                                                gtinCx: (data as any).gtin_cx || "",
+                                                qtyPerBox: (data as any).box_quantity || 1,
+                                                boxesReceived: 0,
+                                                saveGtin: false,
+                                                savedGtin: (data as any).gtin_cx || undefined,
+                                                savedQtyPerBox: (data as any).box_quantity || undefined,
+                                              },
+                                            }));
+                                          }
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  className={`text-lg transition-colors ${isBoxExpanded ? "text-primary" : "text-muted-foreground/60 hover:text-primary"}`}
+                                  title="Configurar entrada em caixa"
+                                >
+                                  📦
+                                </button>
+                              </TableCell>
+                            )}
                             <TableCell>
-                              <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
-                              <Package className="h-4 w-4 text-muted-foreground/40" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
-                          <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
-                          <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-1">
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
-                                setConferenceItems((prev) => {
-                                  const updated = [...prev];
-                                  const ci = { ...updated[i], scannedQty: Math.max(0, updated[i].scannedQty - 1) };
-                                  ci.status = ci.scannedQty === 0 ? "pending" : ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
-                                  updated[i] = ci;
-                                  return updated;
-                                });
-                              }}>
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="font-bold w-8 text-center text-lg">{item.scannedQty}</span>
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
-                                setConferenceItems((prev) => {
-                                  const updated = [...prev];
-                                  const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
-                                  ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
-                                  updated[i] = ci;
-                                  return updated;
-                                });
-                              }}>
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 rounded-full bg-muted/40 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-300 ${
-                                    item.status === "ok" ? "bg-emerald-500" :
-                                    item.status === "excess" ? "bg-destructive" :
-                                    item.status === "partial" ? "bg-amber-500" : "bg-muted-foreground/30"
-                                  }`}
-                                  style={{ width: `${pct}%` }}
-                                />
+                              <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground/40" />
                               </div>
-                              <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(pct)}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge className={
-                              item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
-                              item.status === "excess" ? "bg-destructive/15 text-destructive" :
-                              item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
-                              "bg-muted text-muted-foreground"
-                            }>
-                              {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm font-medium">{item.xmlProduct.description}</div>
+                              {item.boxBadge && (
+                                <Badge className="mt-1 bg-primary/15 text-primary border-primary/30 text-[10px]">{item.boxBadge}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
+                            <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                                  setConferenceItems((prev) => {
+                                    const updated = [...prev];
+                                    const ci = { ...updated[i], scannedQty: Math.max(0, updated[i].scannedQty - 1) };
+                                    ci.status = ci.scannedQty === 0 ? "pending" : ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                                    updated[i] = ci;
+                                    return updated;
+                                  });
+                                }}>
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="font-bold w-8 text-center text-lg">{item.scannedQty}</span>
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                                  setConferenceItems((prev) => {
+                                    const updated = [...prev];
+                                    const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
+                                    ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                                    updated[i] = ci;
+                                    return updated;
+                                  });
+                                }}>
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 rounded-full bg-muted/40 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      item.status === "ok" ? "bg-emerald-500" :
+                                      item.status === "excess" ? "bg-destructive" :
+                                      item.status === "partial" ? "bg-amber-500" : "bg-muted-foreground/30"
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(pct)}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge className={
+                                item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                                item.status === "excess" ? "bg-destructive/15 text-destructive" :
+                                item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                                "bg-muted text-muted-foreground"
+                              }>
+                                {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Expanded box config row */}
+                          {boxModeEnabled && isBoxExpanded && (
+                            <TableRow className="bg-muted/10 border-t-0">
+                              <TableCell colSpan={boxModeEnabled ? 9 : 8} className="p-0">
+                                <div className="p-4 space-y-4 border-l-4 border-primary/40">
+                                  <p className="text-sm font-semibold flex items-center gap-2">📦 Configurar entrada em caixa</p>
+
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                                        GTIN CX <span className="text-[10px]">(código da caixa)</span>
+                                      </label>
+                                      <div className="flex gap-1">
+                                        <Input
+                                          value={boxCfg.gtinCx}
+                                          onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: e.target.value } }))}
+                                          placeholder="GTIN da caixa"
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                      {boxCfg.savedGtin && (
+                                        <Badge className="mt-1 bg-emerald-500/15 text-emerald-400 text-[10px]">GTIN salvo ✓</Badge>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por caixa</label>
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={boxCfg.qtyPerBox}
+                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, qtyPerBox: parseInt(e.target.value) || 1 } }))}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Caixas recebidas</label>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={boxCfg.boxesReceived}
+                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, boxesReceived: parseInt(e.target.value) || 0 } }))}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Total calculado</label>
+                                      <div className="h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                                        {boxTotal > 0 ? `${boxCfg.boxesReceived} × ${boxCfg.qtyPerBox} = ${boxTotal} un` : "0 unidades"}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={boxCfg.saveGtin}
+                                      onCheckedChange={(v) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, saveGtin: !!v } }))}
+                                      id={`save-gtin-${i}`}
+                                    />
+                                    <label htmlFor={`save-gtin-${i}`} className="text-xs text-muted-foreground cursor-pointer">
+                                      Salvar GTIN CX neste produto para próximas entradas
+                                    </label>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setExpandedBoxIdx(null)}>Cancelar</Button>
+                                    <Button size="sm" onClick={() => applyBoxConfig(i)} disabled={boxTotal === 0} className="gap-1">
+                                      <Check className="h-3 w-3" /> Aplicar
+                                    </Button>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
@@ -1821,6 +2051,91 @@ const EntradaNota = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewProductDialog(false)}>Cancelar</Button>
             <Button onClick={addNewProduct}>Cadastrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Box Bip Dialog - GTIN CX detected */}
+      <Dialog open={!!boxBipDialog} onOpenChange={(v) => { if (!v) setBoxBipDialog(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">📦 Caixa detectada!</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm">
+              Caixa de <strong>{boxBipDialog?.productName}</strong> detectada!
+            </p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantas caixas?</label>
+              <Input
+                type="number"
+                min={1}
+                defaultValue={1}
+                id="box-bip-qty"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && boxBipDialog) {
+                    const val = parseInt((e.target as HTMLInputElement).value) || 1;
+                    applyBoxBip(boxBipDialog.productIdx!, val, boxBipDialog.qtyPerBox!);
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Cada caixa contém {boxBipDialog?.qtyPerBox} unidades
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBoxBipDialog(null)}>Cancelar</Button>
+            <Button onClick={() => {
+              const input = document.getElementById("box-bip-qty") as HTMLInputElement;
+              const val = parseInt(input?.value) || 1;
+              if (boxBipDialog) applyBoxBip(boxBipDialog.productIdx!, val, boxBipDialog.qtyPerBox!);
+            }}>Aplicar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unknown GTIN CX Dialog */}
+      <Dialog open={!!unknownGtinDialog} onOpenChange={(v) => { if (!v) { setUnknownGtinDialog(null); setUnknownGtinProduct(""); setUnknownGtinQty(1); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Código não encontrado</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Código <strong className="text-foreground font-mono">{unknownGtinDialog?.code}</strong> não reconhecido. Deseja cadastrar como GTIN CX?
+            </p>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Selecione o produto</label>
+              <Select value={unknownGtinProduct} onValueChange={setUnknownGtinProduct}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {conferenceItems.filter((i) => i.matchedProductId).map((item, idx) => (
+                    <SelectItem key={idx} value={item.matchedProductId!}>{item.xmlProduct.description}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por caixa</label>
+              <Input type="number" min={1} value={unknownGtinQty} onChange={(e) => setUnknownGtinQty(parseInt(e.target.value) || 1)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setUnknownGtinDialog(null); setUnknownGtinProduct(""); }}>Cancelar</Button>
+            <Button disabled={!unknownGtinProduct} onClick={async () => {
+              if (!unknownGtinProduct || !unknownGtinDialog) return;
+              await supabase.from("products").update({
+                gtin_cx: unknownGtinDialog.code,
+                box_quantity: unknownGtinQty,
+              }).eq("id", unknownGtinProduct);
+              toast({ title: "GTIN CX cadastrado!", description: "Próxima vez será reconhecido automaticamente." });
+              setUnknownGtinDialog(null);
+              setUnknownGtinProduct("");
+              setUnknownGtinQty(1);
+              setTimeout(() => bipRef.current?.focus(), 50);
+            }}>Cadastrar e aplicar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
