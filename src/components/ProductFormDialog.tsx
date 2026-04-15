@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { supabase } from "@/integrations/supabase/client";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 type UnsplashPhoto = {
   id: string;
@@ -78,6 +80,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const updateProduct = useUpdateProduct();
   const [isEnriching, setIsEnriching] = useState(false);
   const [showGtinCxScanner, setShowGtinCxScanner] = useState(false);
+  const { guardedClose, showConfirm, confirmDiscard, confirmContinue, markDirty, resetDirty } = useUnsavedChanges(onOpenChange);
   const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
@@ -207,9 +210,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     } else {
       await createProduct.mutateAsync(formData);
     }
+    resetDirty();
     onOpenChange(false);
     form.reset();
-  };
 
   const onSubmit = async (values: FormValues) => {
     const exists = await checkSkuExists(values.sku, product?.id);
