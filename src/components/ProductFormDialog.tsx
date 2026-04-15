@@ -477,7 +477,31 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   </div>
                 )}
 
-                {/* Category */}
+                {/* GTIN CX (Box barcode) */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="gtin_cx" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        📦 GTIN CX
+                        <span className="text-[10px] text-muted-foreground ml-1" title="Código de barras da caixa fechada. Usado para dar entrada em lote.">(caixa)</span>
+                      </FormLabel>
+                      <FormControl><Input {...field} placeholder="Código da caixa fechada" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="box_quantity" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-1">
+                        Qtd por caixa
+                        <span className="text-[10px] text-muted-foreground ml-1" title="Quantidade de unidades dentro de cada caixa fechada.">(un)</span>
+                      </FormLabel>
+                      <FormControl><Input type="number" {...field} placeholder="Ex: 12" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                </div>
+
+
                 <FormField control={form.control} name="category_id" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
