@@ -211,6 +211,40 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     }
   };
 
+  const handleSearchPhotos = async () => {
+    const name = form.getValues("name");
+    if (!name || name.trim().length === 0) {
+      toast({ title: "Digite o nome do produto primeiro", variant: "destructive" });
+      return;
+    }
+    setIsSearchingPhotos(true);
+    setShowPhotoGrid(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("unsplash-search", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        body: null,
+      });
+      // supabase.functions.invoke doesn't support query params, so use fetch directly
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/unsplash-search?query=${encodeURIComponent(name.trim())}&per_page=6`;
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro na busca");
+      setUnsplashPhotos(result.photos || []);
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar fotos", description: err.message, variant: "destructive" });
+      setUnsplashPhotos([]);
+    } finally {
+      setIsSearchingPhotos(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
