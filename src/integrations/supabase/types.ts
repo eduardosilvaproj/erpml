@@ -1501,6 +1501,215 @@ export type Database = {
           },
         ]
       }
+      seller_stores: {
+        Row: {
+          banner_url: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          primary_color: string
+          sale_mode: Database["public"]["Enums"]["store_sale_mode"]
+          slug: string
+          store_name: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          banner_url?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          primary_color?: string
+          sale_mode?: Database["public"]["Enums"]["store_sale_mode"]
+          slug: string
+          store_name: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          banner_url?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          primary_color?: string
+          sale_mode?: Database["public"]["Enums"]["store_sale_mode"]
+          slug?: string
+          store_name?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_stores_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_orders: {
+        Row: {
+          asaas_bank_slip_url: string | null
+          asaas_customer_id: string | null
+          asaas_invoice_url: string | null
+          asaas_payment_id: string | null
+          asaas_pix_copy_paste: string | null
+          asaas_pix_qrcode: string | null
+          buyer_address: Json | null
+          buyer_cpf: string
+          buyer_email: string
+          buyer_name: string
+          buyer_phone: string | null
+          created_at: string
+          id: string
+          order_number: string
+          paid_at: string | null
+          payment_method:
+            | Database["public"]["Enums"]["store_payment_method"]
+            | null
+          payment_status: Database["public"]["Enums"]["store_payment_status"]
+          product_id: string | null
+          product_name: string
+          quantity: number
+          shipping_cost: number
+          store_id: string
+          total_price: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          asaas_bank_slip_url?: string | null
+          asaas_customer_id?: string | null
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_pix_copy_paste?: string | null
+          asaas_pix_qrcode?: string | null
+          buyer_address?: Json | null
+          buyer_cpf: string
+          buyer_email: string
+          buyer_name: string
+          buyer_phone?: string | null
+          created_at?: string
+          id?: string
+          order_number: string
+          paid_at?: string | null
+          payment_method?:
+            | Database["public"]["Enums"]["store_payment_method"]
+            | null
+          payment_status?: Database["public"]["Enums"]["store_payment_status"]
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          shipping_cost?: number
+          store_id: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Update: {
+          asaas_bank_slip_url?: string | null
+          asaas_customer_id?: string | null
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_pix_copy_paste?: string | null
+          asaas_pix_qrcode?: string | null
+          buyer_address?: Json | null
+          buyer_cpf?: string
+          buyer_email?: string
+          buyer_name?: string
+          buyer_phone?: string | null
+          created_at?: string
+          id?: string
+          order_number?: string
+          paid_at?: string | null
+          payment_method?:
+            | Database["public"]["Enums"]["store_payment_method"]
+            | null
+          payment_status?: Database["public"]["Enums"]["store_payment_status"]
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          shipping_cost?: number
+          store_id?: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "seller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_products: {
+        Row: {
+          created_at: string
+          custom_description: string | null
+          custom_price: number | null
+          id: string
+          is_visible: boolean
+          product_id: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_description?: string | null
+          custom_price?: number | null
+          id?: string
+          is_visible?: boolean
+          product_id: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_description?: string | null
+          custom_price?: number | null
+          id?: string
+          is_visible?: boolean
+          product_id?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "seller_stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           asaas_customer_id: string | null
@@ -1756,6 +1965,9 @@ export type Database = {
       company_role: "owner" | "manager" | "member"
       company_status: "active" | "suspended" | "cancelled"
       plan_type: "free" | "basic" | "premium" | "enterprise"
+      store_payment_method: "pix" | "cartao" | "boleto"
+      store_payment_status: "pendente" | "pago" | "cancelado" | "expirado"
+      store_sale_mode: "mercadolivre" | "proprio" | "hibrido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1887,6 +2099,9 @@ export const Constants = {
       company_role: ["owner", "manager", "member"],
       company_status: ["active", "suspended", "cancelled"],
       plan_type: ["free", "basic", "premium", "enterprise"],
+      store_payment_method: ["pix", "cartao", "boleto"],
+      store_payment_status: ["pendente", "pago", "cancelado", "expirado"],
+      store_sale_mode: ["mercadolivre", "proprio", "hibrido"],
     },
   },
 } as const
