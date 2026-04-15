@@ -126,7 +126,8 @@ const CRM = () => {
   const openNew = () => {
     setEditing(null);
     setDocType("cpf");
-    setForm({ name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "" });
+    formDirtyRef.current = false;
+    setForm({ name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "", cep: "", city: "", state: "" });
     setDialogOpen(true);
   };
 
@@ -134,6 +135,7 @@ const CRM = () => {
     setEditing(c);
     const digits = (c.cpf || "").replace(/\D/g, "");
     setDocType(digits.length > 11 ? "cnpj" : "cpf");
+    formDirtyRef.current = false;
     setForm({
       name: c.name,
       phone: c.phone || "",
@@ -142,6 +144,9 @@ const CRM = () => {
       address: c.address || "",
       notes: c.notes || "",
       birthday: "",
+      cep: "",
+      city: "",
+      state: "",
     });
     setDialogOpen(true);
   };
