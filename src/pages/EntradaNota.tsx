@@ -1361,13 +1361,11 @@ const EntradaNota = () => {
                             <TableCell className="text-center">
                               <button
                                 onClick={() => {
-                                  if (item.matchedProductId) {
-                                    setUnknownGtinDialog({ code: "" });
-                                    setUnknownGtinProduct(item.matchedProductId);
-                                    setUnknownGtinQty(1);
-                                    setUnknownGtinBoxes(1);
-                                    setUnknownGtinSave(true);
-                                  }
+                                  setUnknownGtinDialog({ code: "" });
+                                  setUnknownGtinProduct(item.matchedProductId || `idx-${i}`);
+                                  setUnknownGtinQty(1);
+                                  setUnknownGtinBoxes(1);
+                                  setUnknownGtinSave(true);
                                 }}
                                 className={`text-lg transition-colors ${item.boxBadge ? "text-primary" : "text-muted-foreground/40 hover:text-primary"}`}
                                 title="Configurar entrada em caixa"
@@ -2024,12 +2022,13 @@ const EntradaNota = () => {
               const selectedItem = productIdx >= 0 && productIdx < conferenceItems.length ? conferenceItems[productIdx] : null;
               const productName = selectedItem?.xmlProduct.description || "";
 
-              // Save GTIN CX if checkbox checked and code is non-empty
-              if (unknownGtinSave && unknownGtinDialog.code) {
+              // Save GTIN CX if checkbox checked, code is non-empty, and product has a DB ID
+              const actualProductId = unknownGtinProduct.startsWith("idx-") ? selectedItem?.matchedProductId : unknownGtinProduct;
+              if (unknownGtinSave && unknownGtinDialog.code && actualProductId) {
                 await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
-                }).eq("id", unknownGtinProduct);
+                }).eq("id", actualProductId);
                 toast({ title: `GTIN CX salvo no produto ${productName}!` });
               }
 
