@@ -61,6 +61,7 @@ const EntradaNota = () => {
   const [bipInput, setBipInput] = useState("");
   const bipRef = useRef<HTMLInputElement>(null);
   const [bipAlert, setBipAlert] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
+  const [flashIdx, setFlashIdx] = useState<number | null>(null);
 
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
