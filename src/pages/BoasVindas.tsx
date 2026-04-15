@@ -27,8 +27,8 @@ const steps = [
     icon: FileText,
     title: "Importar Notas Fiscais",
     description: "Importe XML de notas fiscais para atualizar seu estoque automaticamente.",
-    path: "/entrada-xml",
-    cta: "Importar XML",
+    path: "/entrada-nota",
+    cta: "Importar Nota",
   },
   {
     icon: Users,

@@ -65,7 +65,6 @@ const menuGroups: MenuGroup[] = [
     color: "text-emerald-400",
     items: [
       { title: "Estoque", url: "/estoque", icon: Warehouse },
-      { title: "Entrada XML", url: "/entrada-xml", icon: FileText },
       { title: "Entrada Nota", url: "/entrada-nota", icon: CameraIcon },
       { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
       { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList },
