@@ -287,8 +287,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPhotoPreview(url);
+      selectedFileRef.current = file;
+      setPhotoSource("file");
+      setPhotoPreview(URL.createObjectURL(file));
+      setShowPhotoGrid(false);
     }
   };
 
