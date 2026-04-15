@@ -312,7 +312,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] px-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2" onChange={markDirty}>
                 {/* Photo upload */}
                 <div className="space-y-3">
                   <div
