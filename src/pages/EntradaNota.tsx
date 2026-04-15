@@ -2142,6 +2142,21 @@ const EntradaNota = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Restore progress dialog */}
+      <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>📋 Retomar nota em andamento?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Encontramos uma entrada de nota fiscal que não foi finalizada. Deseja continuar de onde parou?
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={discardSavedState}>Descartar</Button>
+            <Button onClick={restoreSavedState}>Continuar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
