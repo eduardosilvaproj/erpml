@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useMyCompany, useCompanyMembers, useCompanyAuditLog, useUpdateCompany } from "@/hooks/useCompanyData";
+import { maskCnpj, maskPhone, maskCep } from "@/lib/masks";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -227,20 +228,27 @@ export default function CompanyDashboard() {
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
-                    { key: "name", label: "Nome da Empresa" },
-                    { key: "cnpj", label: "CNPJ" },
-                    { key: "email", label: "E-mail" },
-                    { key: "phone", label: "Telefone" },
-                    { key: "address", label: "Endereço" },
-                    { key: "city", label: "Cidade" },
-                    { key: "state", label: "Estado" },
-                    { key: "zip_code", label: "CEP" },
-                  ].map(({ key, label }) => (
+                    { key: "name", label: "Nome da Empresa", mask: null },
+                    { key: "cnpj", label: "CNPJ", mask: "cnpj" },
+                    { key: "email", label: "E-mail", mask: null },
+                    { key: "phone", label: "Telefone", mask: "phone" },
+                    { key: "address", label: "Endereço", mask: null },
+                    { key: "city", label: "Cidade", mask: null },
+                    { key: "state", label: "Estado", mask: null },
+                    { key: "zip_code", label: "CEP", mask: "cep" },
+                  ].map(({ key, label, mask }) => (
                     <div key={key} className="space-y-1">
                       <Label>{label}</Label>
                       <Input
                         value={form[key] || ""}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                        onChange={(e) => {
+                          let val = e.target.value;
+                          if (mask === "cnpj") val = maskCnpj(val);
+                          if (mask === "phone") val = maskPhone(val);
+                          if (mask === "cep") val = maskCep(val);
+                          setForm({ ...form, [key]: val });
+                        }}
+                        maxLength={mask === "cnpj" ? 18 : mask === "phone" ? 15 : mask === "cep" ? 9 : undefined}
                       />
                     </div>
                   ))}

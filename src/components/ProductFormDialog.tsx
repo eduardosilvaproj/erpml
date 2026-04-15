@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { supabase } from "@/integrations/supabase/client";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 type UnsplashPhoto = {
   id: string;
@@ -78,6 +80,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const updateProduct = useUpdateProduct();
   const [isEnriching, setIsEnriching] = useState(false);
   const [showGtinCxScanner, setShowGtinCxScanner] = useState(false);
+  const { guardedClose, showConfirm, confirmDiscard, confirmContinue, markDirty, resetDirty } = useUnsavedChanges(onOpenChange);
   const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
@@ -207,10 +210,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     } else {
       await createProduct.mutateAsync(formData);
     }
+    resetDirty();
     onOpenChange(false);
     form.reset();
   };
-
   const onSubmit = async (values: FormValues) => {
     const exists = await checkSkuExists(values.sku, product?.id);
     if (exists) {
@@ -302,14 +305,14 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={guardedClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] p-0">
           <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] px-6">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2" onChange={markDirty}>
                 {/* Photo upload */}
                 <div className="space-y-3">
                   <div
@@ -635,7 +638,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
                 {/* Footer */}
                 <DialogFooter className="pt-4 border-t border-border/40">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                  <Button type="button" variant="outline" onClick={() => guardedClose(false)}>Cancelar</Button>
                   <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Salvar produto
@@ -669,6 +672,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UnsavedChangesDialog open={showConfirm} onDiscard={confirmDiscard} onContinue={confirmContinue} />
     </>
   );
 }

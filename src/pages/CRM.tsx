@@ -1,4 +1,4 @@
-import { useState, Fragment, useMemo } from "react";
+import { useState, Fragment, useMemo, useRef } from "react";
 import {
   Users, Plus, Search, ShoppingBag, Pencil, Trash2, Loader2, MessageSquare,
   Phone, Mail, Eye, ArrowLeft, Filter, ArrowUpDown, Calendar, MapPin, FileText,
@@ -58,32 +58,9 @@ function formatPhone(phone: string) {
   return phone;
 }
 
-function maskCpfCnpj(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 11) {
-    return digits
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  return digits
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-}
-
-function maskPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 10) {
-    return digits
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-  return digits
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2");
-}
+import { maskCpfCnpj, maskPhone, maskCep } from "@/lib/masks";
+import { fetchCep } from "@/lib/viacep";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 
 type FilterType = "all" | "active" | "no_purchases";
 type SortType = "name" | "most_purchases" | "most_recent";
@@ -130,8 +107,13 @@ const CRM = () => {
   const [sortType, setSortType] = useState<SortType>("name");
   const [docType, setDocType] = useState<"cpf" | "cnpj">("cpf");
   const [form, setForm] = useState({
-    name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: ""
+    name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "", cep: "", city: "", state: ""
   });
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState(false);
+  const [cepFilled, setCepFilled] = useState(false);
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const formDirtyRef = useRef(false);
 
   const { data: customers, isLoading } = useCustomers(search || undefined);
   const { data: stats } = useCustomerStats();
@@ -144,7 +126,8 @@ const CRM = () => {
   const openNew = () => {
     setEditing(null);
     setDocType("cpf");
-    setForm({ name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "" });
+    formDirtyRef.current = false;
+    setForm({ name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "", cep: "", city: "", state: "" });
     setDialogOpen(true);
   };
 
@@ -152,6 +135,7 @@ const CRM = () => {
     setEditing(c);
     const digits = (c.cpf || "").replace(/\D/g, "");
     setDocType(digits.length > 11 ? "cnpj" : "cpf");
+    formDirtyRef.current = false;
     setForm({
       name: c.name,
       phone: c.phone || "",
@@ -160,18 +144,22 @@ const CRM = () => {
       address: c.address || "",
       notes: c.notes || "",
       birthday: "",
+      cep: "",
+      city: "",
+      state: "",
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
+    const fullAddress = [form.address, form.city, form.state].filter(Boolean).join(", ");
     const payload = {
       name: form.name,
       phone: form.phone || undefined,
       email: form.email || undefined,
       cpf: form.cpf || undefined,
-      address: form.address || undefined,
+      address: fullAddress || form.address || undefined,
       notes: form.notes || undefined,
     };
     if (editing) {
@@ -179,7 +167,37 @@ const CRM = () => {
     } else {
       await createCustomer.mutateAsync(payload);
     }
+    formDirtyRef.current = false;
     setDialogOpen(false);
+  };
+
+  const handleCepLookup = async (cep: string) => {
+    const digits = cep.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    setCepError(false);
+    const result = await fetchCep(digits);
+    setCepLoading(false);
+    if (result) {
+      setForm((prev) => ({
+        ...prev,
+        address: result.logradouro || prev.address,
+        city: result.localidade || prev.city,
+        state: result.uf || prev.state,
+      }));
+      setCepFilled(true);
+      setTimeout(() => setCepFilled(false), 1500);
+    } else {
+      setCepError(true);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open && formDirtyRef.current) {
+      setShowUnsavedConfirm(true);
+      return;
+    }
+    setDialogOpen(open);
   };
 
   const formatCurrency = (v: number) =>
@@ -348,7 +366,7 @@ const CRM = () => {
 
   function renderForm() {
     return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1" onChange={() => { formDirtyRef.current = true; }}>
         <div>
           <Label>Nome completo *</Label>
           <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
@@ -391,10 +409,61 @@ const CRM = () => {
             <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemplo.com" />
           </div>
         </div>
+
+        {/* CEP with auto-lookup */}
+        <div>
+          <Label>CEP</Label>
+          <div className="relative">
+            <Input
+              value={form.cep}
+              onChange={(e) => {
+                const masked = maskCep(e.target.value);
+                setForm({ ...form, cep: masked });
+                setCepError(false);
+                handleCepLookup(masked);
+              }}
+              placeholder="00000-000"
+              maxLength={9}
+              className={cepError ? "border-destructive" : ""}
+            />
+            {cepLoading && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+            )}
+          </div>
+          {cepError && <p className="text-xs text-destructive mt-1">CEP não encontrado</p>}
+        </div>
+
         <div>
           <Label>Endereço</Label>
-          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Rua, nº, bairro, cidade - UF" />
+          <Input
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            placeholder="Rua, nº, bairro"
+            className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+          />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Cidade</Label>
+            <Input
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="Cidade"
+              className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+            />
+          </div>
+          <div>
+            <Label>Estado (UF)</Label>
+            <Input
+              value={form.state}
+              onChange={(e) => setForm({ ...form, state: e.target.value })}
+              placeholder="UF"
+              maxLength={2}
+              className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+            />
+          </div>
+        </div>
+
         <div>
           <Label>Data de Aniversário</Label>
           <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
@@ -608,14 +677,14 @@ const CRM = () => {
       </Tabs>
 
       {/* Customer Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
           </DialogHeader>
           {renderForm()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>Cancelar</Button>
             <Button
               onClick={handleSave}
               disabled={!form.name.trim() || createCustomer.isPending || updateCustomer.isPending}
@@ -628,6 +697,11 @@ const CRM = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UnsavedChangesDialog
+        open={showUnsavedConfirm}
+        onDiscard={() => { setShowUnsavedConfirm(false); formDirtyRef.current = false; setDialogOpen(false); }}
+        onContinue={() => setShowUnsavedConfirm(false)}
+      />
     </div>
   );
 };
