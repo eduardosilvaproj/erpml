@@ -55,12 +55,12 @@ const Estoque = () => {
 
   const handleAdjustSave = async () => {
     if (!adjustDialog) return;
-    const updates: Record<string, number> = {};
-    if (adjustPhysical !== "") updates.stock_physical = Number(adjustPhysical);
-    if (adjustFull !== "") updates.stock_full = Number(adjustFull);
-    if (Object.keys(updates).length === 0) return;
+    const updateData: { stock_physical?: number; stock_full?: number } = {};
+    if (adjustPhysical !== "") updateData.stock_physical = Number(adjustPhysical);
+    if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
+    if (Object.keys(updateData).length === 0) return;
 
-    const { error } = await supabase.from("products").update(updates).eq("id", adjustDialog.id);
+    const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
     if (error) {
       toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
     } else {
