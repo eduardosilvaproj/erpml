@@ -1,12 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
-  Keyboard, X, Package, ArrowRight, ArrowDown, Bot, Search, Plus, Trash2, Edit2, Save
+  Keyboard, Package, ArrowRight, Bot, Search, Plus, Trash2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -28,7 +32,7 @@ interface ConferenceItem {
   status: "pending" | "partial" | "ok" | "excess" | "not_found";
 }
 
-const STEP_LABELS = ["NF", "Conferência", "Divergências", "Ajustes", "Confirmar"];
+const STEP_LABELS = ["NF", "Conferência", "Divergências", "Ajustes XML", "Confirmar"];
 
 const EntradaNota = () => {
   const { toast } = useToast();
@@ -41,7 +45,11 @@ const EntradaNota = () => {
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   // Step 1 - NF
-  const [nfMode, setNfMode] = useState<"scan" | "manual" | "xml">("scan");
+  const [nfMode, setNfMode] = useState<"sefaz" | "xml">("sefaz");
+  const [nfNumber, setNfNumber] = useState("");
+  const [nfSeries, setNfSeries] = useState("001");
+  const [nfFornecedor, setNfFornecedor] = useState("");
+  const [nfDate, setNfDate] = useState("");
   const [manualKey, setManualKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [nfeData, setNfeData] = useState<NFeData | null>(null);
@@ -56,16 +64,19 @@ const EntradaNota = () => {
 
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
+  const [divergenceActions, setDivergenceActions] = useState<Record<number, "conferida" | "nota">>({});
 
   // Step 4 - Adjustments
   const [adjustedItems, setAdjustedItems] = useState<MatchResult[]>([]);
   const [newProductDialog, setNewProductDialog] = useState(false);
   const [newProductData, setNewProductData] = useState({ name: "", ean: "", sku: "", price: "" });
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [entryNotes, setEntryNotes] = useState("");
 
   // Step 5 - Confirm
   const [saving, setSaving] = useState(false);
   const [done, setDone] = useState(false);
+  const [autoUpdateStock, setAutoUpdateStock] = useState(true);
+  const [autoUpdateCost, setAutoUpdateCost] = useState(true);
 
   // XML file upload
   const fileRef = useRef<HTMLInputElement>(null);
@@ -87,7 +98,6 @@ const EntradaNota = () => {
       if (data?.error) throw new Error(data.error);
 
       setNfeChave(clean);
-      // Build minimal NFeData from chave metadata
       const nfe: NFeData = {
         number: data.numero,
         series: data.serie,
@@ -98,6 +108,9 @@ const EntradaNota = () => {
         products: [],
       };
       setNfeData(nfe);
+      setNfNumber(data.numero);
+      setNfSeries(data.serie || "001");
+      setNfFornecedor(nfe.issuerName);
       toast({ title: "Nota encontrada!", description: `NF-e nº ${data.numero} identificada.` });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message || "Erro ao consultar.", variant: "destructive" });
@@ -117,6 +130,10 @@ const EntradaNota = () => {
       const matched = matchProducts(parsed.products, dbProducts || []);
       setNfeData(parsed);
       setMatches(matched);
+      setNfNumber(parsed.number);
+      setNfSeries(parsed.series || "001");
+      setNfFornecedor(parsed.issuerName);
+      setNfDate(parsed.issueDate || "");
       toast({ title: "XML importado!", description: `${parsed.products.length} produtos encontrados.` });
     } catch (err: any) {
       toast({ title: "Erro no XML", description: err.message, variant: "destructive" });
@@ -128,7 +145,6 @@ const EntradaNota = () => {
 
   const goToStep = (step: WizardStep) => {
     if (step === 2 && nfeData) {
-      // Build conference items from matches
       const items: ConferenceItem[] = matches.map((m) => ({
         xmlProduct: m.xmlProduct,
         matchedProductId: m.matchedProductId,
@@ -144,6 +160,7 @@ const EntradaNota = () => {
     if (step === 3) {
       const divs = conferenceItems.filter((i) => i.status !== "ok");
       setDivergences(divs);
+      setDivergenceActions({});
       setCompletedSteps((p) => new Set([...p, 2]));
     }
     if (step === 4) {
@@ -169,30 +186,17 @@ const EntradaNota = () => {
     setBipAlert(null);
 
     const idx = conferenceItems.findIndex(
-      (i) => i.xmlProduct.ean === code || i.xmlProduct.code === code ||
-        (i.matchedProductId && i.xmlProduct.ean && i.xmlProduct.ean === code)
+      (i) => i.xmlProduct.ean === code || i.xmlProduct.code === code
     );
 
     if (idx === -1) {
-      // Try matching by barcode from DB
-      const dbMatch = conferenceItems.findIndex(
-        (i) => i.matchedProductName?.toLowerCase().includes(code.toLowerCase())
-      );
-      if (dbMatch === -1) {
-        setBipAlert({ type: "error", msg: `Produto "${code}" não encontrado na nota!` });
-        return;
-      }
-    }
-
-    const targetIdx = idx !== -1 ? idx : -1;
-    if (targetIdx === -1) {
       setBipAlert({ type: "error", msg: `Produto "${code}" não encontrado na nota!` });
       return;
     }
 
     setConferenceItems((prev) => {
       const updated = [...prev];
-      const item = { ...updated[targetIdx] };
+      const item = { ...updated[idx] };
       item.scannedQty += 1;
 
       if (item.scannedQty === item.expectedQty) {
@@ -206,16 +210,14 @@ const EntradaNota = () => {
         setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
       }
 
-      updated[targetIdx] = item;
+      updated[idx] = item;
       return updated;
     });
   };
 
   const conferenceProgress = conferenceItems.length > 0
-    ? Math.round((conferenceItems.filter((i) => i.status === "ok").length / conferenceItems.length) * 100)
+    ? conferenceItems.filter((i) => i.status === "ok").length
     : 0;
-
-  const remainingItems = conferenceItems.filter((i) => i.status !== "ok").length;
 
   // ========== STEP 4: ADJUSTMENTS ==========
   const removeAdjustedItem = (idx: number) => {
@@ -230,10 +232,10 @@ const EntradaNota = () => {
     );
   };
 
-  const updateAdjustedEan = (idx: number, ean: string) => {
+  const updateAdjustedCost = (idx: number, cost: number) => {
     setAdjustedItems((prev) =>
       prev.map((item, i) =>
-        i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, ean } } : item
+        i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, unitValue: cost, totalValue: cost * item.xmlProduct.quantity } } : item
       )
     );
   };
@@ -271,7 +273,6 @@ const EntradaNota = () => {
     setSaving(true);
 
     try {
-      // Check duplicate
       const { data: existing } = await supabase
         .from("invoices")
         .select("id")
@@ -312,7 +313,6 @@ const EntradaNota = () => {
         throw invError;
       }
 
-      // Save items and update stock
       for (const match of itemsToImport) {
         let productId = match.matchedProductId;
 
@@ -330,10 +330,10 @@ const EntradaNota = () => {
           total_value: match.xmlProduct.totalValue,
           match_type: productId ? match.matchType : "none",
           match_confidence: match.confidence,
-          stock_updated: !!productId,
+          stock_updated: !!productId && autoUpdateStock,
         });
 
-        if (productId) {
+        if (productId && autoUpdateStock) {
           const { data: current } = await supabase
             .from("products")
             .select("stock_physical, cost")
@@ -343,14 +343,20 @@ const EntradaNota = () => {
           if (current) {
             const qty = Math.floor(match.xmlProduct.quantity);
             const newStock = current.stock_physical + qty;
-            const totalOldCost = current.stock_physical * current.cost;
-            const totalNewCost = match.xmlProduct.quantity * match.xmlProduct.unitValue;
-            const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : match.xmlProduct.unitValue;
-
-            await supabase.from("products").update({
-              stock_physical: newStock,
-              cost: Math.round(avgCost * 100) / 100,
-            }).eq("id", productId);
+            
+            if (autoUpdateCost) {
+              const totalOldCost = current.stock_physical * current.cost;
+              const totalNewCost = match.xmlProduct.quantity * match.xmlProduct.unitValue;
+              const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : match.xmlProduct.unitValue;
+              await supabase.from("products").update({
+                stock_physical: newStock,
+                cost: Math.round(avgCost * 100) / 100,
+              }).eq("id", productId);
+            } else {
+              await supabase.from("products").update({
+                stock_physical: newStock,
+              }).eq("id", productId);
+            }
           }
         }
       }
@@ -371,8 +377,12 @@ const EntradaNota = () => {
   const reset = () => {
     setCurrentStep(1);
     setCompletedSteps(new Set());
-    setNfMode("scan");
+    setNfMode("sefaz");
     setManualKey("");
+    setNfNumber("");
+    setNfSeries("001");
+    setNfFornecedor("");
+    setNfDate("");
     setNfeData(null);
     setNfeChave("");
     setMatches([]);
@@ -383,6 +393,9 @@ const EntradaNota = () => {
     setSaving(false);
     setBipAlert(null);
     setBipInput("");
+    setEntryNotes("");
+    setAutoUpdateStock(true);
+    setAutoUpdateCost(true);
   };
 
   const canGoToStep = (step: number) => {
@@ -394,29 +407,22 @@ const EntradaNota = () => {
     return false;
   };
 
-  const itemsWithoutEan = (adjustedItems.length > 0 ? adjustedItems : matches).filter(
-    (m) => !m.xmlProduct.ean
-  );
+  const itemsToShow = adjustedItems.length > 0 ? adjustedItems : matches;
+  const totalValue = itemsToShow.reduce((sum, m) => sum + m.xmlProduct.totalValue, 0);
 
+  // ========== RENDER ==========
   return (
-    <div className="max-w-3xl mx-auto space-y-4 pb-8">
+    <div className="max-w-5xl mx-auto space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px]" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div className="flex-1">
-          <h1 className="text-lg font-bold">Entrada de Mercadoria</h1>
-          <p className="text-xs text-muted-foreground">Assistente guiado de recebimento</p>
-        </div>
-        <Badge variant="outline" className="gap-1.5 text-primary border-primary/30">
-          <Bot className="h-3.5 w-3.5" />
-          Assistente ativo
-        </Badge>
+      <div>
+        <h1 className="text-2xl font-bold">Entrada de Mercadoria</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Passo {currentStep} — {STEP_LABELS[currentStep - 1]}
+        </p>
       </div>
 
-      {/* Progress Bar */}
-      <div className="flex items-center gap-1">
+      {/* Step Progress Bar */}
+      <div className="flex items-center gap-0">
         {STEP_LABELS.map((label, i) => {
           const stepNum = (i + 1) as WizardStep;
           const isActive = currentStep === stepNum;
@@ -424,19 +430,32 @@ const EntradaNota = () => {
           const isClickable = canGoToStep(stepNum);
 
           return (
-            <div key={label} className="flex-1 flex flex-col items-center gap-1">
+            <div key={label} className="flex items-center flex-1">
               <button
                 disabled={!isClickable}
                 onClick={() => isClickable && goToStep(stepNum)}
-                className={`w-full h-2 rounded-full transition-all ${
-                  isActive ? "bg-primary" : isCompleted ? "bg-primary/60" : "bg-muted"
-                } ${isClickable ? "cursor-pointer hover:opacity-80" : "cursor-default"}`}
-              />
-              <span className={`text-[10px] font-medium ${
-                isActive ? "text-primary" : isCompleted ? "text-primary/60" : "text-muted-foreground"
-              }`}>
-                {label}
-              </span>
+                className={`flex items-center gap-2 ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+              >
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 ${
+                  isCompleted
+                    ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/40"
+                    : isActive
+                    ? "bg-primary text-primary-foreground border-2 border-primary"
+                    : "bg-muted/50 text-muted-foreground border-2 border-border"
+                }`}>
+                  {isCompleted ? <Check className="h-4 w-4" /> : stepNum}
+                </div>
+                <span className={`text-xs font-medium hidden sm:inline ${
+                  isActive ? "text-primary" : isCompleted ? "text-emerald-400" : "text-muted-foreground"
+                }`}>
+                  {label}
+                </span>
+              </button>
+              {i < STEP_LABELS.length - 1 && (
+                <div className={`flex-1 h-px mx-3 ${
+                  completedSteps.has(stepNum) ? "bg-emerald-500/40" : "bg-border"
+                }`} />
+              )}
             </div>
           );
         })}
@@ -444,59 +463,78 @@ const EntradaNota = () => {
 
       {/* ========== STEP 1: NF ========== */}
       {currentStep === 1 && (
-        <div className="space-y-4">
-          {/* AI Assistant Box */}
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-4 flex items-start gap-3">
-              <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                <Bot className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Assistente de Importação</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Digite ou bipe o número da nota. O sistema busca automaticamente e preenche tudo para você.
-                  Você também pode importar o XML diretamente.
-                </p>
+        <div className="space-y-6">
+          {/* AI Banner */}
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Assistente de Importação</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mercadoria chegou? Digite o número da NF ou escaneie o código de barras da nota. O sistema vai buscar o XML automaticamente na SEFAZ.
+              </p>
+            </div>
+          </div>
+
+          {/* NF Form Fields */}
+          <Card>
+            <CardContent className="p-5 space-y-5">
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nota Fiscal de Entrada</p>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Número NF</label>
+                  <Input value={nfNumber} onChange={(e) => setNfNumber(e.target.value)} placeholder="000123" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Série</label>
+                  <Input value={nfSeries} onChange={(e) => setNfSeries(e.target.value)} placeholder="001" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Fornecedor</label>
+                  <Input value={nfFornecedor} onChange={(e) => setNfFornecedor(e.target.value)} placeholder="Nome do fornecedor" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Data Emissão</label>
+                  <Input type="date" value={nfDate} onChange={(e) => setNfDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd Itens</label>
+                  <Input value={nfeData ? (nfeData.products.length || matches.length) : "—"} readOnly className="bg-muted/20 cursor-default" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Valor Total</label>
+                  <Input value={nfeData ? formatCurrency(nfeData.totalValue) : "—"} readOnly className="bg-muted/20 cursor-default" />
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Mode selector */}
+          {/* Mode Toggle */}
           <div className="flex gap-2">
-            {[
-              { key: "scan", icon: ScanBarcode, label: "Câmera" },
-              { key: "manual", icon: Keyboard, label: "Digitar Chave" },
-              { key: "xml", icon: FileText, label: "Importar XML" },
-            ].map(({ key, icon: Icon, label }) => (
-              <Button
-                key={key}
-                variant={nfMode === key ? "default" : "outline"}
-                className="flex-1 min-h-[48px] gap-2"
-                onClick={() => setNfMode(key as any)}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="text-xs">{label}</span>
-              </Button>
-            ))}
+            <Button
+              variant={nfMode === "sefaz" ? "default" : "outline"}
+              className="flex-1 min-h-[44px] gap-2"
+              onClick={() => setNfMode("sefaz")}
+            >
+              <Search className="h-4 w-4" />
+              Buscar na SEFAZ
+            </Button>
+            <Button
+              variant={nfMode === "xml" ? "default" : "outline"}
+              className="flex-1 min-h-[44px] gap-2"
+              onClick={() => setNfMode("xml")}
+            >
+              <FileText className="h-4 w-4" />
+              Upload XML
+            </Button>
           </div>
 
-          {/* Scan mode */}
-          {nfMode === "scan" && !nfeData && (
-            <Card className="border-dashed border-2 border-primary/30">
-              <CardContent className="p-4 space-y-4">
-                <div className="text-center space-y-1">
-                  <ScanBarcode className="h-8 w-8 text-primary mx-auto" />
-                  <p className="text-sm font-medium">Aponte a câmera para o código de barras do DANFE</p>
-                </div>
-                <BarcodeScanner onScan={(code) => consultarChave(code)} />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Manual mode */}
-          {nfMode === "manual" && !nfeData && (
+          {/* SEFAZ mode */}
+          {nfMode === "sefaz" && !nfeData && (
             <Card>
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-5 space-y-4">
                 <p className="text-sm font-medium">Chave de Acesso (44 dígitos)</p>
                 <Input
                   placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
@@ -507,7 +545,7 @@ const EntradaNota = () => {
                   inputMode="numeric"
                 />
                 <p className="text-xs text-muted-foreground">{manualKey.replace(/\D/g, "").length}/44 dígitos</p>
-                <Button className="w-full min-h-[48px]" onClick={() => consultarChave(manualKey)} disabled={loading || manualKey.replace(/\D/g, "").length < 44}>
+                <Button className="w-full min-h-[44px]" onClick={() => consultarChave(manualKey)} disabled={loading || manualKey.replace(/\D/g, "").length < 44}>
                   {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                   Buscar Nota
                 </Button>
@@ -517,14 +555,12 @@ const EntradaNota = () => {
 
           {/* XML mode */}
           {nfMode === "xml" && !nfeData && (
-            <Card>
-              <CardContent className="p-4 space-y-3">
-                <div className="text-center space-y-2">
-                  <FileText className="h-8 w-8 text-primary mx-auto" />
-                  <p className="text-sm font-medium">Selecione o arquivo XML da NF-e</p>
-                </div>
+            <Card className="border-dashed border-2 border-border/60">
+              <CardContent className="p-8 flex flex-col items-center gap-4">
+                <FileText className="h-10 w-10 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">Arraste o arquivo XML da NF-e ou clique para selecionar</p>
                 <input ref={fileRef} type="file" accept=".xml" className="hidden" onChange={handleXmlUpload} />
-                <Button variant="outline" className="w-full min-h-[48px]" onClick={() => fileRef.current?.click()} disabled={loading}>
+                <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
                   Selecionar XML
                 </Button>
@@ -534,73 +570,51 @@ const EntradaNota = () => {
 
           {/* Loading */}
           {loading && (
-            <Card>
-              <CardContent className="p-6 flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                <p className="text-sm font-medium">Processando nota fiscal...</p>
-              </CardContent>
-            </Card>
+            <div className="flex items-center justify-center gap-3 py-8">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              <p className="text-sm font-medium text-muted-foreground">Processando nota fiscal...</p>
+            </div>
           )}
 
-          {/* NF Preview */}
+          {/* NF Found */}
           {nfeData && !loading && (
-            <Card className="border-primary/30">
-              <CardContent className="p-4 space-y-4">
+            <Card className="border-emerald-500/30">
+              <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    <CheckCircle className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-base font-bold">NF-e nº {nfeData.number}</p>
-                    <p className="text-xs text-muted-foreground">Série {nfeData.series}</p>
+                    <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">XML Encontrado na SEFAZ</p>
                   </div>
-                  <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200">Autorizada</Badge>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">✓ Autorizada</Badge>
                 </div>
 
-                <div className="h-px bg-border" />
-
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                {nfeChave && (
                   <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Fornecedor</p>
-                    <p className="font-medium mt-0.5">{nfeData.issuerName}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Chave NF-e</p>
+                    <p className="text-xs font-mono text-muted-foreground break-all">{nfeChave}</p>
                   </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Data</p>
-                    <p className="font-medium mt-0.5">{nfeData.issueDate ? new Date(nfeData.issueDate).toLocaleDateString("pt-BR") : "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Itens</p>
-                    <p className="font-medium mt-0.5">{nfeData.products.length || matches.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Valor Total</p>
-                    <p className="font-medium mt-0.5">{formatCurrency(nfeData.totalValue)}</p>
-                  </div>
-                </div>
+                )}
 
                 {matches.length > 0 && (
-                  <>
-                    <div className="h-px bg-border" />
-                    <div className="flex gap-2 text-xs">
-                      <Badge variant="secondary">{matches.filter((m) => m.matchType !== "none").length} vinculados</Badge>
-                      <Badge variant="destructive">{matches.filter((m) => m.matchType === "none").length} novos</Badge>
-                    </div>
-                  </>
+                  <div className="flex gap-2 text-xs">
+                    <Badge variant="secondary">{matches.filter((m) => m.matchType !== "none").length} vinculados</Badge>
+                    <Badge variant="destructive">{matches.filter((m) => m.matchType === "none").length} novos</Badge>
+                  </div>
                 )}
 
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1 min-h-[48px]" onClick={() => { setNfeData(null); setMatches([]); }}>
+                  <Button variant="outline" onClick={() => { setNfeData(null); setMatches([]); }}>
                     Trocar nota
                   </Button>
                   {matches.length > 0 ? (
-                    <Button className="flex-1 min-h-[48px] gap-2" onClick={() => goToStep(2)}>
-                      Ir para conferência
-                      <ArrowRight className="h-4 w-4" />
+                    <Button className="gap-2" onClick={() => goToStep(2)}>
+                      Próximo <ArrowRight className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button className="flex-1 min-h-[48px] gap-2" onClick={() => goToStep(4)}>
-                      Ir para ajustes
-                      <ArrowRight className="h-4 w-4" />
+                    <Button className="gap-2" onClick={() => goToStep(4)}>
+                      Ir para ajustes <ArrowRight className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
@@ -612,19 +626,7 @@ const EntradaNota = () => {
 
       {/* ========== STEP 2: CONFERÊNCIA ========== */}
       {currentStep === 2 && (
-        <div className="space-y-4">
-          {/* AI Box */}
-          <Card className="border-primary/30 bg-primary/5">
-            <CardContent className="p-3 flex items-center gap-3">
-              <Bot className="h-5 w-5 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                {remainingItems > 0
-                  ? `Faltam ${remainingItems} iten(s) para finalizar a conferência.`
-                  : "Todos os itens foram conferidos! Pode avançar."}
-              </p>
-            </CardContent>
-          </Card>
-
+        <div className="space-y-5">
           {/* Bip Input */}
           <Card>
             <CardContent className="p-4 space-y-3">
@@ -633,19 +635,15 @@ const EntradaNota = () => {
                 ref={bipRef}
                 value={bipInput}
                 onChange={(e) => setBipInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleBip(bipInput);
-                  }
-                }}
+                onKeyDown={(e) => { if (e.key === "Enter") handleBip(bipInput); }}
                 placeholder="Código de barras / EAN / SKU"
-                className="min-h-[52px] text-lg font-mono"
+                className="min-h-[48px] text-lg font-mono"
                 autoFocus
               />
               {bipAlert && (
                 <div className={`rounded-lg p-3 text-sm font-medium ${
-                  bipAlert.type === "success" ? "bg-emerald-500/10 text-emerald-700" :
-                  bipAlert.type === "warning" ? "bg-amber-500/10 text-amber-700" :
+                  bipAlert.type === "success" ? "bg-emerald-500/10 text-emerald-400" :
+                  bipAlert.type === "warning" ? "bg-amber-500/10 text-amber-400" :
                   "bg-destructive/10 text-destructive"
                 }`}>
                   {bipAlert.msg}
@@ -654,138 +652,172 @@ const EntradaNota = () => {
             </CardContent>
           </Card>
 
-          {/* Progress */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
-              <div className="h-full bg-primary transition-all rounded-full" style={{ width: `${conferenceProgress}%` }} />
+          {/* Table */}
+          <div className="rounded-xl border border-border/60 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="w-[50px]">Foto</TableHead>
+                  <TableHead>Nome do produto</TableHead>
+                  <TableHead>SKU / Código</TableHead>
+                  <TableHead className="text-center">Qtd Nota</TableHead>
+                  <TableHead className="text-center">Qtd Conferida</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="w-[100px]">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {conferenceItems.map((item, i) => (
+                  <TableRow key={i} className={
+                    item.status === "ok" ? "bg-emerald-500/5" :
+                    item.status === "excess" ? "bg-destructive/5" :
+                    item.status === "partial" ? "bg-amber-500/5" : ""
+                  }>
+                    <TableCell>
+                      <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
+                        <Package className="h-4 w-4 text-muted-foreground/40" />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
+                    <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
+                    <TableCell className="text-center">
+                      <Input
+                        type="number"
+                        value={item.scannedQty}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setConferenceItems((prev) => {
+                            const updated = [...prev];
+                            const ci = { ...updated[i], scannedQty: val };
+                            ci.status = val === ci.expectedQty ? "ok" : val > ci.expectedQty ? "excess" : val > 0 ? "partial" : "pending";
+                            updated[i] = ci;
+                            return updated;
+                          });
+                        }}
+                        className="w-16 h-8 text-center mx-auto"
+                        min={0}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge className={
+                        item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                        item.status === "excess" ? "bg-destructive/15 text-destructive" :
+                        item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                        "bg-muted text-muted-foreground"
+                      }>
+                        {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => {
+                        setConferenceItems((prev) => {
+                          const updated = [...prev];
+                          const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
+                          ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                          updated[i] = ci;
+                          return updated;
+                        });
+                      }}>
+                        + Conferir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">{conferenceProgress} de {conferenceItems.length} itens conferidos</p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setCurrentStep(1)}>
+                <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+              </Button>
+              <Button onClick={() => {
+                const hasDivergences = conferenceItems.some((i) => i.status !== "ok");
+                goToStep(hasDivergences ? 3 : 4);
+              }}>
+                Próximo <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">{conferenceProgress}%</span>
-          </div>
-
-          {/* Items List */}
-          <div className="space-y-2">
-            {conferenceItems.map((item, i) => (
-              <Card key={i} className={`border ${
-                item.status === "ok" ? "border-emerald-200 bg-emerald-50/50 dark:bg-emerald-500/5" :
-                item.status === "excess" ? "border-destructive/30 bg-destructive/5" :
-                item.status === "partial" ? "border-amber-200 bg-amber-50/50 dark:bg-amber-500/5" :
-                "border-border"
-              }`}>
-                <CardContent className="p-3 flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                    item.status === "ok" ? "bg-emerald-500/15 text-emerald-700" :
-                    item.status === "excess" ? "bg-destructive/15 text-destructive" :
-                    item.status === "partial" ? "bg-amber-500/15 text-amber-700" :
-                    "bg-muted text-muted-foreground"
-                  }`}>
-                    {item.status === "ok" ? <CheckCircle className="h-4 w-4" /> :
-                     item.status === "excess" ? <AlertTriangle className="h-4 w-4" /> :
-                     `${item.scannedQty}`}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.xmlProduct.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      EAN: {item.xmlProduct.ean || "—"} • Esperado: {item.expectedQty} • Conferido: {item.scannedQty}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 min-h-[48px]" onClick={() => setCurrentStep(1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <Button className="flex-1 min-h-[48px] gap-2" onClick={() => {
-              const hasDivergences = conferenceItems.some((i) => i.status !== "ok");
-              goToStep(hasDivergences ? 3 : 4);
-            }}>
-              Avançar
-              <ArrowRight className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       )}
 
       {/* ========== STEP 3: DIVERGÊNCIAS ========== */}
       {currentStep === 3 && (
-        <div className="space-y-4">
-          <Card className="border-amber-200 bg-amber-500/5">
-            <CardContent className="p-3 flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                {divergences.length > 0
-                  ? `${divergences.length} divergência(s) encontrada(s). Revise antes de continuar.`
-                  : "Nenhuma divergência encontrada!"}
-              </p>
-            </CardContent>
-          </Card>
-
+        <div className="space-y-5">
           {divergences.length === 0 ? (
             <Card>
-              <CardContent className="p-6 text-center">
-                <CheckCircle className="h-12 w-12 text-emerald-600 mx-auto mb-3" />
-                <p className="text-sm font-medium">Tudo certo! Nenhuma divergência.</p>
+              <CardContent className="p-10 text-center space-y-3">
+                <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto" />
+                <p className="text-lg font-bold">Nenhuma divergência encontrada!</p>
+                <p className="text-sm text-muted-foreground">Todos os itens conferem com a nota fiscal.</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-2">
-              {divergences.map((item, i) => (
-                <Card key={i} className="border-amber-200">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-medium">{item.xmlProduct.description}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Esperado: {item.expectedQty} | Conferido: {item.scannedQty} | Diferença: {item.expectedQty - item.scannedQty}
-                        </p>
-                      </div>
-                      <Badge className={
-                        item.status === "excess" ? "bg-destructive/15 text-destructive" :
-                        item.status === "pending" ? "bg-muted text-muted-foreground" :
-                        "bg-amber-500/15 text-amber-700"
-                      }>
-                        {item.status === "excess" ? "Excesso" : item.status === "pending" ? "Não conferido" : "Parcial"}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1" onClick={() => {
-                        setConferenceItems((prev) =>
-                          prev.map((ci) =>
-                            ci.xmlProduct.code === item.xmlProduct.code
-                              ? { ...ci, scannedQty: ci.expectedQty, status: "ok" }
-                              : ci
-                          )
-                        );
-                        setDivergences((prev) => prev.filter((_, idx) => idx !== i));
-                        toast({ title: "Ajustado manualmente" });
-                      }}>
-                        Ajustar para esperado
-                      </Button>
-                      <Button variant="ghost" size="sm" className="flex-1" onClick={() => {
-                        setDivergences((prev) => prev.filter((_, idx) => idx !== i));
-                        toast({ title: "Divergência ignorada" });
-                      }}>
-                        Ignorar
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="rounded-xl border border-border/60 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead>Produto</TableHead>
+                    <TableHead className="text-center">Qtd Nota</TableHead>
+                    <TableHead className="text-center">Qtd Conferida</TableHead>
+                    <TableHead className="text-center">Diferença</TableHead>
+                    <TableHead>Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {divergences.map((item, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
+                      <TableCell className="text-center">{item.expectedQty}</TableCell>
+                      <TableCell className="text-center">{item.scannedQty}</TableCell>
+                      <TableCell className="text-center font-bold text-destructive">
+                        {item.scannedQty - item.expectedQty}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={divergenceActions[i] === "conferida" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setDivergenceActions((p) => ({ ...p, [i]: "conferida" }))}
+                          >
+                            Aceitar conferida
+                          </Button>
+                          <Button
+                            variant={divergenceActions[i] === "nota" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              setDivergenceActions((p) => ({ ...p, [i]: "nota" }));
+                              setConferenceItems((prev) =>
+                                prev.map((ci) =>
+                                  ci.xmlProduct.code === item.xmlProduct.code
+                                    ? { ...ci, scannedQty: ci.expectedQty, status: "ok" }
+                                    : ci
+                                )
+                              );
+                            }}
+                          >
+                            Aceitar da nota
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
 
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 min-h-[48px]" onClick={() => setCurrentStep(2)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setCurrentStep(2)}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
-            <Button className="flex-1 min-h-[48px] gap-2" onClick={() => goToStep(4)}>
-              Avançar para ajustes
-              <ArrowRight className="h-4 w-4" />
+            <Button onClick={() => goToStep(4)}>
+              Próximo <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </div>
@@ -793,88 +825,82 @@ const EntradaNota = () => {
 
       {/* ========== STEP 4: AJUSTES XML ========== */}
       {currentStep === 4 && (
-        <div className="space-y-4">
-          {/* EAN warning */}
-          {itemsWithoutEan.length > 0 && (
-            <Card className="border-amber-200 bg-amber-500/5">
-              <CardContent className="p-3 flex items-center gap-3">
-                <Bot className="h-5 w-5 text-amber-600 shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  Detectamos {itemsWithoutEan.length} produto(s) sem código de barras. Preencha o EAN ou cadastre novos produtos.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
+        <div className="space-y-5">
           <div className="flex justify-between items-center">
-            <p className="text-sm font-medium">{(adjustedItems.length > 0 ? adjustedItems : matches).length} produto(s)</p>
+            <p className="text-sm text-muted-foreground">{itemsToShow.length} produto(s)</p>
             <Button variant="outline" size="sm" className="gap-1" onClick={() => setNewProductDialog(true)}>
-              <Plus className="h-3.5 w-3.5" />
-              Cadastrar produto
+              <Plus className="h-3.5 w-3.5" /> Cadastrar produto
             </Button>
           </div>
 
-          <div className="space-y-2">
-            {(adjustedItems.length > 0 ? adjustedItems : matches).map((item, i) => (
-              <Card key={i}>
-                <CardContent className="p-3 space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.xmlProduct.description}</p>
-                      <div className="flex gap-2 mt-1">
-                        {item.matchType !== "none" && (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200 text-[10px]">
-                            Vinculado
-                          </Badge>
-                        )}
-                        {!item.xmlProduct.ean && (
-                          <Badge variant="destructive" className="text-[10px]">Sem EAN</Badge>
-                        )}
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeAdjustedItem(i)}>
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Qtd</p>
+          <div className="rounded-xl border border-border/60 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-center w-[100px]">Quantidade</TableHead>
+                  <TableHead className="text-center w-[130px]">Preço de Custo</TableHead>
+                  <TableHead className="text-center w-[130px]">Total</TableHead>
+                  <TableHead className="w-[50px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(adjustedItems.length > 0 ? adjustedItems : matches).map((item, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <p className="text-sm font-medium">{item.xmlProduct.description}</p>
+                      <p className="text-xs text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</p>
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Input
                         type="number"
                         value={item.xmlProduct.quantity}
                         onChange={(e) => updateAdjustedQty(i, parseFloat(e.target.value) || 0)}
-                        className="h-9 text-sm"
+                        className="w-20 h-8 text-center mx-auto"
                         min={0}
                       />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Valor Unit.</p>
-                      <Input value={formatCurrency(item.xmlProduct.unitValue)} className="h-9 text-sm" readOnly />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">EAN</p>
+                    </TableCell>
+                    <TableCell className="text-center">
                       <Input
-                        value={item.xmlProduct.ean}
-                        onChange={(e) => updateAdjustedEan(i, e.target.value)}
-                        placeholder="Preencher"
-                        className={`h-9 text-sm ${!item.xmlProduct.ean ? "border-amber-400" : ""}`}
+                        type="number"
+                        step="0.01"
+                        value={item.xmlProduct.unitValue}
+                        onChange={(e) => updateAdjustedCost(i, parseFloat(e.target.value) || 0)}
+                        className="w-24 h-8 text-center mx-auto"
+                        min={0}
                       />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </TableCell>
+                    <TableCell className="text-center font-medium text-sm">
+                      {formatCurrency(item.xmlProduct.quantity * item.xmlProduct.unitValue)}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeAdjustedItem(i)}>
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 min-h-[48px]" onClick={() => setCurrentStep(matches.length > 0 ? 3 : 1)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+          {/* Notes */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Observação geral da entrada</label>
+            <Textarea
+              value={entryNotes}
+              onChange={(e) => setEntryNotes(e.target.value)}
+              placeholder="Observações opcionais sobre esta entrada..."
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setCurrentStep(matches.length > 0 ? 3 : 1)}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
-            <Button className="flex-1 min-h-[48px] gap-2" onClick={() => goToStep(5)}>
-              Avançar para confirmação
-              <ArrowRight className="h-4 w-4" />
+            <Button onClick={() => goToStep(5)}>
+              Próximo <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
         </div>
@@ -882,53 +908,81 @@ const EntradaNota = () => {
 
       {/* ========== STEP 5: CONFIRMAR ========== */}
       {currentStep === 5 && !done && (
-        <div className="space-y-4">
-          <Card className="border-primary/30">
+        <div className="space-y-5">
+          {/* Summary Card */}
+          <Card>
             <CardContent className="p-5 space-y-4">
-              <div className="text-center space-y-2">
-                <Package className="h-12 w-12 text-primary mx-auto" />
-                <p className="text-base font-bold">Confirmar Entrada no Estoque</p>
-              </div>
-
-              <div className="h-px bg-border" />
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Fornecedor</p>
-                  <p className="font-medium mt-0.5">{nfeData?.issuerName}</p>
+                  <p className="font-medium mt-1">{nfeData?.issuerName || nfFornecedor}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">NF-e</p>
-                  <p className="font-medium mt-0.5">nº {nfeData?.number}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Número NF</p>
+                  <p className="font-medium mt-1">nº {nfeData?.number || nfNumber}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Total Produtos</p>
-                  <p className="font-medium mt-0.5">{(adjustedItems.length > 0 ? adjustedItems : matches).length}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Valor Total</p>
-                  <p className="font-medium mt-0.5">{formatCurrency(nfeData?.totalValue || 0)}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Data</p>
+                  <p className="font-medium mt-1">{nfDate ? new Date(nfDate).toLocaleDateString("pt-BR") : nfeData?.issueDate ? new Date(nfeData.issueDate).toLocaleDateString("pt-BR") : "—"}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-muted/50">
-            <CardContent className="p-4 space-y-2 text-xs text-muted-foreground">
-              <p>✔ Estoque físico será atualizado automaticamente</p>
-              <p>✔ Entrada será registrada no histórico</p>
-              <p>✔ Custo médio será recalculado</p>
-            </CardContent>
-          </Card>
+          {/* Final Table */}
+          <div className="rounded-xl border border-border/60 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-center">Qtd</TableHead>
+                  <TableHead className="text-center">Custo Unit.</TableHead>
+                  <TableHead className="text-center">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemsToShow.map((item, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
+                    <TableCell className="text-center">{item.xmlProduct.quantity}</TableCell>
+                    <TableCell className="text-center">{formatCurrency(item.xmlProduct.unitValue)}</TableCell>
+                    <TableCell className="text-center font-medium">{formatCurrency(item.xmlProduct.totalValue)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
 
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 min-h-[48px]" onClick={() => setCurrentStep(4)}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
+          {/* Total */}
+          <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 p-4">
+            <p className="text-sm font-semibold">Total Geral da Entrada</p>
+            <p className="text-xl font-bold text-primary">{formatCurrency(totalValue || nfeData?.totalValue || 0)}</p>
+          </div>
+
+          {/* Checkboxes */}
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Checkbox checked={autoUpdateStock} onCheckedChange={(v) => setAutoUpdateStock(!!v)} />
+              <span className="text-sm">Atualizar estoque automaticamente</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <Checkbox checked={autoUpdateCost} onCheckedChange={(v) => setAutoUpdateCost(!!v)} />
+              <span className="text-sm">Atualizar preço de custo dos produtos</span>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-between">
+            <Button variant="outline" onClick={() => setCurrentStep(4)}>
+              <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
-            <Button className="flex-1 min-h-[52px] gap-2 text-base" onClick={confirmarEntrada} disabled={saving}>
+            <Button
+              className="min-h-[48px] px-8 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={confirmarEntrada}
+              disabled={saving}
+            >
               {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
-              Confirmar entrada
+              ✓ Confirmar entrada
             </Button>
           </div>
         </div>
@@ -936,30 +990,29 @@ const EntradaNota = () => {
 
       {/* ========== DONE ========== */}
       {currentStep === 5 && done && (
-        <div className="space-y-4">
-          <Card className="border-emerald-200 bg-emerald-500/5">
-            <CardContent className="p-8 flex flex-col items-center gap-4">
+        <Dialog open={done} onOpenChange={() => {}}>
+          <DialogContent className="max-w-md">
+            <div className="flex flex-col items-center gap-4 py-4">
               <div className="h-16 w-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-emerald-600" />
+                <CheckCircle className="h-8 w-8 text-emerald-500" />
               </div>
               <div className="text-center space-y-1">
-                <p className="text-lg font-bold text-emerald-700">Entrada confirmada!</p>
+                <p className="text-lg font-bold">Entrada realizada com sucesso!</p>
                 <p className="text-sm text-muted-foreground">
-                  NF-e nº {nfeData?.number} — {(adjustedItems.length > 0 ? adjustedItems : matches).length} produto(s) atualizados no estoque.
+                  {itemsToShow.length} produtos adicionados ao estoque
                 </p>
               </div>
-            </CardContent>
-          </Card>
-
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex-1 min-h-[48px]" onClick={reset}>
-              Nova entrada
-            </Button>
-            <Button className="flex-1 min-h-[48px]" onClick={() => navigate("/estoque")}>
-              Ver todas as notas
-            </Button>
-          </div>
-        </div>
+            </div>
+            <DialogFooter className="flex gap-3 sm:gap-3">
+              <Button variant="outline" className="flex-1" onClick={reset}>
+                Nova entrada
+              </Button>
+              <Button className="flex-1" onClick={() => navigate("/estoque")}>
+                Ver estoque
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* New Product Dialog */}
@@ -970,19 +1023,19 @@ const EntradaNota = () => {
           </DialogHeader>
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Nome do produto *</p>
+              <label className="text-xs text-muted-foreground mb-1 block">Nome do produto *</label>
               <Input value={newProductData.name} onChange={(e) => setNewProductData((p) => ({ ...p, name: e.target.value }))} />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">SKU *</p>
+              <label className="text-xs text-muted-foreground mb-1 block">SKU *</label>
               <Input value={newProductData.sku} onChange={(e) => setNewProductData((p) => ({ ...p, sku: e.target.value }))} />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">EAN (código de barras)</p>
+              <label className="text-xs text-muted-foreground mb-1 block">EAN (código de barras)</label>
               <Input value={newProductData.ean} onChange={(e) => setNewProductData((p) => ({ ...p, ean: e.target.value }))} />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground mb-1">Preço de venda</p>
+              <label className="text-xs text-muted-foreground mb-1 block">Preço de venda</label>
               <Input type="number" value={newProductData.price} onChange={(e) => setNewProductData((p) => ({ ...p, price: e.target.value }))} />
             </div>
           </div>
