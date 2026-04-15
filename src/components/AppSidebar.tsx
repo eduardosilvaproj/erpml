@@ -1,10 +1,9 @@
-import { useState } from "react";
 import {
   LayoutDashboard, Package, FileText, ScanBarcode,
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock, Megaphone, Boxes, GraduationCap, ClipboardList,
-  Store, Brain, TrendingUp, CameraIcon
+  Store, Brain, TrendingUp, CameraIcon, ChevronDown
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
@@ -20,7 +19,7 @@ import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import { useSidebarCategory } from "@/contexts/SidebarCategoryContext";
+import { useState } from "react";
 
 export interface MenuItem {
   title: string;
@@ -109,25 +108,26 @@ export function AppSidebar() {
   const { planName } = usePlanFeatures();
   const unansweredQuestions = useUnansweredMLQuestionsCount();
   const isMobile = useIsMobile();
-  const { activeCategory, toggleCategory } = useSidebarCategory();
 
   const isPathActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
   };
 
+  // Find which group contains the active route
+  const activeGroupLabel = menuGroups.find((g) =>
+    g.items.some((item) => isPathActive(item.url))
+  )?.label ?? null;
+
+  const [openGroup, setOpenGroup] = useState<string | null>(activeGroupLabel);
+
+  const toggleGroup = (label: string) => {
+    setOpenGroup((prev) => (prev === label ? null : label));
+  };
+
   const handleNavClick = () => {
     if (isMobile) setOpenMobile(false);
   };
-
-  const findActiveGroupLabel = () => {
-    for (const g of menuGroups) {
-      if (g.items.some((item) => isPathActive(item.url))) return g.label;
-    }
-    return null;
-  };
-
-  const activeGroupLabel = findActiveGroupLabel();
 
   return (
     <Sidebar collapsible="icon">
@@ -176,47 +176,81 @@ export function AppSidebar() {
               </div>
             )}
 
-            {/* Category buttons */}
-            <div className="space-y-1.5 px-2">
+            {/* Accordion groups */}
+            <div className="space-y-1 px-2">
               {menuGroups.map((group) => {
-                const isActive = activeCategory === group.label;
+                const isOpen = openGroup === group.label;
                 const hasActiveRoute = group.items.some((item) => isPathActive(item.url));
-                const isHighlighted = isActive || (hasActiveRoute && activeCategory === null);
 
                 return (
-                  <button
-                    key={group.label}
-                    onClick={() => toggleCategory(group.label)}
-                    className={`flex items-center gap-3 w-full rounded-lg transition-all duration-200 min-h-[52px] py-3 px-3 active:scale-[0.97] group ${
-                      isHighlighted
-                        ? "bg-primary/10 border-l-[3px] border-l-primary"
-                        : "hover:bg-sidebar-accent/50 border-l-[3px] border-l-transparent"
-                    }`}
-                  >
-                    <div className={`flex items-center justify-center h-9 w-9 rounded-lg transition-colors ${
-                      isHighlighted ? "bg-primary/15" : "bg-sidebar-accent/60 group-hover:bg-sidebar-accent"
-                    }`}>
-                      <group.icon className={`h-5 w-5 ${isHighlighted ? "text-primary" : group.color}`} strokeWidth={1.75} />
-                    </div>
-                    {!collapsed && (
-                      <div className="flex-1 text-left min-w-0">
-                        <span className={`text-sm font-semibold block ${
-                          isHighlighted ? "text-primary" : "text-sidebar-foreground"
-                        }`}>
-                          {group.label}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/60">{group.items.length} itens</span>
+                  <div key={group.label}>
+                    {/* Group header button */}
+                    <button
+                      onClick={() => toggleGroup(group.label)}
+                      className={`flex items-center gap-3 w-full rounded-lg transition-all duration-200 min-h-[44px] py-2 px-3 active:scale-[0.97] group ${
+                        isOpen
+                          ? "bg-primary/10 border-l-[3px] border-l-primary"
+                          : hasActiveRoute
+                          ? "bg-primary/5 border-l-[3px] border-l-primary/40"
+                          : "hover:bg-sidebar-accent/50 border-l-[3px] border-l-transparent"
+                      }`}
+                    >
+                      <div className={`flex items-center justify-center h-8 w-8 rounded-lg transition-colors ${
+                        isOpen ? "bg-primary/15" : "bg-sidebar-accent/60 group-hover:bg-sidebar-accent"
+                      }`}>
+                        <group.icon className={`h-4.5 w-4.5 ${isOpen ? "text-primary" : group.color}`} strokeWidth={1.75} />
+                      </div>
+                      {!collapsed && (
+                        <>
+                          <span className={`text-sm font-semibold flex-1 text-left ${
+                            isOpen ? "text-primary" : "text-sidebar-foreground"
+                          }`}>
+                            {group.label}
+                          </span>
+                          {group.label === "Cadastros" && unansweredQuestions > 0 && (
+                            <Badge className="h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse shrink-0">
+                              {unansweredQuestions}
+                            </Badge>
+                          )}
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground/60 transition-transform duration-200 shrink-0 ${
+                            isOpen ? "rotate-180" : ""
+                          }`} />
+                        </>
+                      )}
+                    </button>
+
+                    {/* Subcategory items - accordion */}
+                    {!collapsed && isOpen && (
+                      <div className="ml-5 mt-1 mb-1 space-y-0.5 border-l-2 border-sidebar-border/30 pl-3 animate-accordion-down overflow-hidden">
+                        {group.items.map((item) => {
+                          const active = isPathActive(item.url);
+                          return (
+                            <NavLink
+                              key={item.title}
+                              to={item.url}
+                              onClick={handleNavClick}
+                              className={`flex items-center gap-2.5 rounded-lg transition-all duration-150 min-h-[38px] py-1.5 px-2.5 active:scale-[0.98] ${
+                                active
+                                  ? "bg-primary/10 text-primary font-medium"
+                                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+                              }`}
+                              activeClassName=""
+                            >
+                              <item.icon className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-muted-foreground/60"}`} strokeWidth={1.75} />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[13px] block truncate">{item.title}</span>
+                              </div>
+                              {item.premium && (
+                                <Badge variant="outline" className="text-[8px] border-primary/30 text-primary/60 bg-primary/5 px-1 py-0 h-4 shrink-0">
+                                  Pro
+                                </Badge>
+                              )}
+                            </NavLink>
+                          );
+                        })}
                       </div>
                     )}
-                    {!collapsed && hasActiveRoute && !isActive && (
-                      <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
-                    )}
-                    {!collapsed && group.label === "Cadastros" && unansweredQuestions > 0 && (
-                      <Badge className="h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse shrink-0">
-                        {unansweredQuestions}
-                      </Badge>
-                    )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
