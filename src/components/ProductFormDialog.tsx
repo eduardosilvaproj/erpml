@@ -43,6 +43,8 @@ const schema = z.object({
   min_stock: z.coerce.number().int().min(0).optional(),
   stock_initial: z.coerce.number().int().min(0).optional(),
   active: z.boolean().optional(),
+  gtin_cx: z.string().max(50).optional().or(z.literal("")),
+  box_quantity: z.coerce.number().int().min(0).optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -102,6 +104,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     min_stock: p?.min_stock || 0,
     stock_initial: 0,
     active: p?.active ?? true,
+    gtin_cx: (p as any)?.gtin_cx || "",
+    box_quantity: (p as any)?.box_quantity ?? "",
   });
 
   const form = useForm<FormValues>({
