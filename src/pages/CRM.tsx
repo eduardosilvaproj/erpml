@@ -88,29 +88,6 @@ function maskPhone(value: string) {
 type FilterType = "all" | "active" | "no_purchases";
 type SortType = "name" | "most_purchases" | "most_recent";
 
-// Mock customer for layout preview
-const MOCK_CUSTOMER: Customer = {
-  id: "mock-maria-silva",
-  name: "Maria Silva",
-  cpf: "123.456.789-00",
-  phone: "(11) 99999-9999",
-  email: "maria@email.com",
-  address: null,
-  notes: null,
-  company_id: null,
-  created_at: "2026-03-01T00:00:00Z",
-  updated_at: "2026-04-10T00:00:00Z",
-};
-
-const MOCK_PURCHASE_TOTALS: Record<string, { total: number; count: number; lastDate: string }> = {
-  "mock-maria-silva": { total: 1250, count: 3, lastDate: "2026-04-10T00:00:00Z" },
-};
-
-const MOCK_PURCHASES = [
-  { id: "m1", sale_number: "VND-001", created_at: "2026-04-10T00:00:00Z", total_value: 450, payment_method: "PIX", sale_items: [{ id: "mi1", quantity: 3, product_name: "Camiseta Premium" }] },
-  { id: "m2", sale_number: "VND-002", created_at: "2026-03-22T00:00:00Z", total_value: 520, payment_method: "Cartão", sale_items: [{ id: "mi2", quantity: 2, product_name: "Calça Jeans Slim" }] },
-  { id: "m3", sale_number: "VND-003", created_at: "2026-03-10T00:00:00Z", total_value: 280, payment_method: "PIX", sale_items: [{ id: "mi3", quantity: 1, product_name: "Tênis Esportivo" }] },
-];
 
 // Hook for customer purchase totals
 function useCustomerPurchaseTotals() {
