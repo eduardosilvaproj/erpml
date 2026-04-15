@@ -39,14 +39,6 @@ interface ConferenceItem {
   boxBadge?: string; // e.g. "📦 3 cx × 12 un = 36"
 }
 
-interface BoxConfig {
-  gtinCx: string;
-  qtyPerBox: number;
-  boxesReceived: number;
-  saveGtin: boolean;
-  savedGtin?: string; // pre-filled from DB
-  savedQtyPerBox?: number;
-}
 
 // Batch mode types
 interface BatchNfe {
@@ -112,10 +104,6 @@ const EntradaNota = () => {
   const [batchConferenceMode, setBatchConferenceMode] = useState<"together" | "one_by_one" | null>(null);
   const [currentBatchNfIdx, setCurrentBatchNfIdx] = useState(0);
 
-  // Box mode
-  const [boxModeEnabled, setBoxModeEnabled] = useState(false);
-  const [expandedBoxIdx, setExpandedBoxIdx] = useState<number | null>(null);
-  const [boxConfigs, setBoxConfigs] = useState<Record<number, BoxConfig>>({});
   const [boxBipDialog, setBoxBipDialog] = useState<{ code: string; productIdx?: number; productName?: string; qtyPerBox?: number } | null>(null);
   const [unknownGtinDialog, setUnknownGtinDialog] = useState<{ code: string } | null>(null);
   const [unknownGtinProduct, setUnknownGtinProduct] = useState("");
@@ -449,34 +437,6 @@ const EntradaNota = () => {
     setTimeout(() => bipRef.current?.focus(), 50);
   };
 
-  const applyBoxConfig = async (idx: number) => {
-    const config = boxConfigs[idx];
-    if (!config) return;
-    const total = config.boxesReceived * config.qtyPerBox;
-
-    setConferenceItems((prev) => {
-      const updated = [...prev];
-      const item = { ...updated[idx] };
-      item.scannedQty = total;
-      item.boxBadge = `📦 ${config.boxesReceived} cx × ${config.qtyPerBox} un = ${total}`;
-      if (item.scannedQty === item.expectedQty) item.status = "ok";
-      else if (item.scannedQty > item.expectedQty) item.status = "excess";
-      else if (item.scannedQty > 0) item.status = "partial";
-      else item.status = "pending";
-      updated[idx] = item;
-      return updated;
-    });
-
-    if (config.saveGtin && config.gtinCx && conferenceItems[idx]?.matchedProductId) {
-      await supabase.from("products").update({
-        gtin_cx: config.gtinCx,
-        box_quantity: config.qtyPerBox,
-      }).eq("id", conferenceItems[idx].matchedProductId!);
-      toast({ title: "GTIN CX salvo no cadastro!" });
-    }
-
-    setExpandedBoxIdx(null);
-  };
 
   const conferenceProgress = conferenceItems.length > 0
     ? conferenceItems.filter((i) => i.status === "ok").length
@@ -768,9 +728,6 @@ const EntradaNota = () => {
     setCurrentBatchNfIdx(0);
     setBatchSelectedForConfirm(new Set());
     setBatchConfirmResult(null);
-    setBoxModeEnabled(false);
-    setExpandedBoxIdx(null);
-    setBoxConfigs({});
     setBoxBipDialog(null);
     setUnknownGtinDialog(null);
   };
@@ -1195,17 +1152,6 @@ const EntradaNota = () => {
           {/* Conference content (shared for single & batch once mode is selected) */}
           {(!isBatchMode || batchConferenceMode) && (
             <>
-              {/* Box mode toggle */}
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-                <Checkbox
-                  checked={boxModeEnabled}
-                  onCheckedChange={(v) => setBoxModeEnabled(!!v)}
-                  id="box-mode"
-                />
-                <label htmlFor="box-mode" className="text-sm font-medium cursor-pointer">
-                  📦 Esta nota contém produtos em caixa
-                </label>
-              </div>
               {/* Bip Input */}
               <Card>
               <CardContent className="p-4 space-y-3">
@@ -1264,7 +1210,7 @@ const EntradaNota = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       {isBatchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
-                      {boxModeEnabled && <TableHead className="w-[40px]" />}
+                      
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
                       <TableHead>SKU / Código</TableHead>
@@ -1277,9 +1223,6 @@ const EntradaNota = () => {
                   <TableBody>
                     {conferenceItems.map((item, i) => {
                       const pct = item.expectedQty > 0 ? Math.min(100, (item.scannedQty / item.expectedQty) * 100) : 0;
-                      const isBoxExpanded = expandedBoxIdx === i;
-                      const boxCfg = boxConfigs[i] || { gtinCx: "", qtyPerBox: 1, boxesReceived: 0, saveGtin: false };
-                      const boxTotal = boxCfg.qtyPerBox * boxCfg.boxesReceived;
                       return (
                         <React.Fragment key={i}>
                           <TableRow className={`transition-all duration-500 ${
@@ -1291,41 +1234,6 @@ const EntradaNota = () => {
                             {isBatchMode && batchConferenceMode === "together" && (
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
-                              </TableCell>
-                            )}
-                            {boxModeEnabled && (
-                              <TableCell>
-                                <button
-                                  onClick={() => {
-                                    if (isBoxExpanded) {
-                                      setExpandedBoxIdx(null);
-                                    } else {
-                                      setExpandedBoxIdx(i);
-                                      // Pre-fill from product if available
-                                      if (!boxConfigs[i] && item.matchedProductId) {
-                                        supabase.from("products").select("gtin_cx, box_quantity").eq("id", item.matchedProductId).single().then(({ data }) => {
-                                          if (data) {
-                                            setBoxConfigs((prev) => ({
-                                              ...prev,
-                                              [i]: {
-                                                gtinCx: (data as any).gtin_cx || "",
-                                                qtyPerBox: (data as any).box_quantity || 1,
-                                                boxesReceived: 0,
-                                                saveGtin: false,
-                                                savedGtin: (data as any).gtin_cx || undefined,
-                                                savedQtyPerBox: (data as any).box_quantity || undefined,
-                                              },
-                                            }));
-                                          }
-                                        });
-                                      }
-                                    }
-                                  }}
-                                  className={`text-lg transition-colors ${isBoxExpanded ? "text-primary" : "text-muted-foreground/60 hover:text-primary"}`}
-                                  title="Configurar entrada em caixa"
-                                >
-                                  📦
-                                </button>
                               </TableCell>
                             )}
                             <TableCell>
@@ -1395,79 +1303,6 @@ const EntradaNota = () => {
                             </TableCell>
                           </TableRow>
 
-                          {/* Expanded box config row */}
-                          {boxModeEnabled && isBoxExpanded && (
-                            <TableRow className="bg-muted/10 border-t-0">
-                              <TableCell colSpan={boxModeEnabled ? 9 : 8} className="p-0">
-                                <div className="p-4 space-y-4 border-l-4 border-primary/40">
-                                  <p className="text-sm font-semibold flex items-center gap-2">📦 Configurar entrada em caixa</p>
-
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div>
-                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
-                                        GTIN CX <span className="text-[10px]">(código da caixa)</span>
-                                      </label>
-                                      <div className="flex gap-1">
-                                        <BarcodeScannerInput
-                                          value={boxCfg.gtinCx}
-                                          onChange={(v) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: v } }))}
-                                          onScan={(code) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: code } }))}
-                                          placeholder="GTIN da caixa"
-                                          inputClassName="text-sm"
-                                          showCameraButton
-                                        />
-                                      </div>
-                                      {boxCfg.savedGtin && (
-                                        <Badge className="mt-1 bg-emerald-500/15 text-emerald-400 text-[10px]">GTIN salvo ✓</Badge>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por caixa</label>
-                                      <Input
-                                        type="number"
-                                        min={1}
-                                        value={boxCfg.qtyPerBox}
-                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, qtyPerBox: parseInt(e.target.value) || 1 } }))}
-                                        className="text-sm"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Caixas recebidas</label>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        value={boxCfg.boxesReceived}
-                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, boxesReceived: parseInt(e.target.value) || 0 } }))}
-                                        className="text-sm"
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Total calculado</label>
-                                      <div className="h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                                        {boxTotal > 0 ? `${boxCfg.boxesReceived} × ${boxCfg.qtyPerBox} = ${boxTotal} un` : "0 unidades"}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center gap-2">
-                                    <Checkbox
-                                      checked={boxCfg.saveGtin}
-                                      onCheckedChange={(v) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, saveGtin: !!v } }))}
-                                      id={`save-gtin-${i}`}
-                                    />
-                                    <label htmlFor={`save-gtin-${i}`} className="text-xs text-muted-foreground cursor-pointer">
-                                      Salvar GTIN CX neste produto para próximas entradas
-                                    </label>
-                                  </div>
-
-                                  <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => setExpandedBoxIdx(null)}>Cancelar</Button>
-                                    <Button size="sm" onClick={() => applyBoxConfig(i)} disabled={boxTotal === 0} className="gap-1">
-                                      <Check className="h-3 w-3" /> Aplicar
-                                    </Button>
-                                  </div>
-                                </div>
-                              </TableCell>
                             </TableRow>
                           )}
                         </React.Fragment>
