@@ -1790,14 +1790,19 @@ const EntradaNota = () => {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-400" />
-              Código não reconhecido
+              {unknownGtinDialog?.code ? (
+                <><AlertTriangle className="h-5 w-5 text-amber-400" /> Código não reconhecido</>
+              ) : (
+                <><Package className="h-5 w-5 text-primary" /> Configurar entrada em caixa</>
+              )}
             </DialogTitle>
+            {unknownGtinDialog?.code && (
+              <p className="text-sm text-muted-foreground">
+                Código bipado: <span className="font-mono font-bold">{unknownGtinDialog.code}</span>
+              </p>
+            )}
             <p className="text-sm text-muted-foreground">
-              Código bipado: <span className="font-mono font-bold">{unknownGtinDialog?.code}</span>
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Selecione a qual produto desta nota pertence esta caixa:
+              {unknownGtinDialog?.code ? "Selecione a qual produto desta nota pertence esta caixa:" : "Configure a quantidade de caixas e unidades:"}
             </p>
           </DialogHeader>
 
@@ -1863,19 +1868,21 @@ const EntradaNota = () => {
                 </div>
               )}
 
-              <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
-                <Checkbox
-                  id="save-gtin-entrada"
-                  checked={unknownGtinSave}
-                  onCheckedChange={(checked) => setUnknownGtinSave(!!checked)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
-                  <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
-                  <br />
-                  <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
-                </label>
-              </div>
+              {unknownGtinDialog?.code && (
+                <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                  <Checkbox
+                    id="save-gtin-entrada"
+                    checked={unknownGtinSave}
+                    onCheckedChange={(checked) => setUnknownGtinSave(!!checked)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
+                    <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
+                    <br />
+                    <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
@@ -1888,8 +1895,8 @@ const EntradaNota = () => {
               const selectedItem = conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct);
               const productName = selectedItem?.xmlProduct.description || "";
 
-              // Save GTIN CX if checkbox checked
-              if (unknownGtinSave) {
+              // Save GTIN CX if checkbox checked and code is non-empty
+              if (unknownGtinSave && unknownGtinDialog.code) {
                 await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
