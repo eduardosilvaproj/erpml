@@ -584,6 +584,7 @@ const EntradaNota = () => {
                       series: "001",
                       issuerCnpj: "00.000.000/0001-00",
                       issuerName: "Distribuidora Alfa LTDA",
+                      issueDate: "14/04/2026",
                       totalValue: 850.00,
                       products: [
                         { code: "P-A", description: "Produto A", ean: "7891234560011", ncm: "8471.30.19", cfop: "5102", unit: "UN", quantity: 5, unitValue: 50, totalValue: 250 },
