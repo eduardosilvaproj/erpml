@@ -3,7 +3,31 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onFocus, onBlur, ...props }, ref) => {
+    const isNumeric = type === "number";
+
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (isNumeric) {
+        e.target.select();
+      }
+      onFocus?.(e);
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+      if (isNumeric && e.target.value === "") {
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value"
+        )?.set;
+        if (nativeInputValueSetter) {
+          nativeInputValueSetter.call(e.target, "0");
+          e.target.dispatchEvent(new Event("input", { bubbles: true }));
+          e.target.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+      onBlur?.(e);
+    };
+
     return (
       <input
         type={type}
@@ -12,6 +36,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className,
         )}
         ref={ref}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         {...props}
       />
     );
