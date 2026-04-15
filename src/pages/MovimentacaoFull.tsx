@@ -245,14 +245,14 @@ const MovimentacaoFull = () => {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; class: string }> = {
-      separando: { label: "Separando", class: "bg-primary/10 text-primary" },
-      enviado: { label: "Enviado", class: "bg-amber-500/15 text-amber-700" },
-      recebido_full: { label: "Recebido FULL", class: "bg-blue-500/15 text-blue-700" },
-      conferido_full: { label: "Conferido FULL", class: "bg-emerald-500/15 text-emerald-700" },
+      separando: { label: "Separando", class: "bg-muted text-muted-foreground" },
+      enviado: { label: "Enviado", class: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+      recebido_full: { label: "Recebido", class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+      conferido_full: { label: "Conferido", class: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
       cancelado: { label: "Cancelado", class: "bg-destructive/15 text-destructive" },
     };
     const s = map[status] || map.separando;
-    return <Badge className={s.class}>{s.label}</Badge>;
+    return <Badge variant="outline" className={s.class}>{s.label}</Badge>;
   };
 
   const statCounts = {
