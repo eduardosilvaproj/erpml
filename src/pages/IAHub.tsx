@@ -1,7 +1,9 @@
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, Search, Megaphone, MessageSquare, Brain,
@@ -174,12 +176,27 @@ export default function IAHub() {
   const navigate = useNavigate();
   const { isRouteAllowed, planName, features } = usePlanFeatures();
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [tagFilter, setTagFilter] = useState<"todos" | "premium" | "gratuito">("todos");
+
   const isFeatureAllowed = (feature: AIFeature): boolean => {
     if (!feature.planGate) return true;
     return features.includes(feature.planGate) ||
       features.includes("Tudo do Premium") ||
       features.some((f) => f.startsWith("Tudo do"));
   };
+
+  const filteredFeatures = useMemo(() => {
+    return AI_FEATURES.filter((f) => {
+      if (tagFilter === "premium" && !f.planGate) return false;
+      if (tagFilter === "gratuito" && f.planGate) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return f.title.toLowerCase().includes(q) || f.description.toLowerCase().includes(q) || f.tags.some((t) => t.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [searchQuery, tagFilter]);
 
   const handleNavigate = (feature: AIFeature) => {
     if (feature.route === "#suporte") {
@@ -194,7 +211,7 @@ export default function IAHub() {
   const groupedFeatures = Object.entries(CATEGORIES).map(([key, cat]) => ({
     key,
     ...cat,
-    features: AI_FEATURES.filter((f) => f.category === key),
+    features: filteredFeatures.filter((f) => f.category === key),
   })).filter((g) => g.features.length > 0);
 
   const totalAvailable = AI_FEATURES.filter(isFeatureAllowed).length;
@@ -225,6 +242,35 @@ export default function IAHub() {
               {planName}
             </Badge>
           )}
+        </div>
+      </div>
+
+      {/* Search, filters & counter */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar ferramenta de IA..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            {(["todos", "premium", "gratuito"] as const).map((tag) => (
+              <Button
+                key={tag}
+                variant={tagFilter === tag ? "default" : "outline"}
+                size="sm"
+                className="text-xs capitalize"
+                onClick={() => setTagFilter(tag)}
+              >
+                {tag === "todos" ? "Todos" : tag === "premium" ? "Premium" : "Gratuito"}
+              </Button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">{filteredFeatures.length} ferramentas disponíveis</span>
         </div>
       </div>
 
