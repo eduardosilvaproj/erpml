@@ -73,6 +73,7 @@ const App = () => (
     <TooltipProvider delayDuration={500}>
       <Toaster />
       <Sonner />
+      <VersionUpdateBanner />
       <BrowserRouter>
         <AuthProvider>
           <HelpProvider>
