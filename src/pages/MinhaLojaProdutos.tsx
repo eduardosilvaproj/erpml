@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 export default function MinhaLojaProdutos() {
   const { data: store, isLoading: storeLoading } = useMyStore();
-  const { data: products, isLoading: productsLoading } = useProductData();
+  const { data: products, isLoading: productsLoading } = useProducts();
   const { data: storeProducts } = useStoreProducts(store?.id);
   const upsertProduct = useUpsertStoreProduct();
   const [search, setSearch] = useState("");
