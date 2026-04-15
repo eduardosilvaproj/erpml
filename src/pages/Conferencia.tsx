@@ -11,6 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -28,9 +31,19 @@ interface ScannedProduct {
   scannedQty: number;
   systemQty: number;
   lastBipAt: Date;
+  boxInfo?: { boxes: number; unitsPerBox: number; totalUnits: number; gtinSaved?: boolean };
 }
 
 type ConferenceMode = "nf" | "inventario";
+
+interface GtinModalState {
+  open: boolean;
+  code: string;
+  selectedProductId: string;
+  unitsPerBox: string;
+  boxQty: string;
+  saveGtin: boolean;
+}
 
 const Conferencia = () => {
   const { toast } = useToast();
@@ -47,10 +60,15 @@ const Conferencia = () => {
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
+  // GTIN CX modal
+  const [gtinModal, setGtinModal] = useState<GtinModalState>({
+    open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
+  });
+
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
 
-  const { data: productsData } = useProducts();
+  const { data: productsData, refetch: refetchProducts } = useProducts();
   const allProducts = productsData?.products ?? [];
 
   useEffect(() => {
@@ -73,25 +91,7 @@ const Conferencia = () => {
     } catch {}
   };
 
-  const handleScan = useCallback((code: string) => {
-    if (!code.trim()) return;
-    setScanBuffer("");
-
-    const simProducts = (window as any).__simProducts || [];
-    const product = allProducts.find(
-      (p) => p.barcode === code.trim() || p.sku === code.trim()
-    ) || simProducts.find(
-      (p: any) => p.barcode === code.trim() || p.sku === code.trim()
-    );
-
-    if (!product) {
-      setLastScan({ success: false, name: "Não encontrado", code: code.trim() });
-      playBeep(200, 400);
-      scanInputRef.current?.flash(false);
-      setTimeout(() => scanInputRef.current?.focus(), 50);
-      return;
-    }
-
+  const addScannedUnits = useCallback((product: any, units: number, boxInfo?: ScannedProduct["boxInfo"]) => {
     setFlashId(product.id);
     setTimeout(() => setFlashId(null), 1000);
 
@@ -100,7 +100,7 @@ const Conferencia = () => {
       if (existing) {
         return prev.map((p) =>
           p.productId === product.id
-            ? { ...p, scannedQty: p.scannedQty + 1, lastBipAt: new Date() }
+            ? { ...p, scannedQty: p.scannedQty + units, lastBipAt: new Date(), boxInfo: boxInfo || p.boxInfo }
             : p
         );
       }
@@ -111,19 +111,103 @@ const Conferencia = () => {
           sku: product.sku,
           barcode: product.barcode,
           imageUrl: product.image_url,
-          scannedQty: 1,
+          scannedQty: units,
           systemQty: product.stock_physical,
           lastBipAt: new Date(),
+          boxInfo,
         },
         ...prev,
       ];
     });
+  }, []);
 
-    setLastScan({ success: true, name: product.name, code: code.trim() });
+  const handleScan = useCallback((code: string) => {
+    if (!code.trim()) return;
+    setScanBuffer("");
+
+    const trimmed = code.trim();
+    const simProducts = (window as any).__simProducts || [];
+
+    // 1. Match by barcode or SKU
+    const product = allProducts.find(
+      (p) => p.barcode === trimmed || p.sku === trimmed
+    ) || simProducts.find(
+      (p: any) => p.barcode === trimmed || p.sku === trimmed
+    );
+
+    if (product) {
+      addScannedUnits(product, 1);
+      setLastScan({ success: true, name: product.name, code: trimmed });
+      playBeep(800, 100);
+      scanInputRef.current?.flash(true);
+      setTimeout(() => scanInputRef.current?.focus(), 50);
+      return;
+    }
+
+    // 2. Match by GTIN CX (box code)
+    const gtinProduct = allProducts.find((p) => p.gtin_cx && p.gtin_cx === trimmed);
+    if (gtinProduct) {
+      const unitsPerBox = gtinProduct.box_quantity || 1;
+      addScannedUnits(gtinProduct, unitsPerBox, {
+        boxes: 1, unitsPerBox, totalUnits: unitsPerBox
+      });
+      setLastScan({ success: true, name: `📦 ${gtinProduct.name} (${unitsPerBox}un)`, code: trimmed });
+      playBeep(800, 100);
+      scanInputRef.current?.flash(true);
+      setTimeout(() => scanInputRef.current?.focus(), 50);
+      return;
+    }
+
+    // 3. Unknown code — open GTIN CX modal
+    setGtinModal({
+      open: true,
+      code: trimmed,
+      selectedProductId: "",
+      unitsPerBox: "",
+      boxQty: "1",
+      saveGtin: true,
+    });
+    playBeep(400, 200);
+  }, [allProducts, addScannedUnits]);
+
+  const handleGtinConfirm = async () => {
+    const product = allProducts.find((p) => p.id === gtinModal.selectedProductId);
+    if (!product) return;
+
+    const units = parseInt(gtinModal.unitsPerBox) || 0;
+    const boxes = parseInt(gtinModal.boxQty) || 1;
+    const totalUnits = units * boxes;
+
+    if (units <= 0) {
+      toast({ title: "Informe as unidades por caixa", variant: "destructive" });
+      return;
+    }
+
+    // Save GTIN CX to product if checkbox is checked
+    if (gtinModal.saveGtin) {
+      try {
+        await supabase
+          .from("products")
+          .update({ gtin_cx: gtinModal.code, box_quantity: units })
+          .eq("id", product.id);
+        refetchProducts();
+        toast({ title: `GTIN CX salvo no produto ${product.name}!` });
+      } catch (err: any) {
+        toast({ title: "Erro ao salvar GTIN CX", description: err.message, variant: "destructive" });
+      }
+    }
+
+    addScannedUnits(product, totalUnits, {
+      boxes, unitsPerBox: units, totalUnits, gtinSaved: gtinModal.saveGtin
+    });
+
+    setLastScan({ success: true, name: `📦 ${product.name} (${totalUnits}un)`, code: gtinModal.code });
     playBeep(800, 100);
     scanInputRef.current?.flash(true);
+
+    setGtinModal((prev) => ({ ...prev, open: false }));
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [allProducts]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -157,7 +241,6 @@ const Conferencia = () => {
       }
     }
 
-    // Products in system but not scanned
     for (const p of allProducts) {
       if (p.stock_physical > 0 && !scannedProducts.find((sp) => sp.productId === p.id)) {
         notFound.push({ id: p.id, name: p.name, sku: p.sku, systemQty: p.stock_physical });
@@ -205,6 +288,9 @@ const Conferencia = () => {
     setLastScan(null);
     setScanBuffer("");
   };
+
+  const gtinTotalUnits = (parseInt(gtinModal.unitsPerBox) || 0) * (parseInt(gtinModal.boxQty) || 0);
+  const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
@@ -379,6 +465,12 @@ const Conferencia = () => {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{sp.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground">{sp.sku}</p>
+                          {sp.boxInfo && (
+                            <Badge className="mt-1 bg-blue-500/15 text-blue-400 border-blue-500/30 text-[10px]">
+                              📦 {sp.boxInfo.boxes}cx × {sp.boxInfo.unitsPerBox}un = {sp.boxInfo.totalUnits}un
+                              {sp.boxInfo.gtinSaved && " ✓ GTIN salvo"}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -649,6 +741,129 @@ const Conferencia = () => {
           </Card>
         </div>
       )}
+
+      {/* ========== GTIN CX MODAL ========== */}
+      <Dialog open={gtinModal.open} onOpenChange={(open) => {
+        if (!open) {
+          setGtinModal((prev) => ({ ...prev, open: false }));
+          setTimeout(() => scanInputRef.current?.focus(), 50);
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              Código não reconhecido
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Código bipado: <span className="font-mono font-bold">{gtinModal.code}</span>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Selecione a qual produto desta nota pertence esta caixa:
+            </p>
+          </DialogHeader>
+
+          <RadioGroup
+            value={gtinModal.selectedProductId}
+            onValueChange={(val) => setGtinModal((prev) => ({ ...prev, selectedProductId: val }))}
+            className="space-y-2 max-h-[200px] overflow-y-auto"
+          >
+            {allProducts.map((p) => (
+              <label
+                key={p.id}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  gtinModal.selectedProductId === p.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border/40 hover:border-primary/30"
+                }`}
+              >
+                <RadioGroupItem value={p.id} />
+                {p.image_url ? (
+                  <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                    <Package className="h-4 w-4 text-muted-foreground/40" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{p.name}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">Est: {p.stock_physical}</span>
+              </label>
+            ))}
+          </RadioGroup>
+
+          {gtinModal.selectedProductId && (
+            <div className="space-y-4 pt-2">
+              <Separator />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Unidades por caixa</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={gtinModal.unitsPerBox}
+                    onChange={(e) => setGtinModal((prev) => ({ ...prev, unitsPerBox: e.target.value }))}
+                    placeholder="Ex: 12"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Qtd de caixas</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={gtinModal.boxQty}
+                    onChange={(e) => setGtinModal((prev) => ({ ...prev, boxQty: e.target.value }))}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+
+              {gtinTotalUnits > 0 && (
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Total: <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> × <span className="font-bold text-foreground">{gtinModal.boxQty}</span> = <span className="font-bold text-primary text-lg">{gtinTotalUnits} unidades</span>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                <Checkbox
+                  id="save-gtin"
+                  checked={gtinModal.saveGtin}
+                  onCheckedChange={(checked) => setGtinModal((prev) => ({ ...prev, saveGtin: !!checked }))}
+                  className="mt-0.5"
+                />
+                <label htmlFor="save-gtin" className="text-sm cursor-pointer">
+                  <span className="font-medium">Salvar este código como GTIN CX do produto {selectedGtinProduct?.name}</span>
+                  <br />
+                  <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGtinModal((prev) => ({ ...prev, open: false }));
+                setTimeout(() => scanInputRef.current?.focus(), 50);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGtinConfirm}
+              disabled={!gtinModal.selectedProductId || gtinTotalUnits <= 0}
+            >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
