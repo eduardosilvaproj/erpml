@@ -213,7 +213,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     resetDirty();
     onOpenChange(false);
     form.reset();
-
+  };
   const onSubmit = async (values: FormValues) => {
     const exists = await checkSkuExists(values.sku, product?.id);
     if (exists) {
