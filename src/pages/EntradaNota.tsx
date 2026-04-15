@@ -851,6 +851,7 @@ const EntradaNota = () => {
     setBoxConfigs({});
     setBoxBipDialog(null);
     setUnknownGtinDialog(null);
+  };
 
   const canGoToStep = (step: number) => {
     if (step === 1) return true;
