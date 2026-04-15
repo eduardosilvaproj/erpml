@@ -276,7 +276,7 @@ export default function MasterAdmin() {
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-right">
-                            <Tooltip>
+                            <ShadTooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant={c.status === "active" ? "outline" : "default"}
@@ -289,7 +289,7 @@ export default function MasterAdmin() {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
-                            </Tooltip>
+                            </ShadTooltip>
                           </TableCell>
                         </TableRow>
                       ))}
