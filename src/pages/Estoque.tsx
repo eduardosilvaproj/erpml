@@ -96,14 +96,7 @@ const Estoque = () => {
     toast({ title: "Relatório exportado!" });
   };
 
-  // Mock recent movements for display
-  const recentMovements = [
-    { date: "15/04/2026", product: "Fone Bluetooth TWS", type: "entrada" as const, qty: 50, user: "Sistema (NF-e)" },
-    { date: "14/04/2026", product: "Capa iPhone 15", type: "saida" as const, qty: -2, user: "PDV" },
-    { date: "14/04/2026", product: "Película Galaxy S24", type: "ajuste" as const, qty: 10, user: "Admin" },
-    { date: "13/04/2026", product: "Carregador USB-C 20W", type: "saida" as const, qty: -5, user: "ML FULL" },
-    { date: "12/04/2026", product: "Mouse Gamer RGB", type: "entrada" as const, qty: 30, user: "Sistema (NF-e)" },
-  ];
+  const recentMovements: { date: string; product: string; type: "entrada" | "saida" | "ajuste"; qty: number; user: string }[] = [];
 
   const movementIcon = (type: string) => {
     if (type === "entrada") return <ArrowDownLeft className="h-4 w-4 text-emerald-500" />;
@@ -414,6 +407,12 @@ const Estoque = () => {
           </Button>
         </CardHeader>
         <CardContent>
+          {recentMovements.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <History className="mb-2 h-8 w-8 opacity-30" />
+              <p className="text-sm">Nenhuma movimentação registrada</p>
+            </div>
+          ) : (
           <div className="space-y-3">
             {recentMovements.map((m, i) => (
               <div key={i} className="flex items-center gap-3 rounded-lg bg-muted/30 px-4 py-3">
@@ -431,6 +430,7 @@ const Estoque = () => {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 
