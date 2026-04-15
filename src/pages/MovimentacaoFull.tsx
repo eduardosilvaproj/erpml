@@ -298,6 +298,7 @@ const MovimentacaoFull = () => {
             <ScanBarcode className="h-5 w-5" />
             Bipar Produtos para Envio
           </CardTitle>
+          <p className="text-sm text-muted-foreground">📦 Estoque Físico → 🏭 Depósito FULL ML</p>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Direction indicator */}
@@ -363,95 +364,151 @@ const MovimentacaoFull = () => {
           {/* Last scan feedback */}
           {lastScan && (
             <div className={`rounded-lg p-3 flex items-center gap-3 ${
-              lastScan.success ? "bg-emerald-50 border border-emerald-200" : "bg-destructive/5 border border-destructive/20"
+              lastScan.success ? "bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20" : "bg-destructive/5 border border-destructive/20"
             }`}>
               {lastScan.success ? (
-                <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
+                <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
               ) : (
                 <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
               )}
               <p className="text-sm font-medium">{lastScan.message}</p>
             </div>
           )}
-
-          {/* Items list */}
-          {items.length > 0 && (
-            <div className="space-y-3">
-              <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Produto</TableHead>
-                    <TableHead className="text-center">Est. Físico</TableHead>
-                    <TableHead className="text-center">Qtd Enviar</TableHead>
-                    <TableHead className="w-[80px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.productId}>
-                      <TableCell className="font-mono text-xs">{item.productSku}</TableCell>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
-                      <TableCell className="text-center text-muted-foreground">{item.stockPhysical}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-2">
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}>
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="font-bold text-lg w-8 text-center">{item.quantity}</span>
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)} disabled={item.quantity >= item.stockPhysical}>
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => removeItem(item.productId)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
-
-              {usedKits.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap pt-1">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Boxes className="h-3.5 w-3.5" /> Kits nesta ordem:
-                  </span>
-                  {usedKits.map((name) => (
-                    <Badge key={name} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
-                      {name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-2">
-                <p className="text-sm text-muted-foreground">
-                  {items.length} produto(s) • {totalQty} unidade(s)
-                </p>
-                <Button onClick={handleCreateOrder} disabled={createOrder.isPending}>
-                  {createOrder.isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Truck className="mr-2 h-4 w-4" />
-                  )}
-                  Criar Ordem de Envio ({totalQty} itens)
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {items.length === 0 && !lastScan && (
-            <p className="text-center text-sm text-muted-foreground py-4">
-              Bipe produtos ou SKU de kits para adicionar à ordem de envio
-            </p>
-          )}
         </CardContent>
       </Card>
+
+      {/* Two-column layout: Products + Summary */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        {/* Left column — Products for shipping (60%) */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Produtos para envio
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {items.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Bipe produtos para adicionar à ordem de envio</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Produto</TableHead>
+                        <TableHead className="text-center">Qtd</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.productId}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{item.productName}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{item.productSku}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}>
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="font-bold w-8 text-center">{item.quantity}</span>
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)} disabled={item.quantity >= item.stockPhysical}>
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem(item.productId)}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {usedKits.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Boxes className="h-3.5 w-3.5" /> Kits:
+                    </span>
+                    {usedKits.map((name) => (
+                      <Badge key={name} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
+                        {name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
+                <div className="border-t border-border/50 pt-3">
+                  <p className="text-sm text-muted-foreground">
+                    {items.length} produto(s) • {totalQty} unidade(s)
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Right column — Summary (40%) */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">Resumo do envio</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total de produtos</span>
+                <span className="font-semibold">{items.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total de itens</span>
+                <span className="font-semibold">{totalQty}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Peso estimado</span>
+                <span className="font-semibold text-muted-foreground">— kg</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleCreateOrder}
+                disabled={items.length === 0 || createOrder.isPending}
+              >
+                {createOrder.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Truck className="mr-2 h-4 w-4" />
+                )}
+                Gerar ordem de envio
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => { setItems([]); setUsedKits([]); setLastScan(null); }}
+                disabled={items.length === 0}
+              >
+                Limpar lista
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Transfer history */}
       {orders && orders.length > 0 && (
