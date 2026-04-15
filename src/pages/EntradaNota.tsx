@@ -75,14 +75,11 @@ const EntradaNota = () => {
   const companyId = useCompanyId();
   const queryClient = useQueryClient();
 
-  // Mode: single or batch
-  const [batchMode, setBatchMode] = useState(false);
-
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  // Step 1 - NF (single mode)
+  // Step 1 - NF
   const [nfMode, setNfMode] = useState<"sefaz" | "xml">("sefaz");
   const [nfNumber, setNfNumber] = useState("");
   const [nfSeries, setNfSeries] = useState("001");
@@ -94,14 +91,17 @@ const EntradaNota = () => {
   const [nfeChave, setNfeChave] = useState("");
   const [matches, setMatches] = useState<MatchResult[]>([]);
 
-  // Step 1 - Batch mode
+  // Step 1 - NFs loaded
   const [batchNfes, setBatchNfes] = useState<BatchNfe[]>([]);
-  const [sefazEntries, setSefazEntries] = useState<SefazEntry[]>([]);
+  const [sefazEntries, setSefazEntries] = useState<SefazEntry[]>([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
   const [batchSearching, setBatchSearching] = useState(false);
   const [batchSearchProgress, setBatchSearchProgress] = useState({ current: 0, total: 0 });
   const [dragOver, setDragOver] = useState(false);
   const batchFileRef = useRef<HTMLInputElement>(null);
 
+  // Mode: auto-detected based on loaded NFs count
+  const isBatchMode = batchNfes.length > 1;
+  
   // Step 2 - Conference
   const [conferenceItems, setConferenceItems] = useState<ConferenceItem[]>([]);
   const [bipInput, setBipInput] = useState("");
@@ -138,97 +138,10 @@ const EntradaNota = () => {
   const [batchSelectedForConfirm, setBatchSelectedForConfirm] = useState<Set<string>>(new Set());
   const [batchConfirmResult, setBatchConfirmResult] = useState<{ confirmed: number; products: number; total: number } | null>(null);
 
-  // XML file upload (single)
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  // ============ SINGLE MODE FUNCTIONS (unchanged) ============
-  const consultarChave = useCallback(async (chave: string) => {
-    const clean = chave.replace(/\D/g, "");
-    if (clean.length !== 44) {
-      toast({ title: "Chave inválida", description: "A chave deve ter 44 dígitos.", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-
-      setNfeChave(clean);
-      const nfe: NFeData = {
-        number: data.numero,
-        series: data.serie,
-        issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
-        issuerCnpj: data.cnpjEmitente,
-        totalValue: 0,
-        issueDate: data.dataEmissao,
-        products: [],
-      };
-      setNfeData(nfe);
-      setNfNumber(data.numero);
-      setNfSeries(data.serie || "001");
-      setNfFornecedor(nfe.issuerName);
-      toast({ title: "Nota encontrada!", description: `NF-e nº ${data.numero} identificada.` });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message || "Erro ao consultar.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  const handleXmlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setLoading(true);
-    try {
-      const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
-
-      for (const file of Array.from(files)) {
-        try {
-          const xml = await file.text();
-          const parsed = parseNFeXml(xml);
-          const matched = matchProducts(parsed.products, dbProducts || []);
-
-          // If single file, set as current NF (legacy behavior)
-          if (files.length === 1) {
-            setNfeData(parsed);
-            setMatches(matched);
-            setNfNumber(parsed.number);
-            setNfSeries(parsed.series || "001");
-            setNfFornecedor(parsed.issuerName);
-            setNfDate(parsed.issueDate || "");
-          }
-
-          // Always add to batchNfes for the loaded table
-          setBatchNfes((prev) => [
-            ...prev,
-            {
-              id: generateId(),
-              nfeData: parsed,
-              matches: matched,
-              fileName: file.name,
-              selected: true,
-              conferenceStatus: "pending",
-            },
-          ]);
-        } catch (err: any) {
-          toast({ title: `Erro: ${file.name}`, description: err.message, variant: "destructive" });
-        }
-      }
-
-      toast({ title: "XML(s) importado(s)!", description: `${files.length} arquivo(s) processado(s).` });
-    } catch (err: any) {
-      toast({ title: "Erro no XML", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
 
   // ============ BATCH MODE FUNCTIONS ============
   const handleBatchXmlUpload = useCallback(async (files: FileList | File[]) => {
@@ -312,12 +225,14 @@ const EntradaNota = () => {
   // ============ STEP NAVIGATION ============
   const goToStep = (step: WizardStep) => {
     if (step === 2) {
-      if (batchMode && selectedBatchNfes.length > 0) {
+      if (isBatchMode && selectedBatchNfes.length > 0) {
         // Batch: ask conference mode
         setBatchConferenceMode(null);
         setCompletedSteps((p) => new Set([...p, 1]));
-      } else if (nfeData) {
-        const items: ConferenceItem[] = matches.map((m) => ({
+      } else if (batchNfes.length === 1) {
+        // Single NF
+        const singleNf = batchNfes[0];
+        const items: ConferenceItem[] = singleNf.matches.map((m) => ({
           xmlProduct: m.xmlProduct,
           matchedProductId: m.matchedProductId,
           matchedProductName: m.matchedProductName,
@@ -327,6 +242,8 @@ const EntradaNota = () => {
           status: "pending",
         }));
         setConferenceItems(items);
+        setNfeData(singleNf.nfeData);
+        setMatches(singleNf.matches);
         setCompletedSteps((p) => new Set([...p, 1]));
       }
     }
@@ -337,7 +254,7 @@ const EntradaNota = () => {
       setCompletedSteps((p) => new Set([...p, 2]));
     }
     if (step === 4) {
-      if (batchMode) {
+      if (isBatchMode) {
         const allMatches: MatchResult[] = selectedBatchNfes.flatMap((n) => n.matches);
         setAdjustedItems([...allMatches]);
       } else {
@@ -347,7 +264,7 @@ const EntradaNota = () => {
     }
     if (step === 5) {
       setCompletedSteps((p) => new Set([...p, 4]));
-      if (batchMode) {
+      if (isBatchMode) {
         setBatchSelectedForConfirm(new Set(selectedBatchNfes.map((n) => n.id)));
       }
     }
@@ -416,10 +333,10 @@ const EntradaNota = () => {
 
   // ========== STEP 2: CONFERENCE (BIP) ==========
   useEffect(() => {
-    if (currentStep === 2 && bipRef.current && (batchConferenceMode || !batchMode)) {
+    if (currentStep === 2 && bipRef.current && (batchConferenceMode || !isBatchMode)) {
       bipRef.current.focus();
     }
-  }, [currentStep, batchConferenceMode, batchMode]);
+  }, [currentStep, batchConferenceMode, isBatchMode]);
 
   const playBeep = (freq: number, duration: number) => {
     try {
@@ -610,7 +527,7 @@ const EntradaNota = () => {
 
   // ========== STEP 5: CONFIRM ==========
   const confirmarEntrada = async () => {
-    if (batchMode) {
+    if (isBatchMode) {
       await confirmarEntradaLote();
       return;
     }
@@ -841,7 +758,7 @@ const EntradaNota = () => {
     setAutoUpdateStock(true);
     setAutoUpdateCost(true);
     setBatchNfes([]);
-    setSefazEntries([]);
+    setSefazEntries([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
     setBatchConferenceMode(null);
     setCurrentBatchNfIdx(0);
     setBatchSelectedForConfirm(new Set());
@@ -856,8 +773,7 @@ const EntradaNota = () => {
   const canGoToStep = (step: number) => {
     if (step === 1) return true;
     if (step === 2) {
-      if (batchMode) return selectedBatchNfes.length > 0;
-      return !!nfeData && matches.length > 0;
+      return batchNfes.length > 0 && (isBatchMode ? selectedBatchNfes.length > 0 : batchNfes[0]?.matches?.length > 0);
     }
     if (step === 3) return completedSteps.has(2);
     if (step === 4) return completedSteps.has(2);
@@ -865,7 +781,7 @@ const EntradaNota = () => {
     return false;
   };
 
-  const itemsToShow = adjustedItems.length > 0 ? adjustedItems : (batchMode ? selectedBatchNfes.flatMap((n) => n.matches) : matches);
+  const itemsToShow = adjustedItems.length > 0 ? adjustedItems : (isBatchMode ? selectedBatchNfes.flatMap((n) => n.matches) : matches);
   const totalValue = itemsToShow.reduce((sum, m) => sum + m.xmlProduct.totalValue, 0);
 
   // ========== RENDER ==========
@@ -879,17 +795,7 @@ const EntradaNota = () => {
             Passo {currentStep} — {STEP_LABELS[currentStep - 1]}
           </p>
         </div>
-        {currentStep === 1 && (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${!batchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              Entrada única
-            </span>
-            <Switch checked={batchMode} onCheckedChange={(v) => { setBatchMode(v); reset(); setBatchMode(v); }} />
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${batchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              Entrada em lote
-            </span>
-          </div>
-        )}
+        
       </div>
 
       {/* Step Progress Bar */}
@@ -932,8 +838,8 @@ const EntradaNota = () => {
         })}
       </div>
 
-      {/* ========== STEP 1: NF ========== */}
-      {currentStep === 1 && !batchMode && (
+      {/* ========== STEP 1: NF (unified) ========== */}
+      {currentStep === 1 && (
         <div className="space-y-6">
           {/* AI Banner */}
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
@@ -943,46 +849,12 @@ const EntradaNota = () => {
             <div>
               <p className="text-sm font-medium">Assistente de Importação</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Mercadoria chegou? Digite o número da NF ou escaneie o código de barras da nota. O sistema vai buscar o XML automaticamente na SEFAZ.
+                Importe uma ou várias notas. O sistema detecta automaticamente se é entrada única ou em lote.
               </p>
             </div>
           </div>
 
-          {/* NF Form Fields */}
-          <Card>
-            <CardContent className="p-5 space-y-5">
-              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nota Fiscal de Entrada</p>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Número NF</label>
-                  <Input value={nfNumber} onChange={(e) => setNfNumber(e.target.value)} placeholder="000123" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Série</label>
-                  <Input value={nfSeries} onChange={(e) => setNfSeries(e.target.value)} placeholder="001" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Fornecedor</label>
-                  <Input value={nfFornecedor} onChange={(e) => setNfFornecedor(e.target.value)} placeholder="Nome do fornecedor" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Data Emissão</label>
-                  <Input type="date" value={nfDate} onChange={(e) => setNfDate(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd Itens</label>
-                  <Input value={nfeData ? (nfeData.products.length || matches.length) : "—"} readOnly className="bg-muted/20 cursor-default" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Valor Total</label>
-                  <Input value={nfeData ? formatCurrency(nfeData.totalValue) : "—"} readOnly className="bg-muted/20 cursor-default" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Mode Toggle */}
+          {/* Mode Toggle: SEFAZ vs XML */}
           <div className="flex gap-2">
             <Button
               variant={nfMode === "sefaz" ? "default" : "outline"}
@@ -1003,48 +875,133 @@ const EntradaNota = () => {
           </div>
 
           {/* SEFAZ mode */}
-          {nfMode === "sefaz" && !nfeData && (
+          {nfMode === "sefaz" && (
             <Card>
               <CardContent className="p-5 space-y-4">
                 <p className="text-sm font-medium">Chave de Acesso (44 dígitos)</p>
-                <Input
-                  placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
-                  value={manualKey}
-                  onChange={(e) => setManualKey(e.target.value)}
-                  className="min-h-[48px] text-base font-mono tracking-wider"
-                  maxLength={54}
-                  inputMode="numeric"
-                />
-                <p className="text-xs text-muted-foreground">{manualKey.replace(/\D/g, "").length}/44 dígitos</p>
-                <Button className="w-full min-h-[44px]" onClick={() => consultarChave(manualKey)} disabled={loading || manualKey.replace(/\D/g, "").length < 44}>
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                  Buscar Nota
-                </Button>
-                <Button variant="outline" className="w-full min-h-[44px] gap-2" onClick={() => {
-                  if (nfNumber.trim()) {
-                    // Add current fields as a SEFAZ entry to batchNfes placeholder
-                    toast({ title: "Use a chave de acesso para buscar", description: "Preencha a chave de 44 dígitos acima.", variant: "destructive" });
-                    return;
-                  }
-                  toast({ title: "Preencha a NF atual antes de adicionar outra", variant: "destructive" });
-                }}>
-                  <Plus className="h-4 w-4" /> Adicionar outra NF
-                </Button>
+                {sefazEntries.map((entry, idx) => (
+                  <div key={entry.id} className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Input
+                        placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+                        value={entry.number}
+                        onChange={(e) => updateSefazEntry(entry.id, "number", e.target.value)}
+                        className="min-h-[48px] text-base font-mono tracking-wider"
+                        maxLength={54}
+                        inputMode="numeric"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">{entry.number.replace(/\D/g, "").length}/44 dígitos</p>
+                    </div>
+                    <div className="w-20">
+                      <Input
+                        placeholder="Série"
+                        value={entry.series}
+                        onChange={(e) => updateSefazEntry(entry.id, "series", e.target.value)}
+                        className="min-h-[48px]"
+                      />
+                    </div>
+                    {sefazEntries.length > 1 && (
+                      <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => removeSefazEntry(entry.id)}>
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="gap-2 min-h-[44px]"
+                    onClick={addSefazEntry}
+                    disabled={sefazEntries.length >= 20}
+                  >
+                    <Plus className="h-4 w-4" /> Adicionar outra NF
+                  </Button>
+                  <Button
+                    className="flex-1 min-h-[44px]"
+                    onClick={async () => {
+                      const validEntries = sefazEntries.filter((e) => e.number.replace(/\D/g, "").length === 44);
+                      if (validEntries.length === 0) {
+                        toast({ title: "Preencha pelo menos uma chave válida", description: "A chave deve ter 44 dígitos.", variant: "destructive" });
+                        return;
+                      }
+                      setLoading(true);
+                      setBatchSearchProgress({ current: 0, total: validEntries.length });
+                      const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
+                      let processed = 0;
+                      for (const entry of validEntries) {
+                        try {
+                          const clean = entry.number.replace(/\D/g, "");
+                          const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
+                          if (error || data?.error) throw new Error(data?.error || error?.message);
+                          const nfe: NFeData = {
+                            number: data.numero,
+                            series: data.serie,
+                            issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
+                            issuerCnpj: data.cnpjEmitente,
+                            totalValue: 0,
+                            issueDate: data.dataEmissao,
+                            products: [],
+                          };
+                          // For single NF also set legacy state
+                          if (validEntries.length === 1) {
+                            setNfeData(nfe);
+                            setNfNumber(data.numero);
+                            setNfSeries(data.serie || "001");
+                            setNfFornecedor(nfe.issuerName);
+                          }
+                          setBatchNfes((prev) => [...prev, {
+                            id: generateId(),
+                            nfeData: nfe,
+                            matches: [],
+                            selected: true,
+                            conferenceStatus: "pending",
+                          }]);
+                        } catch (err: any) {
+                          toast({ title: `Erro na NF`, description: err.message, variant: "destructive" });
+                        }
+                        processed++;
+                        setBatchSearchProgress({ current: processed, total: validEntries.length });
+                      }
+                      setLoading(false);
+                    }}
+                    disabled={loading || sefazEntries.every((e) => e.number.replace(/\D/g, "").length < 44)}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                    {loading ? `Buscando ${batchSearchProgress.current} de ${batchSearchProgress.total}...` : "Buscar na SEFAZ"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
 
           {/* XML mode */}
-          {nfMode === "xml" && !nfeData && (
+          {nfMode === "xml" && (
             <Card className="border-dashed border-2 border-border/60">
-              <CardContent className="p-8 flex flex-col items-center gap-4">
-                <FileText className="h-10 w-10 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">Arraste os arquivos XML da NF-e ou clique para selecionar (múltiplos)</p>
-                <input ref={fileRef} type="file" accept=".xml" multiple className="hidden" onChange={handleXmlUpload} />
-                <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-                  Selecionar XML(s)
-                </Button>
+              <CardContent className="p-8">
+                <div
+                  className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 transition-colors ${
+                    dragOver ? "border-primary bg-primary/5" : "border-border"
+                  }`}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleBatchDrop}
+                >
+                  <Upload className={`mb-3 h-10 w-10 transition-colors ${dragOver ? "text-primary" : "text-muted-foreground/40"}`} />
+                  <p className="text-sm font-medium mb-1">Arraste um ou vários XMLs aqui</p>
+                  <p className="text-xs text-muted-foreground mb-4">Suporta seleção múltipla de arquivos</p>
+                  <input
+                    ref={batchFileRef}
+                    type="file"
+                    accept=".xml"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => { if (e.target.files) handleBatchXmlUpload(e.target.files); if (batchFileRef.current) batchFileRef.current.value = ""; }}
+                  />
+                  <Button variant="outline" onClick={() => batchFileRef.current?.click()} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                    Selecionar XML(s)
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1053,12 +1010,12 @@ const EntradaNota = () => {
           {loading && (
             <div className="flex items-center justify-center gap-3 py-8">
               <Loader2 className="h-6 w-6 text-primary animate-spin" />
-              <p className="text-sm font-medium text-muted-foreground">Processando nota fiscal...</p>
+              <p className="text-sm font-medium text-muted-foreground">Processando nota(s) fiscal(is)...</p>
             </div>
           )}
 
-          {/* NF Found */}
-          {nfeData && !loading && (
+          {/* Single NF loaded — go straight to next step */}
+          {batchNfes.length === 1 && !loading && (
             <Card className="border-emerald-500/30">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-3">
@@ -1066,51 +1023,40 @@ const EntradaNota = () => {
                     <CheckCircle className="h-5 w-5 text-emerald-500" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">XML Encontrado na SEFAZ</p>
+                    <p className="text-sm font-semibold">NF-e nº {batchNfes[0].nfeData.number}</p>
+                    <p className="text-xs text-muted-foreground">{batchNfes[0].nfeData.issuerName}</p>
                   </div>
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">✓ Autorizada</Badge>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                    {batchNfes[0].nfeData.products.length} itens — {formatCurrency(batchNfes[0].nfeData.totalValue)}
+                  </Badge>
                 </div>
-
-                {nfeChave && (
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Chave NF-e</p>
-                    <p className="text-xs font-mono text-muted-foreground break-all">{nfeChave}</p>
-                  </div>
-                )}
-
-                {matches.length > 0 && (
-                  <div className="flex gap-2 text-xs">
-                    <Badge variant="secondary">{matches.filter((m) => m.matchType !== "none").length} vinculados</Badge>
-                    <Badge variant="destructive">{matches.filter((m) => m.matchType === "none").length} novos</Badge>
-                  </div>
-                )}
-
                 <div className="flex gap-3 pt-2">
-                  <Button variant="outline" onClick={() => { setNfeData(null); setMatches([]); }}>
+                  <Button variant="outline" onClick={() => { setBatchNfes([]); setNfeData(null); setMatches([]); }}>
                     Trocar nota
                   </Button>
-                  {matches.length > 0 ? (
-                    <Button className="gap-2" onClick={() => goToStep(2)}>
-                      Próximo <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button className="gap-2" onClick={() => goToStep(4)}>
-                      Ir para ajustes <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button className="gap-2" onClick={() => goToStep(2)}>
+                    Próximo <ArrowRight className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Loaded NFs table (shown when multiple NFs loaded) */}
-          {batchNfes.length > 0 && (
+          {/* Multiple NFs loaded — show table with checkboxes */}
+          {batchNfes.length > 1 && !loading && (
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Files className="h-5 w-5" />
-                  Notas carregadas ({batchNfes.length})
-                </CardTitle>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Files className="h-5 w-5" />
+                    Notas carregadas ({batchNfes.length})
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={toggleAllBatchNfes}>
+                      {batchNfes.every((n) => n.selected) ? "Desmarcar todas" : "Selecionar todas"}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -1128,10 +1074,7 @@ const EntradaNota = () => {
                     {batchNfes.map((nf) => (
                       <TableRow key={nf.id}>
                         <TableCell>
-                          <Checkbox
-                            checked={nf.selected}
-                            onCheckedChange={() => toggleBatchNfe(nf.id)}
-                          />
+                          <Checkbox checked={nf.selected} onCheckedChange={() => toggleBatchNfe(nf.id)} />
                         </TableCell>
                         <TableCell className="font-medium">{nf.nfeData.number}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{nf.nfeData.issuerName}</TableCell>
@@ -1146,112 +1089,6 @@ const EntradaNota = () => {
                     ))}
                   </TableBody>
                 </Table>
-                <div className="flex items-center justify-between p-4 border-t border-border">
-                  <p className="text-sm text-muted-foreground">
-                    {selectedBatchNfes.length} de {batchNfes.length} selecionada(s)
-                  </p>
-                  <Button
-                    onClick={() => { setBatchMode(true); goToStep(2); }}
-                    disabled={selectedBatchNfes.length === 0}
-                    className="gap-2"
-                  >
-                    Avançar com {selectedBatchNfes.length} nota(s) <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* ========== STEP 1: BATCH MODE ========== */}
-      {currentStep === 1 && batchMode && (
-        <div className="space-y-6">
-          {/* Upload area */}
-          <Card>
-            <CardContent className="p-6">
-              <div
-                className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-10 transition-colors ${
-                  dragOver ? "border-primary bg-primary/5" : "border-border"
-                }`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleBatchDrop}
-              >
-                <Upload className={`mb-3 h-10 w-10 transition-colors ${dragOver ? "text-primary" : "text-muted-foreground/40"}`} />
-                <p className="text-sm font-medium mb-1">Arraste vários XMLs aqui ou clique para selecionar</p>
-                <p className="text-xs text-muted-foreground mb-4">Suporta seleção múltipla de arquivos</p>
-                <input
-                  ref={batchFileRef}
-                  type="file"
-                  accept=".xml"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => { if (e.target.files) handleBatchXmlUpload(e.target.files); if (batchFileRef.current) batchFileRef.current.value = ""; }}
-                />
-                <Button variant="outline" onClick={() => batchFileRef.current?.click()}>
-                  <Upload className="mr-2 h-4 w-4" /> Selecionar XMLs
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Batch NF list */}
-          {batchNfes.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Files className="h-5 w-5" />
-                    Notas do lote ({batchNfes.length})
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={toggleAllBatchNfes}>
-                      {batchNfes.every((n) => n.selected) ? "Desmarcar todas" : "Selecionar todas"}
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setBatchNfes((prev) => prev.filter((n) => !n.selected))} disabled={!batchNfes.some((n) => n.selected)}>
-                      Remover selecionadas
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="w-[50px]" />
-                      <TableHead>Status</TableHead>
-                      <TableHead>Nº NF</TableHead>
-                      <TableHead>Fornecedor</TableHead>
-                      <TableHead className="text-center">Itens</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead className="w-[50px]" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {batchNfes.map((nf) => (
-                      <TableRow key={nf.id}>
-                        <TableCell>
-                          <Checkbox checked={nf.selected} onCheckedChange={() => toggleBatchNfe(nf.id)} />
-                        </TableCell>
-                        <TableCell>
-                          <CheckCircle className="h-4 w-4 text-emerald-500" />
-                        </TableCell>
-                        <TableCell className="font-medium">{nf.nfeData.number}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{nf.nfeData.issuerName}</TableCell>
-                        <TableCell className="text-center">{nf.nfeData.products.length}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(nf.nfeData.totalValue)}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeBatchNfe(nf.id)}>
-                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {/* Footer totals */}
                 <div className="flex items-center justify-between p-4 border-t border-border bg-muted/10">
                   <div className="flex gap-6 text-sm">
                     <span className="text-muted-foreground">
@@ -1265,17 +1102,11 @@ const EntradaNota = () => {
                     </span>
                   </div>
                   <Button onClick={() => goToStep(2)} disabled={selectedBatchNfes.length === 0} className="gap-2">
-                    Próximo <ArrowRight className="h-4 w-4" />
+                    Avançar com {selectedBatchNfes.length} nota(s) <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
-
-          {batchNfes.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Nenhuma nota carregada. Faça upload de XMLs para começar.
-            </p>
           )}
         </div>
       )}
@@ -1284,7 +1115,7 @@ const EntradaNota = () => {
       {currentStep === 2 && (
         <div className="space-y-5">
           {/* Batch mode: choose conference mode */}
-          {batchMode && !batchConferenceMode && (
+          {isBatchMode && !batchConferenceMode && (
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-6 text-center space-y-2">
@@ -1329,7 +1160,7 @@ const EntradaNota = () => {
           )}
 
           {/* Batch one-by-one: NF progress bar */}
-          {batchMode && batchConferenceMode === "one_by_one" && (
+          {isBatchMode && batchConferenceMode === "one_by_one" && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between text-sm mb-2">
@@ -1355,7 +1186,7 @@ const EntradaNota = () => {
           )}
 
           {/* Conference content (shared for single & batch once mode is selected) */}
-          {(!batchMode || batchConferenceMode) && (
+          {(!isBatchMode || batchConferenceMode) && (
             <>
               {/* Box mode toggle */}
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -1426,7 +1257,7 @@ const EntradaNota = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      {batchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      {isBatchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
                       {boxModeEnabled && <TableHead className="w-[40px]" />}
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
@@ -1451,7 +1282,7 @@ const EntradaNota = () => {
                             item.status === "excess" ? "bg-destructive/5" :
                             item.status === "partial" ? "bg-amber-500/5" : ""
                           }`}>
-                            {batchMode && batchConferenceMode === "together" && (
+                            {isBatchMode && batchConferenceMode === "together" && (
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
                               </TableCell>
@@ -1642,7 +1473,7 @@ const EntradaNota = () => {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{conferenceProgress} de {conferenceItems.length} itens conferidos</p>
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => { if (batchMode) { setBatchConferenceMode(null); } else { setCurrentStep(1); } }}>
+                  <Button variant="outline" onClick={() => { if (isBatchMode) { setBatchConferenceMode(null); } else { setCurrentStep(1); } }}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                   <Button
@@ -1811,7 +1642,7 @@ const EntradaNota = () => {
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setCurrentStep(matches.length > 0 || batchMode ? 3 : 1)}>
+            <Button variant="outline" onClick={() => setCurrentStep(matches.length > 0 || isBatchMode ? 3 : 1)}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
             <Button onClick={() => goToStep(5)}>
@@ -1825,7 +1656,7 @@ const EntradaNota = () => {
       {currentStep === 5 && !done && (
         <div className="space-y-5">
           {/* Batch: summary table per NF */}
-          {batchMode ? (
+          {isBatchMode ? (
             <>
               <Card>
                 <CardHeader>
@@ -1942,7 +1773,7 @@ const EntradaNota = () => {
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <Checkbox checked={autoUpdateStock} onCheckedChange={(v) => setAutoUpdateStock(!!v)} />
-              <span className="text-sm">Atualizar estoque {batchMode ? "de todas as notas" : "automaticamente"}</span>
+              <span className="text-sm">Atualizar estoque {isBatchMode ? "de todas as notas" : "automaticamente"}</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <Checkbox checked={autoUpdateCost} onCheckedChange={(v) => setAutoUpdateCost(!!v)} />
@@ -1956,7 +1787,7 @@ const EntradaNota = () => {
               <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
             <div className="flex gap-3">
-              {batchMode && (
+              {isBatchMode && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1969,10 +1800,10 @@ const EntradaNota = () => {
               <Button
                 className="min-h-[48px] px-8 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={confirmarEntrada}
-                disabled={saving || (batchMode && batchSelectedForConfirm.size === 0)}
+                disabled={saving || (isBatchMode && batchSelectedForConfirm.size === 0)}
               >
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
-                {batchMode
+                {isBatchMode
                   ? batchSelectedForConfirm.size === selectedBatchNfes.length
                     ? "✓ Confirmar todas as entradas"
                     : `✓ Confirmar selecionadas (${batchSelectedForConfirm.size})`
@@ -1992,7 +1823,7 @@ const EntradaNota = () => {
                 <CheckCircle className="h-8 w-8 text-emerald-500" />
               </div>
               <div className="text-center space-y-1">
-                {batchMode && batchConfirmResult ? (
+                {isBatchMode && batchConfirmResult ? (
                   <>
                     <p className="text-lg font-bold">{batchConfirmResult.confirmed} nota(s) confirmada(s) com sucesso!</p>
                     <p className="text-sm text-muted-foreground">
