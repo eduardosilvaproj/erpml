@@ -31,12 +31,14 @@ interface ConferenceItem {
   xmlProduct: NFeProduct;
   matchedProductId: string | null;
   matchedProductName: string | null;
+  matchedProductBarcode: string | null;
+  matchedProductSku: string | null;
   matchType: string;
   expectedQty: number;
   scannedQty: number;
   status: "pending" | "partial" | "ok" | "excess" | "not_found";
   nfNumber?: string;
-  boxBadge?: string; // e.g. "📦 3 cx × 12 un = 36"
+  boxBadge?: string;
 }
 
 
@@ -286,6 +288,8 @@ const EntradaNota = () => {
           xmlProduct: m.xmlProduct,
           matchedProductId: m.matchedProductId,
           matchedProductName: m.matchedProductName,
+          matchedProductBarcode: m.matchedProductBarcode,
+          matchedProductSku: m.matchedProductSku,
           matchType: m.matchType,
           expectedQty: Math.floor(m.xmlProduct.quantity),
           scannedQty: 0,
@@ -331,6 +335,8 @@ const EntradaNota = () => {
           xmlProduct: m.xmlProduct,
           matchedProductId: m.matchedProductId,
           matchedProductName: m.matchedProductName,
+          matchedProductBarcode: m.matchedProductBarcode,
+          matchedProductSku: m.matchedProductSku,
           matchType: m.matchType,
           expectedQty: Math.floor(m.xmlProduct.quantity),
           scannedQty: 0,
@@ -352,6 +358,8 @@ const EntradaNota = () => {
       xmlProduct: m.xmlProduct,
       matchedProductId: m.matchedProductId,
       matchedProductName: m.matchedProductName,
+      matchedProductBarcode: m.matchedProductBarcode,
+      matchedProductSku: m.matchedProductSku,
       matchType: m.matchType,
       expectedQty: Math.floor(m.xmlProduct.quantity),
       scannedQty: 0,
@@ -414,7 +422,10 @@ const EntradaNota = () => {
       (i) => {
         const eanMatch = normalizedDigits.length > 0 && normalizeDigits(i.xmlProduct.ean) === normalizedDigits;
         const codeMatch = normalizeIdentifier(i.xmlProduct.code) === normalizedCode;
-        return eanMatch || codeMatch;
+        // Also match against linked product's barcode/SKU from the database
+        const dbBarcodeMatch = normalizedDigits.length > 0 && i.matchedProductBarcode && normalizeDigits(i.matchedProductBarcode) === normalizedDigits;
+        const dbSkuMatch = i.matchedProductSku && normalizeIdentifier(i.matchedProductSku) === normalizedCode;
+        return eanMatch || codeMatch || dbBarcodeMatch || dbSkuMatch;
       }
     );
 
@@ -1361,13 +1372,11 @@ const EntradaNota = () => {
                             <TableCell className="text-center">
                               <button
                                 onClick={() => {
-                                  if (item.matchedProductId) {
-                                    setUnknownGtinDialog({ code: "" });
-                                    setUnknownGtinProduct(item.matchedProductId);
-                                    setUnknownGtinQty(1);
-                                    setUnknownGtinBoxes(1);
-                                    setUnknownGtinSave(true);
-                                  }
+                                  setUnknownGtinDialog({ code: "" });
+                                  setUnknownGtinProduct(item.matchedProductId || `idx-${i}`);
+                                  setUnknownGtinQty(1);
+                                  setUnknownGtinBoxes(1);
+                                  setUnknownGtinSave(true);
                                 }}
                                 className={`text-lg transition-colors ${item.boxBadge ? "text-primary" : "text-muted-foreground/40 hover:text-primary"}`}
                                 title="Configurar entrada em caixa"
@@ -2013,16 +2022,24 @@ const EntradaNota = () => {
             <Button disabled={!unknownGtinProduct || unknownGtinQty <= 0 || unknownGtinBoxes <= 0} onClick={async () => {
               if (!unknownGtinProduct || !unknownGtinDialog) return;
               const totalUnits = unknownGtinQty * unknownGtinBoxes;
-              const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === unknownGtinProduct);
-              const selectedItem = conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct);
+              
+              // Support both matched products (by ID) and unmatched products (by idx-N fallback)
+              let productIdx: number;
+              if (unknownGtinProduct.startsWith("idx-")) {
+                productIdx = parseInt(unknownGtinProduct.replace("idx-", ""), 10);
+              } else {
+                productIdx = conferenceItems.findIndex((i) => i.matchedProductId === unknownGtinProduct);
+              }
+              const selectedItem = productIdx >= 0 && productIdx < conferenceItems.length ? conferenceItems[productIdx] : null;
               const productName = selectedItem?.xmlProduct.description || "";
 
-              // Save GTIN CX if checkbox checked and code is non-empty
-              if (unknownGtinSave && unknownGtinDialog.code) {
+              // Save GTIN CX if checkbox checked, code is non-empty, and product has a DB ID
+              const actualProductId = unknownGtinProduct.startsWith("idx-") ? selectedItem?.matchedProductId : unknownGtinProduct;
+              if (unknownGtinSave && unknownGtinDialog.code && actualProductId) {
                 await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
-                }).eq("id", unknownGtinProduct);
+                }).eq("id", actualProductId);
                 toast({ title: `GTIN CX salvo no produto ${productName}!` });
               }
 
