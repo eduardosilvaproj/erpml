@@ -82,6 +82,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [isSearchingPhotos, setIsSearchingPhotos] = useState(false);
   const [showPhotoGrid, setShowPhotoGrid] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFileRef = useRef<File | null>(null);
+  const [photoSource, setPhotoSource] = useState<"file" | "unsplash" | null>(null);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
