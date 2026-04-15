@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useProducts } from "@/hooks/useProductData";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 
 type Step = 1 | 2 | 3;
 
@@ -35,7 +35,7 @@ type ConferenceMode = "nf" | "inventario";
 const Conferencia = () => {
   const { toast } = useToast();
   const companyId = useCompanyId();
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
 
   const [step, setStep] = useState<Step>(1);
   const [mode, setMode] = useState<ConferenceMode | null>(null);
@@ -87,6 +87,7 @@ const Conferencia = () => {
     if (!product) {
       setLastScan({ success: false, name: "Não encontrado", code: code.trim() });
       playBeep(200, 400);
+      scanInputRef.current?.flash(false);
       setTimeout(() => scanInputRef.current?.focus(), 50);
       return;
     }
@@ -120,6 +121,7 @@ const Conferencia = () => {
 
     setLastScan({ success: true, name: product.name, code: code.trim() });
     playBeep(800, 100);
+    scanInputRef.current?.flash(true);
     setTimeout(() => scanInputRef.current?.focus(), 50);
   }, [allProducts]);
 
@@ -127,6 +129,7 @@ const Conferencia = () => {
     if (e.key === "Enter") {
       e.preventDefault();
       handleScan(scanBuffer);
+      setScanBuffer("");
     }
   };
 
@@ -313,22 +316,21 @@ const Conferencia = () => {
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
-                    <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                    <Input
+                    <BarcodeScannerInput
                       ref={scanInputRef}
                       value={scanBuffer}
-                      onChange={(e) => setScanBuffer(e.target.value)}
-                      onKeyDown={handleKeyDown}
+                      onChange={(v) => setScanBuffer(v)}
+                      onScan={(code) => { handleScan(code); setScanBuffer(""); }}
                       placeholder="Bipe ou digite o código de barras..."
-                      className="pl-11 text-lg h-14 font-mono"
+                      inputClassName="text-lg h-14 font-mono"
+                      icon={<ScanBarcode className="h-5 w-5" />}
                       autoFocus
-                      autoComplete="off"
+                      scanMode
                     />
                   </div>
-                  <Button className="h-14" onClick={() => handleScan(scanBuffer)} disabled={!scanBuffer.trim()}>
+                  <Button className="h-14" onClick={() => { handleScan(scanBuffer); setScanBuffer(""); }} disabled={!scanBuffer.trim()}>
                     Bipar
                   </Button>
-                  <BarcodeScanner onScan={(code) => handleScan(code)} />
                 </div>
 
                 {lastScan && (

@@ -15,7 +15,7 @@ import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, Refresh
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { supabase } from "@/integrations/supabase/client";
 
 type UnsplashPhoto = {
@@ -77,7 +77,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const [isEnriching, setIsEnriching] = useState(false);
-  const [showScanner, setShowScanner] = useState(false);
+  const [showGtinCxScanner, setShowGtinCxScanner] = useState(false);
   const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
@@ -451,11 +451,16 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   <FormField control={form.control} name="barcode" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Código de Barras</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl><Input {...field} placeholder="7891234567890" /></FormControl>
-                        <Button type="button" variant="outline" size="icon" title="Escanear" onClick={() => setShowScanner((v) => !v)}>
-                          <Camera className="h-4 w-4" />
-                        </Button>
+                      <div className="flex gap-2 items-center">
+                        <FormControl>
+                          <BarcodeScannerInput
+                            value={field.value || ""}
+                            onChange={(v) => field.onChange(v)}
+                            onScan={(code) => { field.onChange(code); toast({ title: "✓ Código lido!", description: code }); }}
+                            placeholder="7891234567890"
+                            showCameraButton
+                          />
+                        </FormControl>
                         <Button type="button" variant="outline" size="icon" title="Gerar EAN-13" onClick={() => { const ean = generateEAN13(); form.setValue("barcode", ean); toast({ title: "EAN-13 gerado!", description: ean }); }}>
                           <Wand2 className="h-4 w-4" />
                         </Button>
@@ -470,13 +475,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   )} />
                 </div>
 
-                {showScanner && (
-                  <div className="rounded-lg border p-3 space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Escanear código de barras</p>
-                    <BarcodeScanner onScan={(code) => { form.setValue("barcode", code); setShowScanner(false); toast({ title: "Código escaneado!", description: code }); }} />
-                  </div>
-                )}
-
                 {/* GTIN CX (Box barcode) */}
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="gtin_cx" render={({ field }) => (
@@ -485,7 +483,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                         📦 GTIN CX
                         <span className="text-[10px] text-muted-foreground ml-1" title="Código de barras da caixa fechada. Usado para dar entrada em lote.">(caixa)</span>
                       </FormLabel>
-                      <FormControl><Input {...field} placeholder="Código da caixa fechada" /></FormControl>
+                      <FormControl>
+                        <BarcodeScannerInput
+                          value={field.value || ""}
+                          onChange={(v) => field.onChange(v)}
+                          onScan={(code) => { field.onChange(code); toast({ title: "✓ GTIN CX lido!", description: code }); }}
+                          placeholder="Código da caixa fechada"
+                          showCameraButton
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
