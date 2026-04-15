@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogT
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useKits, useCreateKit, useUpdateKit, useDeleteKit, useDeductKitStock, useBulkCreateKits, type Kit, type KitFormData } from "@/hooks/useKitData";
 import { useProducts } from "@/hooks/useProductData";
@@ -46,14 +48,20 @@ const Kits = () => {
   const [formSku, setFormSku] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formPrice, setFormPrice] = useState(0);
+  const [formActive, setFormActive] = useState(true);
   const [formItems, setFormItems] = useState<{ product_id: string; quantity: number }[]>([]);
 
+  const generateSku = () => {
+    const num = (kits?.length || 0) + 1;
+    return `KIT-${String(num).padStart(3, "0")}`;
+  };
+
   const resetForm = () => {
-    setFormName(""); setFormSku(""); setFormDescription(""); setFormPrice(0); setFormItems([]);
+    setFormName(""); setFormSku(""); setFormDescription(""); setFormPrice(0); setFormActive(true); setFormItems([]);
     setEditingKit(null);
   };
 
-  const openCreate = () => { resetForm(); setDialogOpen(true); };
+  const openCreate = () => { resetForm(); setFormSku(generateSku()); setDialogOpen(true); };
 
   const openEdit = (kit: Kit) => {
     setEditingKit(kit);
@@ -61,6 +69,7 @@ const Kits = () => {
     setFormSku(kit.sku);
     setFormDescription(kit.description || "");
     setFormPrice(kit.price);
+    setFormActive(kit.active !== false);
     setFormItems(kit.kit_items?.map((i) => ({ product_id: i.product_id, quantity: i.quantity })) || []);
     setDialogOpen(true);
   };
@@ -300,23 +309,22 @@ const Kits = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Nome *</Label>
+                <Label>Nome do kit *</Label>
                 <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Kit Combo Premium" />
               </div>
               <div>
-                <Label>SKU *</Label>
-                <Input value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="KIT-001" />
+                <Label>SKU do kit (auto)</Label>
+                <Input value={formSku} onChange={(e) => setFormSku(e.target.value)} placeholder="KIT-001" className="font-mono" />
               </div>
             </div>
             <div>
               <Label>Descrição</Label>
               <Textarea value={formDescription} onChange={(e) => setFormDescription(e.target.value)} placeholder="Descrição do kit..." rows={2} />
             </div>
-            <div>
-              <Label>Preço do Kit (R$)</Label>
-              <Input type="number" min={0} step={0.01} value={formPrice} onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)} />
-            </div>
 
+            <Separator />
+
+            {/* Products */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label>Produtos do Kit *</Label>
@@ -327,37 +335,87 @@ const Kits = () => {
               {formItems.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4 border rounded-lg">Nenhum produto adicionado ao kit.</p>
               )}
-              {formItems.map((item, idx) => (
-                <div key={idx} className="flex gap-2 items-center mb-2">
-                  <Select value={item.product_id} onValueChange={(v) => updateItem(idx, "product_id", v)}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecione um produto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    min={1}
-                    className="w-20"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(idx, "quantity", parseInt(e.target.value) || 1)}
-                  />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(idx)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+              {formItems.map((item, idx) => {
+                const selectedProduct = products.find(p => p.id === item.product_id);
+                return (
+                  <div key={idx} className="flex gap-2 items-center mb-2">
+                    <Select value={item.product_id} onValueChange={(v) => updateItem(idx, "product_id", v)}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Buscar produto por nome ou SKU" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name} ({p.sku})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      type="number"
+                      min={1}
+                      className="w-20"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(idx, "quantity", parseInt(e.target.value) || 1)}
+                    />
+                    {selectedProduct && (
+                      <span className="text-xs text-muted-foreground w-20 text-right shrink-0">
+                        R$ {(selectedProduct.cost * item.quantity).toFixed(2)}
+                      </span>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive shrink-0" onClick={() => removeItem(idx)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Separator />
+
+            {/* Pricing & Margin */}
+            {(() => {
+              const totalCost = formItems.reduce((sum, item) => {
+                const p = products.find(pr => pr.id === item.product_id);
+                return sum + (p ? p.cost * item.quantity : 0);
+              }, 0);
+              const margin = formPrice > 0 ? ((formPrice - totalCost) / formPrice * 100) : 0;
+              return (
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label>Custo calculado</Label>
+                    <div className="h-10 flex items-center px-3 rounded-xl border border-border bg-muted/30 text-sm font-mono">
+                      R$ {totalCost.toFixed(2)}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Preço de venda (R$)</Label>
+                    <Input type="number" min={0} step={0.01} value={formPrice} onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)} />
+                  </div>
+                  <div>
+                    <Label>Margem</Label>
+                    <div className={`h-10 flex items-center px-3 rounded-xl border border-border text-sm font-bold ${
+                      margin > 20 ? "text-emerald-400 bg-emerald-500/10" : margin > 0 ? "text-amber-400 bg-amber-500/10" : "text-destructive bg-destructive/10"
+                    }`}>
+                      {margin.toFixed(1)}%
+                    </div>
+                  </div>
                 </div>
-              ))}
+              );
+            })()}
+
+            {/* Active toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border/30 bg-muted/10">
+              <div>
+                <Label className="text-sm font-medium">Status do kit</Label>
+                <p className="text-xs text-muted-foreground">{formActive ? "Ativo — disponível para venda" : "Inativo — não aparece nas listagens"}</p>
+              </div>
+              <Switch checked={formActive} onCheckedChange={setFormActive} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>Cancelar</Button>
             <Button onClick={handleSave} disabled={createKit.isPending || updateKit.isPending}>
               {(createKit.isPending || updateKit.isPending) && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-              {editingKit ? "Salvar" : "Criar Kit"}
+              {editingKit ? "Salvar" : "Salvar kit"}
             </Button>
           </DialogFooter>
         </DialogContent>
