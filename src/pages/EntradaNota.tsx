@@ -921,6 +921,16 @@ const EntradaNota = () => {
                   {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                   Buscar Nota
                 </Button>
+                <Button variant="outline" className="w-full min-h-[44px] gap-2" onClick={() => {
+                  if (nfNumber.trim()) {
+                    // Add current fields as a SEFAZ entry to batchNfes placeholder
+                    toast({ title: "Use a chave de acesso para buscar", description: "Preencha a chave de 44 dígitos acima.", variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "Preencha a NF atual antes de adicionar outra", variant: "destructive" });
+                }}>
+                  <Plus className="h-4 w-4" /> Adicionar outra NF
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -930,11 +940,11 @@ const EntradaNota = () => {
             <Card className="border-dashed border-2 border-border/60">
               <CardContent className="p-8 flex flex-col items-center gap-4">
                 <FileText className="h-10 w-10 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">Arraste o arquivo XML da NF-e ou clique para selecionar</p>
-                <input ref={fileRef} type="file" accept=".xml" className="hidden" onChange={handleXmlUpload} />
+                <p className="text-sm text-muted-foreground">Arraste os arquivos XML da NF-e ou clique para selecionar (múltiplos)</p>
+                <input ref={fileRef} type="file" accept=".xml" multiple className="hidden" onChange={handleXmlUpload} />
                 <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={loading}>
                   {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-                  Selecionar XML
+                  Selecionar XML(s)
                 </Button>
               </CardContent>
             </Card>
