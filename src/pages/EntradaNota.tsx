@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
-  Keyboard, Package, ArrowRight, Bot, Search, Plus, Trash2, Check
+  Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
