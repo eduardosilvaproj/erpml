@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -119,6 +120,8 @@ const EntradaNota = () => {
   const [unknownGtinDialog, setUnknownGtinDialog] = useState<{ code: string } | null>(null);
   const [unknownGtinProduct, setUnknownGtinProduct] = useState("");
   const [unknownGtinQty, setUnknownGtinQty] = useState(1);
+  const [unknownGtinBoxes, setUnknownGtinBoxes] = useState(1);
+  const [unknownGtinSave, setUnknownGtinSave] = useState(true);
 
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
