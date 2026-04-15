@@ -162,13 +162,15 @@ export interface MatchResult {
   matchedProductName: string | null;
   matchedProductBarcode: string | null;
   matchedProductSku: string | null;
+  matchedProductGtinCx: string | null;
+  matchedProductBoxQty: number | null;
   matchType: "exact" | "fuzzy" | "new" | "none";
   confidence: number;
 }
 
 export function matchProducts(
   xmlProducts: NFeProduct[],
-  dbProducts: { id: string; name: string; barcode: string | null; sku: string }[]
+  dbProducts: { id: string; name: string; barcode: string | null; sku: string; gtin_cx?: string | null; box_quantity?: number | null }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
     const normalizedXmlBarcode = normalizeBarcode(xp.ean);
