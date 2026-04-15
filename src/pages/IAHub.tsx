@@ -245,6 +245,35 @@ export default function IAHub() {
         </div>
       </div>
 
+      {/* Search, filters & counter */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Buscar ferramenta de IA..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            {(["todos", "premium", "gratuito"] as const).map((tag) => (
+              <Button
+                key={tag}
+                variant={tagFilter === tag ? "default" : "outline"}
+                size="sm"
+                className="text-xs capitalize"
+                onClick={() => setTagFilter(tag)}
+              >
+                {tag === "todos" ? "Todos" : tag === "premium" ? "Premium" : "Gratuito"}
+              </Button>
+            ))}
+          </div>
+          <span className="text-xs text-muted-foreground">{filteredFeatures.length} ferramentas disponíveis</span>
+        </div>
+      </div>
+
       {/* Categories */}
       {groupedFeatures.map((group) => (
         <div key={group.key} className="space-y-3">
