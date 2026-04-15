@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
   Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check,
