@@ -45,6 +45,7 @@ export type ProductFormData = {
   id_ml?: string;
   min_stock?: number;
   supplier_ids: string[];
+  image_url?: string;
 };
 
 export function useProducts(filters?: {
@@ -121,6 +122,7 @@ export function useCreateProduct() {
         id_ml: productData.id_ml || null,
         min_stock: productData.min_stock ?? 0,
         company_id: companyId,
+        image_url: productData.image_url || null,
       };
 
       const { data: product, error } = await supabase
@@ -172,6 +174,7 @@ export function useUpdateProduct() {
         sku_ml: productData.sku_ml || null,
         id_ml: productData.id_ml || null,
         min_stock: productData.min_stock ?? 0,
+        image_url: productData.image_url || null,
       };
 
       const { error } = await supabase.from("products").update(updateData).eq("id", id);
