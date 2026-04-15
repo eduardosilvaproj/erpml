@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HelpProvider } from "@/contexts/HelpContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { VersionUpdateBanner } from "@/components/VersionUpdateBanner";
 import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
@@ -72,6 +73,7 @@ const App = () => (
     <TooltipProvider delayDuration={500}>
       <Toaster />
       <Sonner />
+      <VersionUpdateBanner />
       <BrowserRouter>
         <AuthProvider>
           <HelpProvider>
