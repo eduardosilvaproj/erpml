@@ -1403,11 +1403,13 @@ const EntradaNota = () => {
                                         GTIN CX <span className="text-[10px]">(código da caixa)</span>
                                       </label>
                                       <div className="flex gap-1">
-                                        <Input
+                                        <BarcodeScannerInput
                                           value={boxCfg.gtinCx}
-                                          onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: e.target.value } }))}
+                                          onChange={(v) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: v } }))}
+                                          onScan={(code) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: code } }))}
                                           placeholder="GTIN da caixa"
-                                          className="text-sm"
+                                          inputClassName="text-sm"
+                                          showCameraButton
                                         />
                                       </div>
                                       {boxCfg.savedGtin && (
