@@ -33,6 +33,8 @@ interface ConferenceItem {
   matchedProductName: string | null;
   matchedProductBarcode: string | null;
   matchedProductSku: string | null;
+  matchedProductGtinCx: string | null;
+  matchedProductBoxQty: number | null;
   matchType: string;
   expectedQty: number;
   scannedQty: number;
@@ -147,7 +149,7 @@ const EntradaNota = () => {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, barcode, sku")
+      .select("id, name, barcode, sku, gtin_cx, box_quantity")
       .eq("company_id", companyId)
       .order("name");
 
