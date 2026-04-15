@@ -111,6 +111,15 @@ const EntradaNota = () => {
   const [batchConferenceMode, setBatchConferenceMode] = useState<"together" | "one_by_one" | null>(null);
   const [currentBatchNfIdx, setCurrentBatchNfIdx] = useState(0);
 
+  // Box mode
+  const [boxModeEnabled, setBoxModeEnabled] = useState(false);
+  const [expandedBoxIdx, setExpandedBoxIdx] = useState<number | null>(null);
+  const [boxConfigs, setBoxConfigs] = useState<Record<number, BoxConfig>>({});
+  const [boxBipDialog, setBoxBipDialog] = useState<{ code: string; productIdx?: number; productName?: string; qtyPerBox?: number } | null>(null);
+  const [unknownGtinDialog, setUnknownGtinDialog] = useState<{ code: string } | null>(null);
+  const [unknownGtinProduct, setUnknownGtinProduct] = useState("");
+  const [unknownGtinQty, setUnknownGtinQty] = useState(1);
+
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
   const [divergenceActions, setDivergenceActions] = useState<Record<number, "conferida" | "nota">>({});
