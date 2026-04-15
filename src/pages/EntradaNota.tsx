@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
-  Keyboard, Package, ArrowRight, Bot, Search, Plus, Trash2, Check
+  Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -61,6 +61,7 @@ const EntradaNota = () => {
   const [bipInput, setBipInput] = useState("");
   const bipRef = useRef<HTMLInputElement>(null);
   const [bipAlert, setBipAlert] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
+  const [flashIdx, setFlashIdx] = useState<number | null>(null);
 
   // Step 3 - Divergences
   const [divergences, setDivergences] = useState<ConferenceItem[]>([]);
@@ -180,6 +181,20 @@ const EntradaNota = () => {
     }
   }, [currentStep]);
 
+  const playBeep = (freq: number, duration: number) => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      gain.gain.value = 0.3;
+      osc.start();
+      setTimeout(() => { osc.stop(); ctx.close(); }, duration);
+    } catch {}
+  };
+
   const handleBip = (code: string) => {
     if (!code.trim()) return;
     setBipInput("");
@@ -190,9 +205,14 @@ const EntradaNota = () => {
     );
 
     if (idx === -1) {
-      setBipAlert({ type: "error", msg: `Produto "${code}" não encontrado na nota!` });
+      setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
+      playBeep(200, 400);
+      setTimeout(() => bipRef.current?.focus(), 50);
       return;
     }
+
+    setFlashIdx(idx);
+    setTimeout(() => setFlashIdx(null), 1000);
 
     setConferenceItems((prev) => {
       const updated = [...prev];
@@ -202,17 +222,23 @@ const EntradaNota = () => {
       if (item.scannedQty === item.expectedQty) {
         item.status = "ok";
         setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
+        playBeep(800, 100);
       } else if (item.scannedQty > item.expectedQty) {
         item.status = "excess";
         setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
+        playBeep(200, 150);
+        setTimeout(() => playBeep(200, 150), 200);
       } else {
         item.status = "partial";
         setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
+        playBeep(600, 100);
       }
 
       updated[idx] = item;
       return updated;
     });
+
+    setTimeout(() => bipRef.current?.focus(), 50);
   };
 
   const conferenceProgress = conferenceItems.length > 0
@@ -630,25 +656,54 @@ const EntradaNota = () => {
           {/* Bip Input */}
           <Card>
             <CardContent className="p-4 space-y-3">
-              <p className="text-sm font-medium">Bipe ou digite o código do produto</p>
-              <Input
-                ref={bipRef}
-                value={bipInput}
-                onChange={(e) => setBipInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleBip(bipInput); }}
-                placeholder="Código de barras / EAN / SKU"
-                className="min-h-[48px] text-lg font-mono"
-                autoFocus
-              />
+              <p className="text-sm font-medium">Bipe ou digite o código de barras...</p>
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                  <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    ref={bipRef}
+                    value={bipInput}
+                    onChange={(e) => setBipInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleBip(bipInput); }}
+                    placeholder="Bipe ou digite o código de barras..."
+                    className="pl-11 min-h-[48px] text-lg font-mono"
+                    autoFocus
+                    autoComplete="off"
+                  />
+                </div>
+                <Button className="h-12" onClick={() => handleBip(bipInput)} disabled={!bipInput.trim()}>
+                  Bipar
+                </Button>
+                <BarcodeScanner onScan={(code) => handleBip(code)} />
+              </div>
               {bipAlert && (
-                <div className={`rounded-lg p-3 text-sm font-medium ${
-                  bipAlert.type === "success" ? "bg-emerald-500/10 text-emerald-400" :
-                  bipAlert.type === "warning" ? "bg-amber-500/10 text-amber-400" :
-                  "bg-destructive/10 text-destructive"
+                <div className={`rounded-lg p-3 text-sm font-medium flex items-center gap-2 ${
+                  bipAlert.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
+                  bipAlert.type === "warning" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                  "bg-destructive/10 text-destructive border border-destructive/20"
                 }`}>
+                  {bipAlert.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> :
+                   bipAlert.type === "warning" ? <AlertTriangle className="h-4 w-4 shrink-0" /> :
+                   <AlertTriangle className="h-4 w-4 shrink-0" />}
                   {bipAlert.msg}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Overall progress */}
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Progresso geral</span>
+                <span className="font-bold">{conferenceProgress} de {conferenceItems.length} itens conferidos</span>
+              </div>
+              <div className="h-3 rounded-full bg-muted/40 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                  style={{ width: `${conferenceItems.length > 0 ? (conferenceProgress / conferenceItems.length) * 100 : 0}%` }}
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -661,69 +716,84 @@ const EntradaNota = () => {
                   <TableHead>Nome do produto</TableHead>
                   <TableHead>SKU / Código</TableHead>
                   <TableHead className="text-center">Qtd Nota</TableHead>
-                  <TableHead className="text-center">Qtd Conferida</TableHead>
+                  <TableHead className="text-center w-[130px]">Qtd Conferida</TableHead>
+                  <TableHead className="text-center w-[120px]">Progresso</TableHead>
                   <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="w-[100px]">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {conferenceItems.map((item, i) => (
-                  <TableRow key={i} className={
-                    item.status === "ok" ? "bg-emerald-500/5" :
-                    item.status === "excess" ? "bg-destructive/5" :
-                    item.status === "partial" ? "bg-amber-500/5" : ""
-                  }>
-                    <TableCell>
-                      <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground/40" />
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
-                    <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
-                    <TableCell className="text-center">
-                      <Input
-                        type="number"
-                        value={item.scannedQty}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          setConferenceItems((prev) => {
-                            const updated = [...prev];
-                            const ci = { ...updated[i], scannedQty: val };
-                            ci.status = val === ci.expectedQty ? "ok" : val > ci.expectedQty ? "excess" : val > 0 ? "partial" : "pending";
-                            updated[i] = ci;
-                            return updated;
-                          });
-                        }}
-                        className="w-16 h-8 text-center mx-auto"
-                        min={0}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className={
-                        item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
-                        item.status === "excess" ? "bg-destructive/15 text-destructive" :
-                        item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
-                        "bg-muted text-muted-foreground"
-                      }>
-                        {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => {
-                        setConferenceItems((prev) => {
-                          const updated = [...prev];
-                          const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
-                          ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
-                          updated[i] = ci;
-                          return updated;
-                        });
-                      }}>
-                        + Conferir
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {conferenceItems.map((item, i) => {
+                  const pct = item.expectedQty > 0 ? Math.min(100, (item.scannedQty / item.expectedQty) * 100) : 0;
+                  return (
+                    <TableRow key={i} className={`transition-all duration-500 ${
+                      flashIdx === i ? "!bg-emerald-500/20" :
+                      item.status === "ok" ? "bg-emerald-500/5" :
+                      item.status === "excess" ? "bg-destructive/5" :
+                      item.status === "partial" ? "bg-amber-500/5" : ""
+                    }`}>
+                      <TableCell>
+                        <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
+                          <Package className="h-4 w-4 text-muted-foreground/40" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
+                      <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
+                      <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                            setConferenceItems((prev) => {
+                              const updated = [...prev];
+                              const ci = { ...updated[i], scannedQty: Math.max(0, updated[i].scannedQty - 1) };
+                              ci.status = ci.scannedQty === 0 ? "pending" : ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                              updated[i] = ci;
+                              return updated;
+                            });
+                          }}>
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="font-bold w-8 text-center text-lg">{item.scannedQty}</span>
+                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                            setConferenceItems((prev) => {
+                              const updated = [...prev];
+                              const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
+                              ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                              updated[i] = ci;
+                              return updated;
+                            });
+                          }}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-2 rounded-full bg-muted/40 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                item.status === "ok" ? "bg-emerald-500" :
+                                item.status === "excess" ? "bg-destructive" :
+                                item.status === "partial" ? "bg-amber-500" : "bg-muted-foreground/30"
+                              }`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(pct)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge className={
+                          item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                          item.status === "excess" ? "bg-destructive/15 text-destructive" :
+                          item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                          "bg-muted text-muted-foreground"
+                        }>
+                          {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -735,10 +805,13 @@ const EntradaNota = () => {
               <Button variant="outline" onClick={() => setCurrentStep(1)}>
                 <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
               </Button>
-              <Button onClick={() => {
-                const hasDivergences = conferenceItems.some((i) => i.status !== "ok");
-                goToStep(hasDivergences ? 3 : 4);
-              }}>
+              <Button
+                onClick={() => {
+                  const hasDivergences = conferenceItems.some((i) => i.status !== "ok");
+                  goToStep(hasDivergences ? 3 : 4);
+                }}
+                disabled={conferenceProgress < conferenceItems.length}
+              >
                 Próximo <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
