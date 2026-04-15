@@ -198,6 +198,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       min_stock: values.min_stock,
       supplier_ids: [],
       image_url: imageUrl || undefined,
+      gtin_cx: values.gtin_cx || undefined,
+      box_quantity: typeof values.box_quantity === "number" ? values.box_quantity : undefined,
     };
 
     if (product) {
