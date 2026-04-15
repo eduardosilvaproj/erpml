@@ -82,17 +82,20 @@ export default function DuplicadorAnuncios() {
 
   // Step 1: Fetch source item
   const fetchItem = useCallback(async () => {
-    const id = itemId.trim();
-    if (!id) { toast.error("Informe o ID do anúncio."); return; }
+    const raw = itemId.trim().toUpperCase();
+    // Extract MLB ID from full URL or raw input
+    const match = raw.match(/(MLB[\d]+)/);
+    const id = match ? match[1] : raw;
+    if (!id || !/^MLB\d+$/i.test(id)) { toast.error("Informe um ID válido (ex: MLB1234567890)."); return; }
     setLoading(true);
     try {
       const data = await callML("get-item", { itemId: id });
       if (!data || !data.id) throw new Error("Anúncio não encontrado.");
 
-      // fetch description
+      // fetch description using dedicated action
       let desc = "";
       try {
-        const descData = await callML("get-item", { itemId: `${data.id}/description` });
+        const descData = await callML("get-item-description", { itemId: data.id });
         desc = descData?.plain_text || descData?.text || "";
       } catch { /* ignore */ }
 
