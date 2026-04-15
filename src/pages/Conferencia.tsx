@@ -77,8 +77,11 @@ const Conferencia = () => {
     if (!code.trim()) return;
     setScanBuffer("");
 
+    const simProducts = (window as any).__simProducts || [];
     const product = allProducts.find(
       (p) => p.barcode === code.trim() || p.sku === code.trim()
+    ) || simProducts.find(
+      (p: any) => p.barcode === code.trim() || p.sku === code.trim()
     );
 
     if (!product) {
