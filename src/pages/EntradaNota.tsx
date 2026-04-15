@@ -138,97 +138,10 @@ const EntradaNota = () => {
   const [batchSelectedForConfirm, setBatchSelectedForConfirm] = useState<Set<string>>(new Set());
   const [batchConfirmResult, setBatchConfirmResult] = useState<{ confirmed: number; products: number; total: number } | null>(null);
 
-  // XML file upload (single)
-  const fileRef = useRef<HTMLInputElement>(null);
-
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-  // ============ SINGLE MODE FUNCTIONS (unchanged) ============
-  const consultarChave = useCallback(async (chave: string) => {
-    const clean = chave.replace(/\D/g, "");
-    if (clean.length !== 44) {
-      toast({ title: "Chave inválida", description: "A chave deve ter 44 dígitos.", variant: "destructive" });
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-
-      setNfeChave(clean);
-      const nfe: NFeData = {
-        number: data.numero,
-        series: data.serie,
-        issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
-        issuerCnpj: data.cnpjEmitente,
-        totalValue: 0,
-        issueDate: data.dataEmissao,
-        products: [],
-      };
-      setNfeData(nfe);
-      setNfNumber(data.numero);
-      setNfSeries(data.serie || "001");
-      setNfFornecedor(nfe.issuerName);
-      toast({ title: "Nota encontrada!", description: `NF-e nº ${data.numero} identificada.` });
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message || "Erro ao consultar.", variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
-
-  const handleXmlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setLoading(true);
-    try {
-      const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
-
-      for (const file of Array.from(files)) {
-        try {
-          const xml = await file.text();
-          const parsed = parseNFeXml(xml);
-          const matched = matchProducts(parsed.products, dbProducts || []);
-
-          // If single file, set as current NF (legacy behavior)
-          if (files.length === 1) {
-            setNfeData(parsed);
-            setMatches(matched);
-            setNfNumber(parsed.number);
-            setNfSeries(parsed.series || "001");
-            setNfFornecedor(parsed.issuerName);
-            setNfDate(parsed.issueDate || "");
-          }
-
-          // Always add to batchNfes for the loaded table
-          setBatchNfes((prev) => [
-            ...prev,
-            {
-              id: generateId(),
-              nfeData: parsed,
-              matches: matched,
-              fileName: file.name,
-              selected: true,
-              conferenceStatus: "pending",
-            },
-          ]);
-        } catch (err: any) {
-          toast({ title: `Erro: ${file.name}`, description: err.message, variant: "destructive" });
-        }
-      }
-
-      toast({ title: "XML(s) importado(s)!", description: `${files.length} arquivo(s) processado(s).` });
-    } catch (err: any) {
-      toast({ title: "Erro no XML", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
 
   // ============ BATCH MODE FUNCTIONS ============
   const handleBatchXmlUpload = useCallback(async (files: FileList | File[]) => {
