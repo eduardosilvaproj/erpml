@@ -979,27 +979,46 @@ const EntradaNota = () => {
 
           {/* Single NF loaded — go straight to next step */}
           {batchNfes.length === 1 && !loading && (
-            <Card className="border-emerald-500/30">
+            <Card className={batchNfes[0].nfeData.products.length > 0 ? "border-emerald-500/30" : "border-amber-500/30"}>
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${batchNfes[0].nfeData.products.length > 0 ? "bg-emerald-500/15" : "bg-amber-500/15"}`}>
+                    {batchNfes[0].nfeData.products.length > 0
+                      ? <CheckCircle className="h-5 w-5 text-emerald-500" />
+                      : <AlertTriangle className="h-5 w-5 text-amber-500" />}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold">NF-e nº {batchNfes[0].nfeData.number}</p>
                     <p className="text-xs text-muted-foreground">{batchNfes[0].nfeData.issuerName}</p>
                   </div>
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                  <Badge className={batchNfes[0].nfeData.products.length > 0
+                    ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                    : "bg-amber-500/15 text-amber-400 border-amber-500/30"}>
                     {batchNfes[0].nfeData.products.length} itens — {formatCurrency(batchNfes[0].nfeData.totalValue)}
                   </Badge>
                 </div>
+                {batchNfes[0].nfeData.products.length === 0 && (
+                  <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400 space-y-1">
+                    <p className="font-medium">⚠️ Nota sem itens/produtos</p>
+                    <p className="text-xs text-amber-400/80">
+                      A busca pela chave de acesso retorna apenas os dados do cabeçalho da nota (número, série, CNPJ, UF).
+                      Para importar os produtos e realizar a conferência, utilize o <strong>modo XML</strong> com o arquivo .xml da nota fiscal.
+                    </p>
+                  </div>
+                )}
                 <div className="flex gap-3 pt-2">
                   <Button variant="outline" onClick={() => { setBatchNfes([]); setNfeData(null); setMatches([]); }}>
                     Trocar nota
                   </Button>
-                  <Button className="gap-2" onClick={() => goToStep(2)}>
-                    Próximo <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  {batchNfes[0].nfeData.products.length === 0 ? (
+                    <Button variant="outline" className="gap-2" onClick={() => { setBatchNfes([]); setNfeData(null); setMatches([]); setNfMode("xml"); }}>
+                      <Upload className="h-4 w-4" /> Importar XML
+                    </Button>
+                  ) : (
+                    <Button className="gap-2" onClick={() => goToStep(2)}>
+                      Próximo <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
