@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMyCompany, useCompanyMembers, useCompanyAuditLog, useUpdateCompany } from "@/hooks/useCompanyData";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,11 +9,72 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Users, History, Save, Loader2, Crown, Star } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Users, History, Save, Loader2, Crown, Star, Camera, UserPlus, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+
+function CompanyLogoUpload({ companyId, logoUrl, isOwner }: { companyId: string; logoUrl: string | null; isOwner: boolean }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const queryClient = useQueryClient();
+
+  const publicLogoUrl = logoUrl
+    ? logoUrl.startsWith("http") ? logoUrl : supabase.storage.from("avatars").getPublicUrl(logoUrl).data?.publicUrl
+    : null;
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Selecione uma imagem"); return; }
+    if (file.size > 2 * 1024 * 1024) { toast.error("Máximo 2MB"); return; }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `company-logos/${companyId}/logo.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { error: dbErr } = await supabase.from("companies").update({ logo_url: path } as any).eq("id", companyId);
+      if (dbErr) throw dbErr;
+      queryClient.invalidateQueries({ queryKey: ["my-company"] });
+      toast.success("Logo atualizado!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao enviar logo");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-2 mb-6">
+      <div
+        className={`relative w-[120px] h-[120px] rounded-xl border-2 border-dashed border-border bg-muted/30 flex items-center justify-center overflow-hidden ${isOwner ? "cursor-pointer hover:border-primary/50 transition-colors" : ""}`}
+        onClick={() => isOwner && fileRef.current?.click()}
+      >
+        {uploading ? (
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        ) : publicLogoUrl ? (
+          <img src={publicLogoUrl} alt="Logo" className="w-full h-full object-contain p-2" />
+        ) : (
+          <div className="flex flex-col items-center gap-1 text-muted-foreground">
+            <Camera className="h-8 w-8" />
+            <span className="text-xs text-center">Logo da empresa</span>
+          </div>
+        )}
+      </div>
+      {isOwner && (
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleUpload} disabled={uploading} />
+      )}
+      <p className="text-xs text-muted-foreground">Recomendado: 200×200px</p>
+    </div>
+  );
+}
 
 export default function CompanyDashboard() {
   const { user } = useAuth();
@@ -23,6 +85,10 @@ export default function CompanyDashboard() {
 
   const [form, setForm] = useState<Record<string, string>>({});
   const [editing, setEditing] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviting, setInviting] = useState(false);
 
   if (isLoading) {
     return (
@@ -60,12 +126,44 @@ export default function CompanyDashboard() {
     }
   };
 
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) { toast.error("Informe o e-mail"); return; }
+    setInviting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-member`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ email: inviteEmail, role: inviteRole, companyId: company.id }),
+        }
+      );
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao convidar");
+      }
+      toast.success("Convite enviado!");
+      setInviteOpen(false);
+      setInviteEmail("");
+      setInviteRole("member");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const isOwner = company.owner_id === user?.id;
 
   const roleLabel: Record<string, string> = {
-    owner: "Proprietário",
+    owner: "Admin",
     manager: "Gerente",
-    member: "Membro",
+    member: "Operador",
   };
 
   const statusColor: Record<string, string> = {
@@ -125,6 +223,7 @@ export default function CompanyDashboard() {
               )}
             </CardHeader>
             <CardContent>
+              <CompanyLogoUpload companyId={company.id} logoUrl={(company as any).logo_url} isOwner={isOwner} />
               {editing ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
@@ -178,16 +277,24 @@ export default function CompanyDashboard() {
 
         <TabsContent value="membros">
           <Card>
-            <CardHeader>
-              <CardTitle>Membros da Empresa</CardTitle>
-              <CardDescription>{members?.length || 0} membro(s)</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Membros da Empresa</CardTitle>
+                <CardDescription>{members?.length || 0} membro(s)</CardDescription>
+              </div>
+              {isOwner && (
+                <Button size="sm" onClick={() => setInviteOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-1" /> Convidar membro
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Papel</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Nível de Acesso</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Desde</TableHead>
                   </TableRow>
@@ -202,13 +309,19 @@ export default function CompanyDashboard() {
                         </div>
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Mail className="h-3 w-3" />
+                          {(m.profile as any)?.email || "—"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant={m.role === "owner" ? "default" : "secondary"}>
                           {roleLabel[m.role] || m.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={m.is_active ? "default" : "secondary"}>
-                          {m.is_active ? "Ativo" : "Inativo"}
+                        <Badge variant={m.is_active ? "default" : "outline"} className={m.is_active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}>
+                          {m.is_active ? "Ativo" : "Pendente"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -272,6 +385,38 @@ export default function CompanyDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Invite member dialog */}
+      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Convidar Membro</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <Label>E-mail *</Label>
+              <Input placeholder="email@exemplo.com" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Nível de Acesso</Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manager">Gerente</SelectItem>
+                  <SelectItem value="member">Operador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancelar</Button>
+            <Button onClick={handleInvite} disabled={inviting}>
+              {inviting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <UserPlus className="h-4 w-4 mr-1" />}
+              Enviar convite
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

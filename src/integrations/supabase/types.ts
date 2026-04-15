@@ -206,6 +206,7 @@ export type Database = {
           email: string | null
           id: string
           is_courtesy: boolean
+          logo_url: string | null
           name: string
           owner_id: string
           phone: string | null
@@ -223,6 +224,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_courtesy?: boolean
+          logo_url?: string | null
           name: string
           owner_id: string
           phone?: string | null
@@ -240,6 +242,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_courtesy?: boolean
+          logo_url?: string | null
           name?: string
           owner_id?: string
           phone?: string | null
