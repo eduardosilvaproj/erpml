@@ -78,6 +78,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [showScanner, setShowScanner] = useState(false);
   const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
+  const [isSearchingPhotos, setIsSearchingPhotos] = useState(false);
+  const [showPhotoGrid, setShowPhotoGrid] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getDefaults = (p?: Product | null): FormValues => ({
