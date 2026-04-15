@@ -1352,6 +1352,17 @@ const EntradaNota = () => {
           {/* Conference content (shared for single & batch once mode is selected) */}
           {(!batchMode || batchConferenceMode) && (
             <>
+              {/* Box mode toggle */}
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+                <Checkbox
+                  checked={boxModeEnabled}
+                  onCheckedChange={(v) => setBoxModeEnabled(!!v)}
+                  id="box-mode"
+                />
+                <label htmlFor="box-mode" className="text-sm font-medium cursor-pointer">
+                  📦 Esta nota contém produtos em caixa
+                </label>
+              </div>
               {/* Bip Input */}
               <Card>
                 <CardContent className="p-4 space-y-3">
