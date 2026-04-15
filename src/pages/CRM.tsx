@@ -153,12 +153,13 @@ const CRM = () => {
 
   const handleSave = async () => {
     if (!form.name.trim()) return;
+    const fullAddress = [form.address, form.city, form.state].filter(Boolean).join(", ");
     const payload = {
       name: form.name,
       phone: form.phone || undefined,
       email: form.email || undefined,
       cpf: form.cpf || undefined,
-      address: form.address || undefined,
+      address: fullAddress || form.address || undefined,
       notes: form.notes || undefined,
     };
     if (editing) {
@@ -166,7 +167,37 @@ const CRM = () => {
     } else {
       await createCustomer.mutateAsync(payload);
     }
+    formDirtyRef.current = false;
     setDialogOpen(false);
+  };
+
+  const handleCepLookup = async (cep: string) => {
+    const digits = cep.replace(/\D/g, "");
+    if (digits.length !== 8) return;
+    setCepLoading(true);
+    setCepError(false);
+    const result = await fetchCep(digits);
+    setCepLoading(false);
+    if (result) {
+      setForm((prev) => ({
+        ...prev,
+        address: result.logradouro || prev.address,
+        city: result.localidade || prev.city,
+        state: result.uf || prev.state,
+      }));
+      setCepFilled(true);
+      setTimeout(() => setCepFilled(false), 1500);
+    } else {
+      setCepError(true);
+    }
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open && formDirtyRef.current) {
+      setShowUnsavedConfirm(true);
+      return;
+    }
+    setDialogOpen(open);
   };
 
   const formatCurrency = (v: number) =>
