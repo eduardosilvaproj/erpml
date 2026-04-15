@@ -48,6 +48,7 @@ interface BatchNfe {
   fileName?: string;
   selected: boolean;
   conferenceStatus: "pending" | "in_progress" | "done";
+  partialData?: boolean;
 }
 
 interface SefazEntry {

@@ -136,6 +136,10 @@ Deno.serve(async (req) => {
       modelo: metadata.modelo === "55" ? "NF-e" : "NFC-e",
       tipoEmissao: metadata.tipoEmissao,
       fonte: "chave_acesso",
+      totalValue: 0,
+      products: [],
+      partialData: true,
+      partialReason: "Consulta por chave retorna apenas os dados do cabeçalho. Para itens/produtos, importe o XML da nota.",
     };
 
     return new Response(JSON.stringify(result), {
