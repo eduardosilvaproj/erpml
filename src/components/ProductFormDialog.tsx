@@ -638,7 +638,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
                 {/* Footer */}
                 <DialogFooter className="pt-4 border-t border-border/40">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                  <Button type="button" variant="outline" onClick={() => guardedClose(false)}>Cancelar</Button>
                   <Button type="submit" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Salvar produto
