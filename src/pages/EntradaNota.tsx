@@ -374,14 +374,17 @@ const EntradaNota = () => {
           setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
           playBeep(800, 100);
           bipRef.current?.flash(true);
+        } else if (item.scannedQty > item.expectedQty) {
           item.status = "excess";
           setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
           playBeep(200, 150);
           setTimeout(() => playBeep(200, 150), 200);
+          bipRef.current?.flash(false);
         } else {
           item.status = "partial";
           setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
           playBeep(600, 100);
+          bipRef.current?.flash(true);
         }
         updated[idx] = item;
         return updated;
