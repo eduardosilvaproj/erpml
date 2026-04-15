@@ -312,7 +312,7 @@ const EntradaNota = () => {
   // ============ STEP NAVIGATION ============
   const goToStep = (step: WizardStep) => {
     if (step === 2) {
-      if (batchMode && selectedBatchNfes.length > 0) {
+      if (isBatchMode && selectedBatchNfes.length > 0) {
         // Batch: ask conference mode
         setBatchConferenceMode(null);
         setCompletedSteps((p) => new Set([...p, 1]));
@@ -337,7 +337,7 @@ const EntradaNota = () => {
       setCompletedSteps((p) => new Set([...p, 2]));
     }
     if (step === 4) {
-      if (batchMode) {
+      if (isBatchMode) {
         const allMatches: MatchResult[] = selectedBatchNfes.flatMap((n) => n.matches);
         setAdjustedItems([...allMatches]);
       } else {
@@ -347,7 +347,7 @@ const EntradaNota = () => {
     }
     if (step === 5) {
       setCompletedSteps((p) => new Set([...p, 4]));
-      if (batchMode) {
+      if (isBatchMode) {
         setBatchSelectedForConfirm(new Set(selectedBatchNfes.map((n) => n.id)));
       }
     }
@@ -416,10 +416,10 @@ const EntradaNota = () => {
 
   // ========== STEP 2: CONFERENCE (BIP) ==========
   useEffect(() => {
-    if (currentStep === 2 && bipRef.current && (batchConferenceMode || !batchMode)) {
+    if (currentStep === 2 && bipRef.current && (batchConferenceMode || !isBatchMode)) {
       bipRef.current.focus();
     }
-  }, [currentStep, batchConferenceMode, batchMode]);
+  }, [currentStep, batchConferenceMode, isBatchMode]);
 
   const playBeep = (freq: number, duration: number) => {
     try {
@@ -610,7 +610,7 @@ const EntradaNota = () => {
 
   // ========== STEP 5: CONFIRM ==========
   const confirmarEntrada = async () => {
-    if (batchMode) {
+    if (isBatchMode) {
       await confirmarEntradaLote();
       return;
     }
@@ -856,7 +856,7 @@ const EntradaNota = () => {
   const canGoToStep = (step: number) => {
     if (step === 1) return true;
     if (step === 2) {
-      if (batchMode) return selectedBatchNfes.length > 0;
+      if (isBatchMode) return selectedBatchNfes.length > 0;
       return !!nfeData && matches.length > 0;
     }
     if (step === 3) return completedSteps.has(2);
@@ -865,7 +865,7 @@ const EntradaNota = () => {
     return false;
   };
 
-  const itemsToShow = adjustedItems.length > 0 ? adjustedItems : (batchMode ? selectedBatchNfes.flatMap((n) => n.matches) : matches);
+  const itemsToShow = adjustedItems.length > 0 ? adjustedItems : (isBatchMode ? selectedBatchNfes.flatMap((n) => n.matches) : matches);
   const totalValue = itemsToShow.reduce((sum, m) => sum + m.xmlProduct.totalValue, 0);
 
   // ========== RENDER ==========
@@ -881,11 +881,11 @@ const EntradaNota = () => {
         </div>
         {currentStep === 1 && (
           <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${!batchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${!isBatchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
               Entrada única
             </span>
-            <Switch checked={batchMode} onCheckedChange={(v) => { setBatchMode(v); reset(); setBatchMode(v); }} />
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${batchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+            <Switch checked={isBatchMode} onCheckedChange={(v) => { setBatchMode(v); reset(); setBatchMode(v); }} />
+            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${isBatchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
               Entrada em lote
             </span>
           </div>
@@ -933,7 +933,7 @@ const EntradaNota = () => {
       </div>
 
       {/* ========== STEP 1: NF ========== */}
-      {currentStep === 1 && !batchMode && (
+      {currentStep === 1 && !isBatchMode && (
         <div className="space-y-6">
           {/* AI Banner */}
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 flex items-start gap-3">
@@ -1165,7 +1165,7 @@ const EntradaNota = () => {
       )}
 
       {/* ========== STEP 1: BATCH MODE ========== */}
-      {currentStep === 1 && batchMode && (
+      {currentStep === 1 && isBatchMode && (
         <div className="space-y-6">
           {/* Upload area */}
           <Card>
@@ -1284,7 +1284,7 @@ const EntradaNota = () => {
       {currentStep === 2 && (
         <div className="space-y-5">
           {/* Batch mode: choose conference mode */}
-          {batchMode && !batchConferenceMode && (
+          {isBatchMode && !batchConferenceMode && (
             <div className="space-y-4">
               <Card>
                 <CardContent className="p-6 text-center space-y-2">
@@ -1329,7 +1329,7 @@ const EntradaNota = () => {
           )}
 
           {/* Batch one-by-one: NF progress bar */}
-          {batchMode && batchConferenceMode === "one_by_one" && (
+          {isBatchMode && batchConferenceMode === "one_by_one" && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between text-sm mb-2">
@@ -1355,7 +1355,7 @@ const EntradaNota = () => {
           )}
 
           {/* Conference content (shared for single & batch once mode is selected) */}
-          {(!batchMode || batchConferenceMode) && (
+          {(!isBatchMode || batchConferenceMode) && (
             <>
               {/* Box mode toggle */}
               <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
@@ -1426,7 +1426,7 @@ const EntradaNota = () => {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/30">
-                      {batchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      {isBatchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
                       {boxModeEnabled && <TableHead className="w-[40px]" />}
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
@@ -1451,7 +1451,7 @@ const EntradaNota = () => {
                             item.status === "excess" ? "bg-destructive/5" :
                             item.status === "partial" ? "bg-amber-500/5" : ""
                           }`}>
-                            {batchMode && batchConferenceMode === "together" && (
+                            {isBatchMode && batchConferenceMode === "together" && (
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
                               </TableCell>
@@ -1642,7 +1642,7 @@ const EntradaNota = () => {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">{conferenceProgress} de {conferenceItems.length} itens conferidos</p>
                 <div className="flex gap-3">
-                  <Button variant="outline" onClick={() => { if (batchMode) { setBatchConferenceMode(null); } else { setCurrentStep(1); } }}>
+                  <Button variant="outline" onClick={() => { if (isBatchMode) { setBatchConferenceMode(null); } else { setCurrentStep(1); } }}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                   <Button
@@ -1811,7 +1811,7 @@ const EntradaNota = () => {
           </div>
 
           <div className="flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setCurrentStep(matches.length > 0 || batchMode ? 3 : 1)}>
+            <Button variant="outline" onClick={() => setCurrentStep(matches.length > 0 || isBatchMode ? 3 : 1)}>
               <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
             <Button onClick={() => goToStep(5)}>
@@ -1825,7 +1825,7 @@ const EntradaNota = () => {
       {currentStep === 5 && !done && (
         <div className="space-y-5">
           {/* Batch: summary table per NF */}
-          {batchMode ? (
+          {isBatchMode ? (
             <>
               <Card>
                 <CardHeader>
@@ -1942,7 +1942,7 @@ const EntradaNota = () => {
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <Checkbox checked={autoUpdateStock} onCheckedChange={(v) => setAutoUpdateStock(!!v)} />
-              <span className="text-sm">Atualizar estoque {batchMode ? "de todas as notas" : "automaticamente"}</span>
+              <span className="text-sm">Atualizar estoque {isBatchMode ? "de todas as notas" : "automaticamente"}</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <Checkbox checked={autoUpdateCost} onCheckedChange={(v) => setAutoUpdateCost(!!v)} />
@@ -1956,7 +1956,7 @@ const EntradaNota = () => {
               <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
             </Button>
             <div className="flex gap-3">
-              {batchMode && (
+              {isBatchMode && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1969,10 +1969,10 @@ const EntradaNota = () => {
               <Button
                 className="min-h-[48px] px-8 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={confirmarEntrada}
-                disabled={saving || (batchMode && batchSelectedForConfirm.size === 0)}
+                disabled={saving || (isBatchMode && batchSelectedForConfirm.size === 0)}
               >
                 {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
-                {batchMode
+                {isBatchMode
                   ? batchSelectedForConfirm.size === selectedBatchNfes.length
                     ? "✓ Confirmar todas as entradas"
                     : `✓ Confirmar selecionadas (${batchSelectedForConfirm.size})`
@@ -1992,7 +1992,7 @@ const EntradaNota = () => {
                 <CheckCircle className="h-8 w-8 text-emerald-500" />
               </div>
               <div className="text-center space-y-1">
-                {batchMode && batchConfirmResult ? (
+                {isBatchMode && batchConfirmResult ? (
                   <>
                     <p className="text-lg font-bold">{batchConfirmResult.confirmed} nota(s) confirmada(s) com sucesso!</p>
                     <p className="text-sm text-muted-foreground">
