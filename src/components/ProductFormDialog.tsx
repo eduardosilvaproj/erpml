@@ -220,12 +220,6 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     setIsSearchingPhotos(true);
     setShowPhotoGrid(true);
     try {
-      const { data, error } = await supabase.functions.invoke("unsplash-search", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        body: null,
-      });
-      // supabase.functions.invoke doesn't support query params, so use fetch directly
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/unsplash-search?query=${encodeURIComponent(name.trim())}&per_page=6`;
       const session = (await supabase.auth.getSession()).data.session;
       const res = await fetch(url, {
