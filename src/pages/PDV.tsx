@@ -386,10 +386,10 @@ const PDV = () => {
                 </TableBody>
               </Table>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <ShoppingCart className="mb-4 h-16 w-16 opacity-20" />
-                <p className="text-lg">Carrinho vazio</p>
-                <p className="text-sm">Bipe um produto ou clique no catálogo</p>
+              <div className="flex flex-col items-center justify-center h-[200px] text-muted-foreground">
+                <ShoppingCart className="mb-3 h-12 w-12 opacity-20" />
+                <p className="text-base font-medium">Pronto para vender!</p>
+                <p className="text-sm mt-1">Bipe um produto ou busque no catálogo acima.</p>
               </div>
             )}
           </CardContent>

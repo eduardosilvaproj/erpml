@@ -95,13 +95,13 @@ export function AppSidebar() {
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/"); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-150 ${
                 isActive("/")
                   ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
                   : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
-              <Home className="h-5 w-5 shrink-0 text-foreground" strokeWidth={1.75} />
+              <Home className="h-[18px] w-[18px] shrink-0 text-foreground" strokeWidth={1.75} />
               <span>Início</span>
             </button>
           </TooltipTrigger>
@@ -119,13 +119,13 @@ export function AppSidebar() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => toggleGroup(group.label)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-150 ${
                       isOpen || groupActive
                         ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
                         : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                     }`}
                   >
-                    <group.icon className={`h-5 w-5 shrink-0 ${group.color}`} strokeWidth={1.75} />
+                    <group.icon className={`h-[18px] w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
                     <span className="flex-1 text-left">{group.label}</span>
                     <ChevronDown
                       className={`h-4 w-4 shrink-0 opacity-40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -145,13 +145,13 @@ export function AppSidebar() {
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => go(sub.url)}
-                            className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-[13px] transition-all duration-100 bg-slate-800/50 ${
+                            className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-all duration-100 bg-slate-800/50 ${
                               subActive
                                 ? "text-blue-400 font-semibold"
                                 : "text-muted-foreground hover:text-blue-300"
                             }`}
                           >
-                            <sub.icon className={`h-3.5 w-3.5 shrink-0 ${subActive ? "text-blue-400" : ""}`} strokeWidth={1.75} />
+                            <sub.icon className={`h-[18px] w-[18px] shrink-0 ${subActive ? "text-blue-400" : ""}`} strokeWidth={1.75} />
                             <span>{sub.label}</span>
                           </button>
                         </TooltipTrigger>
@@ -170,13 +170,13 @@ export function AppSidebar() {
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-150 ${
                 isActive("/ia-hub") || isActive("/ia-")
                   ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
                   : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
-              <Brain className="h-5 w-5 shrink-0 text-[#F472B6]" strokeWidth={1.75} />
+              <Brain className="h-[18px] w-[18px] shrink-0 text-[#F472B6]" strokeWidth={1.75} />
               <span>Central de IA</span>
             </button>
           </TooltipTrigger>
@@ -191,13 +191,13 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => { setOpenGroup(null); go("/admin"); }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-150 ${
                     isActive("/admin")
                       ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
                       : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                   }`}
                 >
-                  <ShieldCheck className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} />
+                  <ShieldCheck className="h-[18px] w-[18px] shrink-0 text-amber-400" strokeWidth={1.75} />
                   <span>Admin</span>
                 </button>
               </TooltipTrigger>
@@ -207,13 +207,13 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => { setOpenGroup(null); go("/master-admin"); }}
-                  className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium transition-all duration-150 ${
                     isActive("/master-admin")
                       ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
                       : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                   }`}
                 >
-                  <Crown className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} />
+                  <Crown className="h-[18px] w-[18px] shrink-0 text-amber-400" strokeWidth={1.75} />
                   <span>Master</span>
                   {pendingCount > 0 && (
                     <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
@@ -234,9 +234,9 @@ export function AppSidebar() {
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-slate-700/30 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-medium bg-slate-700/30 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
-              <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+              <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
               <span>Sair</span>
             </button>
           </TooltipTrigger>
