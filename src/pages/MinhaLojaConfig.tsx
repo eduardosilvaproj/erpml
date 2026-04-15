@@ -10,7 +10,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Store, ShoppingBag, CreditCard, Layers, ExternalLink, Loader2, Check, X } from "lucide-react";
 import { useMyStore, useUpsertStore, useCheckSlugAvailability } from "@/hooks/useStoreData";
 import { toast } from "sonner";
-import { useDebounce } from "@/hooks/use-mobile";
 
 function slugify(text: string) {
   return text

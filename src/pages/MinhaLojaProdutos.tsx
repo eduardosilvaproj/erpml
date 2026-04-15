@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Package, Loader2, Search, Eye } from "lucide-react";
 import { useMyStore, useStoreProducts, useUpsertStoreProduct } from "@/hooks/useStoreData";
-import { useProductData } from "@/hooks/useProductData";
+import { useProducts } from "@/hooks/useProductData";
 import { toast } from "sonner";
 
 export default function MinhaLojaProdutos() {
