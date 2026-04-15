@@ -1382,12 +1382,21 @@ const EntradaNota = () => {
                                 onClick={() => {
                                   setUnknownGtinDialog({ code: "" });
                                   setUnknownGtinProduct(item.matchedProductId || `idx-${i}`);
-                                  setUnknownGtinQty(1);
+                                  setUnknownGtinQty(item.matchedProductBoxQty || 1);
                                   setUnknownGtinBoxes(1);
                                   setUnknownGtinSave(true);
                                 }}
-                                className={`text-lg transition-colors ${item.boxBadge ? "text-primary" : "text-muted-foreground/40 hover:text-primary"}`}
-                                title="Configurar entrada em caixa"
+                                className={`text-lg transition-colors ${
+                                  item.boxBadge
+                                    ? "text-primary"
+                                    : item.matchedProductGtinCx
+                                    ? "text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.4)]"
+                                    : "text-muted-foreground/40 hover:text-primary"
+                                }`}
+                                title={item.matchedProductGtinCx
+                                  ? `GTIN CX cadastrado: ${item.matchedProductGtinCx} (${item.matchedProductBoxQty || '?'} un/cx)`
+                                  : "Configurar entrada em caixa"
+                                }
                               >
                                 📦
                               </button>
