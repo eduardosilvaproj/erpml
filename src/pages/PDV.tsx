@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, ShoppingCart, CreditCard, Banknote, Smartphone,
-  Trash2, Plus, Minus, Loader2, CheckCircle, AlertTriangle, X
+  Trash2, Plus, Minus, Loader2, CheckCircle, AlertTriangle, X,
+  Package, DollarSign, Percent
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateSale, useSalesStats, type CartItem } from "@/hooks/useSalesData";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { useProductData } from "@/hooks/useProductData";
 
 const PDV = () => {
   const { toast } = useToast();
@@ -22,9 +24,25 @@ const PDV = () => {
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [saleComplete, setSaleComplete] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const [discountValue, setDiscountValue] = useState("");
+  const [discountType, setDiscountType] = useState<"R$" | "%">("R$");
 
   const createSale = useCreateSale();
   const { data: stats } = useSalesStats();
+  const { data: allProducts } = useProductData();
+
+  const filteredProducts = useMemo(() => {
+    if (!allProducts) return [];
+    const active = allProducts.filter((p) => p.active && p.stock_physical > 0);
+    if (!catalogSearch.trim()) return active;
+    const q = catalogSearch.toLowerCase();
+    return active.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      (p.barcode && p.barcode.toLowerCase().includes(q))
+    );
+  }, [allProducts, catalogSearch]);
 
   useEffect(() => {
     scanInputRef.current?.focus();
@@ -43,6 +61,30 @@ const PDV = () => {
       setTimeout(() => { osc.stop(); ctx.close(); }, duration);
     } catch {}
   };
+
+  const addToCart = useCallback((product: { id: string; name: string; sku: string; barcode: string | null; price: number; stock_physical: number }) => {
+    const existing = cart.find((i) => i.productId === product.id);
+    if (existing) {
+      if (existing.quantity >= product.stock_physical) {
+        toast({ title: "Estoque máximo", description: `Máximo de ${product.stock_physical} unidades.`, variant: "destructive" });
+        return;
+      }
+      setCart(cart.map((i) =>
+        i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
+      ));
+    } else {
+      setCart([...cart, {
+        productId: product.id,
+        productName: product.name,
+        productSku: product.sku,
+        barcode: product.barcode,
+        quantity: 1,
+        unitPrice: product.price,
+        stockPhysical: product.stock_physical,
+      }]);
+    }
+    playBeep(800, 100);
+  }, [cart, toast]);
 
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
@@ -122,7 +164,16 @@ const PDV = () => {
     setCart(cart.filter((i) => i.productId !== productId));
   };
 
-  const total = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+  const subtotal = cart.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0);
+
+  const discountAmount = useMemo(() => {
+    const v = parseFloat(discountValue) || 0;
+    if (v <= 0) return 0;
+    if (discountType === "%") return Math.min(subtotal, subtotal * (v / 100));
+    return Math.min(subtotal, v);
+  }, [discountValue, discountType, subtotal]);
+
+  const total = subtotal - discountAmount;
 
   const handleFinalizeSale = async () => {
     if (!selectedPayment || cart.length === 0) return;
@@ -130,10 +181,12 @@ const PDV = () => {
       await createSale.mutateAsync({
         items: cart,
         paymentMethod: selectedPayment,
+        discount: discountAmount,
       });
       setCart([]);
       setLastScan(null);
       setSelectedPayment(null);
+      setDiscountValue("");
       setSaleComplete(true);
       playBeep(1000, 200);
       setTimeout(() => {
@@ -149,6 +202,7 @@ const PDV = () => {
     setCart([]);
     setLastScan(null);
     setSelectedPayment(null);
+    setDiscountValue("");
     setSaleComplete(false);
     setTimeout(() => scanInputRef.current?.focus(), 50);
   };
@@ -175,7 +229,7 @@ const PDV = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
-      {/* Left: Product scan + cart */}
+      {/* Left: Product scan + catalog + cart */}
       <div className="md:col-span-2 space-y-4 flex flex-col min-h-[50vh] md:min-h-0">
         {/* Stats bar */}
         <div className="grid grid-cols-2 gap-3">
@@ -238,7 +292,57 @@ const PDV = () => {
               </div>
             )}
           </CardHeader>
-          <CardContent className="flex-1 overflow-auto">
+
+          {/* Product Catalog */}
+          <div className="px-6 pb-3">
+            <div className="relative mb-3">
+              <Package className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={catalogSearch}
+                onChange={(e) => setCatalogSearch(e.target.value)}
+                placeholder="Buscar produto no catálogo..."
+                className="pl-10 h-9 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-2 max-h-[240px] overflow-y-auto pr-1">
+              {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => addToCart({
+                    id: product.id,
+                    name: product.name,
+                    sku: product.sku,
+                    barcode: product.barcode,
+                    price: product.price,
+                    stock_physical: product.stock_physical,
+                  })}
+                  className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-border/40 bg-muted/20 hover:bg-primary/10 hover:border-primary/40 transition-all text-center group"
+                >
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      className="h-12 w-12 rounded-lg object-cover bg-background"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-muted/40 flex items-center justify-center">
+                      <Package className="h-5 w-5 text-muted-foreground/50" />
+                    </div>
+                  )}
+                  <p className="text-[11px] font-medium text-foreground leading-tight line-clamp-2">{product.name}</p>
+                  <p className="text-[11px] font-bold text-primary">{formatCurrency(product.price)}</p>
+                </button>
+              )) : (
+                <div className="col-span-3 py-6 text-center text-xs text-muted-foreground">
+                  Nenhum produto encontrado
+                </div>
+              )}
+            </div>
+          </div>
+
+          <Separator />
+
+          <CardContent className="flex-1 overflow-auto pt-3">
             {cart.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -283,7 +387,7 @@ const PDV = () => {
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <ShoppingCart className="mb-4 h-16 w-16 opacity-20" />
                 <p className="text-lg">Carrinho vazio</p>
-                <p className="text-sm">Bipe um produto para começar a venda</p>
+                <p className="text-sm">Bipe um produto ou clique no catálogo</p>
               </div>
             )}
           </CardContent>
@@ -311,7 +415,53 @@ const PDV = () => {
             <Separator />
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{cart.reduce((s, i) => s + i.quantity, 0)} itens</span>
+              <span className="text-sm text-muted-foreground">Subtotal: {formatCurrency(subtotal)}</span>
             </div>
+
+            {/* Discount */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">Desconto</label>
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  <button
+                    onClick={() => setDiscountType("R$")}
+                    className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      discountType === "R$"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <DollarSign className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => setDiscountType("%")}
+                    className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      discountType === "%"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted/30 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Percent className="h-3 w-3" />
+                  </button>
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={discountValue}
+                  onChange={(e) => setDiscountValue(e.target.value)}
+                  placeholder={discountType === "%" ? "0%" : "0,00"}
+                  className="h-8 text-sm flex-1"
+                  disabled={cart.length === 0}
+                />
+              </div>
+              {discountAmount > 0 && (
+                <p className="text-xs text-emerald-400">
+                  − {formatCurrency(discountAmount)} de desconto
+                </p>
+              )}
+            </div>
+
             <div className="flex items-center justify-between text-2xl font-bold">
               <span>Total</span>
               <span className="text-primary">{formatCurrency(total)}</span>
