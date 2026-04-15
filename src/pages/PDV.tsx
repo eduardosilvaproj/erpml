@@ -32,9 +32,10 @@ const PDV = () => {
   const { data: stats } = useSalesStats();
   const { data: allProducts } = useProducts();
 
+  const productsList = allProducts?.products ?? [];
+
   const filteredProducts = useMemo(() => {
-    if (!allProducts) return [];
-    const active = allProducts.filter((p) => p.active && p.stock_physical > 0);
+    const active = productsList.filter((p) => p.active && p.stock_physical > 0);
     if (!catalogSearch.trim()) return active;
     const q = catalogSearch.toLowerCase();
     return active.filter((p) =>
