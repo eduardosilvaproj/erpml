@@ -135,6 +135,84 @@ const EntradaNota = () => {
   const [batchSelectedForConfirm, setBatchSelectedForConfirm] = useState<Set<string>>(new Set());
   const [batchConfirmResult, setBatchConfirmResult] = useState<{ confirmed: number; products: number; total: number } | null>(null);
 
+  // ============ LOCALSTORAGE PERSISTENCE ============
+  const STORAGE_KEY = "entrada_nota_wizard_state";
+
+  useEffect(() => {
+    if (done || (currentStep === 1 && conferenceItems.length === 0 && batchNfes.length === 0)) return;
+    try {
+      const stateToSave = {
+        currentStep,
+        completedSteps: Array.from(completedSteps),
+        conferenceItems,
+        batchNfes,
+        batchConferenceMode,
+        currentBatchNfIdx,
+        divergences,
+        divergenceActions,
+        adjustedItems,
+        entryNotes,
+        autoUpdateStock,
+        autoUpdateCost,
+        nfMode,
+        nfeChave,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch {}
+  }, [currentStep, completedSteps, conferenceItems, batchNfes, batchConferenceMode, currentBatchNfIdx, divergences, divergenceActions, adjustedItems, entryNotes, autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave]);
+
+  const [hasRestoredState, setHasRestoredState] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  useEffect(() => {
+    if (hasRestoredState) return;
+    setHasRestoredState(true);
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      if (parsed.savedAt && Date.now() - parsed.savedAt < 24 * 60 * 60 * 1000 && (parsed.conferenceItems?.length > 0 || parsed.batchNfes?.length > 0)) {
+        setShowRestoreDialog(true);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } catch { localStorage.removeItem(STORAGE_KEY); }
+  }, [hasRestoredState]);
+
+  const restoreSavedState = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const s = JSON.parse(saved);
+      if (s.currentStep) setCurrentStep(s.currentStep);
+      if (s.completedSteps) setCompletedSteps(new Set(s.completedSteps));
+      if (s.conferenceItems) setConferenceItems(s.conferenceItems);
+      if (s.batchNfes) setBatchNfes(s.batchNfes);
+      if (s.batchConferenceMode) setBatchConferenceMode(s.batchConferenceMode);
+      if (s.currentBatchNfIdx != null) setCurrentBatchNfIdx(s.currentBatchNfIdx);
+      if (s.divergences) setDivergences(s.divergences);
+      if (s.divergenceActions) setDivergenceActions(s.divergenceActions);
+      if (s.adjustedItems) setAdjustedItems(s.adjustedItems);
+      if (s.entryNotes) setEntryNotes(s.entryNotes);
+      if (s.autoUpdateStock != null) setAutoUpdateStock(s.autoUpdateStock);
+      if (s.autoUpdateCost != null) setAutoUpdateCost(s.autoUpdateCost);
+      if (s.nfMode) setNfMode(s.nfMode);
+      if (s.nfeChave) setNfeChave(s.nfeChave);
+      toast({ title: "Progresso restaurado!", description: "Continuando de onde você parou." });
+    } catch {}
+    setShowRestoreDialog(false);
+  };
+
+  const discardSavedState = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setShowRestoreDialog(false);
+  };
+
+  const clearPersistedState = () => {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  };
+
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
@@ -686,6 +764,7 @@ const EntradaNota = () => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
 
       setDone(true);
+      clearPersistedState();
       toast({ title: "Entrada confirmada!", description: "Estoque atualizado com sucesso." });
     } catch (err: any) {
       toast({ title: "Erro ao confirmar", description: err.message || "Tente novamente.", variant: "destructive" });
@@ -785,6 +864,7 @@ const EntradaNota = () => {
 
       setBatchConfirmResult({ confirmed, products: totalProducts, total: totalVal });
       setDone(true);
+      clearPersistedState();
       toast({ title: `${confirmed} nota(s) confirmada(s)!` });
     } catch (err: any) {
       toast({ title: "Erro ao confirmar lote", description: err.message, variant: "destructive" });
@@ -823,6 +903,7 @@ const EntradaNota = () => {
     setBatchConfirmResult(null);
     setBoxBipDialog(null);
     setUnknownGtinDialog(null);
+    clearPersistedState();
   };
 
   const canGoToStep = (step: number) => {
@@ -2058,6 +2139,21 @@ const EntradaNota = () => {
               setUnknownGtinSave(true);
               setTimeout(() => bipRef.current?.focus(), 50);
             }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Restore progress dialog */}
+      <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>📋 Retomar nota em andamento?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Encontramos uma entrada de nota fiscal que não foi finalizada. Deseja continuar de onde parou?
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={discardSavedState}>Descartar</Button>
+            <Button onClick={restoreSavedState}>Continuar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
