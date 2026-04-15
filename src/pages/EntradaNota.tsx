@@ -436,7 +436,6 @@ const EntradaNota = () => {
     setBipAlert({ type: "success", msg: `📦 ${total} unidades adicionadas via caixa!` });
     setTimeout(() => bipRef.current?.focus(), 50);
   };
-                      <TableHead className="w-[40px]" />
 
   const conferenceProgress = conferenceItems.length > 0
     ? conferenceItems.filter((i) => i.status === "ok").length
@@ -1210,6 +1209,7 @@ const EntradaNota = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       {isBatchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      <TableHead className="w-[40px]" />
                       
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
@@ -1253,6 +1253,7 @@ const EntradaNota = () => {
                                 📦
                               </button>
                             </TableCell>
+                            <TableCell>
                               <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
                                 <Package className="h-4 w-4 text-muted-foreground/40" />
                               </div>
