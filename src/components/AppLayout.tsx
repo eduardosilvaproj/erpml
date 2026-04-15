@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Visão geral do seu negócio" },
@@ -105,6 +106,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <p className="text-[11px] text-muted-foreground/60 mt-0.5 truncate">{pageInfo.subtitle}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <GlobalSearch />
             {unansweredCount > 0 && (
               <button
                 onClick={() => navigate("/crm")}
