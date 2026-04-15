@@ -8,28 +8,18 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 
 // Re-export types and data for backward compat
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
 export { menuGroups } from "@/lib/menu-data";
 
-interface SubItem {
-  label: string;
-  url: string;
-  icon: any;
-}
-
-interface NavGroup {
-  label: string;
-  icon: any;
-  subItems: SubItem[];
-}
+interface SubItem { label: string; url: string; icon: any; }
+interface NavGroup { label: string; icon: any; color: string; subItems: SubItem[]; }
 
 const groups: NavGroup[] = [
   {
-    label: "Cadastros", icon: Package,
+    label: "Cadastros", icon: Package, color: "text-[#60A5FA]",
     subItems: [
       { label: "Produtos", url: "/produtos", icon: Package },
       { label: "Kits", url: "/kits", icon: Boxes },
@@ -38,7 +28,7 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Estoque", icon: Warehouse,
+    label: "Estoque", icon: Warehouse, color: "text-[#34D399]",
     subItems: [
       { label: "Ver Estoque", url: "/estoque", icon: Warehouse },
       { label: "Entrada de Nota", url: "/entrada-nota", icon: ClipboardList },
@@ -47,7 +37,7 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Vendas", icon: Store,
+    label: "Vendas", icon: Store, color: "text-[#FB923C]",
     subItems: [
       { label: "PDV", url: "/pdv", icon: Monitor },
       { label: "Campanhas", url: "/campanhas", icon: Megaphone },
@@ -55,7 +45,7 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Gestão", icon: TrendingUp,
+    label: "Gestão", icon: TrendingUp, color: "text-[#A78BFA]",
     subItems: [
       { label: "Minha Empresa", url: "/empresa", icon: Building2 },
       { label: "Relatórios", url: "/painel-hub", icon: BarChart3 },
@@ -83,30 +73,28 @@ export function AppSidebar() {
 
   const go = (url: string) => navigate(url);
 
-  // Active style for main items
-  const mainActiveClass = "bg-primary/15 text-primary font-semibold border-l-[3px] border-primary";
-  const mainDefaultClass = "border-l-[3px] border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground";
-
   return (
-    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
+    <aside className="w-[230px] min-w-[230px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
       {/* Logo */}
       <div className="h-14 flex items-center gap-3 px-4 border-b border-border/30 shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center">
+        <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
           <span className="text-base font-bold text-primary">E</span>
         </div>
         <span className="text-sm font-bold text-foreground tracking-tight">ERP System</span>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1 scrollbar-thin">
+      <nav className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
         {/* Início */}
         <button
           onClick={() => { setOpenGroup(null); go("/"); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150 ${
-            isActive("/") ? mainActiveClass : mainDefaultClass
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+            isActive("/")
+              ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+              : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
           }`}
         >
-          <Home className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+          <Home className="h-5 w-5 shrink-0 text-foreground" strokeWidth={1.75} />
           <span>Início</span>
         </button>
 
@@ -119,39 +107,35 @@ export function AppSidebar() {
             <div key={group.label}>
               <button
                 onClick={() => toggleGroup(group.label)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150 ${
-                  groupActive && !isOpen
-                    ? mainActiveClass
-                    : isOpen
-                      ? "bg-muted/60 text-foreground font-semibold border-l-[3px] border-muted-foreground/30"
-                      : mainDefaultClass
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  isOpen || groupActive
+                    ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                    : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                 }`}
               >
-                <group.icon className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+                <group.icon className={`h-5 w-5 shrink-0 ${group.color}`} strokeWidth={1.75} />
                 <span className="flex-1 text-left">{group.label}</span>
                 <ChevronDown
-                  className={`h-4 w-4 shrink-0 opacity-50 transition-transform duration-200 ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
+                  className={`h-4 w-4 shrink-0 opacity-40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {/* Sub-items */}
               {isOpen && (
-                <div className="mt-1 mb-1.5 ml-4 pl-4 border-l-2 border-border/40 space-y-0.5">
+                <div className="mt-1.5 ml-3 space-y-[2px]">
                   {group.subItems.map((sub) => {
                     const subActive = isActive(sub.url);
                     return (
                       <button
                         key={sub.url}
                         onClick={() => go(sub.url)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] transition-all duration-100 ${
+                        className={`w-full flex items-center gap-2.5 px-4 py-2 rounded-lg text-[13px] transition-all duration-100 bg-slate-800/50 ${
                           subActive
-                            ? "text-primary font-semibold bg-primary/8"
-                            : "text-muted-foreground hover:text-primary hover:bg-muted/30"
+                            ? "text-blue-400 font-semibold"
+                            : "text-muted-foreground hover:text-blue-300"
                         }`}
                       >
-                        <sub.icon className={`h-4 w-4 shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
+                        <sub.icon className={`h-3.5 w-3.5 shrink-0 ${subActive ? "text-blue-400" : ""}`} strokeWidth={1.75} />
                         <span>{sub.label}</span>
                       </button>
                     );
@@ -165,34 +149,40 @@ export function AppSidebar() {
         {/* IA */}
         <button
           onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150 ${
-            isActive("/ia-hub") || isActive("/ia-") ? mainActiveClass : mainDefaultClass
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+            isActive("/ia-hub") || isActive("/ia-")
+              ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+              : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
           }`}
         >
-          <Brain className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+          <Brain className="h-5 w-5 shrink-0 text-[#F472B6]" strokeWidth={1.75} />
           <span>Central de IA</span>
         </button>
 
         {/* Admin */}
         {isAdmin && (
           <>
-            <div className="mx-3 h-px bg-border/30 my-2" />
+            <div className="mx-2 h-px bg-border/20 my-1" />
             <button
               onClick={() => { setOpenGroup(null); go("/admin"); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150 ${
-                isActive("/admin") ? mainActiveClass : mainDefaultClass
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                isActive("/admin")
+                  ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
-              <ShieldCheck className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+              <ShieldCheck className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} />
               <span>Admin</span>
             </button>
             <button
               onClick={() => { setOpenGroup(null); go("/master-admin"); }}
-              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-150 ${
-                isActive("/master-admin") ? mainActiveClass : mainDefaultClass
+              className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                isActive("/master-admin")
+                  ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
-              <Crown className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+              <Crown className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={1.75} />
               <span>Master</span>
               {pendingCount > 0 && (
                 <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
@@ -205,12 +195,12 @@ export function AppSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-border/30 p-2 shrink-0">
+      <div className="border-t border-border/30 p-3 shrink-0">
         <button
           onClick={signOut}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium bg-slate-700/30 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
-          <LogOut className="h-[22px] w-[22px] shrink-0" strokeWidth={1.75} />
+          <LogOut className="h-5 w-5 shrink-0" strokeWidth={1.75} />
           <span>Sair</span>
         </button>
       </div>
