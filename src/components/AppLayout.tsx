@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Visão geral do seu negócio" },
