@@ -20,15 +20,11 @@ const periodLabels: Record<PeriodFilter, string> = {
   "30d": "30 dias",
 };
 
-const allModules = [
-  { id: "produtos", title: "Produtos", desc: "Cadastro e gestão", icon: Package, url: "/produtos" },
-  { id: "entrada-nota", title: "Entrada Nota", desc: "Importar notas", icon: FileText, url: "/entrada-nota" },
-  { id: "conferencia", title: "Conferência", desc: "Bip de recebimento", icon: ScanBarcode, url: "/conferencia" },
-  { id: "estoque", title: "Estoque", desc: "Físico + FULL", icon: Warehouse, url: "/estoque" },
-  { id: "envio-full", title: "Envio FULL", desc: "Movimentações", icon: ArrowRightLeft, url: "/movimentacao-full" },
-  { id: "pdv", title: "PDV", desc: "Ponto de Venda", icon: Monitor, url: "/pdv" },
-  { id: "crm", title: "CRM", desc: "Clientes", icon: Users, url: "/crm" },
-  { id: "vendas-ml", title: "Vendas ML", desc: "Mercado Livre", icon: ShoppingBag, url: "/integracao-ml" },
+const quickAccessSections = [
+  { id: "cadastros", title: "Cadastros", desc: "Produtos, kits, equipe e CRM", icon: Package, url: "/produtos" },
+  { id: "estoque", title: "Estoque", desc: "Saldos, notas e conferência", icon: Warehouse, url: "/estoque" },
+  { id: "vendas", title: "Vendas", desc: "PDV, campanhas e integrações", icon: Store, url: "/pdv" },
+  { id: "gestao", title: "Gestão", desc: "Relatórios e financeiro", icon: TrendingUp, url: "/painel-hub" },
 ];
 
 const formatCurrency = (v: number) =>
@@ -56,13 +52,15 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
 }) {
   return (
     <Card className="hover-lift border-border/50">
-      <CardContent className="p-5 flex flex-col gap-3">
+      <CardContent className="p-5">
         <div className="flex items-center gap-2">
           <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
         </div>
-        <p className="text-2xl font-bold text-foreground leading-none">{value}</p>
-        {trend !== undefined && <TrendBadge value={trend} />}
+        <p className="text-3xl font-bold text-foreground leading-none mt-3">{value}</p>
+        <div className="mt-3">
+          {trend !== undefined && <TrendBadge value={trend} />}
+        </div>
       </CardContent>
     </Card>
   );

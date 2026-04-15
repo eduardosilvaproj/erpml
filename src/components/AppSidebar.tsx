@@ -70,9 +70,9 @@ export function AppSidebar() {
                 <button
                   key={item.label}
                   onClick={() => handleNav(item.url)}
-                  className={`relative flex flex-col items-center justify-center w-full py-2.5 rounded-lg transition-all duration-150 active:scale-95 group ${
+                  className={`relative flex flex-col items-center justify-center w-full h-14 rounded-lg transition-all duration-150 active:scale-95 group ${
                     active
-                      ? "bg-primary/10"
+                      ? "bg-primary/12"
                       : "hover:bg-sidebar-accent/60"
                   }`}
                 >
@@ -80,10 +80,10 @@ export function AppSidebar() {
                     <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
                   )}
                   <item.icon
-                    className={`h-6 w-6 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
+                    className={`h-7 w-7 ${active ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
                     strokeWidth={1.75}
                   />
-                  <span className={`text-[10px] mt-1 leading-tight ${
+                  <span className={`text-[11px] mt-1 leading-tight ${
                     active ? "text-primary font-semibold" : "text-muted-foreground/70"
                   }`}>
                     {item.label}
