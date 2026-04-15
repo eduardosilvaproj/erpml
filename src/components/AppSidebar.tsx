@@ -70,9 +70,9 @@ export function AppSidebar() {
                 <button
                   key={item.label}
                   onClick={() => handleNav(item.url)}
-                  className={`relative flex flex-col items-center justify-center w-full h-14 rounded-lg transition-all duration-150 active:scale-95 group ${
+                  className={`relative flex flex-col items-center justify-center w-12 h-12 mx-auto rounded-[10px] transition-all duration-150 active:scale-95 group ${
                     active
-                      ? "bg-primary/15 shadow-sm"
+                      ? "bg-primary/8"
                       : "hover:bg-sidebar-accent/60"
                   }`}
                 >
