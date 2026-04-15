@@ -1303,8 +1303,6 @@ const EntradaNota = () => {
                             </TableCell>
                           </TableRow>
 
-                            </TableRow>
-                          )}
                         </React.Fragment>
                       );
                     })}
