@@ -10,6 +10,7 @@ export interface NFeProduct {
   quantity: number;     // qCom
   unitValue: number;    // vUnCom
   totalValue: number;   // vProd
+  additionalInfo?: string; // infAdProd
 }
 
 export interface NFeData {
@@ -22,10 +23,25 @@ export interface NFeData {
   products: NFeProduct[];
 }
 
-function getTagValue(element: Element, tagName: string): string {
-  // Search with and without namespace
-  const el = element.getElementsByTagName(tagName)[0]
+function getFirstElementByTagName(element: Element | Document, tagName: string): Element | null {
+  const directMatch = element.getElementsByTagName(tagName)[0]
     || element.getElementsByTagName(`ns:${tagName}`)[0];
+
+  if (directMatch) return directMatch;
+
+  const allElements = element.getElementsByTagName("*");
+  for (let i = 0; i < allElements.length; i++) {
+    const current = allElements[i];
+    if (current.localName === tagName) {
+      return current;
+    }
+  }
+
+  return null;
+}
+
+function getTagValue(element: Element, tagName: string): string {
+  const el = getFirstElementByTagName(element, tagName);
   return el?.textContent?.trim() || "";
 }
 
@@ -39,49 +55,52 @@ export function parseNFeXml(xmlString: string): NFeData {
   }
 
   // Try to find NFe or nfeProc root
-  const infNFe = doc.getElementsByTagName("infNFe")[0];
+  const infNFe = getFirstElementByTagName(doc, "infNFe");
   if (!infNFe) {
     throw new Error("XML não contém dados de NF-e (infNFe não encontrado).");
   }
 
   // Header - ide
-  const ide = infNFe.getElementsByTagName("ide")[0];
+  const ide = getFirstElementByTagName(infNFe, "ide");
   const number = ide ? getTagValue(ide, "nNF") : "";
   const series = ide ? getTagValue(ide, "serie") : "";
   const issueDate = ide ? getTagValue(ide, "dhEmi") : "";
 
   // Issuer - emit
-  const emit = infNFe.getElementsByTagName("emit")[0];
+  const emit = getFirstElementByTagName(infNFe, "emit");
   const issuerName = emit ? getTagValue(emit, "xNome") : "";
   const issuerCnpj = emit ? getTagValue(emit, "CNPJ") : "";
 
   // Total
-  const total = infNFe.getElementsByTagName("ICMSTot")[0];
+  const total = getFirstElementByTagName(infNFe, "ICMSTot");
   const totalValue = total ? parseFloat(getTagValue(total, "vNF")) || 0 : 0;
 
   // Products - det
-  const detElements = infNFe.getElementsByTagName("det");
+  const detElements = Array.from(infNFe.getElementsByTagName("*")).filter((el) => el.localName === "det");
   const products: NFeProduct[] = [];
 
   for (let i = 0; i < detElements.length; i++) {
     const det = detElements[i];
-    const prod = det.getElementsByTagName("prod")[0];
+    const prod = getFirstElementByTagName(det, "prod");
     if (!prod) continue;
 
     const code = getTagValue(prod, "cProd");
     let ean = getTagValue(prod, "cEAN");
     if (ean === "SEM GTIN" || ean === "") ean = "";
+    const additionalInfo = getTagValue(det, "infAdProd");
+    const description = getTagValue(prod, "xProd") || additionalInfo || code || "Produto sem descrição";
 
     products.push({
       code,
       ean,
-      description: getTagValue(prod, "xProd"),
+      description,
       ncm: getTagValue(prod, "NCM"),
       cfop: getTagValue(prod, "CFOP"),
       unit: getTagValue(prod, "uCom"),
       quantity: parseFloat(getTagValue(prod, "qCom")) || 0,
       unitValue: parseFloat(getTagValue(prod, "vUnCom")) || 0,
       totalValue: parseFloat(getTagValue(prod, "vProd")) || 0,
+      additionalInfo: additionalInfo || undefined,
     });
   }
 
@@ -90,6 +109,27 @@ export function parseNFeXml(xmlString: string): NFeData {
   }
 
   return { number, series, issuerName, issuerCnpj, totalValue, issueDate, products };
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function normalizeIdentifier(value: string | null | undefined): string {
+  return normalizeText(value || "").replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeBarcode(value: string | null | undefined): string {
+  return (value || "").replace(/\D/g, "");
+}
+
+function getProductSearchText(product: NFeProduct): string {
+  return [product.description, product.additionalInfo].filter(Boolean).join(" ").trim();
 }
 
 // Fuzzy string similarity (Levenshtein-based)
@@ -108,8 +148,8 @@ function levenshteinDistance(a: string, b: string): number {
 }
 
 export function stringSimilarity(a: string, b: string): number {
-  const la = a.toLowerCase().trim();
-  const lb = b.toLowerCase().trim();
+  const la = normalizeText(a);
+  const lb = normalizeText(b);
   if (la === lb) return 1;
   const maxLen = Math.max(la.length, lb.length);
   if (maxLen === 0) return 1;
@@ -129,9 +169,12 @@ export function matchProducts(
   dbProducts: { id: string; name: string; barcode: string | null; sku: string }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
+    const normalizedXmlBarcode = normalizeBarcode(xp.ean);
+    const normalizedXmlCode = normalizeIdentifier(xp.code);
+
     // 1. Exact match by barcode/EAN
-    if (xp.ean) {
-      const exactMatch = dbProducts.find((dp) => dp.barcode === xp.ean);
+    if (normalizedXmlBarcode) {
+      const exactMatch = dbProducts.find((dp) => normalizeBarcode(dp.barcode) === normalizedXmlBarcode);
       if (exactMatch) {
         return {
           xmlProduct: xp,
@@ -145,7 +188,7 @@ export function matchProducts(
 
     // 2. Exact match by code = SKU
     const skuMatch = dbProducts.find(
-      (dp) => dp.sku.toLowerCase() === xp.code.toLowerCase()
+      (dp) => normalizeIdentifier(dp.sku) === normalizedXmlCode
     );
     if (skuMatch) {
       return {
@@ -160,15 +203,19 @@ export function matchProducts(
     // 3. Fuzzy match by description/name
     let bestMatch: { id: string; name: string } | null = null;
     let bestScore = 0;
+    const xmlSearchText = getProductSearchText(xp);
     for (const dp of dbProducts) {
-      const score = stringSimilarity(xp.description, dp.name);
+      const score = Math.max(
+        stringSimilarity(xmlSearchText, dp.name),
+        normalizedXmlCode ? stringSimilarity(normalizedXmlCode, normalizeIdentifier(dp.sku)) : 0
+      );
       if (score > bestScore) {
         bestScore = score;
         bestMatch = dp;
       }
     }
 
-    if (bestMatch && bestScore >= 0.6) {
+    if (bestMatch && bestScore >= 0.55) {
       return {
         xmlProduct: xp,
         matchedProductId: bestMatch.id,

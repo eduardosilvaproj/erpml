@@ -49,6 +49,42 @@ const SAMPLE_NFE_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </NFe>
 </nfeProc>`;
 
+const SAMPLE_NFE_XML_WITH_PREFIX = `<?xml version="1.0" encoding="UTF-8"?>
+<ns0:nfeProc xmlns:ns0="http://www.portalfiscal.inf.br/nfe">
+  <ns0:NFe>
+    <ns0:infNFe>
+      <ns0:ide>
+        <ns0:nNF>54321</ns0:nNF>
+        <ns0:serie>2</ns0:serie>
+        <ns0:dhEmi>2026-04-10T08:00:00-03:00</ns0:dhEmi>
+      </ns0:ide>
+      <ns0:emit>
+        <ns0:CNPJ>99887766000155</ns0:CNPJ>
+        <ns0:xNome>Fornecedor Prefixado SA</ns0:xNome>
+      </ns0:emit>
+      <ns0:det nItem="1">
+        <ns0:prod>
+          <ns0:cProd>SKU-01</ns0:cProd>
+          <ns0:cEAN>789.123.456.789-0</ns0:cEAN>
+          <ns0:xProd>Kit Caneca</ns0:xProd>
+          <ns0:NCM>12345678</ns0:NCM>
+          <ns0:CFOP>5102</ns0:CFOP>
+          <ns0:uCom>UN</ns0:uCom>
+          <ns0:qCom>2.0000</ns0:qCom>
+          <ns0:vUnCom>12.5000</ns0:vUnCom>
+          <ns0:vProd>25.00</ns0:vProd>
+        </ns0:prod>
+        <ns0:infAdProd>Cor branca - embalagem premium</ns0:infAdProd>
+      </ns0:det>
+      <ns0:total>
+        <ns0:ICMSTot>
+          <ns0:vNF>25.00</ns0:vNF>
+        </ns0:ICMSTot>
+      </ns0:total>
+    </ns0:infNFe>
+  </ns0:NFe>
+</ns0:nfeProc>`;
+
 describe("NF-e XML Parser", () => {
   it("parses valid NF-e XML correctly", () => {
     const result = parseNFeXml(SAMPLE_NFE_XML);
@@ -74,6 +110,13 @@ describe("NF-e XML Parser", () => {
   it("handles SEM GTIN barcode", () => {
     const result = parseNFeXml(SAMPLE_NFE_XML);
     expect(result.products[1].ean).toBe("");
+  });
+
+  it("parses prefixed XML namespaces and infAdProd", () => {
+    const result = parseNFeXml(SAMPLE_NFE_XML_WITH_PREFIX);
+    expect(result.number).toBe("54321");
+    expect(result.issuerName).toBe("Fornecedor Prefixado SA");
+    expect(result.products[0].additionalInfo).toBe("Cor branca - embalagem premium");
   });
 
   it("throws on invalid XML", () => {
@@ -120,6 +163,30 @@ describe("Product Matching", () => {
     const results = matchProducts(xmlProducts, dbProducts);
     expect(results[0].matchType).toBe("none");
     expect(results[0].matchedProductId).toBeNull();
+  });
+
+  it("matches barcode and SKU even with formatting differences", () => {
+    const formattedDbProducts = [
+      { id: "10", name: "Kit Caneca", barcode: "7891234567890", sku: "SKU01" },
+    ];
+
+    const results = matchProducts([
+      {
+        code: "SKU-01",
+        ean: "789.123.456.789-0",
+        description: "Kit Caneca",
+        ncm: "",
+        cfop: "",
+        unit: "UN",
+        quantity: 1,
+        unitValue: 10,
+        totalValue: 10,
+        additionalInfo: "Cor branca",
+      },
+    ], formattedDbProducts);
+
+    expect(results[0].matchType).toBe("exact");
+    expect(results[0].matchedProductId).toBe("10");
   });
 });
 
