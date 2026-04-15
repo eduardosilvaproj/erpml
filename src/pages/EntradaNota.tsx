@@ -181,6 +181,20 @@ const EntradaNota = () => {
     }
   }, [currentStep]);
 
+  const playBeep = (freq: number, duration: number) => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      gain.gain.value = 0.3;
+      osc.start();
+      setTimeout(() => { osc.stop(); ctx.close(); }, duration);
+    } catch {}
+  };
+
   const handleBip = (code: string) => {
     if (!code.trim()) return;
     setBipInput("");
@@ -191,9 +205,14 @@ const EntradaNota = () => {
     );
 
     if (idx === -1) {
-      setBipAlert({ type: "error", msg: `Produto "${code}" não encontrado na nota!` });
+      setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
+      playBeep(200, 400);
+      setTimeout(() => bipRef.current?.focus(), 50);
       return;
     }
+
+    setFlashIdx(idx);
+    setTimeout(() => setFlashIdx(null), 1000);
 
     setConferenceItems((prev) => {
       const updated = [...prev];
@@ -203,17 +222,23 @@ const EntradaNota = () => {
       if (item.scannedQty === item.expectedQty) {
         item.status = "ok";
         setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
+        playBeep(800, 100);
       } else if (item.scannedQty > item.expectedQty) {
         item.status = "excess";
         setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
+        playBeep(200, 150);
+        setTimeout(() => playBeep(200, 150), 200);
       } else {
         item.status = "partial";
         setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
+        playBeep(600, 100);
       }
 
       updated[idx] = item;
       return updated;
     });
+
+    setTimeout(() => bipRef.current?.focus(), 50);
   };
 
   const conferenceProgress = conferenceItems.length > 0
