@@ -211,7 +211,7 @@ export default function IAHub() {
   const groupedFeatures = Object.entries(CATEGORIES).map(([key, cat]) => ({
     key,
     ...cat,
-    features: AI_FEATURES.filter((f) => f.category === key),
+    features: filteredFeatures.filter((f) => f.category === key),
   })).filter((g) => g.features.length > 0);
 
   const totalAvailable = AI_FEATURES.filter(isFeatureAllowed).length;
