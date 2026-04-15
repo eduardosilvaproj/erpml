@@ -470,6 +470,11 @@ const EntradaNota = () => {
     }
 
     // Check GTIN CX (always, not just box mode) — strict match by company
+    // Always show selection modal for confirmation, pre-selecting matched product as suggestion
+    let preSelectedProduct = "";
+    let preSelectedQty = 1;
+    let isKnownGtin = false;
+
     try {
       const gtinCandidates = Array.from(new Set([code.trim(), normalizedDigits].filter(Boolean)));
       const { data: boxProducts } = await supabase
@@ -479,40 +484,31 @@ const EntradaNota = () => {
         .in("gtin_cx", gtinCandidates);
 
       if (boxProducts && boxProducts.length > 0) {
-        // Find the exact product that is in the conference list
+        isKnownGtin = true;
+        // Pre-select the exact product that is in the conference list
         for (const bp of boxProducts) {
           const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
           if (productIdx !== -1) {
-            setBoxBipDialog({
-              code,
-              productIdx,
-              productName: bp.name,
-              qtyPerBox: bp.box_quantity || 1,
-            });
-            playBeep(600, 100);
-            return;
+            preSelectedProduct = bp.id;
+            preSelectedQty = bp.box_quantity || 1;
+            break;
           }
         }
-        // If no conference match, use first result for the dialog
-        const bp = boxProducts[0];
-        setBoxBipDialog({
-          code,
-          productIdx: -1,
-          productName: bp.name,
-          qtyPerBox: bp.box_quantity || 1,
-        });
-        playBeep(600, 100);
-        return;
+        // Fallback to first result if no conference match
+        if (!preSelectedProduct) {
+          preSelectedProduct = boxProducts[0].id;
+          preSelectedQty = boxProducts[0].box_quantity || 1;
+        }
       }
     } catch { /* fall through */ }
 
-    // Unknown code — open enhanced GTIN CX modal
+    // Open selection modal — pre-select matched product for known GTINs
     setUnknownGtinDialog({ code });
-    setUnknownGtinProduct("");
-    setUnknownGtinQty(1);
+    setUnknownGtinProduct(preSelectedProduct);
+    setUnknownGtinQty(preSelectedQty);
     setUnknownGtinBoxes(1);
-    setUnknownGtinSave(true);
-    playBeep(200, 400);
+    setUnknownGtinSave(!isKnownGtin);
+    playBeep(isKnownGtin ? 600 : 200, isKnownGtin ? 100 : 400);
     return;
   };
 
@@ -1904,46 +1900,7 @@ const EntradaNota = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Box Bip Dialog - GTIN CX detected */}
-      <Dialog open={!!boxBipDialog} onOpenChange={(v) => { if (!v) setBoxBipDialog(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">📦 Caixa detectada!</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm">
-              Caixa de <strong>{boxBipDialog?.productName}</strong> detectada!
-            </p>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quantas caixas?</label>
-              <Input
-                type="number"
-                min={1}
-                defaultValue={1}
-                id="box-bip-qty"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && boxBipDialog) {
-                    const val = parseInt((e.target as HTMLInputElement).value) || 1;
-                    applyBoxBip(boxBipDialog.productIdx!, val, boxBipDialog.qtyPerBox!);
-                  }
-                }}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Cada caixa contém {boxBipDialog?.qtyPerBox} unidades
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setBoxBipDialog(null)}>Cancelar</Button>
-            <Button onClick={() => {
-              const input = document.getElementById("box-bip-qty") as HTMLInputElement;
-              const val = parseInt(input?.value) || 1;
-              if (boxBipDialog) applyBoxBip(boxBipDialog.productIdx!, val, boxBipDialog.qtyPerBox!);
-            }}>Aplicar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Box Bip Dialog removed — now unified into the selection modal below */}
 
       {/* Unknown GTIN CX Dialog — Enhanced */}
       <Dialog open={!!unknownGtinDialog} onOpenChange={(v) => { if (!v) { setUnknownGtinDialog(null); setUnknownGtinProduct(""); setUnknownGtinQty(1); setUnknownGtinBoxes(1); setUnknownGtinSave(true); setTimeout(() => bipRef.current?.focus(), 50); } }}>
@@ -1951,7 +1908,11 @@ const EntradaNota = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {unknownGtinDialog?.code ? (
-                <><AlertTriangle className="h-5 w-5 text-amber-400" /> Código não reconhecido</>
+                unknownGtinProduct ? (
+                  <><Package className="h-5 w-5 text-primary" /> 📦 Caixa detectada — confirme o produto</>
+                ) : (
+                  <><AlertTriangle className="h-5 w-5 text-amber-400" /> Código não reconhecido</>
+                )
               ) : (
                 <><Package className="h-5 w-5 text-primary" /> Configurar entrada em caixa</>
               )}
