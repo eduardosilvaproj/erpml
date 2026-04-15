@@ -106,6 +106,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <p className="text-[11px] text-muted-foreground/60 mt-0.5 truncate">{pageInfo.subtitle}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <GlobalSearch />
             {unansweredCount > 0 && (
               <button
                 onClick={() => navigate("/crm")}
