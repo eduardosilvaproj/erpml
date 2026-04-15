@@ -299,9 +299,9 @@ const CRM = () => {
             <CardTitle className="text-base">Histórico de Compras</CardTitle>
           </CardHeader>
           <CardContent>
-              {displayPurchases && displayPurchases.length > 0 ? (
+              {purchases && purchases.length > 0 ? (
               <div className="space-y-3">
-                {displayPurchases.map((sale: any) => (
+                {purchases.map((sale: any) => (
                   <div key={sale.id} className="flex items-center justify-between rounded-xl bg-muted/30 p-4 border border-border/40">
                     <div>
                       <p className="font-medium text-sm">{sale.sale_number}</p>
@@ -505,7 +505,7 @@ const CRM = () => {
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : allCustomers.length > 0 ? (
+              ) : filteredCustomers.length > 0 ? (
                 <div className="overflow-x-auto -mx-4 sm:mx-0">
                   <Table>
                     <TableHeader>
@@ -520,7 +520,7 @@ const CRM = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {allCustomers.map((c) => {
+                      {filteredCustomers.map((c) => {
                         const totals = getCustomerTotals(c.id);
                         return (
                           <TableRow key={c.id} className="hover:bg-muted/30">
