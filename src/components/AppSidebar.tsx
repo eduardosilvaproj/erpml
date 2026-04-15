@@ -80,6 +80,7 @@ const menuGroups: MenuGroup[] = [
       { title: "PDV", url: "/pdv", icon: Monitor },
       { title: "Campanhas", url: "/campanhas", icon: Megaphone },
       { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag, premium: true },
+      { title: "Minha Loja", url: "/minha-loja/configurar", icon: Store },
     ],
   },
   {
