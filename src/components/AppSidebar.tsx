@@ -1,34 +1,19 @@
+import { useState } from "react";
 import {
-  LayoutDashboard, Package, Warehouse, Store, TrendingUp, Brain,
-  LogOut, ShieldCheck, Crown, Boxes, Users, UsersRound, ScanBarcode,
-  ClipboardList, Monitor, Megaphone, ShoppingBag, Building2, BarChart3,
-  Settings
+  Home, Package, Warehouse, Store, TrendingUp, Brain,
+  LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
+  Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
+  Building2, BarChart3
 } from "lucide-react";
-import { createContext, useContext, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
-import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarFooter, useSidebar,
-} from "@/components/ui/sidebar";
 
 // Re-export types and data for backward compat
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
 export { menuGroups } from "@/lib/menu-data";
-
-// Context for the sub-drawer
-interface SubDrawerContextType {
-  openGroup: string | null;
-  setOpenGroup: (g: string | null) => void;
-}
-export const SubDrawerContext = createContext<SubDrawerContextType>({
-  openGroup: null,
-  setOpenGroup: () => {},
-});
-export const useSubDrawer = () => useContext(SubDrawerContext);
 
 interface SubItem {
   label: string;
@@ -36,54 +21,47 @@ interface SubItem {
   icon: any;
 }
 
-interface NavItem {
+interface NavGroup {
   label: string;
   icon: any;
-  url: string;
-  subItems?: SubItem[];
+  subItems: SubItem[];
 }
 
-const navItems: NavItem[] = [
-  { label: "Início", icon: LayoutDashboard, url: "/" },
+const groups: NavGroup[] = [
   {
-    label: "Cadastros", icon: Package, url: "/produtos",
+    label: "Cadastros", icon: Package,
     subItems: [
       { label: "Produtos", url: "/produtos", icon: Package },
       { label: "Kits", url: "/kits", icon: Boxes },
       { label: "Equipe", url: "/equipe", icon: UsersRound },
-      { label: "CRM / Clientes", url: "/crm", icon: Users },
+      { label: "Clientes", url: "/crm", icon: Users },
     ],
   },
   {
-    label: "Estoque", icon: Warehouse, url: "/estoque",
+    label: "Estoque", icon: Warehouse,
     subItems: [
       { label: "Ver Estoque", url: "/estoque", icon: Warehouse },
       { label: "Entrada de Nota", url: "/entrada-nota", icon: ClipboardList },
       { label: "Conferência", url: "/conferencia", icon: ScanBarcode },
-      { label: "Balanço", url: "/balanco-estoque", icon: BarChart3 },
     ],
   },
   {
-    label: "Vendas", icon: Store, url: "/pdv",
+    label: "Vendas", icon: Store,
     subItems: [
       { label: "PDV", url: "/pdv", icon: Monitor },
       { label: "Campanhas", url: "/campanhas", icon: Megaphone },
-      { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag },
     ],
   },
   {
-    label: "Gestão", icon: TrendingUp, url: "/empresa",
+    label: "Gestão", icon: TrendingUp,
     subItems: [
       { label: "Minha Empresa", url: "/empresa", icon: Building2 },
       { label: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
-      { label: "Financeiro", url: "/financeiro", icon: Settings },
     ],
   },
-  { label: "IA", icon: Brain, url: "/ia-hub" },
 ];
 
 export function AppSidebar() {
-  const { setOpenMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
@@ -91,163 +69,156 @@ export function AppSidebar() {
   const { data: pendingUsers } = usePendingUsers(!!isAdmin);
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const isMobile = useIsMobile();
-  const { openGroup, setOpenGroup } = useSubDrawer();
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
 
-  const isPathActive = (url: string) => {
+  const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
   };
 
-  const isGroupActive = (item: NavItem) => {
-    if (!item.subItems) return isPathActive(item.url);
-    return item.subItems.some((s) => isPathActive(s.url));
+  const toggleGroup = (label: string) => {
+    setOpenGroup(openGroup === label ? null : label);
   };
 
-  const handleNav = (url: string) => {
+  const go = (url: string) => {
     navigate(url);
-    setOpenGroup(null);
-    if (isMobile) setOpenMobile(false);
   };
-
-  const handleGroupClick = (item: NavItem) => {
-    if (item.subItems) {
-      // Toggle drawer
-      setOpenGroup(openGroup === item.label ? null : item.label);
-    } else {
-      setOpenGroup(null);
-      handleNav(item.url);
-    }
-  };
-
-  // Find current open group data
-  const activeGroupData = navItems.find((n) => n.label === openGroup);
 
   return (
-    <>
-      <Sidebar collapsible="none" className="w-[70px] min-w-[70px] border-r border-border/40 z-40">
-        <SidebarContent className="py-4 overflow-y-auto scrollbar-thin items-center">
-          <SidebarGroup>
-            <SidebarGroupContent className="space-y-1">
-              {/* Logo */}
-              <div className="flex items-center justify-center mb-4">
-                <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <span className="text-lg font-bold text-primary">E</span>
-                </div>
-              </div>
-
-              {/* Nav items */}
-              {navItems.map((item) => {
-                const active = isGroupActive(item);
-                const isOpen = openGroup === item.label;
-
-                return (
-                  <button
-                    key={item.label}
-                    onClick={() => handleGroupClick(item)}
-                    className={`relative flex flex-col items-center justify-center w-12 h-12 mx-auto rounded-[10px] transition-all duration-150 active:scale-95 group ${
-                      active || isOpen
-                        ? "bg-primary/8"
-                        : "hover:bg-sidebar-accent/60"
-                    }`}
-                  >
-                    {active && !isOpen && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
-                    )}
-                    {isOpen && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-accent-foreground" />
-                    )}
-                    <item.icon
-                      className={`h-7 w-7 ${active || isOpen ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`}
-                      strokeWidth={1.75}
-                    />
-                    <span className={`text-[11px] mt-1 leading-tight ${
-                      active || isOpen ? "text-primary font-semibold" : "text-muted-foreground/70"
-                    }`}>
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })}
-
-              {/* Admin */}
-              {isAdmin && (
-                <>
-                  <div className="mx-auto w-8 h-px bg-border/40 my-2" />
-                  <button
-                    onClick={() => { setOpenGroup(null); handleNav("/admin"); }}
-                    className={`relative flex flex-col items-center justify-center w-full py-2.5 rounded-lg transition-all duration-150 active:scale-95 group ${
-                      isPathActive("/admin") ? "bg-primary/10" : "hover:bg-sidebar-accent/60"
-                    }`}
-                  >
-                    {isPathActive("/admin") && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
-                    )}
-                    <ShieldCheck className={`h-6 w-6 ${isPathActive("/admin") ? "text-primary" : "text-muted-foreground"}`} strokeWidth={1.75} />
-                    <span className="text-[10px] mt-1 text-muted-foreground/70">Admin</span>
-                  </button>
-                  <button
-                    onClick={() => { setOpenGroup(null); handleNav("/master-admin"); }}
-                    className={`relative flex flex-col items-center justify-center w-full py-2.5 rounded-lg transition-all duration-150 active:scale-95 group ${
-                      isPathActive("/master-admin") ? "bg-primary/10" : "hover:bg-sidebar-accent/60"
-                    }`}
-                  >
-                    {isPathActive("/master-admin") && (
-                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
-                    )}
-                    <Crown className={`h-6 w-6 ${isPathActive("/master-admin") ? "text-primary" : "text-muted-foreground"}`} strokeWidth={1.75} />
-                    <span className="text-[10px] mt-1 text-muted-foreground/70">Master</span>
-                    {pendingCount > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[8px] bg-destructive text-destructive-foreground border-0 rounded-full">
-                        {pendingCount}
-                      </Badge>
-                    )}
-                  </button>
-                </>
-              )}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-
-        <SidebarFooter className="items-center pb-4">
-          <button
-            onClick={signOut}
-            className="flex flex-col items-center justify-center py-2.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors active:scale-95 w-full"
-          >
-            <LogOut className="h-5 w-5" strokeWidth={1.75} />
-            <span className="text-[10px] mt-1">Sair</span>
-          </button>
-        </SidebarFooter>
-      </Sidebar>
-
-      {/* Sub-drawer */}
-      {activeGroupData && activeGroupData.subItems && (
-        <div
-          className="w-[200px] min-w-[200px] border-r border-border/40 bg-sidebar flex flex-col z-30 animate-in slide-in-from-left-4 duration-200"
-        >
-          <div className="p-4 border-b border-border/30">
-            <h3 className="text-sm font-bold text-foreground">{activeGroupData.label}</h3>
-          </div>
-          <nav className="flex-1 p-2 space-y-0.5">
-            {activeGroupData.subItems.map((sub) => {
-              const subActive = isPathActive(sub.url);
-              return (
-                <button
-                  key={sub.url}
-                  onClick={() => handleNav(sub.url)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-100 active:scale-[0.98] ${
-                    subActive
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-                  }`}
-                >
-                  <sub.icon className={`h-4 w-4 shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
-                  <span>{sub.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+    <aside className="w-[220px] min-w-[220px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
+      {/* Logo */}
+      <div className="h-14 flex items-center gap-2.5 px-4 border-b border-border/30 shrink-0">
+        <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center">
+          <span className="text-sm font-bold text-primary">E</span>
         </div>
-      )}
-    </>
+        <span className="text-sm font-bold text-foreground">ERP System</span>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5 scrollbar-thin">
+        {/* Início */}
+        <button
+          onClick={() => { setOpenGroup(null); go("/"); }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+            isActive("/")
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+          }`}
+        >
+          <Home className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+          <span>Início</span>
+        </button>
+
+        {/* Groups */}
+        {groups.map((group) => {
+          const isOpen = openGroup === group.label;
+          const groupActive = group.subItems.some((s) => isActive(s.url));
+
+          return (
+            <div key={group.label}>
+              <button
+                onClick={() => toggleGroup(group.label)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                  groupActive && !isOpen
+                    ? "bg-primary/10 text-primary font-medium"
+                    : isOpen
+                      ? "bg-muted/50 text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+                }`}
+              >
+                <group.icon className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+                <span className="flex-1 text-left">{group.label}</span>
+                <ChevronDown
+                  className={`h-4 w-4 shrink-0 text-muted-foreground/60 transition-transform duration-200 ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Sub-items */}
+              {isOpen && (
+                <div className="mt-0.5 mb-1 ml-3 pl-3 border-l border-border/30 space-y-0.5">
+                  {group.subItems.map((sub) => {
+                    const subActive = isActive(sub.url);
+                    return (
+                      <button
+                        key={sub.url}
+                        onClick={() => go(sub.url)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] transition-colors ${
+                          subActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted/30 hover:text-foreground"
+                        }`}
+                      >
+                        <sub.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+                        <span>{sub.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* IA */}
+        <button
+          onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+            isActive("/ia-hub") || isActive("/ia-")
+              ? "bg-primary/10 text-primary font-medium"
+              : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+          }`}
+        >
+          <Brain className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+          <span>Central de IA</span>
+        </button>
+
+        {/* Admin */}
+        {isAdmin && (
+          <>
+            <div className="mx-3 h-px bg-border/30 my-2" />
+            <button
+              onClick={() => { setOpenGroup(null); go("/admin"); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                isActive("/admin")
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+              }`}
+            >
+              <ShieldCheck className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+              <span>Admin</span>
+            </button>
+            <button
+              onClick={() => { setOpenGroup(null); go("/master-admin"); }}
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                isActive("/master-admin")
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+              }`}
+            >
+              <Crown className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+              <span>Master</span>
+              {pendingCount > 0 && (
+                <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
+                  {pendingCount}
+                </Badge>
+              )}
+            </button>
+          </>
+        )}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-border/30 p-2 shrink-0">
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+        >
+          <LogOut className="h-4.5 w-4.5 shrink-0" strokeWidth={1.75} />
+          <span>Sair</span>
+        </button>
+      </div>
+    </aside>
   );
 }
