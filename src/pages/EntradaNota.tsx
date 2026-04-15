@@ -75,8 +75,8 @@ const EntradaNota = () => {
   const companyId = useCompanyId();
   const queryClient = useQueryClient();
 
-  // Mode: single or batch
-  const [batchMode, setBatchMode] = useState(false);
+  // Mode: auto-detected based on loaded NFs count
+  const isBatchMode = useMemo(() => batchNfes.length > 1, [batchNfes]);
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -94,14 +94,14 @@ const EntradaNota = () => {
   const [nfeChave, setNfeChave] = useState("");
   const [matches, setMatches] = useState<MatchResult[]>([]);
 
-  // Step 1 - Batch mode
+  // Step 1 - NFs loaded
   const [batchNfes, setBatchNfes] = useState<BatchNfe[]>([]);
-  const [sefazEntries, setSefazEntries] = useState<SefazEntry[]>([]);
+  const [sefazEntries, setSefazEntries] = useState<SefazEntry[]>([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
   const [batchSearching, setBatchSearching] = useState(false);
   const [batchSearchProgress, setBatchSearchProgress] = useState({ current: 0, total: 0 });
   const [dragOver, setDragOver] = useState(false);
   const batchFileRef = useRef<HTMLInputElement>(null);
-
+  
   // Step 2 - Conference
   const [conferenceItems, setConferenceItems] = useState<ConferenceItem[]>([]);
   const [bipInput, setBipInput] = useState("");
