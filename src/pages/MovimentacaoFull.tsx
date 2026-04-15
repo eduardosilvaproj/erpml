@@ -513,8 +513,11 @@ const MovimentacaoFull = () => {
       {/* Transfer history */}
       {orders && orders.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Ordens de Envio ({orders.length})</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base">Últimos envios FULL</CardTitle>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+              Ver histórico completo <ChevronRight className="h-3 w-3 ml-1" />
+            </Button>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
