@@ -186,6 +186,8 @@ export function matchProducts(
           matchedProductName: exactMatch.name,
           matchedProductBarcode: exactMatch.barcode,
           matchedProductSku: exactMatch.sku,
+          matchedProductGtinCx: exactMatch.gtin_cx ?? null,
+          matchedProductBoxQty: exactMatch.box_quantity ?? null,
           matchType: "exact" as const,
           confidence: 100,
         };
@@ -203,13 +205,15 @@ export function matchProducts(
         matchedProductName: skuMatch.name,
         matchedProductBarcode: skuMatch.barcode,
         matchedProductSku: skuMatch.sku,
+        matchedProductGtinCx: skuMatch.gtin_cx ?? null,
+        matchedProductBoxQty: skuMatch.box_quantity ?? null,
         matchType: "exact" as const,
         confidence: 100,
       };
     }
 
     // 3. Fuzzy match by description/name
-    let bestMatch: { id: string; name: string; barcode: string | null; sku: string } | null = null;
+    let bestMatch: typeof dbProducts[number] | null = null;
     let bestScore = 0;
     const xmlSearchText = getProductSearchText(xp);
     for (const dp of dbProducts) {
@@ -230,6 +234,8 @@ export function matchProducts(
         matchedProductName: bestMatch.name,
         matchedProductBarcode: bestMatch.barcode,
         matchedProductSku: bestMatch.sku,
+        matchedProductGtinCx: bestMatch.gtin_cx ?? null,
+        matchedProductBoxQty: bestMatch.box_quantity ?? null,
         matchType: "fuzzy" as const,
         confidence: Math.round(bestScore * 100),
       };
@@ -242,6 +248,8 @@ export function matchProducts(
       matchedProductName: null,
       matchedProductBarcode: null,
       matchedProductSku: null,
+      matchedProductGtinCx: null,
+      matchedProductBoxQty: null,
       matchType: "none" as const,
       confidence: 0,
     };
