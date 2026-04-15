@@ -160,6 +160,8 @@ export interface MatchResult {
   xmlProduct: NFeProduct;
   matchedProductId: string | null;
   matchedProductName: string | null;
+  matchedProductBarcode: string | null;
+  matchedProductSku: string | null;
   matchType: "exact" | "fuzzy" | "new" | "none";
   confidence: number;
 }
@@ -180,6 +182,8 @@ export function matchProducts(
           xmlProduct: xp,
           matchedProductId: exactMatch.id,
           matchedProductName: exactMatch.name,
+          matchedProductBarcode: exactMatch.barcode,
+          matchedProductSku: exactMatch.sku,
           matchType: "exact" as const,
           confidence: 100,
         };
@@ -195,13 +199,15 @@ export function matchProducts(
         xmlProduct: xp,
         matchedProductId: skuMatch.id,
         matchedProductName: skuMatch.name,
+        matchedProductBarcode: skuMatch.barcode,
+        matchedProductSku: skuMatch.sku,
         matchType: "exact" as const,
         confidence: 100,
       };
     }
 
     // 3. Fuzzy match by description/name
-    let bestMatch: { id: string; name: string } | null = null;
+    let bestMatch: { id: string; name: string; barcode: string | null; sku: string } | null = null;
     let bestScore = 0;
     const xmlSearchText = getProductSearchText(xp);
     for (const dp of dbProducts) {
@@ -220,6 +226,8 @@ export function matchProducts(
         xmlProduct: xp,
         matchedProductId: bestMatch.id,
         matchedProductName: bestMatch.name,
+        matchedProductBarcode: bestMatch.barcode,
+        matchedProductSku: bestMatch.sku,
         matchType: "fuzzy" as const,
         confidence: Math.round(bestScore * 100),
       };
@@ -230,6 +238,8 @@ export function matchProducts(
       xmlProduct: xp,
       matchedProductId: null,
       matchedProductName: null,
+      matchedProductBarcode: null,
+      matchedProductSku: null,
       matchType: "none" as const,
       confidence: 0,
     };
