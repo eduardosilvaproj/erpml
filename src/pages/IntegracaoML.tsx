@@ -227,7 +227,7 @@ export default function IntegracaoML() {
                       {mlConnected ? "Conexão ativa" : "Reconexão necessária"} — {connection.seller_nickname}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Última sinc.: {connection.updated_at ? new Date(connection.updated_at).toLocaleString("pt-BR") : "—"}
+                      Última sinc.: {(connection as any).updated_at ? new Date((connection as any).updated_at).toLocaleString("pt-BR") : "—"}
                     </p>
                   </div>
                 </div>
