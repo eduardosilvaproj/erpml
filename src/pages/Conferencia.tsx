@@ -1,127 +1,63 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
-  Play, XCircle, ChevronDown, ChevronUp, Check, Clock, Filter
+  Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
+  ArrowRight, ArrowLeft, Download, RotateCcw
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import {
-  useConferences, usePendingInvoices, useStartConference,
-  useScanItem, useFinishConference, type Conference
-} from "@/hooks/useConferenceData";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
+import { useProducts } from "@/hooks/useProductData";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+
+type Step = 1 | 2 | 3;
+
+interface ScannedProduct {
+  productId: string;
+  name: string;
+  sku: string;
+  barcode: string | null;
+  imageUrl: string | null;
+  scannedQty: number;
+  systemQty: number;
+  lastBipAt: Date;
+}
+
+type ConferenceMode = "nf" | "inventario";
 
 const Conferencia = () => {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const scanInputRef = useRef<HTMLInputElement>(null);
-  const [activeConference, setActiveConference] = useState<Conference | null>(null);
+
+  const [step, setStep] = useState<Step>(1);
+  const [mode, setMode] = useState<ConferenceMode | null>(null);
+  const [conferenceName, setConferenceName] = useState("");
+
+  // Step 2
   const [scanBuffer, setScanBuffer] = useState("");
-  const [lastScanResult, setLastScanResult] = useState<{
-    success: boolean;
-    message: string;
-    productName?: string;
-    scanned?: number;
-    expected?: number;
-  } | null>(null);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [showHistory, setShowHistory] = useState(true);
+  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
+  const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
+  const [flashId, setFlashId] = useState<string | null>(null);
 
-  const { data: pendingInvoices } = usePendingInvoices();
-  const { data: conferences, refetch: refetchConferences } = useConferences({
-    status: statusFilter,
-    dateFrom: dateFrom || undefined,
-    dateTo: dateTo || undefined,
-  });
-  const startConference = useStartConference();
-  const scanItem = useScanItem();
-  const finishConference = useFinishConference();
+  // Step 3
+  const [adjusting, setAdjusting] = useState(false);
 
-  // Auto-focus scan input
+  const { data: productsData } = useProducts();
+  const allProducts = productsData?.products ?? [];
+
   useEffect(() => {
-    if (activeConference && scanInputRef.current) {
+    if (step === 2 && scanInputRef.current) {
       scanInputRef.current.focus();
     }
-  }, [activeConference]);
-
-  // Re-fetch active conference data
-  useEffect(() => {
-    if (activeConference && conferences) {
-      const updated = conferences.find((c) => c.id === activeConference.id);
-      if (updated) setActiveConference(updated);
-    }
-  }, [conferences]);
-
-  const handleStartConference = async (invoiceId: string) => {
-    const conf = await startConference.mutateAsync(invoiceId);
-    // Refetch to get full data with relations
-    await refetchConferences();
-    const fullConf = conferences?.find((c) => c.id === conf.id);
-    // Set after next fetch
-    setTimeout(async () => {
-      const { data } = await refetchConferences();
-      const found = data?.find((c: Conference) => c.id === conf.id);
-      if (found) setActiveConference(found);
-    }, 500);
-  };
-
-  const handleScan = useCallback(async (code: string) => {
-    if (!activeConference || !code.trim()) return;
-
-    try {
-      const result = await scanItem.mutateAsync({
-        conferenceId: activeConference.id,
-        barcode: code.trim(),
-      });
-      setLastScanResult({
-        success: true,
-        message: result.status === "ok" ? "✓ Quantidade correta!" : `${result.newQty}/${result.expected}`,
-        productName: result.productName || "",
-        scanned: result.newQty,
-        expected: result.expected,
-      });
-
-      // Play sound feedback
-      if (result.status === "ok") {
-        playBeep(800, 150);
-      } else if (result.status === "excedente") {
-        playBeep(300, 400);
-      } else {
-        playBeep(600, 100);
-      }
-    } catch (err: any) {
-      setLastScanResult({
-        success: false,
-        message: err.message || "Produto não encontrado",
-      });
-      playBeep(200, 500);
-    }
-
-    setScanBuffer("");
-    // Re-focus
-    setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [activeConference, scanItem]);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleScan(scanBuffer);
-    }
-  };
-
-  const handleFinish = async () => {
-    if (!activeConference) return;
-    await finishConference.mutateAsync(activeConference.id);
-    setActiveConference(null);
-    setLastScanResult(null);
-  };
+  }, [step]);
 
   const playBeep = (freq: number, duration: number) => {
     try {
@@ -137,422 +73,559 @@ const Conferencia = () => {
     } catch {}
   };
 
-  // Conference progress
-  const confItems = activeConference?.conference_items || [];
-  const totalItems = confItems.length;
-  const okItems = confItems.filter((i) => i.status === "ok").length;
-  const divergentItems = confItems.filter((i) => i.status === "excedente" || i.status === "divergente").length;
-  const pendingItems = confItems.filter((i) => i.status === "pendente").length;
-  const progressPct = totalItems > 0 ? Math.round((okItems / totalItems) * 100) : 0;
+  const handleScan = useCallback((code: string) => {
+    if (!code.trim()) return;
+    setScanBuffer("");
 
-  const itemStatusIcon = (status: string) => {
-    switch (status) {
-      case "ok": return <CheckCircle className="h-5 w-5 text-emerald-600" />;
-      case "excedente": return <AlertTriangle className="h-5 w-5 text-amber-600" />;
-      case "divergente": return <XCircle className="h-5 w-5 text-destructive" />;
-      default: return <Clock className="h-5 w-5 text-muted-foreground" />;
+    const product = allProducts.find(
+      (p) => p.barcode === code.trim() || p.sku === code.trim()
+    );
+
+    if (!product) {
+      setLastScan({ success: false, name: "Não encontrado", code: code.trim() });
+      playBeep(200, 400);
+      setTimeout(() => scanInputRef.current?.focus(), 50);
+      return;
+    }
+
+    setFlashId(product.id);
+    setTimeout(() => setFlashId(null), 1000);
+
+    setScannedProducts((prev) => {
+      const existing = prev.find((p) => p.productId === product.id);
+      if (existing) {
+        return prev.map((p) =>
+          p.productId === product.id
+            ? { ...p, scannedQty: p.scannedQty + 1, lastBipAt: new Date() }
+            : p
+        );
+      }
+      return [
+        {
+          productId: product.id,
+          name: product.name,
+          sku: product.sku,
+          barcode: product.barcode,
+          imageUrl: product.image_url,
+          scannedQty: 1,
+          systemQty: product.stock_physical,
+          lastBipAt: new Date(),
+        },
+        ...prev,
+      ];
+    });
+
+    setLastScan({ success: true, name: product.name, code: code.trim() });
+    playBeep(800, 100);
+    setTimeout(() => scanInputRef.current?.focus(), 50);
+  }, [allProducts]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleScan(scanBuffer);
     }
   };
 
-  const confStatusBadge = (status: string) => {
-    const map: Record<string, { label: string; class: string }> = {
-      em_andamento: { label: "Em andamento", class: "bg-primary/10 text-primary" },
-      conferida: { label: "Conferida", class: "bg-emerald-500/15 text-emerald-700" },
-      divergente: { label: "Divergente", class: "bg-destructive/15 text-destructive" },
-    };
-    const s = map[status] || map.em_andamento;
-    return <Badge className={s.class}>{s.label}</Badge>;
+  const decrementQty = (productId: string) => {
+    setScannedProducts((prev) =>
+      prev
+        .map((p) =>
+          p.productId === productId ? { ...p, scannedQty: p.scannedQty - 1 } : p
+        )
+        .filter((p) => p.scannedQty > 0)
+    );
+  };
+
+  // Step 3 - Results
+  const results = useMemo(() => {
+    const ok: ScannedProduct[] = [];
+    const divergent: ScannedProduct[] = [];
+    const notFound: { id: string; name: string; sku: string; systemQty: number }[] = [];
+
+    for (const sp of scannedProducts) {
+      if (sp.scannedQty === sp.systemQty) {
+        ok.push(sp);
+      } else {
+        divergent.push(sp);
+      }
+    }
+
+    // Products in system but not scanned
+    for (const p of allProducts) {
+      if (p.stock_physical > 0 && !scannedProducts.find((sp) => sp.productId === p.id)) {
+        notFound.push({ id: p.id, name: p.name, sku: p.sku, systemQty: p.stock_physical });
+      }
+    }
+
+    return { ok, divergent, notFound };
+  }, [scannedProducts, allProducts]);
+
+  const handleAdjustStock = async () => {
+    setAdjusting(true);
+    try {
+      for (const sp of scannedProducts) {
+        if (sp.scannedQty !== sp.systemQty) {
+          await supabase
+            .from("products")
+            .update({ stock_physical: sp.scannedQty })
+            .eq("id", sp.productId);
+        }
+      }
+      toast({ title: "Estoque ajustado!", description: `${results.divergent.length} produtos atualizados.` });
+    } catch (err: any) {
+      toast({ title: "Erro ao ajustar", description: err.message, variant: "destructive" });
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
+  const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
+  const uniqueProducts = scannedProducts.length;
+
+  const startConference = () => {
+    if (!mode) {
+      toast({ title: "Selecione um modo", variant: "destructive" });
+      return;
+    }
+    setStep(2);
+  };
+
+  const reset = () => {
+    setStep(1);
+    setMode(null);
+    setConferenceName("");
+    setScannedProducts([]);
+    setLastScan(null);
+    setScanBuffer("");
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 pb-8">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Conferência com Bip</h1>
-        <p className="text-muted-foreground">Confira produtos recebidos via leitor de código de barras</p>
+        <h1 className="text-2xl font-bold text-foreground">Conferência de Estoque</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {step === 1 ? "Escolha o tipo de conferência" :
+           step === 2 ? "Bipando produtos" :
+           "Resultado da conferência"}
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <Package className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Aguardando</p>
-              <p className="text-2xl font-bold">{pendingInvoices?.length ?? 0}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <ScanBarcode className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Em conferência</p>
-              <p className="text-2xl font-bold">
-                {conferences?.filter((c) => c.status === "em_andamento").length ?? 0}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-4 p-4">
-            <div className="rounded-lg bg-primary/10 p-2">
-              <CheckCircle className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Conferidas</p>
-              <p className="text-2xl font-bold">
-                {conferences?.filter((c) => c.status === "conferida").length ?? 0}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* ===== ACTIVE CONFERENCE ===== */}
-      {activeConference ? (
-        <div className="space-y-4">
-          {/* Conference header */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <ScanBarcode className="h-5 w-5" />
-                  Conferência — NF-e #{activeConference.invoices?.number}
-                </CardTitle>
-                {confStatusBadge(activeConference.status)}
+      {/* Step Indicator */}
+      <div className="flex items-center gap-0">
+        {["Iniciar", "Bipagem", "Resultado"].map((label, i) => {
+          const num = (i + 1) as Step;
+          const isActive = step === num;
+          const isCompleted = step > num;
+          return (
+            <div key={label} className="flex items-center flex-1">
+              <div className="flex items-center gap-2">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shrink-0 ${
+                  isCompleted ? "bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/40" :
+                  isActive ? "bg-primary text-primary-foreground border-2 border-primary" :
+                  "bg-muted/50 text-muted-foreground border-2 border-border"
+                }`}>
+                  {isCompleted ? <Check className="h-4 w-4" /> : num}
+                </div>
+                <span className={`text-xs font-medium hidden sm:inline ${
+                  isActive ? "text-primary" : isCompleted ? "text-emerald-400" : "text-muted-foreground"
+                }`}>
+                  {label}
+                </span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progresso</span>
-                  <span className="font-medium">{okItems}/{totalItems} conferidos</span>
-                </div>
-                <Progress value={progressPct} className="h-3" />
-                <div className="flex gap-4 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500" /> OK: {okItems}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-muted-foreground" /> Pendente: {pendingItems}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-amber-500" /> Divergente: {divergentItems}
-                  </span>
-                </div>
-              </div>
-
-              {/* Scan input — auto-focus, barcode as keyboard */}
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                  <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    ref={scanInputRef}
-                    value={scanBuffer}
-                    onChange={(e) => setScanBuffer(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Bipe o código de barras ou digite e pressione Enter..."
-                    className="pl-11 text-lg h-14 font-mono"
-                    autoFocus
-                    autoComplete="off"
-                  />
-                </div>
-                <Button
-                  size="lg"
-                  className="h-14"
-                  onClick={() => handleScan(scanBuffer)}
-                  disabled={!scanBuffer.trim() || scanItem.isPending}
-                >
-                  {scanItem.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : "Bipar"}
-                </Button>
-                <BarcodeScanner
-                  onScan={(code) => handleScan(code)}
-                  disabled={scanItem.isPending}
-                />
-              </div>
-
-              {/* Last scan feedback */}
-              {lastScanResult && (
-                <div
-                  className={`rounded-lg p-4 flex items-center gap-3 transition-all ${
-                    lastScanResult.success
-                      ? lastScanResult.scanned === lastScanResult.expected
-                        ? "bg-emerald-50 border border-emerald-200"
-                        : (lastScanResult.scanned ?? 0) > (lastScanResult.expected ?? 0)
-                          ? "bg-amber-50 border border-amber-200"
-                          : "bg-primary/5 border border-primary/20"
-                      : "bg-destructive/5 border border-destructive/20"
-                  }`}
-                >
-                  {lastScanResult.success ? (
-                    lastScanResult.scanned === lastScanResult.expected ? (
-                      <CheckCircle className="h-8 w-8 text-emerald-600 shrink-0" />
-                    ) : (lastScanResult.scanned ?? 0) > (lastScanResult.expected ?? 0) ? (
-                      <AlertTriangle className="h-8 w-8 text-amber-600 shrink-0" />
-                    ) : (
-                      <Package className="h-8 w-8 text-primary shrink-0" />
-                    )
-                  ) : (
-                    <XCircle className="h-8 w-8 text-destructive shrink-0" />
-                  )}
-                  <div>
-                    <p className="font-medium">
-                      {lastScanResult.productName || (lastScanResult.success ? "Bipado" : "Erro")}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{lastScanResult.message}</p>
-                  </div>
-                  {lastScanResult.success && lastScanResult.expected && (
-                    <div className="ml-auto text-right">
-                      <p className="text-2xl font-bold">
-                        {lastScanResult.scanned}/{lastScanResult.expected}
-                      </p>
-                      <p className="text-xs text-muted-foreground">bipado/esperado</p>
-                    </div>
-                  )}
-                </div>
+              {i < 2 && (
+                <div className={`flex-1 h-px mx-3 ${isCompleted ? "bg-emerald-500/40" : "bg-border"}`} />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          );
+        })}
+      </div>
 
-          {/* Items table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Itens da Conferência</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">Status</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="text-center">Esperado</TableHead>
-                    <TableHead className="text-center">Bipado</TableHead>
-                    <TableHead className="text-center">Diferença</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {confItems.map((item) => {
-                    const diff = item.scanned_quantity - item.expected_quantity;
-                    return (
-                      <TableRow
-                        key={item.id}
-                        className={
-                          item.status === "ok"
-                            ? "bg-emerald-50/50"
-                            : item.status === "excedente"
-                              ? "bg-amber-50/50"
-                              : ""
-                        }
-                      >
-                        <TableCell>{itemStatusIcon(item.status)}</TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {item.invoice_items?.xml_code}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {item.invoice_items?.xml_description}
-                        </TableCell>
-                        <TableCell className="text-center font-medium">{item.expected_quantity}</TableCell>
-                        <TableCell className="text-center font-bold text-lg">{item.scanned_quantity}</TableCell>
-                        <TableCell className="text-center">
-                          {diff !== 0 && (
-                            <Badge variant={diff > 0 ? "secondary" : "destructive"}>
-                              {diff > 0 ? `+${diff}` : diff}
-                            </Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+      {/* ========== STEP 1: INICIAR ========== */}
+      {step === 1 && (
+        <div className="space-y-6">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+            <button
+              onClick={() => setMode("nf")}
+              className={`p-6 rounded-xl border-2 text-left transition-all ${
+                mode === "nf"
+                  ? "border-primary bg-primary/5"
+                  : "border-border/40 hover:border-primary/30 bg-card/60"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-xl bg-primary/10 p-3">
+                  <FileText className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-foreground">Conferência por Nota Fiscal</p>
+                  <p className="text-xs text-muted-foreground">Confere produtos de uma NF específica</p>
+                </div>
               </div>
+            </button>
+            <button
+              onClick={() => setMode("inventario")}
+              className={`p-6 rounded-xl border-2 text-left transition-all ${
+                mode === "inventario"
+                  ? "border-primary bg-primary/5"
+                  : "border-border/40 hover:border-primary/30 bg-card/60"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-xl bg-amber-500/10 p-3">
+                  <ClipboardList className="h-8 w-8 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-foreground">Inventário Geral</p>
+                  <p className="text-xs text-muted-foreground">Confere todo o estoque</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <label className="text-xs font-medium text-muted-foreground block">Nome da conferência</label>
+              <Input
+                value={conferenceName}
+                onChange={(e) => setConferenceName(e.target.value)}
+                placeholder="Ex: Inventário Abril 2026"
+              />
+              <Button className="w-full" onClick={startConference} disabled={!mode}>
+                Iniciar conferência <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
-
-          {/* Actions */}
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => { setActiveConference(null); setLastScanResult(null); }}
-            >
-              Voltar
-            </Button>
-            <Button
-              onClick={handleFinish}
-              disabled={finishConference.isPending || pendingItems === totalItems}
-            >
-              {finishConference.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              <Check className="mr-2 h-4 w-4" />
-              Finalizar Conferência
-            </Button>
-          </div>
         </div>
-      ) : (
-        <>
-          {/* ===== SELECT INVOICE TO CONFERENCE ===== */}
-          {pendingInvoices && pendingInvoices.length > 0 && (
+      )}
+
+      {/* ========== STEP 2: BIPAGEM ========== */}
+      {step === 2 && (
+        <div className="grid gap-4 md:grid-cols-5">
+          {/* Left column (60%) */}
+          <div className="md:col-span-3 space-y-4">
+            {/* Scan input */}
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      ref={scanInputRef}
+                      value={scanBuffer}
+                      onChange={(e) => setScanBuffer(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Bipe ou digite o código de barras..."
+                      className="pl-11 text-lg h-14 font-mono"
+                      autoFocus
+                      autoComplete="off"
+                    />
+                  </div>
+                  <Button className="h-14" onClick={() => handleScan(scanBuffer)} disabled={!scanBuffer.trim()}>
+                    Bipar
+                  </Button>
+                  <BarcodeScanner onScan={(code) => handleScan(code)} />
+                </div>
+
+                {lastScan && (
+                  <div className={`rounded-lg p-3 flex items-center gap-2 text-sm ${
+                    lastScan.success
+                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
+                  }`}>
+                    {lastScan.success ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+                    <span className="font-medium">{lastScan.name}</span>
+                    <span className="text-muted-foreground ml-auto font-mono text-xs">{lastScan.code}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Scanned products list */}
+            <Card className="flex-1">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Produtos bipados ({uniqueProducts})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-1 max-h-[50vh] overflow-y-auto">
+                {scannedProducts.length === 0 ? (
+                  <div className="flex flex-col items-center py-12 text-muted-foreground">
+                    <ScanBarcode className="h-12 w-12 opacity-20 mb-3" />
+                    <p className="text-sm">Nenhum produto bipado ainda</p>
+                    <p className="text-xs">Bipe um código de barras para começar</p>
+                  </div>
+                ) : (
+                  scannedProducts
+                    .sort((a, b) => b.lastBipAt.getTime() - a.lastBipAt.getTime())
+                    .map((sp) => (
+                      <div
+                        key={sp.productId}
+                        className={`flex items-center gap-3 p-3 rounded-lg border border-border/30 transition-all duration-500 ${
+                          flashId === sp.productId ? "!bg-emerald-500/20 !border-emerald-500/40" : "bg-muted/10"
+                        }`}
+                      >
+                        {sp.imageUrl ? (
+                          <img src={sp.imageUrl} alt={sp.name} className="h-10 w-10 rounded-lg object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{sp.name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{sp.sku}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => decrementQty(sp.productId)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="font-bold text-lg w-6 text-center">{sp.scannedQty}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground/60 w-12 text-right">
+                          {sp.lastBipAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </span>
+                      </div>
+                    ))
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right column (40%) */}
+          <div className="md:col-span-2 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Notas Aguardando Conferência</CardTitle>
+                <CardTitle className="text-sm">Resumo em tempo real</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <p className="text-xs text-muted-foreground">Total bipados</p>
+                    <p className="text-2xl font-bold text-foreground">{totalScanned}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
+                    <p className="text-xs text-muted-foreground">Produtos diferentes</p>
+                    <p className="text-2xl font-bold text-foreground">{uniqueProducts}</p>
+                  </div>
+                </div>
+
+                {lastScan && lastScan.success && (
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                    <p className="text-xs text-muted-foreground mb-1">Última leitura</p>
+                    <p className="text-sm font-medium text-foreground">{lastScan.name}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground">{lastScan.code}</p>
+                  </div>
+                )}
+
+                {conferenceName && (
+                  <div className="p-3 rounded-lg bg-muted/10 border border-border/20">
+                    <p className="text-xs text-muted-foreground">Conferência</p>
+                    <p className="text-sm font-medium">{conferenceName}</p>
+                  </div>
+                )}
+
+                <Separator />
+
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => setStep(3)}
+                    disabled={scannedProducts.length === 0}
+                  >
+                    Finalizar bipagem <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ========== STEP 3: RESULTADO ========== */}
+      {step === 3 && (
+        <div className="space-y-6">
+          {/* Summary cards */}
+          <div className="grid gap-3 grid-cols-3">
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="rounded-lg bg-emerald-500/10 p-2">
+                  <CheckCircle className="h-5 w-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">OK</p>
+                  <p className="text-xl font-bold">{results.ok.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="rounded-lg bg-amber-500/10 p-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Divergente</p>
+                  <p className="text-xl font-bold">{results.divergent.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="rounded-lg bg-destructive/10 p-2">
+                  <XCircle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Não bipado</p>
+                  <p className="text-xl font-bold">{results.notFound.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* OK Section */}
+          {results.ok.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">✅ OK — {results.ok.length}</Badge>
+                  Quantidade confere com o sistema
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nº NF-e</TableHead>
-                      <TableHead>Emitente</TableHead>
-                      <TableHead className="text-center">Itens</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="w-[120px]">Ação</TableHead>
+                      <TableHead>Produto</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead className="text-center">Qtd Sistema</TableHead>
+                      <TableHead className="text-center">Qtd Contada</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendingInvoices.map((inv) => (
-                      <TableRow key={inv.id}>
-                        <TableCell className="font-mono">{inv.number}</TableCell>
-                        <TableCell>{inv.issuer_name || "—"}</TableCell>
-                        <TableCell className="text-center">{inv.items_count}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(inv.created_at).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            onClick={() => handleStartConference(inv.id)}
-                            disabled={startConference.isPending}
-                          >
-                            {startConference.isPending ? (
-                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Play className="mr-1 h-3 w-3" />
-                            )}
-                            Iniciar
-                          </Button>
-                        </TableCell>
+                    {results.ok.map((sp) => (
+                      <TableRow key={sp.productId} className="bg-emerald-500/5">
+                        <TableCell className="font-medium">{sp.name}</TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">{sp.sku}</TableCell>
+                        <TableCell className="text-center">{sp.systemQty}</TableCell>
+                        <TableCell className="text-center font-bold">{sp.scannedQty}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                </div>
               </CardContent>
             </Card>
           )}
 
-          {/* ===== HISTORY ===== */}
-          <Card>
-            <CardHeader
-              className="cursor-pointer"
-              onClick={() => setShowHistory(!showHistory)}
-            >
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  Histórico de Conferências ({conferences?.length ?? 0})
+          {/* Divergent Section */}
+          {results.divergent.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">⚠️ Divergente — {results.divergent.length}</Badge>
+                  Quantidade diferente
                 </CardTitle>
-                {showHistory ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </div>
-            </CardHeader>
-            {showHistory && (
-              <CardContent className="space-y-4">
-                {/* Filters */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full sm:w-[160px]">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="em_andamento">Em andamento</SelectItem>
-                      <SelectItem value="conferida">Conferida</SelectItem>
-                      <SelectItem value="divergente">Divergente</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full sm:w-[160px]"
-                    placeholder="De"
-                  />
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full sm:w-[160px]"
-                    placeholder="Até"
-                  />
-                  {(statusFilter !== "all" || dateFrom || dateTo) && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setStatusFilter("all"); setDateFrom(""); setDateTo(""); }}
-                    >
-                      Limpar
-                    </Button>
-                  )}
-                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Produto</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead className="text-center">Qtd Sistema</TableHead>
+                      <TableHead className="text-center">Qtd Contada</TableHead>
+                      <TableHead className="text-center">Diferença</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.divergent.map((sp) => {
+                      const diff = sp.scannedQty - sp.systemQty;
+                      return (
+                        <TableRow key={sp.productId} className="bg-amber-500/5">
+                          <TableCell className="font-medium">{sp.name}</TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{sp.sku}</TableCell>
+                          <TableCell className="text-center">{sp.systemQty}</TableCell>
+                          <TableCell className="text-center font-bold">{sp.scannedQty}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant={diff > 0 ? "secondary" : "destructive"}>
+                              {diff > 0 ? `+${diff}` : diff}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
-                {conferences && conferences.length > 0 ? (
-                  <div className="overflow-x-auto">
+          {/* Not Found Section */}
+          {results.notFound.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Badge className="bg-destructive/15 text-destructive">❌ Não bipado — {results.notFound.length}</Badge>
+                  Produto no sistema mas não contado
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[300px] overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>NF-e</TableHead>
-                        <TableHead>Emitente</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-center">Itens</TableHead>
-                        <TableHead>Início</TableHead>
-                        <TableHead>Fim</TableHead>
-                        <TableHead className="w-[100px]">Ação</TableHead>
+                        <TableHead>Produto</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead className="text-center">Qtd Sistema</TableHead>
+                        <TableHead className="text-center">Qtd Contada</TableHead>
+                        <TableHead className="text-center">Diferença</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {conferences.map((conf) => (
-                        <TableRow key={conf.id}>
-                          <TableCell className="font-mono">{conf.invoices?.number}</TableCell>
-                          <TableCell>{conf.invoices?.issuer_name || "—"}</TableCell>
-                          <TableCell>{confStatusBadge(conf.status)}</TableCell>
-                          <TableCell className="text-center">{conf.conference_items?.length ?? 0}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {new Date(conf.started_at).toLocaleDateString("pt-BR")}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {conf.finished_at ? new Date(conf.finished_at).toLocaleDateString("pt-BR") : "—"}
-                          </TableCell>
-                          <TableCell>
-                            {conf.status === "em_andamento" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setActiveConference(conf)}
-                              >
-                                Continuar
-                              </Button>
-                            )}
+                      {results.notFound.map((p) => (
+                        <TableRow key={p.id} className="bg-destructive/5">
+                          <TableCell className="font-medium">{p.name}</TableCell>
+                          <TableCell className="font-mono text-xs text-muted-foreground">{p.sku}</TableCell>
+                          <TableCell className="text-center">{p.systemQty}</TableCell>
+                          <TableCell className="text-center font-bold">0</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">-{p.systemQty}</Badge>
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <ScanBarcode className="mb-3 h-10 w-10 opacity-30" />
-                    <p>Nenhuma conferência encontrada</p>
-                  </div>
-                )}
+                </div>
               </CardContent>
-            )}
+            </Card>
+          )}
+
+          {/* Actions */}
+          <Card>
+            <CardContent className="p-5 flex flex-wrap gap-3">
+              <Button
+                onClick={handleAdjustStock}
+                disabled={adjusting || results.divergent.length === 0}
+                className="gap-2"
+              >
+                {adjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Ajustar estoque automaticamente
+              </Button>
+              <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
+                <ArrowLeft className="h-4 w-4" /> Voltar à bipagem
+              </Button>
+              <Button variant="outline" onClick={reset} className="gap-2">
+                <RotateCcw className="h-4 w-4" /> Nova conferência
+              </Button>
+            </CardContent>
           </Card>
-        </>
+        </div>
       )}
     </div>
   );
