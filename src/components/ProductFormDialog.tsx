@@ -11,12 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Camera, AlertTriangle, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { supabase } from "@/integrations/supabase/client";
+
+type UnsplashPhoto = {
+  id: string;
+  url_small: string;
+  url_regular: string;
+  alt: string;
+  photographer: string;
+};
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
