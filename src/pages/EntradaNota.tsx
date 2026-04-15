@@ -1895,8 +1895,8 @@ const EntradaNota = () => {
               const selectedItem = conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct);
               const productName = selectedItem?.xmlProduct.description || "";
 
-              // Save GTIN CX if checkbox checked
-              if (unknownGtinSave) {
+              // Save GTIN CX if checkbox checked and code is non-empty
+              if (unknownGtinSave && unknownGtinDialog.code) {
                 await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
