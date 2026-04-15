@@ -72,7 +72,7 @@ export function AppSidebar() {
                   onClick={() => handleNav(item.url)}
                   className={`relative flex flex-col items-center justify-center w-full h-14 rounded-lg transition-all duration-150 active:scale-95 group ${
                     active
-                      ? "bg-primary/12"
+                      ? "bg-primary/15 shadow-sm"
                       : "hover:bg-sidebar-accent/60"
                   }`}
                 >
