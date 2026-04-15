@@ -469,28 +469,40 @@ const EntradaNota = () => {
       return;
     }
 
-    // Check GTIN CX (always, not just box mode)
+    // Check GTIN CX (always, not just box mode) — strict match by company
     try {
       const gtinCandidates = Array.from(new Set([code.trim(), normalizedDigits].filter(Boolean)));
-      const { data: boxProduct } = await supabase
+      const { data: boxProducts } = await supabase
         .from("products")
         .select("id, name, gtin_cx, box_quantity")
-        .in("gtin_cx", gtinCandidates)
-        .limit(1);
+        .eq("company_id", companyId)
+        .in("gtin_cx", gtinCandidates);
 
-      if (boxProduct && boxProduct.length > 0) {
-        const bp = boxProduct[0];
-        const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
-        if (productIdx !== -1) {
-          setBoxBipDialog({
-            code,
-            productIdx,
-            productName: bp.name,
-            qtyPerBox: (bp as any).box_quantity || 1,
-          });
-          playBeep(600, 100);
-          return;
+      if (boxProducts && boxProducts.length > 0) {
+        // Find the exact product that is in the conference list
+        for (const bp of boxProducts) {
+          const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
+          if (productIdx !== -1) {
+            setBoxBipDialog({
+              code,
+              productIdx,
+              productName: bp.name,
+              qtyPerBox: bp.box_quantity || 1,
+            });
+            playBeep(600, 100);
+            return;
+          }
         }
+        // If no conference match, use first result for the dialog
+        const bp = boxProducts[0];
+        setBoxBipDialog({
+          code,
+          productIdx: -1,
+          productName: bp.name,
+          qtyPerBox: bp.box_quantity || 1,
+        });
+        playBeep(600, 100);
+        return;
       }
     } catch { /* fall through */ }
 
