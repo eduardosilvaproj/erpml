@@ -955,7 +955,7 @@ const EntradaNota = () => {
             <Button variant="outline" className="flex-1 min-h-[48px]" onClick={reset}>
               Nova entrada
             </Button>
-            <Button className="flex-1 min-h-[48px]" onClick={() => navigate("/entrada-xml")}>
+            <Button className="flex-1 min-h-[48px]" onClick={() => navigate("/estoque")}>
               Ver todas as notas
             </Button>
           </div>

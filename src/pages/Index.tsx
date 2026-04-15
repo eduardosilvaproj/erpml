@@ -22,7 +22,7 @@ const periodLabels: Record<PeriodFilter, string> = {
 
 const modules = [
   { title: "Produtos", desc: "Cadastro e gestão", icon: Package, url: "/produtos" },
-  { title: "Entrada XML", desc: "Importar notas", icon: FileText, url: "/entrada-xml" },
+  { title: "Entrada Nota", desc: "Importar notas", icon: FileText, url: "/entrada-nota" },
   { title: "Conferência", desc: "Bip de recebimento", icon: ScanBarcode, url: "/conferencia" },
   { title: "Estoque", desc: "Físico + FULL", icon: Warehouse, url: "/estoque" },
   { title: "Envio FULL", desc: "Movimentações", icon: ArrowRightLeft, url: "/movimentacao-full" },
