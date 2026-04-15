@@ -124,6 +124,7 @@ const PDV = () => {
           ));
           setLastScan({ success: true, message: `${product.name} — ${existing.quantity + 1}x R$ ${product.price.toFixed(2)}` });
           playBeep(800, 100);
+          scanInputRef.current?.flash(true);
         }
       } else {
         setCart([...cart, {
