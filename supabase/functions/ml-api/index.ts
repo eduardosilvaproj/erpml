@@ -605,8 +605,8 @@ Deno.serve(async (req) => {
 
       case "get-item": {
         const itemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
-        if (!itemId) {
-          return jsonResponse({ error: "ID do anúncio inválido." }, 400);
+        if (!itemId || !/^MLB\d+$/i.test(itemId)) {
+          return jsonResponse({ error: "ID do anúncio inválido. Use o formato MLB1234567890." }, 400);
         }
 
         const item = await fetchMlJson(
@@ -616,6 +616,21 @@ Deno.serve(async (req) => {
         );
 
         return jsonResponse(item);
+      }
+
+      case "get-item-description": {
+        const itemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
+        if (!itemId || !/^MLB\d+$/i.test(itemId)) {
+          return jsonResponse({ error: "ID do anúncio inválido." }, 400);
+        }
+
+        const desc = await fetchMlJson(
+          `${ML_API_BASE}/items/${encodeURIComponent(itemId)}/description`,
+          { headers: mlHeaders },
+          "Erro ao buscar descrição"
+        );
+
+        return jsonResponse(desc);
       }
 
       case "sync-stock": {
