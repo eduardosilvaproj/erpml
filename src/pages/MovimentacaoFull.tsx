@@ -245,14 +245,14 @@ const MovimentacaoFull = () => {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; class: string }> = {
-      separando: { label: "Separando", class: "bg-primary/10 text-primary" },
-      enviado: { label: "Enviado", class: "bg-amber-500/15 text-amber-700" },
-      recebido_full: { label: "Recebido FULL", class: "bg-blue-500/15 text-blue-700" },
-      conferido_full: { label: "Conferido FULL", class: "bg-emerald-500/15 text-emerald-700" },
+      separando: { label: "Separando", class: "bg-muted text-muted-foreground" },
+      enviado: { label: "Enviado", class: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+      recebido_full: { label: "Recebido", class: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+      conferido_full: { label: "Conferido", class: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
       cancelado: { label: "Cancelado", class: "bg-destructive/15 text-destructive" },
     };
     const s = map[status] || map.separando;
-    return <Badge className={s.class}>{s.label}</Badge>;
+    return <Badge variant="outline" className={s.class}>{s.label}</Badge>;
   };
 
   const statCounts = {
@@ -511,91 +511,63 @@ const MovimentacaoFull = () => {
       </div>
 
       {/* Transfer history */}
-      {orders && orders.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Últimos envios FULL</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-              Ver histórico completo <ChevronRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            📋 Últimos envios FULL
+          </CardTitle>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
+            Ver histórico completo <ChevronRight className="h-3 w-3 ml-1" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {!orders || orders.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Nenhum envio registrado</p>
+          ) : (
             <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ordem</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Kits</TableHead>
-                  <TableHead className="text-center">Itens</TableHead>
-                  <TableHead className="text-center">Qtd Total</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Produtos</TableHead>
-                  <TableHead className="w-[160px]">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {orders.map((order) => {
-                  const nextStep = statusFlow[order.status];
-                  return (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-mono text-xs">{order.order_number}</TableCell>
-                      <TableCell>{statusBadge(order.status)}</TableCell>
-                      <TableCell>
-                        {order.notes && order.notes.startsWith("Kits:") ? (
-                          <div className="flex flex-wrap gap-1">
-                            {order.notes.replace("Kits: ", "").split(", ").map((kit, i) => (
-                              <Badge key={i} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
-                                <Boxes className="h-3 w-3 mr-0.5" />{kit}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">{order.total_items}</TableCell>
-                      <TableCell className="text-center font-medium">{order.total_quantity}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1 max-w-[200px]">
-                          {order.transfer_items?.slice(0, 3).map((ti) => (
-                            <Badge key={ti.id} variant="outline" className="text-xs">
-                              {ti.products?.name?.slice(0, 20)}
-                              {ti.quantity > 1 && ` ×${ti.quantity}`}
-                            </Badge>
-                          ))}
-                          {(order.transfer_items?.length ?? 0) > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{(order.transfer_items?.length ?? 0) - 3}
-                            </Badge>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Nº da ordem</TableHead>
+                    <TableHead className="text-center">Qtd produtos</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[160px]">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => {
+                    const nextStep = statusFlow[order.status];
+                    return (
+                      <TableRow key={order.id}>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(order.created_at).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">{order.order_number}</TableCell>
+                        <TableCell className="text-center font-medium">{order.total_items}</TableCell>
+                        <TableCell>{statusBadge(order.status)}</TableCell>
+                        <TableCell>
+                          {nextStep && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
+                              disabled={updateStatus.isPending}
+                            >
+                              <ChevronRight className="mr-1 h-3 w-3" />
+                              {nextStep.label}
+                            </Button>
                           )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {nextStep && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
-                            disabled={updateStatus.isPending}
-                          >
-                            <ChevronRight className="mr-1 h-3 w-3" />
-                            {nextStep.label}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
