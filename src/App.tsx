@@ -50,6 +50,11 @@ import Kits from "./pages/Kits";
 import MentorVendasML from "./pages/MentorVendasML";
 import BalancoEstoque from "./pages/BalancoEstoque";
 import EntradaNota from "./pages/EntradaNota";
+import MinhaLojaConfig from "./pages/MinhaLojaConfig";
+import MinhaLojaProdutos from "./pages/MinhaLojaProdutos";
+import MinhaLojaPedidos from "./pages/MinhaLojaPedidos";
+import LojaPublica from "./pages/LojaPublica";
+import LojaCheckout from "./pages/LojaCheckout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +82,8 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/loja/:slug" element={<LojaPublica />} />
+            <Route path="/loja/:slug/checkout" element={<LojaCheckout />} />
             <Route
               path="/*"
               element={
@@ -119,6 +126,9 @@ const App = () => (
                       <Route path="/master-admin" element={<MasterAdmin />} />
                       
                       <Route path="/boas-vindas" element={<BoasVindas />} />
+                      <Route path="/minha-loja/configurar" element={<MinhaLojaConfig />} />
+                      <Route path="/minha-loja/produtos" element={<MinhaLojaProdutos />} />
+                      <Route path="/minha-loja/pedidos" element={<MinhaLojaPedidos />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
