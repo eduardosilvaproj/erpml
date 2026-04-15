@@ -2,12 +2,13 @@ import { useState } from "react";
 import {
   Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
   DollarSign, Percent, Truck, Send, UserPlus,
-  ShoppingCart, Target, Store
+  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
+import { ProductFormDialog } from "@/components/ProductFormDialog";
 
 const periodLabels: Record<PeriodFilter, string> = {
   today: "Hoje",
@@ -62,9 +63,18 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
   );
 }
 
+const quickActions = [
+  { id: "entrada", title: "Entrada de Mercadoria", desc: "Receber produtos com NF", icon: PackageOpen, color: "text-emerald-400", hoverBorder: "hover:border-emerald-500/50", route: "/entrada-nota" },
+  { id: "venda", title: "Nova Venda", desc: "Abrir PDV e registrar venda", icon: Monitor, color: "text-sky-400", hoverBorder: "hover:border-sky-500/50", route: "/pdv" },
+  { id: "conferencia", title: "Conferência", desc: "Bipar e conferir estoque", icon: ScanLine, color: "text-amber-400", hoverBorder: "hover:border-amber-500/50", route: "/conferencia" },
+  { id: "novo-produto", title: "Novo Produto", desc: "Cadastrar produto no catálogo", icon: PlusCircle, color: "text-violet-400", hoverBorder: "hover:border-violet-500/50", route: null },
+];
+
 const Index = () => {
   const [period, setPeriod] = useState<PeriodFilter>("30d");
   const { data, isLoading } = useDashboardData(period);
+  const [showNewProduct, setShowNewProduct] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-8">
@@ -111,6 +121,28 @@ const Index = () => {
             <MetricCard icon={UserPlus} label="Novos Clientes" value={String(data.newCustomers)} trend={data.newCustomersTrend} iconColor="text-primary" />
           </div>
 
+          {/* Ações Rápidas */}
+          <div>
+            <h2 className="text-sm font-semibold text-foreground mb-4">Ações Rápidas</h2>
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+              {quickActions.map((action) => (
+                <button
+                  key={action.id}
+                  onClick={() => action.route ? navigate(action.route) : setShowNewProduct(true)}
+                  className={`flex items-center gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/30 backdrop-blur transition-all hover:bg-muted/60 ${action.hoverBorder} text-left group`}
+                >
+                  <div className={`shrink-0 rounded-lg bg-background/60 p-2 ${action.color}`}>
+                    <action.icon className="h-5 w-5" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{action.title}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Quick Access */}
           <div>
             <h2 className="text-sm font-semibold text-foreground mb-4">Acesso Rápido</h2>
@@ -134,6 +166,8 @@ const Index = () => {
           </div>
         </>
       ) : null}
+
+      <ProductFormDialog open={showNewProduct} onOpenChange={setShowNewProduct} />
     </div>
   );
 };
