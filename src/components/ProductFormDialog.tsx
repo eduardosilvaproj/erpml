@@ -314,6 +314,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                       e.preventDefault();
                       const file = e.dataTransfer.files[0];
                       if (file && file.type.startsWith("image/")) {
+                        selectedFileRef.current = file;
+                        setPhotoSource("file");
                         setPhotoPreview(URL.createObjectURL(file));
                         setShowPhotoGrid(false);
                       }
