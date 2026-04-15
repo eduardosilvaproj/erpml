@@ -366,7 +366,7 @@ const CRM = () => {
 
   function renderForm() {
     return (
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1" onChange={() => { formDirtyRef.current = true; }}>
         <div>
           <Label>Nome completo *</Label>
           <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nome do cliente" />
@@ -409,10 +409,61 @@ const CRM = () => {
             <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@exemplo.com" />
           </div>
         </div>
+
+        {/* CEP with auto-lookup */}
+        <div>
+          <Label>CEP</Label>
+          <div className="relative">
+            <Input
+              value={form.cep}
+              onChange={(e) => {
+                const masked = maskCep(e.target.value);
+                setForm({ ...form, cep: masked });
+                setCepError(false);
+                handleCepLookup(masked);
+              }}
+              placeholder="00000-000"
+              maxLength={9}
+              className={cepError ? "border-destructive" : ""}
+            />
+            {cepLoading && (
+              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+            )}
+          </div>
+          {cepError && <p className="text-xs text-destructive mt-1">CEP não encontrado</p>}
+        </div>
+
         <div>
           <Label>Endereço</Label>
-          <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Rua, nº, bairro, cidade - UF" />
+          <Input
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
+            placeholder="Rua, nº, bairro"
+            className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+          />
         </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Cidade</Label>
+            <Input
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              placeholder="Cidade"
+              className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+            />
+          </div>
+          <div>
+            <Label>Estado (UF)</Label>
+            <Input
+              value={form.state}
+              onChange={(e) => setForm({ ...form, state: e.target.value })}
+              placeholder="UF"
+              maxLength={2}
+              className={cepFilled ? "border-emerald-500 transition-colors" : "transition-colors"}
+            />
+          </div>
+        </div>
+
         <div>
           <Label>Data de Aniversário</Label>
           <Input type="date" value={form.birthday} onChange={(e) => setForm({ ...form, birthday: e.target.value })} />
