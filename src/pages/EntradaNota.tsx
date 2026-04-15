@@ -373,7 +373,7 @@ const EntradaNota = () => {
           item.status = "ok";
           setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
           playBeep(800, 100);
-        } else if (item.scannedQty > item.expectedQty) {
+          bipRef.current?.flash(true);
           item.status = "excess";
           setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
           playBeep(200, 150);
@@ -422,6 +422,7 @@ const EntradaNota = () => {
 
     setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
     playBeep(200, 400);
+    bipRef.current?.flash(false);
     setTimeout(() => bipRef.current?.focus(), 50);
   };
 
