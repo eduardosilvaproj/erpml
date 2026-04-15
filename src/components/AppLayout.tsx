@@ -1,5 +1,7 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { SubcategoryPanel } from "@/components/SubcategoryPanel";
+import { SidebarCategoryProvider } from "@/contexts/SidebarCategoryContext";
 import SupportChat from "@/components/SupportChat";
 import HelpPanel from "@/components/HelpPanel";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
@@ -23,9 +25,7 @@ function SwipeIndicator() {
       setDismissed(true);
       return;
     }
-    // Show after a short delay on first visit
     const timer = setTimeout(() => setVisible(true), 1500);
-    // Auto-hide after 4s and mark as seen
     const hideTimer = setTimeout(() => {
       setVisible(false);
       setDismissed(true);
@@ -93,6 +93,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             <HelpPanel />
           </div>
         </header>
+        <SubcategoryPanel />
         <main className="flex-1 p-3 sm:p-5 md:p-8 overflow-auto animate-fade-in">
           {children}
         </main>
@@ -104,10 +105,12 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SidebarProvider>
-      <AppLayoutInner>{children}</AppLayoutInner>
-      <SupportChat />
-    </SidebarProvider>
+    <SidebarCategoryProvider>
+      <SidebarProvider>
+        <AppLayoutInner>{children}</AppLayoutInner>
+        <SupportChat />
+      </SidebarProvider>
+    </SidebarCategoryProvider>
   );
 };
 
