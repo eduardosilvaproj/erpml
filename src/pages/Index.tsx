@@ -1,14 +1,11 @@
 import { useState } from "react";
 import {
-  Package, ShoppingBag, Warehouse, Users, TrendingUp,
-  ArrowUpRight, ArrowDownRight, Sparkles, DollarSign, Percent,
-  Truck, Send, UserPlus, Trophy, AlertCircle, Clock, Star,
+  Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
+  DollarSign, Percent, Truck, Send, UserPlus,
   ShoppingCart, Target, Store
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
 
