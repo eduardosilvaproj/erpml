@@ -258,16 +258,25 @@ export default function IntegracaoML() {
 
       {/* Not connected state */}
       {!isConnected && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <AlertTriangle className="mb-4 h-12 w-12 opacity-30" />
-            <p className="text-lg font-medium">Conta não conectada</p>
-            <p className="text-sm">Conecte sua conta do Mercado Livre para sincronizar</p>
-            <Button className="mt-4" onClick={handleConnect} disabled={!authUrlData?.url}>
-              <Link2 className="mr-2 h-4 w-4" /> Conectar Agora
-            </Button>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <AlertTriangle className="mb-4 h-12 w-12 opacity-30" />
+              <p className="text-lg font-medium">Conta não conectada</p>
+              <p className="text-sm">Conecte sua conta do Mercado Livre para sincronizar</p>
+              <Button className="mt-4" onClick={handleConnect} disabled={!authUrlData?.url}>
+                <Link2 className="mr-2 h-4 w-4" /> Conectar Agora
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Settings card (always visible) */}
+          <SettingsCard
+            mlSettings={mlSettings}
+            loadingSettings={loadingSettings}
+            updateSettings={updateSettings}
+          />
+        </>
       )}
 
       {/* Connected content */}
