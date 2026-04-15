@@ -672,6 +672,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UnsavedChangesDialog open={showConfirm} onDiscard={confirmDiscard} onContinue={confirmContinue} />
     </>
   );
 }
