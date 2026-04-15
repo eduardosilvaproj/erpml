@@ -1,9 +1,9 @@
 import {
   LayoutDashboard, Package, Warehouse, Store, TrendingUp, Brain,
-  LogOut, ShieldCheck, Crown, ChevronDown, Users, ScanBarcode,
-  ClipboardList, Monitor, Megaphone, Building2, BarChart3
+  LogOut, ShieldCheck, Crown, Boxes, Users, ScanBarcode,
+  ClipboardList, Monitor, Megaphone, ShoppingBag, Building2, BarChart3
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
@@ -21,6 +21,7 @@ export { menuGroups } from "@/lib/menu-data";
 interface SubItem {
   label: string;
   url: string;
+  icon: any;
 }
 
 interface NavItem {
@@ -35,30 +36,32 @@ const navItems: NavItem[] = [
   {
     label: "Cadastros", icon: Package, url: "/produtos",
     subItems: [
-      { label: "Produtos", url: "/produtos" },
-      { label: "CRM / Clientes", url: "/crm" },
+      { label: "Produtos", url: "/produtos", icon: Package },
+      { label: "Kits", url: "/kits", icon: Boxes },
+      { label: "CRM / Clientes", url: "/crm", icon: Users },
     ],
   },
   {
     label: "Estoque", icon: Warehouse, url: "/estoque",
     subItems: [
-      { label: "Ver Estoque", url: "/estoque" },
-      { label: "Entrada de Nota", url: "/entrada-nota" },
-      { label: "Conferência", url: "/conferencia" },
+      { label: "Ver Estoque", url: "/estoque", icon: Warehouse },
+      { label: "Entrada de Nota", url: "/entrada-nota", icon: ClipboardList },
+      { label: "Conferência", url: "/conferencia", icon: ScanBarcode },
     ],
   },
   {
-    label: "Vendas", icon: Store, url: "/crm",
+    label: "Vendas", icon: Store, url: "/pdv",
     subItems: [
-      { label: "PDV", url: "/pdv" },
-      { label: "Campanhas", url: "/campanhas" },
+      { label: "PDV", url: "/pdv", icon: Monitor },
+      { label: "Campanhas", url: "/campanhas", icon: Megaphone },
+      { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag },
     ],
   },
   {
     label: "Gestão", icon: TrendingUp, url: "/empresa",
     subItems: [
-      { label: "Minha Empresa", url: "/empresa" },
-      { label: "Painel HUB", url: "/painel-hub" },
+      { label: "Minha Empresa", url: "/empresa", icon: Building2 },
+      { label: "Painel HUB", url: "/painel-hub", icon: BarChart3 },
     ],
   },
   { label: "IA", icon: Brain, url: "/ia-hub" },
@@ -73,7 +76,8 @@ export function AppSidebar() {
   const { data: pendingUsers } = usePendingUsers(!!isAdmin);
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const isMobile = useIsMobile();
-  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isPathActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
@@ -87,21 +91,17 @@ export function AppSidebar() {
 
   const handleNav = (url: string) => {
     navigate(url);
+    setHoveredGroup(null);
     if (isMobile) setOpenMobile(false);
   };
 
-  const handleGroupClick = (item: NavItem) => {
-    if (item.subItems) {
-      if (expandedGroup === item.label) {
-        setExpandedGroup(null);
-      } else {
-        setExpandedGroup(item.label);
-        handleNav(item.url);
-      }
-    } else {
-      setExpandedGroup(null);
-      handleNav(item.url);
-    }
+  const handleMouseEnter = (label: string) => {
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    setHoveredGroup(label);
+  };
+
+  const handleMouseLeave = () => {
+    hideTimeoutRef.current = setTimeout(() => setHoveredGroup(null), 150);
   };
 
   return (
@@ -119,20 +119,25 @@ export function AppSidebar() {
             {/* Nav items */}
             {navItems.map((item) => {
               const active = isGroupActive(item);
-              const expanded = expandedGroup === item.label;
               const hasSubItems = !!item.subItems;
+              const isHovered = hoveredGroup === item.label;
 
               return (
-                <div key={item.label}>
+                <div
+                  key={item.label}
+                  className="relative"
+                  onMouseEnter={() => hasSubItems ? handleMouseEnter(item.label) : undefined}
+                  onMouseLeave={hasSubItems ? handleMouseLeave : undefined}
+                >
                   <button
-                    onClick={() => handleGroupClick(item)}
+                    onClick={() => handleNav(item.url)}
                     className={`relative flex flex-col items-center justify-center w-12 h-12 mx-auto rounded-[10px] transition-all duration-150 active:scale-95 group ${
                       active
                         ? "bg-primary/8"
                         : "hover:bg-sidebar-accent/60"
                     }`}
                   >
-                    {active && !expanded && (
+                    {active && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-primary" />
                     )}
                     <item.icon
@@ -144,26 +149,29 @@ export function AppSidebar() {
                     }`}>
                       {item.label}
                     </span>
-                    {hasSubItems && (
-                      <ChevronDown className={`absolute -bottom-0.5 h-3 w-3 text-muted-foreground/50 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
-                    )}
                   </button>
 
-                  {/* Sub-items accordion */}
-                  {hasSubItems && expanded && (
-                    <div className="mt-1 mb-1 space-y-0.5">
+                  {/* Floating submenu on hover */}
+                  {hasSubItems && isHovered && (
+                    <div
+                      className="absolute left-full top-0 ml-1 z-50 min-w-[180px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-xl py-2 animate-in fade-in-0 slide-in-from-left-2 duration-150"
+                      onMouseEnter={() => handleMouseEnter(item.label)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <p className="px-3 pb-1.5 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">{item.label}</p>
                       {item.subItems!.map((sub) => {
                         const subActive = isPathActive(sub.url);
                         return (
                           <button
                             key={sub.url}
                             onClick={() => handleNav(sub.url)}
-                            className={`w-full py-1.5 px-1 text-[9px] rounded-md transition-all duration-100 active:scale-95 ${
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                               subActive
-                                ? "bg-primary/10 text-primary font-semibold"
-                                : "text-muted-foreground/70 hover:text-foreground hover:bg-sidebar-accent/40"
+                                ? "bg-primary/10 text-primary font-medium"
+                                : "text-foreground/80 hover:bg-muted/50 hover:text-foreground"
                             }`}
                           >
+                            <sub.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
                             {sub.label}
                           </button>
                         );
