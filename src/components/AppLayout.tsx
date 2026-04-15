@@ -1,5 +1,5 @@
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar, SubDrawerContext, useSubDrawer } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
 import HelpPanel from "@/components/HelpPanel";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
@@ -39,7 +39,6 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 };
 
 function getPageInfo(pathname: string) {
-  // Try exact match first, then prefix match
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   const prefix = Object.keys(PAGE_TITLES).find((k) => k !== "/" && pathname.startsWith(k));
   if (prefix) return PAGE_TITLES[prefix];
@@ -86,6 +85,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { planName } = usePlanFeatures();
   const isMobile = useIsMobile();
   const pageInfo = getPageInfo(location.pathname);
+  const { openGroup, setOpenGroup } = useSubDrawer();
 
   useSwipeGesture({
     onSwipeRight: () => { if (!openMobile) setOpenMobile(true); },
@@ -95,7 +95,10 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex w-full">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        className="flex-1 flex flex-col min-w-0"
+        onClick={() => { if (openGroup) setOpenGroup(null); }}
+      >
         {/* Topbar */}
         <header className="h-14 flex items-center border-b border-border/40 bg-background/90 backdrop-blur-xl px-4 sm:px-6 sticky top-0 z-30 gap-3">
           {isMobile && (
@@ -142,11 +145,15 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
 }
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+
   return (
-    <SidebarProvider>
-      <AppLayoutInner>{children}</AppLayoutInner>
-      <SupportChat />
-    </SidebarProvider>
+    <SubDrawerContext.Provider value={{ openGroup, setOpenGroup }}>
+      <SidebarProvider>
+        <AppLayoutInner>{children}</AppLayoutInner>
+        <SupportChat />
+      </SidebarProvider>
+    </SubDrawerContext.Provider>
   );
 };
 
