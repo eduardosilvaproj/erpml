@@ -677,14 +677,14 @@ const CRM = () => {
       </Tabs>
 
       {/* Customer Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
           </DialogHeader>
           {renderForm()}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => handleDialogClose(false)}>Cancelar</Button>
             <Button
               onClick={handleSave}
               disabled={!form.name.trim() || createCustomer.isPending || updateCustomer.isPending}
@@ -697,6 +697,11 @@ const CRM = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UnsavedChangesDialog
+        open={showUnsavedConfirm}
+        onDiscard={() => { setShowUnsavedConfirm(false); formDirtyRef.current = false; setDialogOpen(false); }}
+        onContinue={() => setShowUnsavedConfirm(false)}
+      />
     </div>
   );
 };
