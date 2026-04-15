@@ -31,12 +31,14 @@ interface ConferenceItem {
   xmlProduct: NFeProduct;
   matchedProductId: string | null;
   matchedProductName: string | null;
+  matchedProductBarcode: string | null;
+  matchedProductSku: string | null;
   matchType: string;
   expectedQty: number;
   scannedQty: number;
   status: "pending" | "partial" | "ok" | "excess" | "not_found";
   nfNumber?: string;
-  boxBadge?: string; // e.g. "📦 3 cx × 12 un = 36"
+  boxBadge?: string;
 }
 
 
