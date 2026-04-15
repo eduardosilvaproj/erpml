@@ -1422,6 +1422,7 @@ const EntradaNota = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       {batchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      {boxModeEnabled && <TableHead className="w-[40px]" />}
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
                       <TableHead>SKU / Código</TableHead>
@@ -1434,79 +1435,198 @@ const EntradaNota = () => {
                   <TableBody>
                     {conferenceItems.map((item, i) => {
                       const pct = item.expectedQty > 0 ? Math.min(100, (item.scannedQty / item.expectedQty) * 100) : 0;
+                      const isBoxExpanded = expandedBoxIdx === i;
+                      const boxCfg = boxConfigs[i] || { gtinCx: "", qtyPerBox: 1, boxesReceived: 0, saveGtin: false };
+                      const boxTotal = boxCfg.qtyPerBox * boxCfg.boxesReceived;
                       return (
-                        <TableRow key={i} className={`transition-all duration-500 ${
-                          flashIdx === i ? "!bg-emerald-500/20" :
-                          item.status === "ok" ? "bg-emerald-500/5" :
-                          item.status === "excess" ? "bg-destructive/5" :
-                          item.status === "partial" ? "bg-amber-500/5" : ""
-                        }`}>
-                          {batchMode && batchConferenceMode === "together" && (
+                        <React.Fragment key={i}>
+                          <TableRow className={`transition-all duration-500 ${
+                            flashIdx === i ? "!bg-emerald-500/20" :
+                            item.status === "ok" ? "bg-emerald-500/5" :
+                            item.status === "excess" ? "bg-destructive/5" :
+                            item.status === "partial" ? "bg-amber-500/5" : ""
+                          }`}>
+                            {batchMode && batchConferenceMode === "together" && (
+                              <TableCell>
+                                <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
+                              </TableCell>
+                            )}
+                            {boxModeEnabled && (
+                              <TableCell>
+                                <button
+                                  onClick={() => {
+                                    if (isBoxExpanded) {
+                                      setExpandedBoxIdx(null);
+                                    } else {
+                                      setExpandedBoxIdx(i);
+                                      // Pre-fill from product if available
+                                      if (!boxConfigs[i] && item.matchedProductId) {
+                                        supabase.from("products").select("gtin_cx, box_quantity").eq("id", item.matchedProductId).single().then(({ data }) => {
+                                          if (data) {
+                                            setBoxConfigs((prev) => ({
+                                              ...prev,
+                                              [i]: {
+                                                gtinCx: (data as any).gtin_cx || "",
+                                                qtyPerBox: (data as any).box_quantity || 1,
+                                                boxesReceived: 0,
+                                                saveGtin: false,
+                                                savedGtin: (data as any).gtin_cx || undefined,
+                                                savedQtyPerBox: (data as any).box_quantity || undefined,
+                                              },
+                                            }));
+                                          }
+                                        });
+                                      }
+                                    }
+                                  }}
+                                  className={`text-lg transition-colors ${isBoxExpanded ? "text-primary" : "text-muted-foreground/60 hover:text-primary"}`}
+                                  title="Configurar entrada em caixa"
+                                >
+                                  📦
+                                </button>
+                              </TableCell>
+                            )}
                             <TableCell>
-                              <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
-                              <Package className="h-4 w-4 text-muted-foreground/40" />
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
-                          <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
-                          <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-1">
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
-                                setConferenceItems((prev) => {
-                                  const updated = [...prev];
-                                  const ci = { ...updated[i], scannedQty: Math.max(0, updated[i].scannedQty - 1) };
-                                  ci.status = ci.scannedQty === 0 ? "pending" : ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
-                                  updated[i] = ci;
-                                  return updated;
-                                });
-                              }}>
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="font-bold w-8 text-center text-lg">{item.scannedQty}</span>
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
-                                setConferenceItems((prev) => {
-                                  const updated = [...prev];
-                                  const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
-                                  ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
-                                  updated[i] = ci;
-                                  return updated;
-                                });
-                              }}>
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-2 rounded-full bg-muted/40 overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full transition-all duration-300 ${
-                                    item.status === "ok" ? "bg-emerald-500" :
-                                    item.status === "excess" ? "bg-destructive" :
-                                    item.status === "partial" ? "bg-amber-500" : "bg-muted-foreground/30"
-                                  }`}
-                                  style={{ width: `${pct}%` }}
-                                />
+                              <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground/40" />
                               </div>
-                              <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(pct)}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge className={
-                              item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
-                              item.status === "excess" ? "bg-destructive/15 text-destructive" :
-                              item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
-                              "bg-muted text-muted-foreground"
-                            }>
-                              {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm font-medium">{item.xmlProduct.description}</div>
+                              {item.boxBadge && (
+                                <Badge className="mt-1 bg-primary/15 text-primary border-primary/30 text-[10px]">{item.boxBadge}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</TableCell>
+                            <TableCell className="text-center font-medium">{item.expectedQty}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-center gap-1">
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                                  setConferenceItems((prev) => {
+                                    const updated = [...prev];
+                                    const ci = { ...updated[i], scannedQty: Math.max(0, updated[i].scannedQty - 1) };
+                                    ci.status = ci.scannedQty === 0 ? "pending" : ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                                    updated[i] = ci;
+                                    return updated;
+                                  });
+                                }}>
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="font-bold w-8 text-center text-lg">{item.scannedQty}</span>
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => {
+                                  setConferenceItems((prev) => {
+                                    const updated = [...prev];
+                                    const ci = { ...updated[i], scannedQty: updated[i].scannedQty + 1 };
+                                    ci.status = ci.scannedQty === ci.expectedQty ? "ok" : ci.scannedQty > ci.expectedQty ? "excess" : "partial";
+                                    updated[i] = ci;
+                                    return updated;
+                                  });
+                                }}>
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-2 rounded-full bg-muted/40 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-300 ${
+                                      item.status === "ok" ? "bg-emerald-500" :
+                                      item.status === "excess" ? "bg-destructive" :
+                                      item.status === "partial" ? "bg-amber-500" : "bg-muted-foreground/30"
+                                    }`}
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="text-[10px] text-muted-foreground w-8 text-right">{Math.round(pct)}%</span>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge className={
+                                item.status === "ok" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                                item.status === "excess" ? "bg-destructive/15 text-destructive" :
+                                item.status === "partial" ? "bg-amber-500/15 text-amber-400 border-amber-500/30" :
+                                "bg-muted text-muted-foreground"
+                              }>
+                                {item.status === "ok" ? "OK" : item.status === "excess" ? "Divergente" : item.status === "partial" ? "Parcial" : "Pendente"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Expanded box config row */}
+                          {boxModeEnabled && isBoxExpanded && (
+                            <TableRow className="bg-muted/10 border-t-0">
+                              <TableCell colSpan={boxModeEnabled ? 9 : 8} className="p-0">
+                                <div className="p-4 space-y-4 border-l-4 border-primary/40">
+                                  <p className="text-sm font-semibold flex items-center gap-2">📦 Configurar entrada em caixa</p>
+
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                                        GTIN CX <span className="text-[10px]">(código da caixa)</span>
+                                      </label>
+                                      <div className="flex gap-1">
+                                        <Input
+                                          value={boxCfg.gtinCx}
+                                          onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, gtinCx: e.target.value } }))}
+                                          placeholder="GTIN da caixa"
+                                          className="text-sm"
+                                        />
+                                      </div>
+                                      {boxCfg.savedGtin && (
+                                        <Badge className="mt-1 bg-emerald-500/15 text-emerald-400 text-[10px]">GTIN salvo ✓</Badge>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por caixa</label>
+                                      <Input
+                                        type="number"
+                                        min={1}
+                                        value={boxCfg.qtyPerBox}
+                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, qtyPerBox: parseInt(e.target.value) || 1 } }))}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Caixas recebidas</label>
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        value={boxCfg.boxesReceived}
+                                        onChange={(e) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, boxesReceived: parseInt(e.target.value) || 0 } }))}
+                                        className="text-sm"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Total calculado</label>
+                                      <div className="h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary">
+                                        {boxTotal > 0 ? `${boxCfg.boxesReceived} × ${boxCfg.qtyPerBox} = ${boxTotal} un` : "0 unidades"}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      checked={boxCfg.saveGtin}
+                                      onCheckedChange={(v) => setBoxConfigs((prev) => ({ ...prev, [i]: { ...boxCfg, saveGtin: !!v } }))}
+                                      id={`save-gtin-${i}`}
+                                    />
+                                    <label htmlFor={`save-gtin-${i}`} className="text-xs text-muted-foreground cursor-pointer">
+                                      Salvar GTIN CX neste produto para próximas entradas
+                                    </label>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <Button variant="outline" size="sm" onClick={() => setExpandedBoxIdx(null)}>Cancelar</Button>
+                                    <Button size="sm" onClick={() => applyBoxConfig(i)} disabled={boxTotal === 0} className="gap-1">
+                                      <Check className="h-3 w-3" /> Aplicar
+                                    </Button>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
