@@ -430,6 +430,7 @@ const Estoque = () => {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 
