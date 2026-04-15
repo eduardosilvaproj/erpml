@@ -69,7 +69,7 @@ const TUTORIALS: Tutorial[] = [
     title: "Importar Nota Fiscal XML",
     icon: FileText,
     steps: [
-      "Vá em Estoque > Entrada XML",
+      "Vá em Estoque > Entrada Nota",
       "Arraste o arquivo XML da nota fiscal ou clique para selecionar",
       "O sistema identifica automaticamente os itens e tenta vincular aos produtos cadastrados",
       "Revise os matches e corrija itens não vinculados",

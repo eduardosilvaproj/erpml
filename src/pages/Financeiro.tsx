@@ -389,7 +389,7 @@ export default function Financeiro() {
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <DollarSign className="mb-4 h-12 w-12 opacity-30" />
               <p>Nenhuma nota fiscal encontrada</p>
-              <p className="text-sm">Importe notas pelo módulo Entrada XML</p>
+              <p className="text-sm">Importe notas pelo módulo Entrada Nota</p>
             </div>
           )}
         </CardContent>
