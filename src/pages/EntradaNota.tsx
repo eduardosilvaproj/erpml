@@ -901,6 +901,7 @@ const EntradaNota = () => {
     setBatchConfirmResult(null);
     setBoxBipDialog(null);
     setUnknownGtinDialog(null);
+    clearPersistedState();
   };
 
   const canGoToStep = (step: number) => {
