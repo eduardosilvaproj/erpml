@@ -167,8 +167,8 @@ export default function AdminPanel() {
                         {u.id !== user?.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="h-3 w-3" />
+                              <Button variant="destructive" size="icon" className="h-8 w-8">
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>

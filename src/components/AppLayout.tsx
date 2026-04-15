@@ -102,7 +102,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           )}
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-bold text-foreground leading-none truncate">{pageInfo.title}</h1>
-            <p className="text-[11px] text-muted-foreground/60 mt-0.5 truncate">{pageInfo.subtitle}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 truncate">{pageInfo.subtitle}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <GlobalSearch />

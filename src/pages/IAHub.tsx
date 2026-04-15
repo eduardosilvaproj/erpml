@@ -231,7 +231,7 @@ export default function IAHub() {
             Todas as funcionalidades de inteligência artificial do sistema em um só lugar
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/5 gap-1">
             <ShieldCheck className="h-3 w-3" />
             {totalAvailable}/{AI_FEATURES.length} disponíveis
@@ -253,7 +253,7 @@ export default function IAHub() {
             placeholder="Buscar ferramenta de IA..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 border-border"
           />
         </div>
         <div className="flex items-center justify-between">

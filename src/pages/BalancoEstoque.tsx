@@ -656,12 +656,25 @@ const BalancoEstoque = () => {
 
       {/* Info card */}
       <Card>
-        <CardContent className="p-4">
-          <div className="rounded-lg bg-muted p-4 text-center">
-            <p className="text-sm font-medium text-foreground">Como funciona o Balanço de Estoque</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              1. Inicie o balanço • 2. Use o bip, câmera ou digitação manual • 3. Cada leitura incrementa +1 na contagem • 4. Compare e exporte o relatório CSV
-            </p>
+        <CardContent className="p-5">
+          <p className="text-base font-semibold text-foreground mb-4">Como funciona o Balanço de Estoque</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">1</span>
+              <p className="text-sm text-muted-foreground">Clique em <strong className="text-foreground">Iniciar Balanço</strong> para começar a contagem</p>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">2</span>
+              <p className="text-sm text-muted-foreground">Use o <strong className="text-foreground">bip, câmera ou digitação</strong> para contar cada item</p>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">3</span>
+              <p className="text-sm text-muted-foreground">Cada leitura <strong className="text-foreground">incrementa +1</strong> na contagem do produto</p>
+            </div>
+            <div className="flex items-start gap-3 rounded-lg bg-muted/50 p-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary text-sm font-bold">4</span>
+              <p className="text-sm text-muted-foreground">Compare divergências e <strong className="text-foreground">exporte o relatório CSV</strong></p>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound } from "lucide-react";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause } from "lucide-react";
 import PendingUsersTab from "@/components/PendingUsersTab";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
@@ -275,15 +275,20 @@ export default function MasterAdmin() {
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant={c.status === "active" ? "destructive" : "default"}
-                              size="sm"
-                              onClick={() => handleToggleStatus(c.id, c.status)}
-                              disabled={toggleStatus.isPending}
-                            >
-                              {c.status === "active" ? <PowerOff className="h-3 w-3 mr-1" /> : <Power className="h-3 w-3 mr-1" />}
-                              {c.status === "active" ? "Suspender" : "Ativar"}
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant={c.status === "active" ? "outline" : "default"}
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => handleToggleStatus(c.id, c.status)}
+                                  disabled={toggleStatus.isPending}
+                                >
+                                  {c.status === "active" ? <Pause className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))}

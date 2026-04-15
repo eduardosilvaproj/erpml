@@ -63,7 +63,7 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
     <Tooltip>
       <TooltipTrigger asChild>
         <Card className="hover-lift border-border/50">
-          <CardContent className="p-5">
+          <CardContent className="px-5 py-3">
             <div className="flex items-center gap-2">
               <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
@@ -96,7 +96,7 @@ const Index = () => {
   return (
     <div className="space-y-8">
       {/* Period Filter */}
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-end gap-1.5">
         {(Object.keys(periodLabels) as PeriodFilter[]).map((p) => (
           <button
             key={p}
