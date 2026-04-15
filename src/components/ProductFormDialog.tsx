@@ -82,6 +82,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [isSearchingPhotos, setIsSearchingPhotos] = useState(false);
   const [showPhotoGrid, setShowPhotoGrid] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const selectedFileRef = useRef<File | null>(null);
+  const [photoSource, setPhotoSource] = useState<"file" | "unsplash" | null>(null);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
@@ -111,9 +113,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     if (open) {
       form.reset(getDefaults(product));
       setSkuConflict(null);
-      setPhotoPreview(null);
+      setPhotoPreview(product?.image_url || null);
       setUnsplashPhotos([]);
       setShowPhotoGrid(false);
+      selectedFileRef.current = null;
+      setPhotoSource(product?.image_url ? "unsplash" : null);
     }
   }, [open, product]);
 
@@ -132,7 +136,47 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     return (data && data.length > 0) || false;
   };
 
+  const uploadImageToStorage = async (sku: string): Promise<string | null> => {
+    // Upload from file
+    if (photoSource === "file" && selectedFileRef.current) {
+      const file = selectedFileRef.current;
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${sku}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+      return urlData.publicUrl;
+    }
+    // Download from Unsplash URL and upload
+    if (photoSource === "unsplash" && photoPreview && photoPreview.startsWith("http")) {
+      try {
+        const res = await fetch(photoPreview);
+        const blob = await res.blob();
+        const path = `${sku}-${Date.now()}.jpg`;
+        const { error } = await supabase.storage.from("product-images").upload(path, blob, { contentType: "image/jpeg" });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        return urlData.publicUrl;
+      } catch {
+        return photoPreview; // fallback to direct URL
+      }
+    }
+    return null;
+  };
+
   const submitProduct = async (values: FormValues) => {
+    let imageUrl: string | null = product?.image_url || null;
+    
+    // Only upload if photo changed
+    if (photoSource) {
+      try {
+        const uploaded = await uploadImageToStorage(values.sku);
+        if (uploaded) imageUrl = uploaded;
+      } catch (err: any) {
+        toast({ title: "Erro ao salvar foto", description: err.message, variant: "destructive" });
+      }
+    }
+
     const formData: ProductFormData = {
       sku: values.sku,
       barcode: values.barcode || undefined,
@@ -149,6 +193,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       id_ml: values.id_ml || undefined,
       min_stock: values.min_stock,
       supplier_ids: [],
+      image_url: imageUrl || undefined,
     };
 
     if (product) {
@@ -242,8 +287,10 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPhotoPreview(url);
+      selectedFileRef.current = file;
+      setPhotoSource("file");
+      setPhotoPreview(URL.createObjectURL(file));
+      setShowPhotoGrid(false);
     }
   };
 
@@ -267,6 +314,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                       e.preventDefault();
                       const file = e.dataTransfer.files[0];
                       if (file && file.type.startsWith("image/")) {
+                        selectedFileRef.current = file;
+                        setPhotoSource("file");
                         setPhotoPreview(URL.createObjectURL(file));
                         setShowPhotoGrid(false);
                       }
@@ -326,6 +375,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                                 }`}
                                 onClick={() => {
                                   setPhotoPreview(photo.url_regular);
+                                  setPhotoSource("unsplash");
+                                  selectedFileRef.current = null;
                                 }}
                               >
                                 <img

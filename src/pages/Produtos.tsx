@@ -329,9 +329,13 @@ const Produtos = () => {
                                 />
                               </TableCell>
                               <TableCell>
-                                <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center">
-                                  <Package className="h-5 w-5 text-muted-foreground/40" />
-                                </div>
+                                {product.image_url ? (
+                                  <img src={product.image_url} alt={product.name} className="h-10 w-10 rounded-lg object-cover" />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center">
+                                    <Package className="h-5 w-5 text-muted-foreground/40" />
+                                  </div>
+                                )}
                               </TableCell>
                               <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
                               <TableCell className="font-medium max-w-[200px] truncate">{product.name}</TableCell>
