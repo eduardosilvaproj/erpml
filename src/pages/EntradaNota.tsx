@@ -2085,7 +2085,7 @@ const EntradaNota = () => {
                     className="mt-0.5"
                   />
                   <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
-                    <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
+                    <span className="font-medium">Salvar este código como GTIN CX do produto {unknownGtinProduct.startsWith("idx-") ? conferenceItems[parseInt(unknownGtinProduct.replace("idx-", ""), 10)]?.xmlProduct.description || "" : conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
                     <br />
                     <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
                   </label>
