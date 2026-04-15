@@ -435,7 +435,7 @@ const EntradaNota = () => {
     } catch {}
   };
 
-  const handleBip = (code: string) => {
+  const handleBip = async (code: string) => {
     if (!code.trim()) return;
     setBipInput("");
     setBipAlert(null);
@@ -444,41 +444,116 @@ const EntradaNota = () => {
       (i) => i.xmlProduct.ean === code || i.xmlProduct.code === code
     );
 
-    if (idx === -1) {
-      setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
-      playBeep(200, 400);
+    if (idx !== -1) {
+      setFlashIdx(idx);
+      setTimeout(() => setFlashIdx(null), 1000);
+
+      setConferenceItems((prev) => {
+        const updated = [...prev];
+        const item = { ...updated[idx] };
+        item.scannedQty += 1;
+        if (item.scannedQty === item.expectedQty) {
+          item.status = "ok";
+          setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
+          playBeep(800, 100);
+        } else if (item.scannedQty > item.expectedQty) {
+          item.status = "excess";
+          setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
+          playBeep(200, 150);
+          setTimeout(() => playBeep(200, 150), 200);
+        } else {
+          item.status = "partial";
+          setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
+          playBeep(600, 100);
+        }
+        updated[idx] = item;
+        return updated;
+      });
       setTimeout(() => bipRef.current?.focus(), 50);
       return;
     }
 
-    setFlashIdx(idx);
-    setTimeout(() => setFlashIdx(null), 1000);
+    // Check GTIN CX if box mode enabled
+    if (boxModeEnabled) {
+      try {
+        const { data: boxProduct } = await supabase
+          .from("products")
+          .select("id, name, gtin_cx, box_quantity")
+          .eq("gtin_cx", code)
+          .limit(1);
+
+        if (boxProduct && boxProduct.length > 0) {
+          const bp = boxProduct[0];
+          const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
+          if (productIdx !== -1) {
+            setBoxBipDialog({
+              code,
+              productIdx,
+              productName: bp.name,
+              qtyPerBox: (bp as any).box_quantity || 1,
+            });
+            playBeep(600, 100);
+            return;
+          }
+        }
+        // Unknown GTIN CX
+        setUnknownGtinDialog({ code });
+        playBeep(200, 400);
+        return;
+      } catch { /* fall through */ }
+    }
+
+    setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
+    playBeep(200, 400);
+    setTimeout(() => bipRef.current?.focus(), 50);
+  };
+
+  const applyBoxBip = (productIdx: number, boxes: number, qtyPerBox: number) => {
+    const total = boxes * qtyPerBox;
+    setConferenceItems((prev) => {
+      const updated = [...prev];
+      const item = { ...updated[productIdx] };
+      item.scannedQty += total;
+      item.boxBadge = `📦 ${boxes} cx × ${qtyPerBox} un = ${total}`;
+      if (item.scannedQty === item.expectedQty) item.status = "ok";
+      else if (item.scannedQty > item.expectedQty) item.status = "excess";
+      else item.status = "partial";
+      updated[productIdx] = item;
+      return updated;
+    });
+    setBoxBipDialog(null);
+    playBeep(800, 100);
+    setBipAlert({ type: "success", msg: `📦 ${total} unidades adicionadas via caixa!` });
+    setTimeout(() => bipRef.current?.focus(), 50);
+  };
+
+  const applyBoxConfig = async (idx: number) => {
+    const config = boxConfigs[idx];
+    if (!config) return;
+    const total = config.boxesReceived * config.qtyPerBox;
 
     setConferenceItems((prev) => {
       const updated = [...prev];
       const item = { ...updated[idx] };
-      item.scannedQty += 1;
-
-      if (item.scannedQty === item.expectedQty) {
-        item.status = "ok";
-        setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
-        playBeep(800, 100);
-      } else if (item.scannedQty > item.expectedQty) {
-        item.status = "excess";
-        setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
-        playBeep(200, 150);
-        setTimeout(() => playBeep(200, 150), 200);
-      } else {
-        item.status = "partial";
-        setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
-        playBeep(600, 100);
-      }
-
+      item.scannedQty = total;
+      item.boxBadge = `📦 ${config.boxesReceived} cx × ${config.qtyPerBox} un = ${total}`;
+      if (item.scannedQty === item.expectedQty) item.status = "ok";
+      else if (item.scannedQty > item.expectedQty) item.status = "excess";
+      else if (item.scannedQty > 0) item.status = "partial";
+      else item.status = "pending";
       updated[idx] = item;
       return updated;
     });
 
-    setTimeout(() => bipRef.current?.focus(), 50);
+    if (config.saveGtin && config.gtinCx && conferenceItems[idx]?.matchedProductId) {
+      await supabase.from("products").update({
+        gtin_cx: config.gtinCx,
+        box_quantity: config.qtyPerBox,
+      }).eq("id", conferenceItems[idx].matchedProductId!);
+      toast({ title: "GTIN CX salvo no cadastro!" });
+    }
+
+    setExpandedBoxIdx(null);
   };
 
   const conferenceProgress = conferenceItems.length > 0
