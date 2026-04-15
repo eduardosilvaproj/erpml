@@ -163,21 +163,46 @@ const EntradaNota = () => {
   }, [toast]);
 
   const handleXmlUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     setLoading(true);
     try {
-      const xml = await file.text();
-      const parsed = parseNFeXml(xml);
       const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
-      const matched = matchProducts(parsed.products, dbProducts || []);
-      setNfeData(parsed);
-      setMatches(matched);
-      setNfNumber(parsed.number);
-      setNfSeries(parsed.series || "001");
-      setNfFornecedor(parsed.issuerName);
-      setNfDate(parsed.issueDate || "");
-      toast({ title: "XML importado!", description: `${parsed.products.length} produtos encontrados.` });
+
+      for (const file of Array.from(files)) {
+        try {
+          const xml = await file.text();
+          const parsed = parseNFeXml(xml);
+          const matched = matchProducts(parsed.products, dbProducts || []);
+
+          // If single file, set as current NF (legacy behavior)
+          if (files.length === 1) {
+            setNfeData(parsed);
+            setMatches(matched);
+            setNfNumber(parsed.number);
+            setNfSeries(parsed.series || "001");
+            setNfFornecedor(parsed.issuerName);
+            setNfDate(parsed.issueDate || "");
+          }
+
+          // Always add to batchNfes for the loaded table
+          setBatchNfes((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              nfeData: parsed,
+              matches: matched,
+              fileName: file.name,
+              selected: true,
+              conferenceStatus: "pending",
+            },
+          ]);
+        } catch (err: any) {
+          toast({ title: `Erro: ${file.name}`, description: err.message, variant: "destructive" });
+        }
+      }
+
+      toast({ title: "XML(s) importado(s)!", description: `${files.length} arquivo(s) processado(s).` });
     } catch (err: any) {
       toast({ title: "Erro no XML", description: err.message, variant: "destructive" });
     } finally {
