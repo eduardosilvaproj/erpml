@@ -375,6 +375,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                                 }`}
                                 onClick={() => {
                                   setPhotoPreview(photo.url_regular);
+                                  setPhotoSource("unsplash");
+                                  selectedFileRef.current = null;
                                 }}
                               >
                                 <img
