@@ -292,6 +292,8 @@ const EntradaNota = () => {
           matchedProductName: m.matchedProductName,
           matchedProductBarcode: m.matchedProductBarcode,
           matchedProductSku: m.matchedProductSku,
+          matchedProductGtinCx: m.matchedProductGtinCx,
+          matchedProductBoxQty: m.matchedProductBoxQty,
           matchType: m.matchType,
           expectedQty: Math.floor(m.xmlProduct.quantity),
           scannedQty: 0,
