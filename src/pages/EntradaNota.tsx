@@ -422,7 +422,10 @@ const EntradaNota = () => {
       (i) => {
         const eanMatch = normalizedDigits.length > 0 && normalizeDigits(i.xmlProduct.ean) === normalizedDigits;
         const codeMatch = normalizeIdentifier(i.xmlProduct.code) === normalizedCode;
-        return eanMatch || codeMatch;
+        // Also match against linked product's barcode/SKU from the database
+        const dbBarcodeMatch = normalizedDigits.length > 0 && i.matchedProductBarcode && normalizeDigits(i.matchedProductBarcode) === normalizedDigits;
+        const dbSkuMatch = i.matchedProductSku && normalizeIdentifier(i.matchedProductSku) === normalizedCode;
+        return eanMatch || codeMatch || dbBarcodeMatch || dbSkuMatch;
       }
     );
 
