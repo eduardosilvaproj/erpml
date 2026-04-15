@@ -563,18 +563,21 @@ const EntradaNota = () => {
 
       if (boxProducts && boxProducts.length > 0) {
         isKnownGtin = true;
-        // Pre-select the exact product that is in the conference list
+        // Pre-select the exact product that is in the conference list (using idx- key)
         for (const bp of boxProducts) {
           const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
           if (productIdx !== -1) {
-            preSelectedProduct = bp.id;
+            preSelectedProduct = `idx-${productIdx}`;
             preSelectedQty = bp.box_quantity || 1;
             break;
           }
         }
-        // Fallback to first result if no conference match
-        if (!preSelectedProduct) {
-          preSelectedProduct = boxProducts[0].id;
+        // Fallback: find first conference item index for first box product
+        if (!preSelectedProduct && boxProducts[0]) {
+          const fallbackIdx = conferenceItems.findIndex((i) => i.matchedProductId === boxProducts[0].id);
+          if (fallbackIdx !== -1) {
+            preSelectedProduct = `idx-${fallbackIdx}`;
+          }
           preSelectedQty = boxProducts[0].box_quantity || 1;
         }
       }
@@ -1469,8 +1472,8 @@ const EntradaNota = () => {
                             <TableCell className="text-center">
                               <button
                                 onClick={() => {
-                                  setUnknownGtinDialog({ code: "" });
-                                  setUnknownGtinProduct(item.matchedProductId || `idx-${i}`);
+                                   setUnknownGtinDialog({ code: "" });
+                                  setUnknownGtinProduct(`idx-${i}`);
                                   setUnknownGtinQty(item.matchedProductBoxQty || 1);
                                   setUnknownGtinBoxes(1);
                                   setUnknownGtinSave(true);
@@ -2013,26 +2016,29 @@ const EntradaNota = () => {
             onValueChange={setUnknownGtinProduct}
             className="space-y-2 max-h-[200px] overflow-y-auto"
           >
-            {conferenceItems.map((item, idx) => (
-              <label
-                key={idx}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  unknownGtinProduct === (item.matchedProductId || `idx-${idx}`)
-                    ? "border-primary bg-primary/5"
-                    : "border-border/40 hover:border-primary/30"
-                }`}
-              >
-                <RadioGroupItem value={item.matchedProductId || `idx-${idx}`} />
-                <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
-                  <Package className="h-4 w-4 text-muted-foreground/40" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.xmlProduct.description}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground">{item.xmlProduct.code}</p>
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0">Qtd: {item.expectedQty}</span>
-              </label>
-            ))}
+            {conferenceItems.map((item, idx) => {
+              const itemKey = `idx-${idx}`;
+              return (
+                <label
+                  key={idx}
+                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    unknownGtinProduct === itemKey
+                      ? "border-primary bg-primary/5"
+                      : "border-border/40 hover:border-primary/30"
+                  }`}
+                >
+                  <RadioGroupItem value={itemKey} />
+                  <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                    <Package className="h-4 w-4 text-muted-foreground/40" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{item.xmlProduct.description}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground">{item.xmlProduct.code}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">Qtd: {item.expectedQty}</span>
+                </label>
+              );
+            })}
           </RadioGroup>
 
           {unknownGtinProduct && (
@@ -2079,7 +2085,7 @@ const EntradaNota = () => {
                     className="mt-0.5"
                   />
                   <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
-                    <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
+                    <span className="font-medium">Salvar este código como GTIN CX do produto {unknownGtinProduct.startsWith("idx-") ? conferenceItems[parseInt(unknownGtinProduct.replace("idx-", ""), 10)]?.xmlProduct.description || "" : conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
                     <br />
                     <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
                   </label>
