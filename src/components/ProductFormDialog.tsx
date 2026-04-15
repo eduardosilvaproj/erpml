@@ -305,7 +305,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={guardedClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] p-0">
           <DialogHeader className="px-6 pt-6 pb-0">
             <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
