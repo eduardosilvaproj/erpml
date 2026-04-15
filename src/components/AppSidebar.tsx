@@ -3,7 +3,7 @@ import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
-  Building2, BarChart3, ShoppingBag, BarChart
+  Building2, BarChart3, ShoppingBag, BarChart, DollarSign
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +45,7 @@ const groups: NavGroup[] = [
     subItems: [
       { label: "PDV", url: "/pdv", icon: Monitor, tooltip: "Registre vendas no balcão com ou sem leitor de código de barras" },
       { label: "Campanhas", url: "/campanhas", icon: Megaphone, tooltip: "Crie promoções e descontos para seus produtos" },
+      { label: "Minha Loja", url: "/minha-loja/configurar", icon: Store, tooltip: "Configure sua vitrine virtual" },
       { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag, tooltip: "Conecte sua conta do Mercado Livre ao sistema" },
     ],
   },
@@ -54,6 +55,7 @@ const groups: NavGroup[] = [
     subItems: [
       { label: "Minha Empresa", url: "/empresa", icon: Building2, tooltip: "Dados e configurações da sua empresa" },
       { label: "Relatórios", url: "/painel-hub", icon: BarChart3, tooltip: "Métricas e relatórios de desempenho" },
+      { label: "Financeiro", url: "/financeiro", icon: DollarSign, tooltip: "Cobranças, pagamentos e faturamento" },
     ],
   },
 ];
