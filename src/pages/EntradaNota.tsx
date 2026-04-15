@@ -575,6 +575,46 @@ const EntradaNota = () => {
                   {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
                   Buscar Nota
                 </Button>
+                <Button
+                  variant="outline"
+                  className="w-full min-h-[44px] border-dashed border-amber-500/40 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => {
+                    const fakeNfe: NFeData = {
+                      number: "004521",
+                      series: "001",
+                      issuerCnpj: "00.000.000/0001-00",
+                      issuerName: "Distribuidora Alfa LTDA",
+                      totalValue: 850.00,
+                      products: [
+                        { code: "P-A", description: "Produto A", ean: "7891234560011", ncm: "8471.30.19", cfop: "5102", unit: "UN", quantity: 5, unitValue: 50, totalValue: 250 },
+                        { code: "P-B", description: "Produto B", ean: "7891234560028", ncm: "8471.30.19", cfop: "5102", unit: "UN", quantity: 3, unitValue: 100, totalValue: 300 },
+                        { code: "P-C", description: "Produto C", ean: "7891234560035", ncm: "8471.30.19", cfop: "5102", unit: "UN", quantity: 10, unitValue: 30, totalValue: 300 },
+                      ],
+                    };
+                    const fakeMatches: MatchResult[] = fakeNfe.products.map((p) => ({
+                      xmlProduct: p,
+                      matchedProductId: null,
+                      matchedProductName: null,
+                      matchType: "none" as const,
+                      confidence: 0,
+                    }));
+                    setNfeData(fakeNfe);
+                    setNfeChave("35260400000000000100550010045210001004521001");
+                    setMatches(fakeMatches);
+                    setConferenceItems(fakeMatches.map((m) => ({
+                      xmlProduct: m.xmlProduct,
+                      matchedProductId: m.matchedProductId,
+                      matchedProductName: m.matchedProductName,
+                      matchType: m.matchType,
+                      expectedQty: m.xmlProduct.quantity,
+                      scannedQty: 0,
+                      status: "pending" as const,
+                    })));
+                    goToStep(2);
+                  }}
+                >
+                  🧪 Simular NF e ir para Etapa 2
+                </Button>
               </CardContent>
             </Card>
           )}
