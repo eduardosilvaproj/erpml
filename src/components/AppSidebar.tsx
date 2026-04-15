@@ -4,38 +4,33 @@ import {
   Warehouse, ArrowRightLeft, ShoppingBag, Monitor,
   Users, UsersRound, BarChart3, LogOut, ShieldCheck, DollarSign, Sparkles,
   Building2, Crown, Lock, Megaphone, Boxes, GraduationCap, ClipboardList,
-  ChevronRight, Store, Brain, TrendingUp, CameraIcon
+  Store, Brain, TrendingUp, CameraIcon
 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
-import { usePlanFeatures, getRequiredPlan } from "@/hooks/usePlanFeatures";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
   SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Collapsible, CollapsibleContent, CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { useSidebarCategory } from "@/contexts/SidebarCategoryContext";
 
-interface MenuItem {
+export interface MenuItem {
   title: string;
   url: string;
   icon: any;
+  desc?: string;
   premium?: boolean;
 }
 
-interface MenuGroup {
+export interface MenuGroup {
   label: string;
   icon: any;
   color: string;
@@ -47,16 +42,16 @@ const topItems: MenuItem[] = [
   { title: "Minha Empresa", url: "/empresa", icon: Building2 },
 ];
 
-const menuGroups: MenuGroup[] = [
+export const menuGroups: MenuGroup[] = [
   {
     label: "Cadastros",
     icon: Package,
     color: "text-blue-400",
     items: [
-      { title: "Produtos", url: "/produtos", icon: Package },
-      { title: "Kits", url: "/kits", icon: Boxes },
-      { title: "Equipe", url: "/equipe", icon: UsersRound },
-      { title: "CRM", url: "/crm", icon: Users },
+      { title: "Produtos", url: "/produtos", icon: Package, desc: "Cadastro e gestão de produtos" },
+      { title: "Kits", url: "/kits", icon: Boxes, desc: "Monte kits compostos" },
+      { title: "Equipe", url: "/equipe", icon: UsersRound, desc: "Membros e permissões" },
+      { title: "CRM", url: "/crm", icon: Users, desc: "Clientes e perguntas ML" },
     ],
   },
   {
@@ -64,11 +59,11 @@ const menuGroups: MenuGroup[] = [
     icon: Warehouse,
     color: "text-emerald-400",
     items: [
-      { title: "Estoque", url: "/estoque", icon: Warehouse },
-      { title: "Entrada Nota", url: "/entrada-nota", icon: CameraIcon },
-      { title: "Conferência", url: "/conferencia", icon: ScanBarcode },
-      { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList },
-      { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, premium: true },
+      { title: "Estoque", url: "/estoque", icon: Warehouse, desc: "Saldo físico e FULL" },
+      { title: "Entrada Nota", url: "/entrada-nota", icon: CameraIcon, desc: "Importar notas fiscais" },
+      { title: "Conferência", url: "/conferencia", icon: ScanBarcode, desc: "Bip de recebimento" },
+      { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList, desc: "Inventário físico" },
+      { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, desc: "Transferir para FULL", premium: true },
     ],
   },
   {
@@ -76,10 +71,10 @@ const menuGroups: MenuGroup[] = [
     icon: Store,
     color: "text-amber-400",
     items: [
-      { title: "PDV", url: "/pdv", icon: Monitor },
-      { title: "Campanhas", url: "/campanhas", icon: Megaphone },
-      { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag, premium: true },
-      { title: "Minha Loja", url: "/minha-loja/configurar", icon: Store },
+      { title: "PDV", url: "/pdv", icon: Monitor, desc: "Ponto de venda" },
+      { title: "Campanhas", url: "/campanhas", icon: Megaphone, desc: "Anúncios em massa" },
+      { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag, desc: "Mercado Livre", premium: true },
+      { title: "Minha Loja", url: "/minha-loja/configurar", icon: Store, desc: "Vitrine virtual" },
     ],
   },
   {
@@ -87,8 +82,8 @@ const menuGroups: MenuGroup[] = [
     icon: TrendingUp,
     color: "text-violet-400",
     items: [
-      { title: "Painel HUB", url: "/painel-hub", icon: BarChart3, premium: true },
-      { title: "Financeiro", url: "/financeiro", icon: DollarSign, premium: true },
+      { title: "Painel HUB", url: "/painel-hub", icon: BarChart3, desc: "Relatórios e métricas", premium: true },
+      { title: "Financeiro", url: "/financeiro", icon: DollarSign, desc: "Cobranças e pagamentos", premium: true },
     ],
   },
   {
@@ -96,8 +91,8 @@ const menuGroups: MenuGroup[] = [
     icon: Brain,
     color: "text-rose-400",
     items: [
-      { title: "Central de IA", url: "/ia-hub", icon: Sparkles },
-      { title: "Mentor de Vendas", url: "/mentor-vendas", icon: GraduationCap, premium: true },
+      { title: "Central de IA", url: "/ia-hub", icon: Sparkles, desc: "Ferramentas de IA" },
+      { title: "Mentor de Vendas", url: "/mentor-vendas", icon: GraduationCap, desc: "Crescimento guiado", premium: true },
     ],
   },
 ];
@@ -106,180 +101,42 @@ export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { data: isAdmin } = useIsAdmin();
   const { data: pendingUsers } = usePendingUsers(!!isAdmin);
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
-  const { isRouteAllowed, planName } = usePlanFeatures();
+  const { planName } = usePlanFeatures();
   const unansweredQuestions = useUnansweredMLQuestionsCount();
   const isMobile = useIsMobile();
+  const { activeCategory, toggleCategory } = useSidebarCategory();
 
   const isPathActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
   };
 
-  const findActiveGroup = () => {
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+
+  const findActiveGroupLabel = () => {
     for (const g of menuGroups) {
       if (g.items.some((item) => isPathActive(item.url))) return g.label;
     }
     return null;
   };
 
-  const STORAGE_KEY = "erp-sidebar-open-groups";
-
-  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return new Set(JSON.parse(saved) as string[]);
-    } catch {}
-    const active = findActiveGroup();
-    return active ? new Set([active]) : new Set<string>();
-  });
-
-  const toggleGroup = (label: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(label)) next.delete(label);
-      else next.add(label);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch {}
-      return next;
-    });
-  };
-
-  const handleNavClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  };
-
-  const renderNavItem = (item: MenuItem) => {
-    const allowed = isRouteAllowed(item.url);
-    const badgeCount = item.url === "/crm" ? unansweredQuestions : 0;
-
-    if (!allowed) {
-      const requiredPlan = getRequiredPlan(item.url) || "Superior";
-      return (
-        <SidebarMenuItem key={item.title}>
-          <TooltipProvider delayDuration={200}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center gap-3 px-3 min-h-[44px] py-2 rounded-lg text-muted-foreground/25 cursor-not-allowed select-none">
-                  <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
-                  {!collapsed && (
-                    <>
-                      <span className="flex-1 truncate text-sm">{item.title}</span>
-                      <Lock className="h-3.5 w-3.5 shrink-0 opacity-40" />
-                    </>
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right" className="text-xs max-w-[200px] space-y-1 p-3">
-                <p className="font-medium">🔒 Plano {requiredPlan}</p>
-                <p className="text-muted-foreground">Faça upgrade para desbloquear.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </SidebarMenuItem>
-      );
-    }
-
-    const active = isPathActive(item.url);
-
-    return (
-      <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton asChild>
-          <NavLink
-            to={item.url}
-            end={item.url === "/"}
-            onClick={handleNavClick}
-            className={`flex items-center rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98] hover:bg-sidebar-accent/80 ${
-              active ? "bg-primary/10 text-primary font-medium" : "text-sidebar-foreground"
-            }`}
-            activeClassName=""
-          >
-            <item.icon className="mr-3 h-5 w-5 shrink-0" strokeWidth={1.75} />
-            {!collapsed && <span className="text-sm flex-1 truncate">{item.title}</span>}
-            {!collapsed && item.premium && (
-              <Badge variant="outline" className="ml-auto h-5 px-1.5 text-[10px] font-medium border-primary/30 text-primary/70 bg-primary/5">
-                Pro
-              </Badge>
-            )}
-            {badgeCount > 0 && (
-              <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
-                {badgeCount}
-              </Badge>
-            )}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    );
-  };
-
-  const renderGroup = (group: MenuGroup) => {
-    const isOpen = openGroups.has(group.label);
-    const hasActiveRoute = group.items.some((item) => isPathActive(item.url));
-
-    if (collapsed) {
-      return (
-        <div key={group.label} className="space-y-1">
-          {group.items.map(renderNavItem)}
-        </div>
-      );
-    }
-
-    return (
-      <Collapsible key={group.label} open={isOpen} onOpenChange={() => toggleGroup(group.label)}>
-        <CollapsibleTrigger
-          className={`flex items-center w-full gap-2.5 px-3 min-h-[44px] py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-widest transition-all duration-150 group active:scale-[0.98]
-            ${hasActiveRoute && !isOpen
-              ? "text-sidebar-foreground/80"
-              : isOpen
-                ? "text-sidebar-foreground/90"
-                : "text-sidebar-foreground/40 hover:text-sidebar-foreground/70"
-            }
-            hover:bg-sidebar-accent/40
-          `}
-        >
-          <div className={`flex items-center justify-center h-6 w-6 rounded-md ${group.color}`}>
-            <group.icon className="h-4 w-4" strokeWidth={2} />
-          </div>
-          <span className="flex-1 text-left">{group.label}</span>
-          {hasActiveRoute && !isOpen && (
-            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          )}
-          <ChevronRight
-            className={`h-3.5 w-3.5 text-sidebar-foreground/30 transition-transform duration-200 group-hover:text-sidebar-foreground/50 ${
-              isOpen ? "rotate-90" : "rotate-0"
-            }`}
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
-          <div className="ml-5 border-l-2 border-sidebar-border/50 pl-3 py-1 space-y-0.5">
-            <SidebarMenu>
-              {group.items.map((item, i) => (
-                <div
-                  key={item.title}
-                  className="animate-fade-in"
-                  style={{ animationDelay: `${i * 40}ms`, animationFillMode: "backwards" }}
-                >
-                  {renderNavItem(item)}
-                </div>
-              ))}
-            </SidebarMenu>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    );
-  };
+  const activeGroupLabel = findActiveGroupLabel();
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent className="py-3 overflow-y-auto scrollbar-thin">
         <SidebarGroup>
-          <SidebarGroupLabel>
+          <SidebarGroupContent>
+            {/* Logo */}
             {!collapsed && (
-              <div className="flex items-center gap-2.5 px-2 mb-1">
+              <div className="flex items-center gap-2.5 px-4 mb-4">
                 <div className="h-9 w-9 rounded-lg bg-primary/15 flex items-center justify-center shadow-[var(--shadow-glow)]">
                   <span className="text-base font-bold text-primary">E</span>
                 </div>
@@ -289,13 +146,28 @@ export function AppSidebar() {
                 </div>
               </div>
             )}
-          </SidebarGroupLabel>
 
-          <SidebarGroupContent className="mt-3">
-            {/* Top-level items */}
-            <SidebarMenu className="space-y-0.5 px-2">
-              {topItems.map(renderNavItem)}
-            </SidebarMenu>
+            {/* Top-level nav items */}
+            <div className="space-y-1 px-2 mb-2">
+              {topItems.map((item) => {
+                const active = isPathActive(item.url);
+                return (
+                  <NavLink
+                    key={item.title}
+                    to={item.url}
+                    end={item.url === "/"}
+                    onClick={handleNavClick}
+                    className={`flex items-center gap-3 rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98] hover:bg-sidebar-accent/80 ${
+                      active ? "bg-primary/10 text-primary font-medium" : "text-sidebar-foreground"
+                    }`}
+                    activeClassName=""
+                  >
+                    <item.icon className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                    {!collapsed && <span className="text-sm">{item.title}</span>}
+                  </NavLink>
+                );
+              })}
+            </div>
 
             {/* Separator */}
             {!collapsed && (
@@ -304,9 +176,49 @@ export function AppSidebar() {
               </div>
             )}
 
-            {/* Grouped sections */}
-            <div className="space-y-1 px-2">
-              {menuGroups.map(renderGroup)}
+            {/* Category buttons */}
+            <div className="space-y-1.5 px-2">
+              {menuGroups.map((group) => {
+                const isActive = activeCategory === group.label;
+                const hasActiveRoute = group.items.some((item) => isPathActive(item.url));
+                const isHighlighted = isActive || (hasActiveRoute && activeCategory === null);
+
+                return (
+                  <button
+                    key={group.label}
+                    onClick={() => toggleCategory(group.label)}
+                    className={`flex items-center gap-3 w-full rounded-lg transition-all duration-200 min-h-[52px] py-3 px-3 active:scale-[0.97] group ${
+                      isHighlighted
+                        ? "bg-primary/10 border-l-[3px] border-l-primary"
+                        : "hover:bg-sidebar-accent/50 border-l-[3px] border-l-transparent"
+                    }`}
+                  >
+                    <div className={`flex items-center justify-center h-9 w-9 rounded-lg transition-colors ${
+                      isHighlighted ? "bg-primary/15" : "bg-sidebar-accent/60 group-hover:bg-sidebar-accent"
+                    }`}>
+                      <group.icon className={`h-5 w-5 ${isHighlighted ? "text-primary" : group.color}`} strokeWidth={1.75} />
+                    </div>
+                    {!collapsed && (
+                      <div className="flex-1 text-left min-w-0">
+                        <span className={`text-sm font-semibold block ${
+                          isHighlighted ? "text-primary" : "text-sidebar-foreground"
+                        }`}>
+                          {group.label}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">{group.items.length} itens</span>
+                      </div>
+                    )}
+                    {!collapsed && hasActiveRoute && !isActive && (
+                      <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
+                    )}
+                    {!collapsed && group.label === "Cadastros" && unansweredQuestions > 0 && (
+                      <Badge className="h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse shrink-0">
+                        {unansweredQuestions}
+                      </Badge>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Admin section */}
@@ -322,29 +234,31 @@ export function AppSidebar() {
                     <div className="h-px flex-1 bg-destructive/20" />
                   </div>
                 )}
-                <SidebarMenu className="space-y-0.5">
-                  {renderNavItem({ title: "Admin", url: "/admin", icon: ShieldCheck })}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild>
-                      <NavLink
-                        to="/master-admin"
-                        onClick={handleNavClick}
-                        className="hover:bg-sidebar-accent/80 rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98]"
-                        activeClassName="bg-primary/10 text-primary font-medium"
-                      >
-                        <Crown className="mr-3 h-5 w-5" strokeWidth={1.75} />
-                        {!collapsed && (
-                          <span className="text-sm flex-1">Painel Master</span>
-                        )}
-                        {pendingCount > 0 && (
-                          <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
-                            {pendingCount}
-                          </Badge>
-                        )}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
+                <div className="space-y-1">
+                  <NavLink
+                    to="/admin"
+                    onClick={handleNavClick}
+                    className="flex items-center gap-3 rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98] hover:bg-sidebar-accent/80 text-sidebar-foreground"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                  >
+                    <ShieldCheck className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                    {!collapsed && <span className="text-sm">Admin</span>}
+                  </NavLink>
+                  <NavLink
+                    to="/master-admin"
+                    onClick={handleNavClick}
+                    className="flex items-center gap-3 rounded-lg transition-all duration-150 min-h-[44px] py-2 px-3 active:scale-[0.98] hover:bg-sidebar-accent/80 text-sidebar-foreground"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                  >
+                    <Crown className="h-5 w-5 shrink-0" strokeWidth={1.75} />
+                    {!collapsed && <span className="text-sm flex-1">Painel Master</span>}
+                    {pendingCount > 0 && (
+                      <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full animate-pulse">
+                        {pendingCount}
+                      </Badge>
+                    )}
+                  </NavLink>
+                </div>
               </div>
             )}
           </SidebarGroupContent>
