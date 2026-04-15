@@ -49,6 +49,7 @@ interface BatchNfe {
   selected: boolean;
   conferenceStatus: "pending" | "in_progress" | "done";
   partialData?: boolean;
+  partialReason?: string;
 }
 
 interface SefazEntry {
@@ -134,6 +135,26 @@ const EntradaNota = () => {
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const normalizeDigits = (value: string) => value.replace(/\D/g, "");
+  const normalizeIdentifier = (value: string) => value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const fetchProductsForMatching = useCallback(async () => {
+    if (!companyId) {
+      throw new Error("Aguarde o carregamento da empresa antes de buscar a nota.");
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, barcode, sku")
+      .eq("company_id", companyId)
+      .order("name");
+
+    if (error) {
+      throw new Error("Não foi possível carregar os produtos cadastrados da empresa.");
+    }
+
+    return data || [];
+  }, [companyId]);
 
   // ============ BATCH MODE FUNCTIONS ============
   const handleBatchXmlUpload = useCallback(async (files: FileList | File[]) => {
@@ -143,29 +164,44 @@ const EntradaNota = () => {
       return;
     }
 
-    const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
+    setLoading(true);
 
-    for (const file of xmlFiles) {
-      try {
-        const xml = await file.text();
-        const parsed = parseNFeXml(xml);
-        const matched = matchProducts(parsed.products, dbProducts || []);
-        setBatchNfes((prev) => [
-          ...prev,
-          {
-            id: generateId(),
-            nfeData: parsed,
-            matches: matched,
-            fileName: file.name,
-            selected: true,
-            conferenceStatus: "pending",
-          },
-        ]);
-      } catch (err: any) {
-        toast({ title: `Erro: ${file.name}`, description: err.message, variant: "destructive" });
+    try {
+      const dbProducts = await fetchProductsForMatching();
+
+      if (dbProducts.length === 0) {
+        toast({
+          title: "Nenhum produto cadastrado",
+          description: "Os itens da nota serão importados como novos até que o catálogo da empresa seja preenchido.",
+        });
       }
+
+      for (const file of xmlFiles) {
+        try {
+          const xml = await file.text();
+          const parsed = parseNFeXml(xml);
+          const matched = matchProducts(parsed.products, dbProducts);
+          setBatchNfes((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              nfeData: parsed,
+              matches: matched,
+              fileName: file.name,
+              selected: true,
+              conferenceStatus: "pending",
+            },
+          ]);
+        } catch (err: any) {
+          toast({ title: `Erro: ${file.name}`, description: err.message, variant: "destructive" });
+        }
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar catálogo", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
-  }, [toast]);
+  }, [fetchProductsForMatching, toast]);
 
   const handleBatchDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -371,8 +407,15 @@ const EntradaNota = () => {
     setBipInput("");
     setBipAlert(null);
 
+    const normalizedDigits = normalizeDigits(code);
+    const normalizedCode = normalizeIdentifier(code);
+
     const idx = conferenceItems.findIndex(
-      (i) => i.xmlProduct.ean === code || i.xmlProduct.code === code
+      (i) => {
+        const eanMatch = normalizedDigits.length > 0 && normalizeDigits(i.xmlProduct.ean) === normalizedDigits;
+        const codeMatch = normalizeIdentifier(i.xmlProduct.code) === normalizedCode;
+        return eanMatch || codeMatch;
+      }
     );
 
     if (idx !== -1) {
@@ -409,10 +452,11 @@ const EntradaNota = () => {
 
     // Check GTIN CX (always, not just box mode)
     try {
+      const gtinCandidates = Array.from(new Set([code.trim(), normalizedDigits].filter(Boolean)));
       const { data: boxProduct } = await supabase
         .from("products")
         .select("id, name, gtin_cx, box_quantity")
-        .eq("gtin_cx", code)
+        .in("gtin_cx", gtinCandidates)
         .limit(1);
 
       if (boxProduct && boxProduct.length > 0) {
@@ -912,45 +956,63 @@ const EntradaNota = () => {
                       }
                       setLoading(true);
                       setBatchSearchProgress({ current: 0, total: validEntries.length });
-                      const { data: dbProducts } = await supabase.from("products").select("id, name, barcode, sku");
-                      let processed = 0;
-                      for (const entry of validEntries) {
-                        try {
-                          const clean = entry.number.replace(/\D/g, "");
-                          const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
-                          if (error || data?.error) throw new Error(data?.error || error?.message);
-                          const products = Array.isArray(data?.products) ? data.products : [];
-                          const nfe: NFeData = {
-                            number: data.numero,
-                            series: data.serie,
-                            issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
-                            issuerCnpj: data.cnpjEmitente,
-                            totalValue: typeof data.totalValue === "number" ? data.totalValue : 0,
-                            issueDate: data.dataEmissao,
-                            products,
-                          };
-                          const matchResults = products.length > 0 ? matchProducts(products, dbProducts || []) : [];
-                          if (validEntries.length === 1) {
-                            setNfeData(nfe);
-                            setNfNumber(data.numero);
-                            setNfSeries(data.serie || "001");
-                            setNfFornecedor(nfe.issuerName);
-                          }
-                          setBatchNfes((prev) => [...prev, {
-                            id: generateId(),
-                            nfeData: nfe,
-                            matches: matchResults,
-                            selected: true,
-                            conferenceStatus: "pending",
-                            partialData: Boolean(data?.partialData),
-                          }]);
-                        } catch (err: any) {
-                          toast({ title: `Erro na NF`, description: err.message, variant: "destructive" });
+
+                      try {
+                        const dbProducts = await fetchProductsForMatching();
+
+                        if (dbProducts.length === 0) {
+                          toast({
+                            title: "Nenhum produto cadastrado",
+                            description: "A nota será carregada, mas os itens serão marcados como novos até que exista um catálogo na empresa.",
+                          });
                         }
-                        processed++;
-                        setBatchSearchProgress({ current: processed, total: validEntries.length });
+
+                        let processed = 0;
+                        for (const entry of validEntries) {
+                          try {
+                            const clean = normalizeDigits(entry.number);
+                            const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
+                            if (error || data?.error) throw new Error(data?.error || error?.message);
+                            const products = Array.isArray(data?.products) ? data.products : [];
+                            const nfe: NFeData = {
+                              number: data.numero,
+                              series: data.serie,
+                              issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
+                              issuerCnpj: data.cnpjEmitente,
+                              totalValue: typeof data.totalValue === "number" ? data.totalValue : 0,
+                              issueDate: data.dataEmissao,
+                              products,
+                            };
+                            const matchResults = products.length > 0 ? matchProducts(products, dbProducts) : [];
+                            if (validEntries.length === 1) {
+                              setNfeData(nfe);
+                              setMatches(matchResults);
+                              setNfNumber(data.numero);
+                              setNfSeries(data.serie || "001");
+                              setNfFornecedor(nfe.issuerName);
+                              setNfDate(data.dataEmissao || "");
+                              setNfeChave(clean);
+                            }
+                            setBatchNfes((prev) => [...prev, {
+                              id: generateId(),
+                              nfeData: nfe,
+                              matches: matchResults,
+                              selected: true,
+                              conferenceStatus: "pending",
+                              partialData: Boolean(data?.partialData),
+                              partialReason: typeof data?.partialReason === "string" ? data.partialReason : undefined,
+                            }]);
+                          } catch (err: any) {
+                            toast({ title: `Erro na NF`, description: err.message, variant: "destructive" });
+                          }
+                          processed++;
+                          setBatchSearchProgress({ current: processed, total: validEntries.length });
+                        }
+                      } catch (err: any) {
+                        toast({ title: "Erro ao carregar catálogo", description: err.message, variant: "destructive" });
+                      } finally {
+                        setLoading(false);
                       }
-                      setLoading(false);
                     }}
                     disabled={loading || sefazEntries.every((e) => e.number.replace(/\D/g, "").length < 44)}
                   >
@@ -1026,8 +1088,15 @@ const EntradaNota = () => {
                   <div className="rounded-lg p-3 bg-amber-500/10 border border-amber-500/20 text-sm text-amber-400 space-y-1">
                     <p className="font-medium">⚠️ Nota sem itens/produtos</p>
                     <p className="text-xs text-amber-400/80">
-                      A busca pela chave de acesso retorna apenas os dados do cabeçalho da nota (número, série, CNPJ, UF).
-                      Para importar os produtos e realizar a conferência, utilize o <strong>modo XML</strong> com o arquivo .xml da nota fiscal.
+                      {batchNfes[0].partialReason || "A busca pela chave de acesso retorna apenas os dados do cabeçalho da nota (número, série, CNPJ, UF). Para importar os produtos e realizar a conferência, utilize o modo XML com o arquivo da nota fiscal."}
+                    </p>
+                  </div>
+                )}
+                {batchNfes[0].nfeData.products.length > 0 && batchNfes[0].matches.length > 0 && batchNfes[0].matches.every((match) => match.matchType === "none") && (
+                  <div className="rounded-lg p-3 bg-muted/30 border border-border text-sm space-y-1">
+                    <p className="font-medium">Nenhum item foi vinculado automaticamente</p>
+                    <p className="text-xs text-muted-foreground">
+                      Revise EAN/SKU dos produtos cadastrados. Se preferir, siga com a importação e trate os itens como novos produtos.
                     </p>
                   </div>
                 )}

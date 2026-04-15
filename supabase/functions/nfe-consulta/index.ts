@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 /**
@@ -58,6 +58,13 @@ function getUfName(code: string): string {
   return ufs[code] || code;
 }
 
+function jsonResponse(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -66,11 +73,8 @@ Deno.serve(async (req) => {
   try {
     // Validate JWT
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Token não fornecido." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return jsonResponse({ error: "Token não fornecido." }, 401);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -79,22 +83,17 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Usuário não autenticado." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await supabase.auth.getClaims(token);
+    if (authError || !claimsData?.claims?.sub) {
+      return jsonResponse({ error: "Usuário não autenticado." }, 401);
     }
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
     const chave = body?.chave;
 
     if (!chave || typeof chave !== "string") {
-      return new Response(JSON.stringify({ error: "Campo 'chave' é obrigatório." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Campo 'chave' é obrigatório." }, 400);
     }
 
     const cleanChave = chave.replace(/\s/g, "");
@@ -104,18 +103,12 @@ Deno.serve(async (req) => {
     try {
       metadata = parseChaveAcesso(cleanChave);
     } catch (err) {
-      return new Response(JSON.stringify({ error: (err as Error).message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: (err as Error).message }, 400);
     }
 
     // Validate model (55 = NF-e, 65 = NFC-e)
     if (metadata.modelo !== "55" && metadata.modelo !== "65") {
-      return new Response(JSON.stringify({ error: "Código não corresponde a uma NF-e ou NFC-e válida." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Código não corresponde a uma NF-e ou NFC-e válida." }, 400);
     }
 
     const ano = 2000 + parseInt(metadata.anoMes.substring(0, 2));
@@ -142,15 +135,9 @@ Deno.serve(async (req) => {
       partialReason: "Consulta por chave retorna apenas os dados do cabeçalho. Para itens/produtos, importe o XML da nota.",
     };
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse(result);
   } catch (err) {
     console.error("Erro na consulta NF-e:", err);
-    return new Response(JSON.stringify({ error: "Erro interno ao processar a consulta." }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Erro interno ao processar a consulta." }, 500);
   }
 });
