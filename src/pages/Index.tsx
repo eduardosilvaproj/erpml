@@ -68,6 +68,7 @@ function TrendBadge({ value, suffix = "%" }: { value: number; suffix?: string })
 }
 
 function SetupChecklist({ totalProducts, totalCustomers }: { totalProducts: number; totalCustomers: number }) {
+  const [expanded, setExpanded] = useState(false);
   const steps = [
     { label: "Empresa configurada", done: true, url: "" },
     { label: "Cadastre seu primeiro produto", done: totalProducts > 0, url: "/produtos", cta: "Ir para Produtos" },
@@ -81,42 +82,49 @@ function SetupChecklist({ totalProducts, totalCustomers }: { totalProducts: numb
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <Settings2 className="h-5 w-5 text-primary" />
-          Configure seu sistema
-        </CardTitle>
-        <p className="text-xs text-muted-foreground">Complete os passos abaixo para começar</p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{completedCount} de {steps.length} concluídos</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
-        <div className="space-y-2">
-          {steps.map((step, i) => (
-            <div key={i} className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${step.done ? "bg-success/5" : "bg-muted/30"}`}>
-              {step.done ? (
-                <CheckSquare className="h-5 w-5 text-success shrink-0" />
-              ) : (
-                <Square className="h-5 w-5 text-muted-foreground/40 shrink-0" />
-              )}
-              <span className={`text-sm flex-1 ${step.done ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                {step.label}
-              </span>
-              {!step.done && step.cta && (
-                <Link to={step.url}>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-3">
-                    {step.cta}
-                  </Button>
-                </Link>
-              )}
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <Settings2 className="h-5 w-5 text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-semibold text-foreground">Configure seu sistema</span>
+              <span className="text-xs text-muted-foreground">{completedCount} de {steps.length} concluídos</span>
             </div>
-          ))}
+            <Progress value={progress} className="h-2" />
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs h-8 px-3 shrink-0 text-primary"
+          >
+            {expanded ? "Ocultar" : "Ver tarefas"}
+          </Button>
         </div>
+
+        {expanded && (
+          <div className="mt-4 space-y-2 animate-accordion-down">
+            {steps.map((step, i) => (
+              <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${step.done ? "bg-success/5" : "bg-muted/30"}`}>
+                {step.done ? (
+                  <CheckSquare className="h-4 w-4 text-success shrink-0" />
+                ) : (
+                  <Square className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                )}
+                <span className={`text-sm flex-1 ${step.done ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                  {step.label}
+                </span>
+                {!step.done && step.cta && (
+                  <Link to={step.url}>
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-3">
+                      {step.cta}
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
