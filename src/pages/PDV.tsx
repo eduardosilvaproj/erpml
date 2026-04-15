@@ -218,8 +218,8 @@ const PDV = () => {
       <div className="flex min-h-[60vh] md:h-[calc(100vh-6rem)] items-center justify-center">
         <Card className="max-w-md w-full">
           <CardContent className="flex flex-col items-center py-12">
-            <div className="mb-4 rounded-full bg-emerald-100 p-4">
-              <CheckCircle className="h-12 w-12 text-emerald-600" />
+            <div className="mb-4 rounded-full bg-emerald-500/20 p-4">
+              <CheckCircle className="h-12 w-12 text-emerald-400" />
             </div>
             <p className="text-2xl font-bold">Venda finalizada!</p>
             <p className="text-muted-foreground mt-1">Estoque atualizado automaticamente</p>
@@ -283,10 +283,10 @@ const PDV = () => {
 
             {lastScan && (
               <div className={`rounded-lg p-2 flex items-center gap-2 text-sm ${
-                lastScan.success ? "bg-emerald-50 border border-emerald-200" : "bg-destructive/5 border border-destructive/20"
+                lastScan.success ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400" : "bg-destructive/10 border border-destructive/30 text-destructive"
               }`}>
                 {lastScan.success ? (
-                  <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <CheckCircle className="h-4 w-4 text-emerald-400 shrink-0" />
                 ) : (
                   <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
                 )}
