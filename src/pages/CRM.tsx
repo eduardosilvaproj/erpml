@@ -1,4 +1,4 @@
-import { useState, Fragment, useMemo } from "react";
+import { useState, Fragment, useMemo, useRef } from "react";
 import {
   Users, Plus, Search, ShoppingBag, Pencil, Trash2, Loader2, MessageSquare,
   Phone, Mail, Eye, ArrowLeft, Filter, ArrowUpDown, Calendar, MapPin, FileText,
@@ -58,32 +58,9 @@ function formatPhone(phone: string) {
   return phone;
 }
 
-function maskCpfCnpj(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 11) {
-    return digits
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  return digits
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-}
-
-function maskPhone(value: string) {
-  const digits = value.replace(/\D/g, "");
-  if (digits.length <= 10) {
-    return digits
-      .replace(/(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  }
-  return digits
-    .replace(/(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2");
-}
+import { maskCpfCnpj, maskPhone, maskCep } from "@/lib/masks";
+import { fetchCep } from "@/lib/viacep";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 
 type FilterType = "all" | "active" | "no_purchases";
 type SortType = "name" | "most_purchases" | "most_recent";
