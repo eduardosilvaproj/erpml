@@ -25,6 +25,7 @@ export type Product = {
   created_at: string;
   updated_at: string;
   company_id: string | null;
+  image_url: string | null;
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
 };

@@ -136,7 +136,47 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     return (data && data.length > 0) || false;
   };
 
+  const uploadImageToStorage = async (sku: string): Promise<string | null> => {
+    // Upload from file
+    if (photoSource === "file" && selectedFileRef.current) {
+      const file = selectedFileRef.current;
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${sku}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+      return urlData.publicUrl;
+    }
+    // Download from Unsplash URL and upload
+    if (photoSource === "unsplash" && photoPreview && photoPreview.startsWith("http")) {
+      try {
+        const res = await fetch(photoPreview);
+        const blob = await res.blob();
+        const path = `${sku}-${Date.now()}.jpg`;
+        const { error } = await supabase.storage.from("product-images").upload(path, blob, { contentType: "image/jpeg" });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from("product-images").getPublicUrl(path);
+        return urlData.publicUrl;
+      } catch {
+        return photoPreview; // fallback to direct URL
+      }
+    }
+    return null;
+  };
+
   const submitProduct = async (values: FormValues) => {
+    let imageUrl: string | null = product?.image_url || null;
+    
+    // Only upload if photo changed
+    if (photoSource) {
+      try {
+        const uploaded = await uploadImageToStorage(values.sku);
+        if (uploaded) imageUrl = uploaded;
+      } catch (err: any) {
+        toast({ title: "Erro ao salvar foto", description: err.message, variant: "destructive" });
+      }
+    }
+
     const formData: ProductFormData = {
       sku: values.sku,
       barcode: values.barcode || undefined,
@@ -153,6 +193,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       id_ml: values.id_ml || undefined,
       min_stock: values.min_stock,
       supplier_ids: [],
+      image_url: imageUrl || undefined,
     };
 
     if (product) {
