@@ -11,12 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Camera, AlertTriangle, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { supabase } from "@/integrations/supabase/client";
+
+type UnsplashPhoto = {
+  id: string;
+  url_small: string;
+  url_regular: string;
+  alt: string;
+  photographer: string;
+};
 
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
@@ -70,6 +78,9 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const [showScanner, setShowScanner] = useState(false);
   const [skuConflict, setSkuConflict] = useState<{ suggestedSku: string; pendingValues: FormValues } | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [unsplashPhotos, setUnsplashPhotos] = useState<UnsplashPhoto[]>([]);
+  const [isSearchingPhotos, setIsSearchingPhotos] = useState(false);
+  const [showPhotoGrid, setShowPhotoGrid] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getDefaults = (p?: Product | null): FormValues => ({
@@ -101,6 +112,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       form.reset(getDefaults(product));
       setSkuConflict(null);
       setPhotoPreview(null);
+      setUnsplashPhotos([]);
+      setShowPhotoGrid(false);
     }
   }, [open, product]);
 
@@ -198,6 +211,34 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     }
   };
 
+  const handleSearchPhotos = async () => {
+    const name = form.getValues("name");
+    if (!name || name.trim().length === 0) {
+      toast({ title: "Digite o nome do produto primeiro", variant: "destructive" });
+      return;
+    }
+    setIsSearchingPhotos(true);
+    setShowPhotoGrid(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/unsplash-search?query=${encodeURIComponent(name.trim())}&per_page=6`;
+      const session = (await supabase.auth.getSession()).data.session;
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erro na busca");
+      setUnsplashPhotos(result.photos || []);
+    } catch (err: any) {
+      toast({ title: "Erro ao buscar fotos", description: err.message, variant: "destructive" });
+      setUnsplashPhotos([]);
+    } finally {
+      setIsSearchingPhotos(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -217,33 +258,107 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2">
                 {/* Photo upload */}
-                <div
-                  className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file && file.type.startsWith("image/")) {
-                      setPhotoPreview(URL.createObjectURL(file));
-                    }
-                  }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Preview" className="h-24 w-24 object-cover rounded-lg" />
-                  ) : (
-                    <>
-                      <Camera className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                      <p className="text-sm text-muted-foreground">Clique ou arraste uma foto</p>
-                      <p className="text-xs text-muted-foreground/50">JPG, PNG ou WEBP</p>
-                    </>
+                <div className="space-y-3">
+                  <div
+                    className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file && file.type.startsWith("image/")) {
+                        setPhotoPreview(URL.createObjectURL(file));
+                        setShowPhotoGrid(false);
+                      }
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Preview" className="h-24 w-24 object-cover rounded-lg" />
+                    ) : (
+                      <>
+                        <Camera className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                        <p className="text-sm text-muted-foreground">Clique ou arraste uma foto</p>
+                        <p className="text-xs text-muted-foreground/50">JPG, PNG ou WEBP</p>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleSearchPhotos}
+                    disabled={isSearchingPhotos}
+                  >
+                    {isSearchingPhotos ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-2 h-4 w-4" />
+                    )}
+                    ✨ Buscar foto automaticamente
+                  </Button>
+
+                  {showPhotoGrid && (
+                    <div className="space-y-2">
+                      {isSearchingPhotos ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : unsplashPhotos.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-2">
+                            {unsplashPhotos.map((photo) => (
+                              <button
+                                key={photo.id}
+                                type="button"
+                                className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all hover:border-primary/60 ${
+                                  photoPreview === photo.url_regular
+                                    ? "border-primary ring-2 ring-primary/30"
+                                    : "border-border/30"
+                                }`}
+                                onClick={() => {
+                                  setPhotoPreview(photo.url_regular);
+                                }}
+                              >
+                                <img
+                                  src={photo.url_small}
+                                  alt={photo.alt}
+                                  className="w-full h-full object-cover"
+                                />
+                                {photoPreview === photo.url_regular && (
+                                  <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
+                                    <Check className="h-3 w-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={handleSearchPhotos}
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Buscar novamente
+                          </Button>
+                          <p className="text-[10px] text-muted-foreground/50 text-center">Fotos via Unsplash</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Nenhuma foto encontrada. Tente outro termo.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
