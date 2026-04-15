@@ -75,14 +75,11 @@ const EntradaNota = () => {
   const companyId = useCompanyId();
   const queryClient = useQueryClient();
 
-  // Mode: auto-detected based on loaded NFs count
-  const isBatchMode = useMemo(() => batchNfes.length > 1, [batchNfes]);
-
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  // Step 1 - NF (single mode)
+  // Step 1 - NF
   const [nfMode, setNfMode] = useState<"sefaz" | "xml">("sefaz");
   const [nfNumber, setNfNumber] = useState("");
   const [nfSeries, setNfSeries] = useState("001");
@@ -101,6 +98,9 @@ const EntradaNota = () => {
   const [batchSearchProgress, setBatchSearchProgress] = useState({ current: 0, total: 0 });
   const [dragOver, setDragOver] = useState(false);
   const batchFileRef = useRef<HTMLInputElement>(null);
+
+  // Mode: auto-detected based on loaded NFs count
+  const isBatchMode = batchNfes.length > 1;
   
   // Step 2 - Conference
   const [conferenceItems, setConferenceItems] = useState<ConferenceItem[]>([]);
