@@ -258,33 +258,107 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 pb-2">
                 {/* Photo upload */}
-                <div
-                  className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const file = e.dataTransfer.files[0];
-                    if (file && file.type.startsWith("image/")) {
-                      setPhotoPreview(URL.createObjectURL(file));
-                    }
-                  }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
-                  {photoPreview ? (
-                    <img src={photoPreview} alt="Preview" className="h-24 w-24 object-cover rounded-lg" />
-                  ) : (
-                    <>
-                      <Camera className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                      <p className="text-sm text-muted-foreground">Clique ou arraste uma foto</p>
-                      <p className="text-xs text-muted-foreground/50">JPG, PNG ou WEBP</p>
-                    </>
+                <div className="space-y-3">
+                  <div
+                    className="relative border-2 border-dashed border-border/50 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/40 transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer.files[0];
+                      if (file && file.type.startsWith("image/")) {
+                        setPhotoPreview(URL.createObjectURL(file));
+                        setShowPhotoGrid(false);
+                      }
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="Preview" className="h-24 w-24 object-cover rounded-lg" />
+                    ) : (
+                      <>
+                        <Camera className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                        <p className="text-sm text-muted-foreground">Clique ou arraste uma foto</p>
+                        <p className="text-xs text-muted-foreground/50">JPG, PNG ou WEBP</p>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleSearchPhotos}
+                    disabled={isSearchingPhotos}
+                  >
+                    {isSearchingPhotos ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Search className="mr-2 h-4 w-4" />
+                    )}
+                    ✨ Buscar foto automaticamente
+                  </Button>
+
+                  {showPhotoGrid && (
+                    <div className="space-y-2">
+                      {isSearchingPhotos ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                      ) : unsplashPhotos.length > 0 ? (
+                        <>
+                          <div className="grid grid-cols-3 gap-2">
+                            {unsplashPhotos.map((photo) => (
+                              <button
+                                key={photo.id}
+                                type="button"
+                                className={`relative rounded-lg overflow-hidden aspect-square border-2 transition-all hover:border-primary/60 ${
+                                  photoPreview === photo.url_regular
+                                    ? "border-primary ring-2 ring-primary/30"
+                                    : "border-border/30"
+                                }`}
+                                onClick={() => {
+                                  setPhotoPreview(photo.url_regular);
+                                }}
+                              >
+                                <img
+                                  src={photo.url_small}
+                                  alt={photo.alt}
+                                  className="w-full h-full object-cover"
+                                />
+                                {photoPreview === photo.url_regular && (
+                                  <div className="absolute top-1 right-1 bg-primary rounded-full p-0.5">
+                                    <Check className="h-3 w-3 text-primary-foreground" />
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={handleSearchPhotos}
+                          >
+                            <RefreshCw className="mr-1 h-3 w-3" />
+                            Buscar novamente
+                          </Button>
+                          <p className="text-[10px] text-muted-foreground/50 text-center">Fotos via Unsplash</p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Nenhuma foto encontrada. Tente outro termo.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
