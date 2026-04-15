@@ -1230,6 +1230,68 @@ Deno.serve(async (req) => {
         return jsonResponse(result);
       }
 
+      case "duplicate-item": {
+        const sourceItemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
+        if (!sourceItemId) {
+          return jsonResponse({ error: "ID do anúncio de origem é obrigatório." }, 400);
+        }
+
+        const itemBody = params.item;
+        if (!itemBody || typeof itemBody !== "object") {
+          return jsonResponse({ error: "Dados do anúncio são obrigatórios." }, 400);
+        }
+
+        // Validate required fields
+        if (!itemBody.title || typeof itemBody.title !== "string" || itemBody.title.length < 1 || itemBody.title.length > 60) {
+          return jsonResponse({ error: "Título inválido (1-60 caracteres)." }, 400);
+        }
+        if (!itemBody.category_id || typeof itemBody.category_id !== "string") {
+          return jsonResponse({ error: "Categoria é obrigatória." }, 400);
+        }
+        if (!Number.isFinite(itemBody.price) || itemBody.price <= 0) {
+          return jsonResponse({ error: "Preço inválido." }, 400);
+        }
+
+        // Build the new item payload
+        const newItem: Record<string, any> = {
+          title: itemBody.title,
+          category_id: itemBody.category_id,
+          price: itemBody.price,
+          currency_id: itemBody.currency_id || "BRL",
+          buying_mode: itemBody.buying_mode || "buy_it_now",
+          condition: itemBody.condition || "new",
+          listing_type_id: itemBody.listing_type_id || "gold_special",
+          available_quantity: itemBody.available_quantity ?? 1,
+        };
+
+        if (itemBody.description) {
+          newItem.description = { plain_text: itemBody.description };
+        }
+        if (Array.isArray(itemBody.pictures) && itemBody.pictures.length > 0) {
+          newItem.pictures = itemBody.pictures;
+        }
+        if (Array.isArray(itemBody.attributes)) {
+          newItem.attributes = itemBody.attributes;
+        }
+        if (Array.isArray(itemBody.variations) && itemBody.variations.length > 0) {
+          newItem.variations = itemBody.variations;
+          // When using variations, remove top-level available_quantity
+          delete newItem.available_quantity;
+        }
+
+        const createdItem = await fetchMlJson(
+          `${ML_API_BASE}/items`,
+          {
+            method: "POST",
+            headers: mlHeaders,
+            body: JSON.stringify(newItem),
+          },
+          "Erro ao criar anúncio duplicado"
+        );
+
+        return jsonResponse(createdItem);
+      }
+
       default:
         return jsonResponse({ error: `Ação desconhecida: ${action}` }, 400);
     }
