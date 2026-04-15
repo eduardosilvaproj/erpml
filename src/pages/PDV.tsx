@@ -147,7 +147,6 @@ const PDV = () => {
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
   }, [cart]);
-  }, [cart]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
