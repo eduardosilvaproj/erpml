@@ -3,7 +3,7 @@ import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
-  Building2, BarChart3, ShoppingBag, BarChart, DollarSign
+  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +47,7 @@ const groups: NavGroup[] = [
       { label: "Campanhas", url: "/campanhas", icon: Megaphone, tooltip: "Crie promoções e descontos para seus produtos" },
       { label: "Minha Loja", url: "/minha-loja/configurar", icon: Store, tooltip: "Configure sua vitrine virtual" },
       { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag, tooltip: "Conecte sua conta do Mercado Livre ao sistema" },
+      { label: "Duplicador ML", url: "/duplicador-anuncios", icon: Copy, tooltip: "Duplique anúncios com variações automáticas" },
     ],
   },
   {
