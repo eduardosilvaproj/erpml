@@ -113,9 +113,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     if (open) {
       form.reset(getDefaults(product));
       setSkuConflict(null);
-      setPhotoPreview(null);
+      setPhotoPreview(product?.image_url || null);
       setUnsplashPhotos([]);
       setShowPhotoGrid(false);
+      selectedFileRef.current = null;
+      setPhotoSource(product?.image_url ? "unsplash" : null);
     }
   }, [open, product]);
 
