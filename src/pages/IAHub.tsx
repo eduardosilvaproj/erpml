@@ -176,12 +176,27 @@ export default function IAHub() {
   const navigate = useNavigate();
   const { isRouteAllowed, planName, features } = usePlanFeatures();
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [tagFilter, setTagFilter] = useState<"todos" | "premium" | "gratuito">("todos");
+
   const isFeatureAllowed = (feature: AIFeature): boolean => {
     if (!feature.planGate) return true;
     return features.includes(feature.planGate) ||
       features.includes("Tudo do Premium") ||
       features.some((f) => f.startsWith("Tudo do"));
   };
+
+  const filteredFeatures = useMemo(() => {
+    return AI_FEATURES.filter((f) => {
+      if (tagFilter === "premium" && !f.planGate) return false;
+      if (tagFilter === "gratuito" && f.planGate) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return f.title.toLowerCase().includes(q) || f.description.toLowerCase().includes(q) || f.tags.some((t) => t.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [searchQuery, tagFilter]);
 
   const handleNavigate = (feature: AIFeature) => {
     if (feature.route === "#suporte") {
