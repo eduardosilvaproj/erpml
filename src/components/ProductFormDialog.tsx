@@ -112,6 +112,8 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
       form.reset(getDefaults(product));
       setSkuConflict(null);
       setPhotoPreview(null);
+      setUnsplashPhotos([]);
+      setShowPhotoGrid(false);
     }
   }, [open, product]);
 
