@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,7 +105,7 @@ const EntradaNota = () => {
   // Step 2 - Conference
   const [conferenceItems, setConferenceItems] = useState<ConferenceItem[]>([]);
   const [bipInput, setBipInput] = useState("");
-  const bipRef = useRef<HTMLInputElement>(null);
+  const bipRef = useRef<BarcodeScannerInputHandle>(null);
   const [bipAlert, setBipAlert] = useState<{ type: "success" | "warning" | "error"; msg: string } | null>(null);
   const [flashIdx, setFlashIdx] = useState<number | null>(null);
   const [batchConferenceMode, setBatchConferenceMode] = useState<"together" | "one_by_one" | null>(null);
@@ -882,13 +882,15 @@ const EntradaNota = () => {
                 {sefazEntries.map((entry, idx) => (
                   <div key={entry.id} className="flex items-center gap-2">
                     <div className="flex-1">
-                      <Input
-                        placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+                      <BarcodeScannerInput
                         value={entry.number}
-                        onChange={(e) => updateSefazEntry(entry.id, "number", e.target.value)}
-                        className="min-h-[48px] text-base font-mono tracking-wider"
+                        onChange={(v) => updateSefazEntry(entry.id, "number", v)}
+                        onScan={(code) => updateSefazEntry(entry.id, "number", code)}
+                        placeholder="0000 0000 0000 0000 0000 0000 0000 0000 0000 0000 0000"
+                        inputClassName="min-h-[48px] text-base font-mono tracking-wider"
                         maxLength={54}
                         inputMode="numeric"
+                        showCameraButton
                       />
                       <p className="text-xs text-muted-foreground mt-1">{entry.number.replace(/\D/g, "").length}/44 dígitos</p>
                     </div>
@@ -1201,27 +1203,26 @@ const EntradaNota = () => {
               </div>
               {/* Bip Input */}
               <Card>
-                <CardContent className="p-4 space-y-3">
-                  <p className="text-sm font-medium">Bipe ou digite o código de barras...</p>
-                  <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                      <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        ref={bipRef}
-                        value={bipInput}
-                        onChange={(e) => setBipInput(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleBip(bipInput); }}
-                        placeholder="Bipe ou digite o código de barras..."
-                        className="pl-11 min-h-[48px] text-lg font-mono"
-                        autoFocus
-                        autoComplete="off"
-                      />
-                    </div>
-                    <Button className="h-12" onClick={() => handleBip(bipInput)} disabled={!bipInput.trim()}>
-                      Bipar
-                    </Button>
-                    <BarcodeScanner onScan={(code) => handleBip(code)} />
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-medium">Bipe ou digite o código de barras...</p>
+                <div className="flex items-center gap-3">
+                  <div className="relative flex-1">
+                    <BarcodeScannerInput
+                      ref={bipRef}
+                      value={bipInput}
+                      onChange={(v) => setBipInput(v)}
+                      onScan={(code) => handleBip(code)}
+                      placeholder="Bipe ou digite o código de barras..."
+                      inputClassName="min-h-[48px] text-lg font-mono"
+                      icon={<ScanBarcode className="h-5 w-5" />}
+                      autoFocus
+                      scanMode
+                    />
                   </div>
+                  <Button className="h-12" onClick={() => handleBip(bipInput)} disabled={!bipInput.trim()}>
+                    Bipar
+                  </Button>
+                </div>
                   {bipAlert && (
                     <div className={`rounded-lg p-3 text-sm font-medium flex items-center gap-2 ${
                       bipAlert.type === "success" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
