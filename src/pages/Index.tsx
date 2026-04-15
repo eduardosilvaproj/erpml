@@ -117,14 +117,14 @@ const Index = () => {
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
               {quickAccessSections.map((sec) => (
                 <Link key={sec.id} to={sec.url}>
-                  <Card className="hover-lift cursor-pointer group h-full min-h-[150px] border-border/40 bg-card/60 hover:border-primary/30 transition-all">
-                    <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-3 h-full">
-                      <div className="rounded-2xl bg-primary/10 p-4 group-hover:bg-primary/15 transition-colors">
-                        <sec.icon className="h-12 w-12 text-primary" strokeWidth={1.5} />
+                  <Card className="hover-lift cursor-pointer group border-border/40 bg-card/60 hover:border-primary/30 transition-all h-[130px]">
+                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 h-full">
+                      <div className="rounded-xl bg-primary/10 p-2.5 group-hover:bg-primary/15 transition-colors">
+                        <sec.icon className="h-10 w-10 text-primary" strokeWidth={1.5} />
                       </div>
                       <div>
                         <p className="font-semibold text-foreground text-base">{sec.title}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{sec.desc}</p>
+                        <p className="text-sm text-muted-foreground">{sec.desc}</p>
                       </div>
                     </CardContent>
                   </Card>
