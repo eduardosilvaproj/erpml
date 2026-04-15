@@ -39,7 +39,9 @@ export default function MinhaLojaProdutos() {
     (storeProducts || []).map(sp => [sp.product_id, sp])
   );
 
-  const filtered = (products || []).filter(p =>
+  const allProducts = products && "products" in products ? products.products : (products || []);
+
+  const filtered = allProducts.filter((p: any) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.sku.toLowerCase().includes(search.toLowerCase())
   );
