@@ -13,7 +13,7 @@ import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
 import { GlobalSearch } from "@/components/GlobalSearch";
-import { GuidedTour } from "@/components/GuidedTour";
+
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/": { title: "Dashboard", subtitle: "Visão geral do seu negócio" },
@@ -133,7 +133,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
               </button>
             )}
-            <GuidedTour />
+            
             <HelpPanel />
             <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border/30">
               <AvatarUpload size="sm" editable={false} />
