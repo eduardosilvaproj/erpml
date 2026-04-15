@@ -12,22 +12,8 @@ import {
   SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 
-export interface MenuItem {
-  title: string;
-  url: string;
-  icon: any;
-  desc?: string;
-  premium?: boolean;
-}
-
-export interface MenuGroup {
-  label: string;
-  icon: any;
-  color: string;
-  items: MenuItem[];
-}
-
-// Keep exported for SubcategoryPanel / other consumers
+// Re-export types and data for backward compat
+export type { MenuItem, MenuGroup } from "@/lib/menu-data";
 export { menuGroups } from "@/lib/menu-data";
 
 interface NavItem {

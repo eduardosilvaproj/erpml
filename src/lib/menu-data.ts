@@ -4,7 +4,21 @@ import {
   ShoppingBag, Store, BarChart3, DollarSign, Sparkles, GraduationCap,
   Brain, TrendingUp
 } from "lucide-react";
-import type { MenuGroup } from "@/components/AppSidebar";
+
+export interface MenuItem {
+  title: string;
+  url: string;
+  icon: any;
+  desc?: string;
+  premium?: boolean;
+}
+
+export interface MenuGroup {
+  label: string;
+  icon: any;
+  color: string;
+  items: MenuItem[];
+}
 
 export const menuGroups: MenuGroup[] = [
   {
