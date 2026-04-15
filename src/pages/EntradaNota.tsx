@@ -1868,19 +1868,21 @@ const EntradaNota = () => {
                 </div>
               )}
 
-              <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
-                <Checkbox
-                  id="save-gtin-entrada"
-                  checked={unknownGtinSave}
-                  onCheckedChange={(checked) => setUnknownGtinSave(!!checked)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
-                  <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
-                  <br />
-                  <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
-                </label>
-              </div>
+              {unknownGtinDialog?.code && (
+                <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                  <Checkbox
+                    id="save-gtin-entrada"
+                    checked={unknownGtinSave}
+                    onCheckedChange={(checked) => setUnknownGtinSave(!!checked)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
+                    <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
+                    <br />
+                    <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
+                  </label>
+                </div>
+              )}
             </div>
           )}
 
