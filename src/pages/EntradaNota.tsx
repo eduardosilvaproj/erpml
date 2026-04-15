@@ -437,7 +437,6 @@ const EntradaNota = () => {
     setTimeout(() => bipRef.current?.focus(), 50);
   };
 
-
   const conferenceProgress = conferenceItems.length > 0
     ? conferenceItems.filter((i) => i.status === "ok").length
     : 0;
@@ -1210,6 +1209,7 @@ const EntradaNota = () => {
                   <TableHeader>
                     <TableRow className="bg-muted/30">
                       {isBatchMode && batchConferenceMode === "together" && <TableHead className="w-[80px]">NF</TableHead>}
+                      <TableHead className="w-[40px]" />
                       
                       <TableHead className="w-[50px]">Foto</TableHead>
                       <TableHead>Nome do produto</TableHead>
@@ -1236,6 +1236,23 @@ const EntradaNota = () => {
                                 <Badge variant="outline" className="text-[10px]">{item.nfNumber}</Badge>
                               </TableCell>
                             )}
+                            <TableCell className="text-center">
+                              <button
+                                onClick={() => {
+                                  if (item.matchedProductId) {
+                                    setUnknownGtinDialog({ code: "" });
+                                    setUnknownGtinProduct(item.matchedProductId);
+                                    setUnknownGtinQty(1);
+                                    setUnknownGtinBoxes(1);
+                                    setUnknownGtinSave(true);
+                                  }
+                                }}
+                                className={`text-lg transition-colors ${item.boxBadge ? "text-primary" : "text-muted-foreground/40 hover:text-primary"}`}
+                                title="Configurar entrada em caixa"
+                              >
+                                📦
+                              </button>
+                            </TableCell>
                             <TableCell>
                               <div className="h-9 w-9 rounded-lg bg-muted/30 flex items-center justify-center">
                                 <Package className="h-4 w-4 text-muted-foreground/40" />
