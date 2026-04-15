@@ -586,70 +586,11 @@ export default function IntegracaoML() {
           </Tabs>
 
           {/* Settings card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" /> Configurações
-              </CardTitle>
-              <CardDescription>Preferências de sincronização e notificações</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {/* Sync frequency */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-sm font-medium">Sincronização automática</Label>
-                  <p className="text-xs text-muted-foreground">Frequência de atualização automática</p>
-                </div>
-                <Select defaultValue="30min">
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15min">A cada 15 min</SelectItem>
-                    <SelectItem value="30min">A cada 30 min</SelectItem>
-                    <SelectItem value="1h">A cada 1 hora</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Separator />
-
-              {/* Stock sync */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="cfg-stock" className="text-sm font-medium">Atualizar estoque ao receber pedido</Label>
-                  <p className="text-xs text-muted-foreground">Baixa automática do estoque quando um pedido ML é confirmado</p>
-                </div>
-                <Switch id="cfg-stock" checked={mlSettings?.auto_sync_stock ?? true} disabled={updateSettings.isPending || loadingSettings}
-                  onCheckedChange={(c) => updateSettings.mutate({ auto_sync_stock: c })} />
-              </div>
-
-              <Separator />
-
-              {/* Price sync */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="cfg-price" className="text-sm font-medium">Sincronizar preços com o sistema</Label>
-                  <p className="text-xs text-muted-foreground">Atualizar preços no ML quando alterados no ERP</p>
-                </div>
-                <Switch id="cfg-price" checked={mlSettings?.auto_sync_price ?? true} disabled={updateSettings.isPending || loadingSettings}
-                  onCheckedChange={(c) => updateSettings.mutate({ auto_sync_price: c })} />
-              </div>
-
-              <Separator />
-
-              {/* Notify */}
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="cfg-notify" className="text-sm font-medium">Notificar novos pedidos</Label>
-                  <p className="text-xs text-muted-foreground">Receber alerta quando um novo pedido chegar do ML</p>
-                </div>
-                <Switch id="cfg-notify" checked={mlSettings?.auto_sync_orders ?? true} disabled={updateSettings.isPending || loadingSettings}
-                  onCheckedChange={(c) => updateSettings.mutate({ auto_sync_orders: c })} />
-              </div>
-            </CardContent>
-          </Card>
+          <SettingsCard
+            mlSettings={mlSettings}
+            loadingSettings={loadingSettings}
+            updateSettings={updateSettings}
+          />
         </>
       )}
     </div>
