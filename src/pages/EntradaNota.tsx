@@ -48,6 +48,7 @@ interface BatchNfe {
   fileName?: string;
   selected: boolean;
   conferenceStatus: "pending" | "in_progress" | "done";
+  partialData?: boolean;
 }
 
 interface SefazEntry {
@@ -217,12 +218,34 @@ const EntradaNota = () => {
   const goToStep = (step: WizardStep) => {
     if (step === 2) {
       if (isBatchMode && selectedBatchNfes.length > 0) {
-        // Batch: ask conference mode
+        const batchWithItems = selectedBatchNfes.filter((n) => n.nfeData.products.length > 0);
+        if (batchWithItems.length === 0) {
+          toast({
+            title: "Notas sem itens para conferência",
+            description: "As notas buscadas apenas pela chave retornam somente o cabeçalho. Importe o XML para conferir os produtos.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (batchWithItems.length !== selectedBatchNfes.length) {
+          setBatchNfes((prev) => prev.map((n) => n.selected ? { ...n, selected: n.nfeData.products.length > 0 } : n));
+          toast({
+            title: "Notas sem itens foram desmarcadas",
+            description: "Somente notas com produtos importados seguirão para a conferência.",
+          });
+        }
         setBatchConferenceMode(null);
         setCompletedSteps((p) => new Set([...p, 1]));
       } else if (batchNfes.length === 1) {
-        // Single NF
         const singleNf = batchNfes[0];
+        if (singleNf.nfeData.products.length === 0) {
+          toast({
+            title: "NF sem itens para conferência",
+            description: "A consulta por chave retorna apenas dados do cabeçalho. Importe o XML para carregar os produtos.",
+            variant: "destructive",
+          });
+          return;
+        }
         const items: ConferenceItem[] = singleNf.matches.map((m) => ({
           xmlProduct: m.xmlProduct,
           matchedProductId: m.matchedProductId,
@@ -896,16 +919,17 @@ const EntradaNota = () => {
                           const clean = entry.number.replace(/\D/g, "");
                           const { data, error } = await supabase.functions.invoke("nfe-consulta", { body: { chave: clean } });
                           if (error || data?.error) throw new Error(data?.error || error?.message);
+                          const products = Array.isArray(data?.products) ? data.products : [];
                           const nfe: NFeData = {
                             number: data.numero,
                             series: data.serie,
                             issuerName: `Emitente ${data.cnpjFormatado} (${data.uf})`,
                             issuerCnpj: data.cnpjEmitente,
-                            totalValue: 0,
+                            totalValue: typeof data.totalValue === "number" ? data.totalValue : 0,
                             issueDate: data.dataEmissao,
-                            products: [],
+                            products,
                           };
-                          // For single NF also set legacy state
+                          const matchResults = products.length > 0 ? matchProducts(products, dbProducts || []) : [];
                           if (validEntries.length === 1) {
                             setNfeData(nfe);
                             setNfNumber(data.numero);
@@ -915,9 +939,10 @@ const EntradaNota = () => {
                           setBatchNfes((prev) => [...prev, {
                             id: generateId(),
                             nfeData: nfe,
-                            matches: [],
+                            matches: matchResults,
                             selected: true,
                             conferenceStatus: "pending",
+                            partialData: Boolean(data?.partialData),
                           }]);
                         } catch (err: any) {
                           toast({ title: `Erro na NF`, description: err.message, variant: "destructive" });
@@ -1054,13 +1079,22 @@ const EntradaNota = () => {
                   </TableHeader>
                   <TableBody>
                     {batchNfes.map((nf) => (
-                      <TableRow key={nf.id}>
+                      <TableRow key={nf.id} className={nf.nfeData.products.length === 0 ? "opacity-70" : undefined}>
                         <TableCell>
-                          <Checkbox checked={nf.selected} onCheckedChange={() => toggleBatchNfe(nf.id)} />
+                          <Checkbox
+                            checked={nf.selected}
+                            disabled={nf.nfeData.products.length === 0}
+                            onCheckedChange={() => toggleBatchNfe(nf.id)}
+                          />
                         </TableCell>
                         <TableCell className="font-medium">{nf.nfeData.number}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{nf.nfeData.issuerName}</TableCell>
-                        <TableCell className="text-center">{nf.nfeData.products.length}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <span>{nf.nfeData.products.length}</span>
+                            {nf.partialData && <Badge variant="outline" className="text-[10px]">Cabeçalho</Badge>}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right font-medium">{formatCurrency(nf.nfeData.totalValue)}</TableCell>
                         <TableCell>
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeBatchNfe(nf.id)}>
