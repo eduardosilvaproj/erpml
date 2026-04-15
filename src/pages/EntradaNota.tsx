@@ -841,7 +841,7 @@ const EntradaNota = () => {
     setAutoUpdateStock(true);
     setAutoUpdateCost(true);
     setBatchNfes([]);
-    setSefazEntries([]);
+    setSefazEntries([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
     setBatchConferenceMode(null);
     setCurrentBatchNfIdx(0);
     setBatchSelectedForConfirm(new Set());
@@ -879,17 +879,7 @@ const EntradaNota = () => {
             Passo {currentStep} — {STEP_LABELS[currentStep - 1]}
           </p>
         </div>
-        {currentStep === 1 && (
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${!isBatchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              Entrada única
-            </span>
-            <Switch checked={isBatchMode} onCheckedChange={(v) => { setBatchMode(v); reset(); setBatchMode(v); }} />
-            <span className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${isBatchMode ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-              Entrada em lote
-            </span>
-          </div>
-        )}
+        
       </div>
 
       {/* Step Progress Bar */}
