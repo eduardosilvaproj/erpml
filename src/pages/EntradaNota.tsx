@@ -1935,46 +1935,143 @@ const EntradaNota = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Unknown GTIN CX Dialog */}
-      <Dialog open={!!unknownGtinDialog} onOpenChange={(v) => { if (!v) { setUnknownGtinDialog(null); setUnknownGtinProduct(""); setUnknownGtinQty(1); } }}>
-        <DialogContent className="max-w-sm">
+      {/* Unknown GTIN CX Dialog — Enhanced */}
+      <Dialog open={!!unknownGtinDialog} onOpenChange={(v) => { if (!v) { setUnknownGtinDialog(null); setUnknownGtinProduct(""); setUnknownGtinQty(1); setUnknownGtinBoxes(1); setUnknownGtinSave(true); setTimeout(() => bipRef.current?.focus(), 50); } }}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Código não encontrado</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              Código não reconhecido
+            </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              Código <strong className="text-foreground font-mono">{unknownGtinDialog?.code}</strong> não reconhecido. Deseja cadastrar como GTIN CX?
+              Código bipado: <span className="font-mono font-bold">{unknownGtinDialog?.code}</span>
             </p>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Selecione o produto</label>
-              <Select value={unknownGtinProduct} onValueChange={setUnknownGtinProduct}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {conferenceItems.filter((i) => i.matchedProductId).map((item, idx) => (
-                    <SelectItem key={idx} value={item.matchedProductId!}>{item.xmlProduct.description}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <p className="text-sm text-muted-foreground">
+              Selecione a qual produto desta nota pertence esta caixa:
+            </p>
+          </DialogHeader>
+
+          <RadioGroup
+            value={unknownGtinProduct}
+            onValueChange={setUnknownGtinProduct}
+            className="space-y-2 max-h-[200px] overflow-y-auto"
+          >
+            {conferenceItems.map((item, idx) => (
+              <label
+                key={idx}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  unknownGtinProduct === (item.matchedProductId || `idx-${idx}`)
+                    ? "border-primary bg-primary/5"
+                    : "border-border/40 hover:border-primary/30"
+                }`}
+              >
+                <RadioGroupItem value={item.matchedProductId || `idx-${idx}`} />
+                <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                  <Package className="h-4 w-4 text-muted-foreground/40" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.xmlProduct.description}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{item.xmlProduct.code}</p>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">Qtd: {item.expectedQty}</span>
+              </label>
+            ))}
+          </RadioGroup>
+
+          {unknownGtinProduct && (
+            <div className="space-y-4 pt-2">
+              <Separator />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Unidades por caixa</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={unknownGtinQty}
+                    onChange={(e) => setUnknownGtinQty(parseInt(e.target.value) || 1)}
+                    placeholder="Ex: 12"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground block mb-1">Qtd de caixas</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={unknownGtinBoxes}
+                    onChange={(e) => setUnknownGtinBoxes(parseInt(e.target.value) || 1)}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+
+              {unknownGtinQty > 0 && unknownGtinBoxes > 0 && (
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Total: <span className="font-bold text-foreground">{unknownGtinQty}</span> × <span className="font-bold text-foreground">{unknownGtinBoxes}</span> = <span className="font-bold text-primary text-lg">{unknownGtinQty * unknownGtinBoxes} unidades</span>
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+                <Checkbox
+                  id="save-gtin-entrada"
+                  checked={unknownGtinSave}
+                  onCheckedChange={(checked) => setUnknownGtinSave(!!checked)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="save-gtin-entrada" className="text-sm cursor-pointer">
+                  <span className="font-medium">Salvar este código como GTIN CX do produto {conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct)?.xmlProduct.description || ""}</span>
+                  <br />
+                  <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
+                </label>
+              </div>
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Qtd por caixa</label>
-              <Input type="number" min={1} value={unknownGtinQty} onChange={(e) => setUnknownGtinQty(parseInt(e.target.value) || 1)} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setUnknownGtinDialog(null); setUnknownGtinProduct(""); }}>Cancelar</Button>
-            <Button disabled={!unknownGtinProduct} onClick={async () => {
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setUnknownGtinDialog(null); setUnknownGtinProduct(""); setUnknownGtinQty(1); setUnknownGtinBoxes(1); setUnknownGtinSave(true); setTimeout(() => bipRef.current?.focus(), 50); }}>Cancelar</Button>
+            <Button disabled={!unknownGtinProduct || unknownGtinQty <= 0 || unknownGtinBoxes <= 0} onClick={async () => {
               if (!unknownGtinProduct || !unknownGtinDialog) return;
-              await supabase.from("products").update({
-                gtin_cx: unknownGtinDialog.code,
-                box_quantity: unknownGtinQty,
-              }).eq("id", unknownGtinProduct);
-              toast({ title: "GTIN CX cadastrado!", description: "Próxima vez será reconhecido automaticamente." });
+              const totalUnits = unknownGtinQty * unknownGtinBoxes;
+              const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === unknownGtinProduct);
+              const selectedItem = conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct);
+              const productName = selectedItem?.xmlProduct.description || "";
+
+              // Save GTIN CX if checkbox checked
+              if (unknownGtinSave) {
+                await supabase.from("products").update({
+                  gtin_cx: unknownGtinDialog.code,
+                  box_quantity: unknownGtinQty,
+                }).eq("id", unknownGtinProduct);
+                toast({ title: `GTIN CX salvo no produto ${productName}!` });
+              }
+
+              // Add scanned units
+              if (productIdx !== -1) {
+                setConferenceItems((prev) => {
+                  const updated = [...prev];
+                  const item = { ...updated[productIdx] };
+                  item.scannedQty += totalUnits;
+                  item.boxBadge = `📦 ${unknownGtinBoxes}cx × ${unknownGtinQty}un = ${totalUnits}un${unknownGtinSave ? " ✓ GTIN salvo" : ""}`;
+                  if (item.scannedQty === item.expectedQty) item.status = "ok";
+                  else if (item.scannedQty > item.expectedQty) item.status = "excess";
+                  else if (item.scannedQty > 0) item.status = "partial";
+                  updated[productIdx] = item;
+                  return updated;
+                });
+                setBipAlert({ type: "success", msg: `📦 ${totalUnits} unidades adicionadas via caixa!` });
+                playBeep(800, 100);
+                bipRef.current?.flash(true);
+              }
+
               setUnknownGtinDialog(null);
               setUnknownGtinProduct("");
               setUnknownGtinQty(1);
+              setUnknownGtinBoxes(1);
+              setUnknownGtinSave(true);
               setTimeout(() => bipRef.current?.focus(), 50);
-            }}>Cadastrar e aplicar</Button>
+            }}>Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
