@@ -764,6 +764,7 @@ const EntradaNota = () => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
 
       setDone(true);
+      clearPersistedState();
       toast({ title: "Entrada confirmada!", description: "Estoque atualizado com sucesso." });
     } catch (err: any) {
       toast({ title: "Erro ao confirmar", description: err.message || "Tente novamente.", variant: "destructive" });
@@ -863,6 +864,7 @@ const EntradaNota = () => {
 
       setBatchConfirmResult({ confirmed, products: totalProducts, total: totalVal });
       setDone(true);
+      clearPersistedState();
       toast({ title: `${confirmed} nota(s) confirmada(s)!` });
     } catch (err: any) {
       toast({ title: "Erro ao confirmar lote", description: err.message, variant: "destructive" });
