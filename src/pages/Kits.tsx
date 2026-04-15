@@ -48,14 +48,20 @@ const Kits = () => {
   const [formSku, setFormSku] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formPrice, setFormPrice] = useState(0);
+  const [formActive, setFormActive] = useState(true);
   const [formItems, setFormItems] = useState<{ product_id: string; quantity: number }[]>([]);
 
+  const generateSku = () => {
+    const num = (kits?.length || 0) + 1;
+    return `KIT-${String(num).padStart(3, "0")}`;
+  };
+
   const resetForm = () => {
-    setFormName(""); setFormSku(""); setFormDescription(""); setFormPrice(0); setFormItems([]);
+    setFormName(""); setFormSku(""); setFormDescription(""); setFormPrice(0); setFormActive(true); setFormItems([]);
     setEditingKit(null);
   };
 
-  const openCreate = () => { resetForm(); setDialogOpen(true); };
+  const openCreate = () => { resetForm(); setFormSku(generateSku()); setDialogOpen(true); };
 
   const openEdit = (kit: Kit) => {
     setEditingKit(kit);
