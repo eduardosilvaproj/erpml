@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useNavigate } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const periodLabels: Record<PeriodFilter, string> = {
   today: "Hoje",
@@ -18,10 +19,10 @@ const periodLabels: Record<PeriodFilter, string> = {
 };
 
 const quickAccessSections = [
-  { id: "cadastros", title: "Cadastros", desc: "Produtos, kits, equipe e CRM", icon: Package, url: "/produtos" },
-  { id: "estoque", title: "Estoque", desc: "Saldos, notas e conferência", icon: Warehouse, url: "/estoque" },
-  { id: "vendas", title: "Vendas", desc: "PDV, campanhas e integrações", icon: Store, url: "/pdv" },
-  { id: "gestao", title: "Gestão", desc: "Relatórios e financeiro", icon: TrendingUp, url: "/painel-hub" },
+  { id: "cadastros", title: "Cadastros", desc: "Produtos, kits, equipe e CRM", icon: Package, url: "/produtos", tooltip: "Clique para gerenciar produtos, kits, equipe e clientes" },
+  { id: "estoque", title: "Estoque", desc: "Saldos, notas e conferência", icon: Warehouse, url: "/estoque", tooltip: "Clique para ver e controlar seu estoque físico e FULL" },
+  { id: "vendas", title: "Vendas", desc: "PDV, campanhas e integrações", icon: Store, url: "/pdv", tooltip: "Clique para acessar o PDV, campanhas e integrações" },
+  { id: "gestao", title: "Gestão", desc: "Relatórios e financeiro", icon: TrendingUp, url: "/painel-hub", tooltip: "Clique para ver relatórios e configurações da empresa" },
 ];
 
 const formatCurrency = (v: number) =>
@@ -44,30 +45,46 @@ function TrendBadge({ value, suffix = "%" }: { value: number; suffix?: string })
   );
 }
 
+const metricTooltips: Record<string, string> = {
+  "Vendas": "Total de vendas realizadas no período selecionado",
+  "Receita Bruta": "Valor total das vendas antes de descontar custos",
+  "Lucro Líquido": "O que sobra depois de pagar todos os custos",
+  "Ticket Médio": "Valor médio gasto por cliente em cada compra",
+  "Margem": "Porcentagem de lucro sobre o valor de venda",
+  "Pendentes": "Pedidos que ainda não foram enviados ao cliente",
+  "Enviados": "Pedidos que já foram despachados",
+  "Novos Clientes": "Clientes que compraram pela primeira vez",
+};
+
 function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
   icon: any; label: string; value: string; trend?: number; iconColor: string;
 }) {
   return (
-    <Card className="hover-lift border-border/50">
-      <CardContent className="p-5">
-        <div className="flex items-center gap-2">
-          <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
-        </div>
-        <p className="text-3xl font-bold text-foreground leading-none mt-3">{value}</p>
-        <div className="mt-3">
-          {trend !== undefined && <TrendBadge value={trend} />}
-        </div>
-      </CardContent>
-    </Card>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Card className="hover-lift border-border/50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2">
+              <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+            </div>
+            <p className="text-3xl font-bold text-foreground leading-none mt-3">{value}</p>
+            <div className="mt-3">
+              {trend !== undefined && <TrendBadge value={trend} />}
+            </div>
+          </CardContent>
+        </Card>
+      </TooltipTrigger>
+      <TooltipContent>{metricTooltips[label] || label}</TooltipContent>
+    </Tooltip>
   );
 }
 
 const quickActions = [
-  { id: "entrada", title: "Entrada de Mercadoria", desc: "Receber produtos com NF", icon: PackageOpen, color: "text-emerald-400", hoverBorder: "hover:border-emerald-500/50", route: "/entrada-nota" },
-  { id: "venda", title: "Nova Venda", desc: "Abrir PDV e registrar venda", icon: Monitor, color: "text-sky-400", hoverBorder: "hover:border-sky-500/50", route: "/pdv" },
-  { id: "conferencia", title: "Conferência", desc: "Bipar e conferir estoque", icon: ScanLine, color: "text-amber-400", hoverBorder: "hover:border-amber-500/50", route: "/conferencia" },
-  { id: "novo-produto", title: "Novo Produto", desc: "Cadastrar produto no catálogo", icon: PlusCircle, color: "text-violet-400", hoverBorder: "hover:border-violet-500/50", route: null },
+  { id: "entrada", title: "Entrada de Mercadoria", desc: "Receber produtos com NF", icon: PackageOpen, color: "text-emerald-400", hoverBorder: "hover:border-emerald-500/50", route: "/entrada-nota", tooltip: "Recebi produtos novos e quero dar entrada no estoque" },
+  { id: "venda", title: "Nova Venda", desc: "Abrir PDV e registrar venda", icon: Monitor, color: "text-sky-400", hoverBorder: "hover:border-sky-500/50", route: "/pdv", tooltip: "Quero registrar uma venda agora no balcão" },
+  { id: "conferencia", title: "Conferência", desc: "Bipar e conferir estoque", icon: ScanLine, color: "text-amber-400", hoverBorder: "hover:border-amber-500/50", route: "/conferencia", tooltip: "Quero verificar se o estoque físico está correto" },
+  { id: "novo-produto", title: "Novo Produto", desc: "Cadastrar produto no catálogo", icon: PlusCircle, color: "text-violet-400", hoverBorder: "hover:border-violet-500/50", route: null, tooltip: "Quero cadastrar um produto novo no sistema" },
 ];
 
 const Index = () => {
@@ -126,19 +143,23 @@ const Index = () => {
             <h2 className="text-sm font-semibold text-foreground mb-4">Ações Rápidas</h2>
             <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
               {quickActions.map((action) => (
-                <button
-                  key={action.id}
-                  onClick={() => action.route ? navigate(action.route) : setShowNewProduct(true)}
-                  className={`flex items-center gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/30 backdrop-blur transition-all hover:bg-muted/60 ${action.hoverBorder} text-left group`}
-                >
-                  <div className={`shrink-0 rounded-lg bg-background/60 p-2 ${action.color}`}>
-                    <action.icon className="h-5 w-5" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{action.title}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
-                  </div>
-                </button>
+                <Tooltip key={action.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => action.route ? navigate(action.route) : setShowNewProduct(true)}
+                      className={`flex items-center gap-3 p-3.5 rounded-xl border border-border/30 bg-muted/30 backdrop-blur transition-all hover:bg-muted/60 ${action.hoverBorder} text-left group`}
+                    >
+                      <div className={`shrink-0 rounded-lg bg-background/60 p-2 ${action.color}`}>
+                        <action.icon className="h-5 w-5" strokeWidth={1.75} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{action.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{action.desc}</p>
+                      </div>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{action.tooltip}</TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
@@ -148,19 +169,24 @@ const Index = () => {
             <h2 className="text-sm font-semibold text-foreground mb-4">Acesso Rápido</h2>
             <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
               {quickAccessSections.map((sec) => (
-                <Link key={sec.id} to={sec.url}>
-                  <Card className="hover-lift cursor-pointer group border-border/40 bg-card/60 hover:border-primary/30 transition-all h-[130px]">
-                    <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 h-full">
-                      <div className="rounded-xl bg-primary/10 p-2.5 group-hover:bg-primary/15 transition-colors">
-                        <sec.icon className="h-10 w-10 text-primary" strokeWidth={1.5} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-foreground text-base">{sec.title}</p>
-                        <p className="text-sm text-muted-foreground">{sec.desc}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                <Tooltip key={sec.id}>
+                  <TooltipTrigger asChild>
+                    <Link to={sec.url}>
+                      <Card className="hover-lift cursor-pointer group border-border/40 bg-card/60 hover:border-primary/30 transition-all h-[130px]">
+                        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 h-full">
+                          <div className="rounded-xl bg-primary/10 p-2.5 group-hover:bg-primary/15 transition-colors">
+                            <sec.icon className="h-10 w-10 text-primary" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-foreground text-base">{sec.title}</p>
+                            <p className="text-sm text-muted-foreground">{sec.desc}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent>{sec.tooltip}</TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
