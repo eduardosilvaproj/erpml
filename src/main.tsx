@@ -3,7 +3,7 @@ import App from "./App.tsx";
 import "./index.css";
 
 // App version — updated at build time via Vite's define
-const APP_VERSION = __APP_VERSION__;
+const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
 const VERSION_KEY = "erp-app-version";
 
 // Version check: if stored version differs, clear localStorage and reload
