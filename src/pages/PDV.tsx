@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateSale, useSalesStats, type CartItem } from "@/hooks/useSalesData";
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import { useProductData } from "@/hooks/useProductData";
+import { useProducts } from "@/hooks/useProductData";
 
 const PDV = () => {
   const { toast } = useToast();
@@ -30,7 +30,7 @@ const PDV = () => {
 
   const createSale = useCreateSale();
   const { data: stats } = useSalesStats();
-  const { data: allProducts } = useProductData();
+  const { data: allProducts } = useProducts();
 
   const filteredProducts = useMemo(() => {
     if (!allProducts) return [];
