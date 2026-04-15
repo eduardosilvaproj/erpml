@@ -298,27 +298,6 @@ const Conferencia = () => {
               <Button className="w-full" onClick={startConference} disabled={!mode}>
                 Iniciar conferência <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
-              <Button
-                variant="outline"
-                className="w-full gap-2 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                onClick={() => {
-                  setConferenceName("Inventário Teste Abril 2026");
-                  setMode("inventario");
-                  setScannedProducts([]);
-                  setLastScan(null);
-                  setScanBuffer("");
-                  // Inject simulated products into allProducts ref won't work,
-                  // so we use a flag to show simulated products available
-                  (window as any).__simProducts = [
-                    { id: "sim-a", name: "Produto A", sku: "SKU-001", barcode: "SKU-001", image_url: null, stock_physical: 10 },
-                    { id: "sim-b", name: "Produto B", sku: "SKU-002", barcode: "SKU-002", image_url: null, stock_physical: 5 },
-                    { id: "sim-c", name: "Produto C", sku: "SKU-003", barcode: "SKU-003", image_url: null, stock_physical: 8 },
-                  ];
-                  setStep(2);
-                }}
-              >
-                <Play className="h-4 w-4" /> Simular etapa 2
-              </Button>
             </CardContent>
           </Card>
         </div>
