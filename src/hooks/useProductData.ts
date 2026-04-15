@@ -26,6 +26,8 @@ export type Product = {
   updated_at: string;
   company_id: string | null;
   image_url: string | null;
+  gtin_cx: string | null;
+  box_quantity: number | null;
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
 };
@@ -47,6 +49,8 @@ export type ProductFormData = {
   min_stock?: number;
   supplier_ids: string[];
   image_url?: string;
+  gtin_cx?: string;
+  box_quantity?: number;
 };
 
 export function useProducts(filters?: {
