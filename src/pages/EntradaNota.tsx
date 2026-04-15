@@ -2013,8 +2013,15 @@ const EntradaNota = () => {
             <Button disabled={!unknownGtinProduct || unknownGtinQty <= 0 || unknownGtinBoxes <= 0} onClick={async () => {
               if (!unknownGtinProduct || !unknownGtinDialog) return;
               const totalUnits = unknownGtinQty * unknownGtinBoxes;
-              const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === unknownGtinProduct);
-              const selectedItem = conferenceItems.find((i) => i.matchedProductId === unknownGtinProduct);
+              
+              // Support both matched products (by ID) and unmatched products (by idx-N fallback)
+              let productIdx: number;
+              if (unknownGtinProduct.startsWith("idx-")) {
+                productIdx = parseInt(unknownGtinProduct.replace("idx-", ""), 10);
+              } else {
+                productIdx = conferenceItems.findIndex((i) => i.matchedProductId === unknownGtinProduct);
+              }
+              const selectedItem = productIdx >= 0 && productIdx < conferenceItems.length ? conferenceItems[productIdx] : null;
               const productName = selectedItem?.xmlProduct.description || "";
 
               // Save GTIN CX if checkbox checked and code is non-empty
