@@ -1003,6 +1003,65 @@ const EntradaNota = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Loaded NFs table (shown when multiple NFs loaded) */}
+          {batchNfes.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Files className="h-5 w-5" />
+                  Notas carregadas ({batchNfes.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="w-[40px]" />
+                      <TableHead>Nº NF</TableHead>
+                      <TableHead>Fornecedor</TableHead>
+                      <TableHead className="text-center">Itens</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead className="w-[40px]" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {batchNfes.map((nf) => (
+                      <TableRow key={nf.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={nf.selected}
+                            onCheckedChange={() => toggleBatchNfe(nf.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{nf.nfeData.number}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{nf.nfeData.issuerName}</TableCell>
+                        <TableCell className="text-center">{nf.nfeData.products.length}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(nf.nfeData.totalValue)}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeBatchNfe(nf.id)}>
+                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex items-center justify-between p-4 border-t border-border">
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBatchNfes.length} de {batchNfes.length} selecionada(s)
+                  </p>
+                  <Button
+                    onClick={() => { setBatchMode(true); goToStep(2); }}
+                    disabled={selectedBatchNfes.length === 0}
+                    className="gap-2"
+                  >
+                    Avançar com {selectedBatchNfes.length} nota(s) <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
