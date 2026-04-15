@@ -2,7 +2,7 @@ import {
   Package, Boxes, UsersRound, Users, Warehouse, CameraIcon,
   ScanBarcode, ClipboardList, ArrowRightLeft, Monitor, Megaphone,
   ShoppingBag, Store, BarChart3, DollarSign, Sparkles, GraduationCap,
-  Brain, TrendingUp
+  Brain, TrendingUp, Copy
 } from "lucide-react";
 
 export interface MenuItem {
@@ -52,6 +52,7 @@ export const menuGroups: MenuGroup[] = [
       { title: "PDV", url: "/pdv", icon: Monitor, desc: "Ponto de venda" },
       { title: "Campanhas", url: "/campanhas", icon: Megaphone, desc: "Anúncios em massa" },
       { title: "Integração ML", url: "/integracao-ml", icon: ShoppingBag, desc: "Mercado Livre", premium: true },
+      { title: "Duplicador", url: "/duplicador-anuncios", icon: Copy, desc: "Duplicar anúncios ML", premium: true },
       { title: "Minha Loja", url: "/minha-loja/configurar", icon: Store, desc: "Vitrine virtual" },
     ],
   },
