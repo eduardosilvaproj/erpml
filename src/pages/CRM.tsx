@@ -107,8 +107,13 @@ const CRM = () => {
   const [sortType, setSortType] = useState<SortType>("name");
   const [docType, setDocType] = useState<"cpf" | "cnpj">("cpf");
   const [form, setForm] = useState({
-    name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: ""
+    name: "", phone: "", email: "", cpf: "", address: "", notes: "", birthday: "", cep: "", city: "", state: ""
   });
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState(false);
+  const [cepFilled, setCepFilled] = useState(false);
+  const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
+  const formDirtyRef = useRef(false);
 
   const { data: customers, isLoading } = useCustomers(search || undefined);
   const { data: stats } = useCustomerStats();
