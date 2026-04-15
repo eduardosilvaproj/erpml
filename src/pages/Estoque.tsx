@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Warehouse, Package, ArrowRightLeft, AlertTriangle, Search, Loader2,
   ShieldCheck, ShieldAlert, Pencil, Plus, Download, FileDown, ClipboardEdit,
-  ArrowUpRight, ArrowDownLeft, RotateCcw, History
+  ArrowUpRight, ArrowDownLeft, RotateCcw, History, PackageOpen
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useProducts, useCategories } from "@/hooks/useProductData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 
 const Estoque = () => {
   const navigate = useNavigate();
@@ -27,9 +28,16 @@ const Estoque = () => {
   const [page, setPage] = useState(1);
   const [onlyDivergent, setOnlyDivergent] = useState(false);
   const [validationSearch, setValidationSearch] = useState("");
-  const [adjustDialog, setAdjustDialog] = useState<{ id: string; name: string; stock_physical: number; stock_full: number } | null>(null);
+  const [adjustDialog, setAdjustDialog] = useState<{ id: string; name: string; stock_physical: number; stock_full: number; gtin_cx?: string | null; box_quantity?: number | null } | null>(null);
   const [adjustPhysical, setAdjustPhysical] = useState("");
   const [adjustFull, setAdjustFull] = useState("");
+
+  // Box mode for adjust dialog
+  const [adjustBoxMode, setAdjustBoxMode] = useState(false);
+  const [adjustBoxGtinCx, setAdjustBoxGtinCx] = useState("");
+  const [adjustBoxUnitsPerBox, setAdjustBoxUnitsPerBox] = useState("");
+  const [adjustBoxCount, setAdjustBoxCount] = useState("");
+  const [adjustBoxTarget, setAdjustBoxTarget] = useState<"physical" | "full">("physical");
 
   const { data, isLoading, refetch } = useProducts({
     search: search || undefined,
@@ -53,23 +61,64 @@ const Estoque = () => {
       ? products.filter((p) => p.stock_physical + p.stock_full === 0)
       : products;
 
+  const openAdjustDialog = (p: typeof products[0]) => {
+    setAdjustDialog({
+      id: p.id,
+      name: p.name,
+      stock_physical: p.stock_physical,
+      stock_full: p.stock_full,
+      gtin_cx: p.gtin_cx,
+      box_quantity: p.box_quantity,
+    });
+    setAdjustPhysical(String(p.stock_physical));
+    setAdjustFull(String(p.stock_full));
+    setAdjustBoxMode(false);
+    setAdjustBoxGtinCx(p.gtin_cx || "");
+    setAdjustBoxUnitsPerBox(p.box_quantity ? String(p.box_quantity) : "");
+    setAdjustBoxCount("");
+    setAdjustBoxTarget("physical");
+  };
+
+  const boxTotal = (parseInt(adjustBoxUnitsPerBox) || 0) * (parseInt(adjustBoxCount) || 0);
+
   const handleAdjustSave = async () => {
     if (!adjustDialog) return;
-    const updateData: { stock_physical?: number; stock_full?: number } = {};
-    if (adjustPhysical !== "") updateData.stock_physical = Number(adjustPhysical);
-    if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
-    if (Object.keys(updateData).length === 0) return;
 
-    const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
-    if (error) {
-      toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
+    if (adjustBoxMode && boxTotal > 0) {
+      // Box mode: subtract units from selected stock
+      const currentStock = adjustBoxTarget === "physical" ? adjustDialog.stock_physical : adjustDialog.stock_full;
+      const newStock = Math.max(0, currentStock - boxTotal);
+      const updateData = adjustBoxTarget === "physical"
+        ? { stock_physical: newStock }
+        : { stock_full: newStock };
+
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      if (error) {
+        toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: `Estoque ajustado! −${boxTotal} unidades (${adjustBoxCount} caixas × ${adjustBoxUnitsPerBox} un)` });
+        refetch();
+      }
     } else {
-      toast({ title: "Estoque ajustado!" });
-      refetch();
+      // Individual mode
+      const updateData: { stock_physical?: number; stock_full?: number } = {};
+      if (adjustPhysical !== "") updateData.stock_physical = Number(adjustPhysical);
+      if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
+      if (Object.keys(updateData).length === 0) return;
+
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      if (error) {
+        toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
+      } else {
+        toast({ title: "Estoque ajustado!" });
+        refetch();
+      }
     }
+
     setAdjustDialog(null);
     setAdjustPhysical("");
     setAdjustFull("");
+    setAdjustBoxMode(false);
   };
 
   const handleExportCSV = () => {
@@ -77,7 +126,7 @@ const Estoque = () => {
       toast({ title: "Nenhum produto para exportar", variant: "destructive" });
       return;
     }
-    const headers = ["SKU", "Produto", "Categoria", "Físico", "FULL", "Total", "Mínimo", "Status"];
+    const headers = ["SKU", "Produto", "Categoria", "Físico (un)", "FULL (un)", "Total (un)", "Mínimo", "Status"];
     const rows = products.map((p) => {
       const total = p.stock_physical + p.stock_full;
       const isZero = total === 0;
@@ -134,9 +183,9 @@ const Estoque = () => {
       {/* Summary cards */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
-          { label: "Estoque Físico", value: totalPhysical, icon: Warehouse, color: "text-primary" },
-          { label: "Estoque FULL", value: totalFull, icon: Package, color: "text-accent" },
-          { label: "Total Geral", value: totalPhysical + totalFull, icon: ArrowRightLeft, color: "text-foreground" },
+          { label: "Físico (un)", value: totalPhysical, icon: Warehouse, color: "text-primary" },
+          { label: "FULL (un)", value: totalFull, icon: Package, color: "text-accent" },
+          { label: "Total (un)", value: totalPhysical + totalFull, icon: ArrowRightLeft, color: "text-foreground" },
           { label: "Estoque Baixo", value: lowStock.length, icon: AlertTriangle, color: "text-destructive" },
         ].map((stat) => (
           <Card key={stat.label}>
@@ -200,9 +249,9 @@ const Estoque = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Produto</TableHead>
-                    <TableHead className="text-center">Físico</TableHead>
-                    <TableHead className="text-center">FULL</TableHead>
-                    <TableHead className="text-center">Total</TableHead>
+                    <TableHead className="text-center">Físico (un)</TableHead>
+                    <TableHead className="text-center">FULL (un)</TableHead>
+                    <TableHead className="text-center">Total (un)</TableHead>
                     <TableHead className="text-center">Mínimo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-center">Atualizado</TableHead>
@@ -214,6 +263,8 @@ const Estoque = () => {
                     const total = p.stock_physical + p.stock_full;
                     const isLow = p.min_stock > 0 && total <= p.min_stock;
                     const isZero = total === 0;
+                    const hasBox = p.gtin_cx && p.box_quantity && p.box_quantity > 0;
+                    const boxApprox = hasBox ? Math.floor(total / p.box_quantity!) : 0;
                     return (
                       <TableRow
                         key={p.id}
@@ -242,7 +293,14 @@ const Estoque = () => {
                         </TableCell>
                         <TableCell className="text-center font-bold text-primary">{p.stock_physical}</TableCell>
                         <TableCell className="text-center font-bold text-accent">{p.stock_full}</TableCell>
-                        <TableCell className="text-center font-bold">{total}</TableCell>
+                        <TableCell className="text-center">
+                          <span className="font-bold">{total}</span>
+                          {hasBox && total > 0 && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              ≈ {boxApprox} caixas de {p.box_quantity}
+                            </p>
+                          )}
+                        </TableCell>
                         <TableCell className="text-center text-muted-foreground">{p.min_stock}</TableCell>
                         <TableCell>
                           {isZero ? (
@@ -261,11 +319,7 @@ const Estoque = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => {
-                              setAdjustDialog({ id: p.id, name: p.name, stock_physical: p.stock_physical, stock_full: p.stock_full });
-                              setAdjustPhysical(String(p.stock_physical));
-                              setAdjustFull(String(p.stock_full));
-                            }}
+                            onClick={() => openAdjustDialog(p)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -289,9 +343,9 @@ const Estoque = () => {
       <Card>
         <CardContent className="p-4">
           <div className="rounded-lg bg-muted p-4 text-center">
-            <p className="text-sm font-medium text-foreground">Regra de Estoque Duplo</p>
+            <p className="text-sm font-medium text-foreground">Regra de Estoque</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Vendas FULL não baixam do estoque físico • Vendas PDV baixam apenas do físico
+              Quantidades sempre em unidades individuais • Caixas são apenas forma de entrada/saída
             </p>
           </div>
         </CardContent>
@@ -351,8 +405,8 @@ const Estoque = () => {
                         <TableRow>
                           <TableHead>SKU</TableHead>
                           <TableHead>Produto</TableHead>
-                          <TableHead className="text-center">Físico</TableHead>
-                          <TableHead className="text-center">FULL</TableHead>
+                          <TableHead className="text-center">Físico (un)</TableHead>
+                          <TableHead className="text-center">FULL (un)</TableHead>
                           <TableHead className="text-center">Diferença</TableHead>
                           <TableHead>Status</TableHead>
                         </TableRow>
@@ -436,23 +490,122 @@ const Estoque = () => {
 
       {/* Adjust dialog */}
       <Dialog open={!!adjustDialog} onOpenChange={(open) => !open && setAdjustDialog(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Ajuste de Estoque{adjustDialog?.name ? ` — ${adjustDialog.name}` : ""}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div>
-              <Label>Estoque Físico</Label>
-              <Input type="number" min={0} value={adjustPhysical} onChange={(e) => setAdjustPhysical(e.target.value)} placeholder="Quantidade física" />
+            {/* Mode toggle */}
+            <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3">
+              <div className="flex gap-1">
+                <Button
+                  variant={!adjustBoxMode ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setAdjustBoxMode(false)}
+                >
+                  ● Individual
+                </Button>
+                <Button
+                  variant={adjustBoxMode ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs h-8"
+                  onClick={() => setAdjustBoxMode(true)}
+                >
+                  <PackageOpen className="h-3.5 w-3.5 mr-1" />
+                  Caixa fechada
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label>Estoque FULL</Label>
-              <Input type="number" min={0} value={adjustFull} onChange={(e) => setAdjustFull(e.target.value)} placeholder="Quantidade FULL" />
-            </div>
+
+            {!adjustBoxMode ? (
+              <>
+                <div>
+                  <Label>Estoque Físico (un)</Label>
+                  <Input type="number" min={0} value={adjustPhysical} onChange={(e) => setAdjustPhysical(e.target.value)} placeholder="Quantidade física" />
+                </div>
+                <div>
+                  <Label>Estoque FULL (un)</Label>
+                  <Input type="number" min={0} value={adjustFull} onChange={(e) => setAdjustFull(e.target.value)} placeholder="Quantidade FULL" />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label className="text-xs">Retirar do estoque</Label>
+                  <div className="flex gap-1 mt-1">
+                    <Button
+                      variant={adjustBoxTarget === "physical" ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-8 flex-1"
+                      onClick={() => setAdjustBoxTarget("physical")}
+                    >
+                      Físico ({adjustDialog?.stock_physical || 0} un)
+                    </Button>
+                    <Button
+                      variant={adjustBoxTarget === "full" ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-8 flex-1"
+                      onClick={() => setAdjustBoxTarget("full")}
+                    >
+                      FULL ({adjustDialog?.stock_full || 0} un)
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">GTIN CX</Label>
+                  <BarcodeScannerInput
+                    value={adjustBoxGtinCx}
+                    onChange={setAdjustBoxGtinCx}
+                    placeholder="Código da caixa"
+                    showCameraButton
+                    inputClassName="h-9 text-sm"
+                  />
+                  {adjustDialog?.gtin_cx && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Cadastrado: {adjustDialog.gtin_cx}</p>
+                  )}
+                </div>
+                <div>
+                  <Label className="text-xs">Unidades por caixa</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={adjustBoxUnitsPerBox}
+                    onChange={(e) => setAdjustBoxUnitsPerBox(e.target.value)}
+                    placeholder="Ex: 12"
+                    className="h-9 text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Editável — varia por saída</p>
+                </div>
+                <div>
+                  <Label className="text-xs">Qtd de caixas a retirar</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={adjustBoxCount}
+                    onChange={(e) => setAdjustBoxCount(e.target.value)}
+                    placeholder="Ex: 2"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                {boxTotal > 0 && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-sm font-semibold text-center">
+                      {adjustBoxCount} caixas × {adjustBoxUnitsPerBox} un = <span className="text-primary">{boxTotal} unidades</span>
+                    </p>
+                    <p className="text-[10px] text-center text-muted-foreground mt-1">
+                      Saldo após ajuste: {Math.max(0, (adjustBoxTarget === "physical" ? (adjustDialog?.stock_physical || 0) : (adjustDialog?.stock_full || 0)) - boxTotal)} un
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustDialog(null)}>Cancelar</Button>
-            <Button onClick={handleAdjustSave} disabled={!adjustDialog?.id}>Salvar</Button>
+            <Button onClick={handleAdjustSave} disabled={!adjustDialog?.id || (adjustBoxMode && boxTotal <= 0)}>
+              {adjustBoxMode ? `Retirar ${boxTotal} un` : "Salvar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

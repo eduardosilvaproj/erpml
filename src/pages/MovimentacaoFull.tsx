@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowRight, ScanBarcode, Package, Truck, Loader2, Plus, Minus,
-  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes
+  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes, PackageOpen
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -17,6 +19,14 @@ import {
 } from "@/hooks/useTransferData";
 import { useKits, type Kit } from "@/hooks/useKitData";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
+
+interface BoxConfig {
+  productId: string;
+  gtinCx: string;
+  unitsPerBox: number;
+  boxCount: number;
+}
 
 const MovimentacaoFull = () => {
   const { toast } = useToast();
@@ -26,12 +36,17 @@ const MovimentacaoFull = () => {
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Box mode state
+  const [boxModeEnabled, setBoxModeEnabled] = useState(false);
+  const [boxConfigs, setBoxConfigs] = useState<Record<string, BoxConfig>>({});
+  const [expandedBoxProduct, setExpandedBoxProduct] = useState<string | null>(null);
+  const [boxForm, setBoxForm] = useState<{ gtinCx: string; unitsPerBox: string; boxCount: string }>({ gtinCx: "", unitsPerBox: "", boxCount: "" });
+
   const { data: orders } = useTransferOrders();
   const { data: kits } = useKits();
   const createOrder = useCreateTransferOrder();
   const updateStatus = useUpdateTransferStatus();
 
-  // Auto-focus scan input
   useEffect(() => {
     scanInputRef.current?.focus();
   }, []);
@@ -73,10 +88,40 @@ const MovimentacaoFull = () => {
     const trimmed = code.trim();
 
     try {
+      // Check if code is a GTIN CX (box barcode) in box mode
+      if (boxModeEnabled) {
+        const { data: boxProducts } = await supabase
+          .from("products")
+          .select("id, name, sku, barcode, stock_physical, gtin_cx, box_quantity")
+          .eq("gtin_cx", trimmed);
+
+        if (boxProducts && boxProducts.length > 0) {
+          const product = boxProducts[0];
+          // Auto-expand box config for this product
+          const result = addOrIncrementItem(items, product, 1);
+          if (result.added) {
+            setItems(result.items);
+            setExpandedBoxProduct(product.id);
+            setBoxForm({
+              gtinCx: product.gtin_cx || trimmed,
+              unitsPerBox: product.box_quantity ? String(product.box_quantity) : "",
+              boxCount: "1",
+            });
+            setLastScan({ success: true, message: `📦 Caixa detectada — "${product.name}". Configure a quantidade.` });
+            playBeep(800, 100);
+          } else {
+            setLastScan({ success: false, message: result.message });
+            playBeep(200, 400);
+          }
+          setScanBuffer("");
+          setTimeout(() => scanInputRef.current?.focus(), 50);
+          return;
+        }
+      }
+
       // 1. Check if code matches a Kit SKU
       const matchedKit = kits?.find((k) => k.sku.toLowerCase() === trimmed.toLowerCase() && k.active);
       if (matchedKit && matchedKit.kit_items && matchedKit.kit_items.length > 0) {
-        // Fetch fresh stock for all kit products
         const productIds = matchedKit.kit_items.map((ki) => ki.product_id);
         const { data: kitProducts } = await supabase
           .from("products")
@@ -97,22 +142,10 @@ const MovimentacaoFull = () => {
 
         for (const kitItem of matchedKit.kit_items) {
           const product = kitProducts.find((p) => p.id === kitItem.product_id);
-          if (!product) {
-            hasError = true;
-            setLastScan({ success: false, message: `Produto do kit não encontrado.` });
-            break;
-          }
-          if (product.stock_physical < kitItem.quantity) {
-            hasError = true;
-            setLastScan({ success: false, message: `"${product.name}" sem estoque suficiente (necessário: ${kitItem.quantity}, disponível: ${product.stock_physical}).` });
-            break;
-          }
+          if (!product) { hasError = true; setLastScan({ success: false, message: `Produto do kit não encontrado.` }); break; }
+          if (product.stock_physical < kitItem.quantity) { hasError = true; setLastScan({ success: false, message: `"${product.name}" sem estoque suficiente (necessário: ${kitItem.quantity}, disponível: ${product.stock_physical}).` }); break; }
           const result = addOrIncrementItem(updatedItems, product, kitItem.quantity);
-          if (!result.added) {
-            hasError = true;
-            setLastScan({ success: false, message: result.message });
-            break;
-          }
+          if (!result.added) { hasError = true; setLastScan({ success: false, message: result.message }); break; }
           updatedItems = result.items;
           addedNames.push(`${product.name} (${kitItem.quantity}x)`);
         }
@@ -134,7 +167,7 @@ const MovimentacaoFull = () => {
       // 2. Regular product scan
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, stock_physical")
+        .select("id, name, sku, barcode, stock_physical, gtin_cx, box_quantity")
         .or(`barcode.eq.${trimmed},sku.eq.${trimmed}`);
 
       const product = products?.[0];
@@ -158,13 +191,23 @@ const MovimentacaoFull = () => {
       setItems(result.items);
       setLastScan({ success: result.added, message: result.message });
       playBeep(result.added ? 800 : 300, result.added ? 100 : 300);
+
+      // If box mode is enabled, auto-expand box config
+      if (boxModeEnabled && result.added) {
+        setExpandedBoxProduct(product.id);
+        setBoxForm({
+          gtinCx: product.gtin_cx || "",
+          unitsPerBox: product.box_quantity ? String(product.box_quantity) : "",
+          boxCount: "1",
+        });
+      }
     } catch (err: any) {
       setLastScan({ success: false, message: err.message });
     }
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [items, kits]);
+  }, [items, kits, boxModeEnabled]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -183,6 +226,10 @@ const MovimentacaoFull = () => {
 
   const removeItem = (productId: string) => {
     setItems(items.filter((i) => i.productId !== productId));
+    const newConfigs = { ...boxConfigs };
+    delete newConfigs[productId];
+    setBoxConfigs(newConfigs);
+    if (expandedBoxProduct === productId) setExpandedBoxProduct(null);
   };
 
   const handleAddKit = async (kit: Kit) => {
@@ -190,15 +237,9 @@ const MovimentacaoFull = () => {
       toast({ title: "Kit sem itens cadastrados.", variant: "destructive" });
       return;
     }
-
     const productIds = kit.kit_items.map((ki) => ki.product_id);
-    const { data: kitProducts } = await supabase
-      .from("products")
-      .select("id, name, sku, barcode, stock_physical")
-      .in("id", productIds);
-
+    const { data: kitProducts } = await supabase.from("products").select("id, name, sku, barcode, stock_physical").in("id", productIds);
     if (!kitProducts) return;
-
     let updatedItems = [...items];
     for (const kitItem of kit.kit_items) {
       const product = kitProducts.find((p) => p.id === kitItem.product_id);
@@ -211,12 +252,42 @@ const MovimentacaoFull = () => {
     toast({ title: `Kit "${kit.name}" adicionado à lista de envio!` });
   };
 
+  const handleApplyBoxConfig = (productId: string) => {
+    const unitsPerBox = parseInt(boxForm.unitsPerBox) || 0;
+    const boxCount = parseInt(boxForm.boxCount) || 0;
+    if (unitsPerBox <= 0 || boxCount <= 0) {
+      toast({ title: "Preencha unidades por caixa e quantidade de caixas.", variant: "destructive" });
+      return;
+    }
+    const totalUnits = unitsPerBox * boxCount;
+    const item = items.find((i) => i.productId === productId);
+    if (!item) return;
+    if (totalUnits > item.stockPhysical) {
+      toast({ title: `Total (${totalUnits} un) excede estoque físico (${item.stockPhysical} un).`, variant: "destructive" });
+      return;
+    }
+
+    setBoxConfigs({
+      ...boxConfigs,
+      [productId]: { productId, gtinCx: boxForm.gtinCx, unitsPerBox, boxCount },
+    });
+    setItems(items.map((i) => i.productId === productId ? { ...i, quantity: totalUnits } : i));
+    setExpandedBoxProduct(null);
+    toast({ title: `📦 ${boxCount} cx × ${unitsPerBox} un = ${totalUnits} un aplicado!` });
+  };
+
   const handleCreateOrder = async () => {
     if (items.length === 0) return;
-    const notes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : undefined;
-    await createOrder.mutateAsync({ items, notes });
+    const boxNotes = Object.values(boxConfigs).map((bc) => {
+      const item = items.find((i) => i.productId === bc.productId);
+      return item ? `${item.productName}: ${bc.boxCount}cx × ${bc.unitsPerBox}un = ${bc.boxCount * bc.unitsPerBox}un` : "";
+    }).filter(Boolean);
+    const kitNotes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : "";
+    const allNotes = [kitNotes, ...boxNotes].filter(Boolean).join(" | ");
+    await createOrder.mutateAsync({ items, notes: allNotes || undefined });
     setItems([]);
     setUsedKits([]);
+    setBoxConfigs({});
     setLastScan(null);
   };
 
@@ -235,6 +306,7 @@ const MovimentacaoFull = () => {
   };
 
   const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
+  const totalBoxes = Object.values(boxConfigs).reduce((sum, bc) => sum + bc.boxCount, 0);
   const activeKits = kits?.filter((k) => k.active && k.kit_items && k.kit_items.length > 0) || [];
 
   const statusFlow: Record<string, { next: string; label: string }> = {
@@ -335,6 +407,20 @@ const MovimentacaoFull = () => {
             <BarcodeScanner onScan={(code) => handleScan(code)} />
           </div>
 
+          {/* Box mode toggle */}
+          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <Switch id="box-mode-full" checked={boxModeEnabled} onCheckedChange={setBoxModeEnabled} />
+            <Label htmlFor="box-mode-full" className="text-sm cursor-pointer flex items-center gap-2">
+              <PackageOpen className="h-4 w-4" />
+              Enviar produtos em caixa fechada
+            </Label>
+            {boxModeEnabled && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs ml-auto">
+                Modo caixa ativo
+              </Badge>
+            )}
+          </div>
+
           {/* Quick kit buttons */}
           {activeKits.length > 0 && (
             <div className="space-y-2">
@@ -343,13 +429,7 @@ const MovimentacaoFull = () => {
               </p>
               <div className="flex flex-wrap gap-2">
                 {activeKits.map((kit) => (
-                  <Button
-                    key={kit.id}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => handleAddKit(kit)}
-                  >
+                  <Button key={kit.id} variant="outline" size="sm" className="text-xs" onClick={() => handleAddKit(kit)}>
                     <Boxes className="h-3 w-3 mr-1" />
                     {kit.name}
                     <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 h-4">
@@ -364,10 +444,10 @@ const MovimentacaoFull = () => {
           {/* Last scan feedback */}
           {lastScan && (
             <div className={`rounded-lg p-3 flex items-center gap-3 ${
-              lastScan.success ? "bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20" : "bg-destructive/5 border border-destructive/20"
+              lastScan.success ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-destructive/5 border border-destructive/20"
             }`}>
               {lastScan.success ? (
-                <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
               ) : (
                 <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
               )}
@@ -401,41 +481,138 @@ const MovimentacaoFull = () => {
                       <TableRow>
                         <TableHead>Produto</TableHead>
                         <TableHead className="text-center">Qtd</TableHead>
+                        {boxModeEnabled && <TableHead className="text-center">Caixa 📦</TableHead>}
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.productId}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-sm truncate">{item.productName}</p>
-                                <p className="text-xs text-muted-foreground font-mono">{item.productSku}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-center gap-1.5">
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}>
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="font-bold w-8 text-center">{item.quantity}</span>
-                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)} disabled={item.quantity >= item.stockPhysical}>
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem(item.productId)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {items.map((item) => {
+                        const bc = boxConfigs[item.productId];
+                        return (
+                          <>
+                            <TableRow key={item.productId}>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-sm truncate">{item.productName}</p>
+                                    <p className="text-xs text-muted-foreground font-mono">{item.productSku}</p>
+                                    {bc && (
+                                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] mt-1">
+                                        📦 {bc.boxCount}cx × {bc.unitsPerBox}un = {bc.boxCount * bc.unitsPerBox} un
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}>
+                                    <Minus className="h-3 w-3" />
+                                  </Button>
+                                  <span className="font-bold w-8 text-center">{item.quantity}</span>
+                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)} disabled={item.quantity >= item.stockPhysical}>
+                                    <Plus className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                              {boxModeEnabled && (
+                                <TableCell className="text-center">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-xs h-7"
+                                    onClick={() => {
+                                      if (expandedBoxProduct === item.productId) {
+                                        setExpandedBoxProduct(null);
+                                      } else {
+                                        setExpandedBoxProduct(item.productId);
+                                        setBoxForm({
+                                          gtinCx: bc?.gtinCx || "",
+                                          unitsPerBox: bc ? String(bc.unitsPerBox) : "",
+                                          boxCount: bc ? String(bc.boxCount) : "1",
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    📦 {bc ? "Editar" : "Configurar"}
+                                  </Button>
+                                </TableCell>
+                              )}
+                              <TableCell>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem(item.productId)}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                            {/* Box config panel */}
+                            {boxModeEnabled && expandedBoxProduct === item.productId && (
+                              <TableRow key={`box-${item.productId}`}>
+                                <TableCell colSpan={4} className="p-0">
+                                  <div className="bg-muted/30 border-t border-border/50 p-4 space-y-3">
+                                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                                      <PackageOpen className="h-3.5 w-3.5" />
+                                      Configurar envio em caixa — {item.productName}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                      <div>
+                                        <Label className="text-xs">GTIN CX</Label>
+                                        <BarcodeScannerInput
+                                          value={boxForm.gtinCx}
+                                          onChange={(v) => setBoxForm({ ...boxForm, gtinCx: v })}
+                                          placeholder="Código da caixa"
+                                          showCameraButton
+                                          inputClassName="h-9 text-sm"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">Preenche automático se cadastrado</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">Unidades por caixa</Label>
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          value={boxForm.unitsPerBox}
+                                          onChange={(e) => setBoxForm({ ...boxForm, unitsPerBox: e.target.value })}
+                                          placeholder="Ex: 12"
+                                          className="h-9 text-sm"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground mt-0.5">Varia por envio</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-xs">Qtd de caixas a enviar</Label>
+                                        <Input
+                                          type="number"
+                                          min={1}
+                                          value={boxForm.boxCount}
+                                          onChange={(e) => setBoxForm({ ...boxForm, boxCount: e.target.value })}
+                                          placeholder="Ex: 3"
+                                          className="h-9 text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-sm font-semibold">
+                                        Total unitário:{" "}
+                                        <span className="text-primary">
+                                          {(parseInt(boxForm.unitsPerBox) || 0) * (parseInt(boxForm.boxCount) || 0)} unidades
+                                        </span>
+                                      </p>
+                                      <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => setExpandedBoxProduct(null)}>Cancelar</Button>
+                                        <Button size="sm" onClick={() => handleApplyBoxConfig(item.productId)}>
+                                          <Check className="h-3.5 w-3.5 mr-1" /> Aplicar
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -475,9 +652,15 @@ const MovimentacaoFull = () => {
                 <span className="font-semibold">{items.length}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total de itens</span>
-                <span className="font-semibold">{totalQty}</span>
+                <span className="text-sm text-muted-foreground">Total unitário</span>
+                <span className="font-semibold text-primary">{totalQty} unidades</span>
               </div>
+              {boxModeEnabled && totalBoxes > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Total de caixas</span>
+                  <span className="font-semibold">{totalBoxes}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Peso estimado</span>
                 <span className="font-semibold text-muted-foreground">— kg</span>
@@ -500,7 +683,7 @@ const MovimentacaoFull = () => {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => { setItems([]); setUsedKits([]); setLastScan(null); }}
+                onClick={() => { setItems([]); setUsedKits([]); setBoxConfigs({}); setLastScan(null); }}
                 disabled={items.length === 0}
               >
                 Limpar lista
