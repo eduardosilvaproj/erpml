@@ -128,6 +128,8 @@ export function useCreateProduct() {
         min_stock: productData.min_stock ?? 0,
         company_id: companyId,
         image_url: productData.image_url || null,
+        gtin_cx: productData.gtin_cx || null,
+        box_quantity: productData.box_quantity ?? null,
       };
 
       const { data: product, error } = await supabase
@@ -180,6 +182,8 @@ export function useUpdateProduct() {
         id_ml: productData.id_ml || null,
         min_stock: productData.min_stock ?? 0,
         image_url: productData.image_url || null,
+        gtin_cx: productData.gtin_cx || null,
+        box_quantity: productData.box_quantity ?? null,
       };
 
       const { error } = await supabase.from("products").update(updateData).eq("id", id);
