@@ -396,40 +396,38 @@ const EntradaNota = () => {
       return;
     }
 
-    // Check GTIN CX if box mode enabled
-    if (boxModeEnabled) {
-      try {
-        const { data: boxProduct } = await supabase
-          .from("products")
-          .select("id, name, gtin_cx, box_quantity")
-          .eq("gtin_cx", code)
-          .limit(1);
+    // Check GTIN CX (always, not just box mode)
+    try {
+      const { data: boxProduct } = await supabase
+        .from("products")
+        .select("id, name, gtin_cx, box_quantity")
+        .eq("gtin_cx", code)
+        .limit(1);
 
-        if (boxProduct && boxProduct.length > 0) {
-          const bp = boxProduct[0];
-          const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
-          if (productIdx !== -1) {
-            setBoxBipDialog({
-              code,
-              productIdx,
-              productName: bp.name,
-              qtyPerBox: (bp as any).box_quantity || 1,
-            });
-            playBeep(600, 100);
-            return;
-          }
+      if (boxProduct && boxProduct.length > 0) {
+        const bp = boxProduct[0];
+        const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
+        if (productIdx !== -1) {
+          setBoxBipDialog({
+            code,
+            productIdx,
+            productName: bp.name,
+            qtyPerBox: (bp as any).box_quantity || 1,
+          });
+          playBeep(600, 100);
+          return;
         }
-        // Unknown GTIN CX
-        setUnknownGtinDialog({ code });
-        playBeep(200, 400);
-        return;
-      } catch { /* fall through */ }
-    }
+      }
+    } catch { /* fall through */ }
 
-    setBipAlert({ type: "error", msg: `Produto "${code}" não pertence a esta nota!` });
+    // Unknown code — open enhanced GTIN CX modal
+    setUnknownGtinDialog({ code });
+    setUnknownGtinProduct("");
+    setUnknownGtinQty(1);
+    setUnknownGtinBoxes(1);
+    setUnknownGtinSave(true);
     playBeep(200, 400);
-    bipRef.current?.flash(false);
-    setTimeout(() => bipRef.current?.focus(), 50);
+    return;
   };
 
   const applyBoxBip = (productIdx: number, boxes: number, qtyPerBox: number) => {
