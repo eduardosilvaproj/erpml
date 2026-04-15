@@ -39,7 +39,7 @@ export default function MinhaLojaProdutos() {
     (storeProducts || []).map(sp => [sp.product_id, sp])
   );
 
-  const allProducts = products && "products" in products ? products.products : (products || []);
+  const allProducts: any[] = products ? (Array.isArray(products) ? products : (products as any).products || []) : [];
 
   const filtered = allProducts.filter((p: any) =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
