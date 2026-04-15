@@ -69,6 +69,7 @@ const Kits = () => {
     setFormSku(kit.sku);
     setFormDescription(kit.description || "");
     setFormPrice(kit.price);
+    setFormActive(kit.active !== false);
     setFormItems(kit.kit_items?.map((i) => ({ product_id: i.product_id, quantity: i.quantity })) || []);
     setDialogOpen(true);
   };
