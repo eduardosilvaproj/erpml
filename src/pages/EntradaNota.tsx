@@ -34,7 +34,17 @@ interface ConferenceItem {
   expectedQty: number;
   scannedQty: number;
   status: "pending" | "partial" | "ok" | "excess" | "not_found";
-  nfNumber?: string; // which NF this item belongs to (batch mode)
+  nfNumber?: string;
+  boxBadge?: string; // e.g. "📦 3 cx × 12 un = 36"
+}
+
+interface BoxConfig {
+  gtinCx: string;
+  qtyPerBox: number;
+  boxesReceived: number;
+  saveGtin: boolean;
+  savedGtin?: string; // pre-filled from DB
+  savedQtyPerBox?: number;
 }
 
 // Batch mode types
