@@ -63,6 +63,82 @@ import {
 import { useMLSettings, useUpdateMLSettings } from "@/hooks/useMLSettings";
 import { useSearchParams } from "react-router-dom";
 
+function SettingsCard({ mlSettings, loadingSettings, updateSettings }: { mlSettings: any; loadingSettings: boolean; updateSettings: any }) {
+  const [autoSync, setAutoSync] = useState(mlSettings?.auto_sync_stock ?? true);
+
+  return (
+    <Card className="bg-muted/20 border-border/50">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Settings className="h-5 w-5" /> Configurações
+        </CardTitle>
+        <CardDescription>Preferências de sincronização e notificações</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-0">
+        {/* Sync auto */}
+        <div className="flex items-center justify-between py-4">
+          <div className="space-y-0.5 flex-1 mr-4">
+            <Label className="text-sm font-medium">Sincronização automática</Label>
+            <p className="text-xs text-muted-foreground">Atualizar dados periodicamente</p>
+          </div>
+          <div className="flex items-center gap-3">
+            {autoSync && (
+              <Select defaultValue="30min">
+                <SelectTrigger className="w-[140px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15min">15 min</SelectItem>
+                  <SelectItem value="30min">30 min</SelectItem>
+                  <SelectItem value="1h">1 hora</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            <Switch checked={autoSync} onCheckedChange={setAutoSync} />
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Stock */}
+        <div className="flex items-center justify-between py-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="cfg-stock" className="text-sm font-medium">Atualizar estoque</Label>
+            <p className="text-xs text-muted-foreground">Baixar estoque ao receber pedido ML</p>
+          </div>
+          <Switch id="cfg-stock" checked={mlSettings?.auto_sync_stock ?? true} disabled={updateSettings.isPending || loadingSettings}
+            onCheckedChange={(c) => updateSettings.mutate({ auto_sync_stock: c })} />
+        </div>
+
+        <Separator />
+
+        {/* Price */}
+        <div className="flex items-center justify-between py-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="cfg-price" className="text-sm font-medium">Sincronizar preços</Label>
+            <p className="text-xs text-muted-foreground">Manter preços iguais ao sistema</p>
+          </div>
+          <Switch id="cfg-price" checked={mlSettings?.auto_sync_price ?? true} disabled={updateSettings.isPending || loadingSettings}
+            onCheckedChange={(c) => updateSettings.mutate({ auto_sync_price: c })} />
+        </div>
+
+        <Separator />
+
+        {/* Notify */}
+        <div className="flex items-center justify-between py-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="cfg-notify" className="text-sm font-medium">Notificar novos pedidos</Label>
+            <p className="text-xs text-muted-foreground">Alerta ao receber pedido no ML</p>
+          </div>
+          <Switch id="cfg-notify" checked={mlSettings?.auto_sync_orders ?? true} disabled={updateSettings.isPending || loadingSettings}
+            onCheckedChange={(c) => updateSettings.mutate({ auto_sync_orders: c })} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function IntegracaoML() {
   const { user } = useAuth();
   const { toast } = useToast();
