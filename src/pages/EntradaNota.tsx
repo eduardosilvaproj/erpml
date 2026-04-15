@@ -563,18 +563,21 @@ const EntradaNota = () => {
 
       if (boxProducts && boxProducts.length > 0) {
         isKnownGtin = true;
-        // Pre-select the exact product that is in the conference list
+        // Pre-select the exact product that is in the conference list (using idx- key)
         for (const bp of boxProducts) {
           const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
           if (productIdx !== -1) {
-            preSelectedProduct = bp.id;
+            preSelectedProduct = `idx-${productIdx}`;
             preSelectedQty = bp.box_quantity || 1;
             break;
           }
         }
-        // Fallback to first result if no conference match
-        if (!preSelectedProduct) {
-          preSelectedProduct = boxProducts[0].id;
+        // Fallback: find first conference item index for first box product
+        if (!preSelectedProduct && boxProducts[0]) {
+          const fallbackIdx = conferenceItems.findIndex((i) => i.matchedProductId === boxProducts[0].id);
+          if (fallbackIdx !== -1) {
+            preSelectedProduct = `idx-${fallbackIdx}`;
+          }
           preSelectedQty = boxProducts[0].box_quantity || 1;
         }
       }
