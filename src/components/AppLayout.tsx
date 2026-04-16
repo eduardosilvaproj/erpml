@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
 import HelpPanel from "@/components/HelpPanel";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
-import { MessageSquare, ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronRight, RefreshCw } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,6 +13,9 @@ import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { forceCheckUpdate } from "@/components/VersionUpdateBanner";
+import { toast } from "sonner";
 
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
@@ -103,6 +106,11 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const pageInfo = getPageInfo(location.pathname);
 
+  const handleForceUpdate = () => {
+    toast.info("Atualizando...", { duration: 1500 });
+    setTimeout(() => forceCheckUpdate(), 1500);
+  };
+
   useSwipeGesture({
     onSwipeRight: () => { if (!openMobile) setOpenMobile(true); },
     onSwipeLeft: () => { if (openMobile) setOpenMobile(false); },
@@ -135,17 +143,27 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
             )}
             
             <HelpPanel />
-            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border/30">
-              <AvatarUpload size="sm" editable={false} />
-              <div className="hidden lg:flex flex-col min-w-0">
-                <span className="text-[11px] text-muted-foreground/70 truncate max-w-[120px]">{user?.email}</span>
-                {planName && (
-                  <Badge variant="outline" className="w-fit text-[8px] border-primary/25 text-primary/70 bg-primary/5 mt-0.5 h-4">
-                    {planName}
-                  </Badge>
-                )}
-              </div>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="hidden md:flex items-center gap-2 pl-2 border-l border-border/30 hover:opacity-80 transition-opacity cursor-pointer">
+                  <AvatarUpload size="sm" editable={false} />
+                  <div className="hidden lg:flex flex-col min-w-0">
+                    <span className="text-[11px] text-muted-foreground/70 truncate max-w-[120px]">{user?.email}</span>
+                    {planName && (
+                      <Badge variant="outline" className="w-fit text-[8px] border-primary/25 text-primary/70 bg-primary/5 mt-0.5 h-4">
+                        {planName}
+                      </Badge>
+                    )}
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleForceUpdate} className="cursor-pointer">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Verificar atualizações
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
