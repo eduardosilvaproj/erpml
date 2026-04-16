@@ -645,7 +645,7 @@ Deno.serve(async (req) => {
         }
 
         const desc = await fetchMlJson(
-          `${ML_API_BASE}/items/${encodeURIComponent(itemId)}/description`,
+          `${ML_API_BASE}/items/${itemId}/description`,
           { headers: mlHeaders },
           "Erro ao buscar descrição"
         );
