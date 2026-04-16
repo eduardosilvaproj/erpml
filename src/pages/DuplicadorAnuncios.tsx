@@ -222,8 +222,13 @@ export default function DuplicadorAnuncios() {
       toast.success("Anúncio carregado com sucesso!");
     } catch (err: any) {
       console.error("[Duplicador] Erro ao buscar anúncio:", err);
-      toast.error(err?.message || "Erro ao buscar anúncio.");
-      // Keep user on step 1 with no partial state
+      const raw = String(err?.message || "");
+      const friendly = /403|negado|forbidden|bloque/i.test(raw)
+        ? "Não foi possível buscar o anúncio. O Mercado Livre bloqueou a requisição. Tente novamente em alguns instantes."
+        : /404|não encontrado/i.test(raw)
+        ? "Anúncio não encontrado. Verifique o ID informado."
+        : "Não foi possível buscar o anúncio. Tente novamente em alguns instantes.";
+      toast.error(friendly);
       setSourceItem(null);
     } finally {
       setLoading(false);
