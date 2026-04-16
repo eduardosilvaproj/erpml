@@ -1,0 +1,323 @@
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Eye, Search, Download, FileText } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
+
+type Period = "all" | "today" | "7d" | "30d";
+
+const fmt = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v || 0);
+
+const fmtDate = (s?: string | null) => (s ? new Date(s).toLocaleDateString("pt-BR") : "—");
+
+function statusBadge(status: string) {
+  const map: Record<string, { label: string; cls: string }> = {
+    importada: { label: "Confirmado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+    conferida: { label: "Confirmado", cls: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+    aguardando_conferencia: { label: "Pendente", cls: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
+    divergente: { label: "Divergente", cls: "bg-destructive/15 text-destructive border-destructive/30" },
+  };
+  const m = map[status] || { label: status, cls: "bg-muted text-muted-foreground border-border" };
+  return <Badge variant="outline" className={m.cls}>{m.label}</Badge>;
+}
+
+function tipoBadge(issuer: string | null) {
+  // Heurística: notas vindas de SEFAZ têm issuer "Emitente CNPJ (UF)", XML traz nome real
+  const isSefaz = !!issuer && issuer.startsWith("Emitente ");
+  return isSefaz ? (
+    <Badge variant="outline" className="bg-blue-500/15 text-blue-400 border-blue-500/30">SEFAZ</Badge>
+  ) : (
+    <Badge variant="outline" className="bg-purple-500/15 text-purple-400 border-purple-500/30">XML</Badge>
+  );
+}
+
+export function EntradaNotaHistorico() {
+  const companyId = useCompanyId();
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState<Period>("all");
+  const [detailId, setDetailId] = useState<string | null>(null);
+
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: ["entrada-nota-historico", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("id, number, series, issuer_name, issuer_cnpj, total_value, items_count, status, imported_at, created_at")
+        .eq("company_id", companyId!)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const filtered = useMemo(() => {
+    const now = Date.now();
+    const cutoffs: Record<Period, number> = {
+      all: 0,
+      today: now - 1 * 24 * 60 * 60 * 1000,
+      "7d": now - 7 * 24 * 60 * 60 * 1000,
+      "30d": now - 30 * 24 * 60 * 60 * 1000,
+    };
+    const cutoff = cutoffs[period];
+    const q = search.trim().toLowerCase();
+    return invoices.filter((i) => {
+      if (cutoff && new Date(i.created_at).getTime() < cutoff) return false;
+      if (!q) return true;
+      return (
+        i.number?.toLowerCase().includes(q) ||
+        i.issuer_name?.toLowerCase().includes(q) ||
+        i.issuer_cnpj?.toLowerCase().includes(q)
+      );
+    });
+  }, [invoices, search, period]);
+
+  const exportCsv = () => {
+    const header = ["Data", "Numero NF", "Fornecedor", "Itens", "Valor", "Status"];
+    const rows = filtered.map((i) => [
+      fmtDate(i.created_at),
+      i.number,
+      i.issuer_name || "",
+      String(i.items_count || 0),
+      String(i.total_value || 0),
+      i.status,
+    ]);
+    const csv = [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `entradas-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <>
+      <Separator className="my-4" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Entradas Recentes
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Histórico das últimas notas importadas</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-4 space-y-4">
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar NF ou fornecedor..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+                <SelectTrigger className="md:w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="today">Hoje</SelectItem>
+                  <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                  <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={exportCsv} disabled={filtered.length === 0} className="gap-2">
+                <Download className="h-4 w-4" /> Exportar
+              </Button>
+            </div>
+
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground py-8 text-center">Carregando histórico...</p>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-10 text-sm text-muted-foreground">
+                {invoices.length === 0
+                  ? "Nenhuma entrada registrada ainda. As entradas confirmadas aparecerão aqui."
+                  : "Nenhuma entrada encontrada com os filtros aplicados."}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30">
+                      <TableHead>Data</TableHead>
+                      <TableHead>Nº NF</TableHead>
+                      <TableHead>Fornecedor</TableHead>
+                      <TableHead className="text-center">Itens</TableHead>
+                      <TableHead className="text-right">Valor total</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[60px] text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filtered.map((i) => (
+                      <TableRow key={i.id}>
+                        <TableCell className="text-sm">{fmtDate(i.created_at)}</TableCell>
+                        <TableCell className="font-medium">{i.number}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground max-w-[260px] truncate">{i.issuer_name || "—"}</TableCell>
+                        <TableCell className="text-center">{i.items_count}</TableCell>
+                        <TableCell className="text-right font-medium">{fmt(Number(i.total_value))}</TableCell>
+                        <TableCell>{tipoBadge(i.issuer_name)}</TableCell>
+                        <TableCell>{statusBadge(i.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailId(i.id)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <DetailDialog invoiceId={detailId} onClose={() => setDetailId(null)} />
+    </>
+  );
+}
+
+function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClose: () => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["entrada-nota-detalhe", invoiceId],
+    enabled: !!invoiceId,
+    queryFn: async () => {
+      const { data: inv, error } = await supabase
+        .from("invoices")
+        .select("*, invoice_items(*, products(id, name, sku, image_url))")
+        .eq("id", invoiceId!)
+        .maybeSingle();
+      if (error) throw error;
+      return inv;
+    },
+  });
+
+  const exportPdf = () => {
+    if (!data) return;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    const items = (data.invoice_items as any[]) || [];
+    const rows = items
+      .map(
+        (it) => `
+        <tr>
+          <td>${it.products?.name || it.xml_description}</td>
+          <td>${it.products?.sku || it.xml_code || "—"}</td>
+          <td style="text-align:center">${it.quantity}</td>
+          <td style="text-align:right">${fmt(Number(it.unit_value))}</td>
+          <td style="text-align:right">${fmt(Number(it.total_value))}</td>
+        </tr>`
+      )
+      .join("");
+    w.document.write(`
+      <html><head><title>NF ${data.number}</title>
+      <style>body{font-family:Arial,sans-serif;padding:20px;color:#111}h1{font-size:18px}table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}th,td{border:1px solid #ddd;padding:6px}th{background:#f3f4f6;text-align:left}</style>
+      </head><body>
+        <h1>Nota Fiscal nº ${data.number}</h1>
+        <p><b>Fornecedor:</b> ${data.issuer_name || "—"}<br/>
+           <b>CNPJ:</b> ${data.issuer_cnpj || "—"}<br/>
+           <b>Data:</b> ${fmtDate(data.created_at)}<br/>
+           <b>Status:</b> ${data.status}</p>
+        <table><thead><tr><th>Produto</th><th>SKU</th><th>Qtd</th><th>Unit.</th><th>Subtotal</th></tr></thead><tbody>${rows}</tbody></table>
+        <p style="margin-top:16px"><b>Total de itens:</b> ${data.items_count} &nbsp; | &nbsp; <b>Valor total:</b> ${fmt(Number(data.total_value))}</p>
+      </body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+  };
+
+  return (
+    <Dialog open={!!invoiceId} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Detalhes da Nota Fiscal</DialogTitle>
+        </DialogHeader>
+        {isLoading || !data ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">Carregando...</p>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Nº NF</p>
+                <p className="font-semibold">{data.number}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fornecedor</p>
+                <p className="font-semibold truncate">{data.issuer_name || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Data</p>
+                <p className="font-semibold">{fmtDate(data.created_at)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status</p>
+                <div>{statusBadge(data.status)}</div>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="rounded-lg border border-border/50 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/30">
+                    <TableHead>Produto</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead className="text-center">Qtd</TableHead>
+                    <TableHead className="text-right">Unit.</TableHead>
+                    <TableHead className="text-right">Subtotal</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {((data.invoice_items as any[]) || []).map((it) => (
+                    <TableRow key={it.id}>
+                      <TableCell className="text-sm">{it.products?.name || it.xml_description}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{it.products?.sku || it.xml_code || "—"}</TableCell>
+                      <TableCell className="text-center">{it.quantity}</TableCell>
+                      <TableCell className="text-right">{fmt(Number(it.unit_value))}</TableCell>
+                      <TableCell className="text-right font-medium">{fmt(Number(it.total_value))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 text-sm">
+              <span className="text-muted-foreground">
+                <strong className="text-foreground">{data.items_count}</strong> itens
+              </span>
+              <span>
+                Valor total: <strong className="text-primary">{fmt(Number(data.total_value))}</strong>
+              </span>
+            </div>
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button onClick={exportPdf} disabled={!data} className="gap-2">
+            <Download className="h-4 w-4" /> Exportar PDF
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
