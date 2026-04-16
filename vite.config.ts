@@ -47,8 +47,7 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
-        },
-        prefer_related_applications: false,
+      },
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
         name: "ErpML - ERP Mercado Livre",
@@ -60,6 +59,7 @@ export default defineConfig(({ mode }) => ({
         orientation: "portrait",
         scope: "/",
         start_url: "/",
+        prefer_related_applications: false,
         icons: [
           {
             src: "pwa-icon-192.png",
