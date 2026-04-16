@@ -51,9 +51,14 @@ interface SourceItem {
   available_quantity: number;
   pictures: { id?: string; url?: string; source?: string; secure_url?: string }[];
   attributes: any[];
+  variations?: any[];
   description?: string;
   thumbnail?: string;
   permalink?: string;
+  _seller_nickname?: string;
+  _seller_id?: number;
+  _is_own_item?: boolean;
+  _connected_nickname?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -189,9 +194,14 @@ export default function DuplicadorAnuncios() {
               (a: any) => !["SELLER_SKU", "GTIN", "SELLER_CUSTOM_FIELD"].includes(a.id)
             )
           : [],
+        variations: Array.isArray(data.variations) ? data.variations : [],
         description: desc,
         thumbnail: data.thumbnail || data.secure_thumbnail,
         permalink: data.permalink,
+        _seller_nickname: data._seller_nickname || null,
+        _seller_id: data._seller_id || null,
+        _is_own_item: data._is_own_item || false,
+        _connected_nickname: data._connected_nickname || null,
       };
 
       setSourceItem(item);
@@ -442,6 +452,10 @@ export default function DuplicadorAnuncios() {
               </Button>
             </div>
 
+            <p className="text-xs text-muted-foreground mt-3">
+              ℹ️ Certifique-se de ter os direitos sobre as imagens e conteúdo utilizados.
+            </p>
+
             {!mlConnection && (
               <p className="text-sm text-destructive mt-3">
                 Nenhuma conta do Mercado Livre conectada. Vá em Integrações para conectar.
@@ -456,23 +470,38 @@ export default function DuplicadorAnuncios() {
         <>
           {/* Item preview */}
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 space-y-4">
               <div className="flex gap-4 items-start">
                 {sourceItem.thumbnail && (
                   <img
                     src={sourceItem.thumbnail.replace("http://", "https://")}
                     alt={sourceItem.title}
-                    className="w-20 h-20 object-contain rounded-lg border bg-white flex-shrink-0"
+                    className="w-24 h-24 object-contain rounded-lg border bg-white flex-shrink-0"
                   />
                 )}
-                <div className="flex-1 min-w-0 space-y-1">
+                <div className="flex-1 min-w-0 space-y-2">
                   <h3 className="font-semibold text-sm leading-tight line-clamp-2">{sourceItem.title}</h3>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>ID: {sourceItem.id}</span>
                     <span>Preço: R$ {sourceItem.price.toFixed(2)}</span>
                     <span>Fotos: {sourceItem.pictures.length}</span>
                     <span>Cat: {sourceItem.category_id}</span>
+                    {sourceItem._seller_nickname && (
+                      <span>Vendedor: {sourceItem._seller_nickname}</span>
+                    )}
                   </div>
+
+                  {/* Seller badge */}
+                  {sourceItem._is_own_item ? (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-medium">
+                      ✅ Seu anúncio — será duplicado com novas variações
+                    </div>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-medium">
+                      📋 Anúncio de outro vendedor — você irá criar uma cópia na sua conta
+                    </div>
+                  )}
+
                   {sourceItem.permalink && (
                     <a
                       href={sourceItem.permalink}
@@ -485,6 +514,41 @@ export default function DuplicadorAnuncios() {
                   )}
                 </div>
               </div>
+
+              {/* Existing variations */}
+              {sourceItem.variations && sourceItem.variations.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Variações existentes ({sourceItem.variations.length}):</p>
+                  <div className="flex flex-wrap gap-1">
+                    {sourceItem.variations.slice(0, 12).map((v: any, i: number) => {
+                      const label = Array.isArray(v.attribute_combinations)
+                        ? v.attribute_combinations.map((a: any) => a.value_name).join(" / ")
+                        : `Variação ${i + 1}`;
+                      return <Badge key={i} variant="outline" className="text-xs">{label}</Badge>;
+                    })}
+                    {sourceItem.variations.length > 12 && (
+                      <Badge variant="outline" className="text-xs">+{sourceItem.variations.length - 12}</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Key attributes */}
+              {sourceItem.attributes.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">Atributos ({sourceItem.attributes.length}):</p>
+                  <div className="flex flex-wrap gap-1">
+                    {sourceItem.attributes.slice(0, 8).map((a: any, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-xs">
+                        {a.name}: {a.value_name || "—"}
+                      </Badge>
+                    ))}
+                    {sourceItem.attributes.length > 8 && (
+                      <Badge variant="secondary" className="text-xs">+{sourceItem.attributes.length - 8}</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

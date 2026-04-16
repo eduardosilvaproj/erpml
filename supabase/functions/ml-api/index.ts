@@ -617,25 +617,38 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: "ID do anúncio inválido. Use o formato MLB1234567890." }, 400);
         }
 
-        console.log(`[get-item] Fetching item ${itemId} with token present: ${Boolean(accessToken)}`);
+        console.log(`[get-item] Fetching item ${itemId} via public API (no auth)`);
 
-        try {
-          const item = await fetchMlJson(
-            `${ML_API_BASE}/items/${itemId}`,
-            { headers: mlHeaders },
-            "Erro ao buscar anúncio"
-          );
-          return jsonResponse(item);
-        } catch (err: any) {
-          if (err instanceof MlAuthError && err.code === "forbidden") {
-            const connection = await getConnection(serviceClient, userId);
-            const nick = connection?.seller_nickname || "desconhecida";
-            return jsonResponse({
-              error: `Este anúncio não pertence à conta ML conectada (${nick}).`
-            }, 403);
-          }
-          throw err;
+        // Use public endpoint — no Authorization header — so ANY listing can be fetched
+        const item = await fetchMlJson(
+          `${ML_API_BASE}/items/${itemId}`,
+          { headers: { "Content-Type": "application/json" } },
+          "Erro ao buscar anúncio"
+        );
+
+        // Fetch seller info
+        let sellerInfo: any = null;
+        if (item?.seller_id) {
+          try {
+            sellerInfo = await fetchMlJson(
+              `${ML_API_BASE}/users/${item.seller_id}`,
+              { headers: { "Content-Type": "application/json" } },
+              "Erro ao buscar vendedor"
+            );
+          } catch { /* seller info is optional */ }
         }
+
+        // Check if this item belongs to the connected user
+        const connection = await getConnection(serviceClient, userId);
+        const isOwnItem = connection ? String(item?.seller_id) === String(connection.ml_user_id) : false;
+
+        return jsonResponse({
+          ...item,
+          _seller_nickname: sellerInfo?.nickname || null,
+          _seller_id: item?.seller_id || null,
+          _is_own_item: isOwnItem,
+          _connected_nickname: connection?.seller_nickname || null,
+        });
       }
 
       case "get-item-description": {
@@ -644,9 +657,10 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: "ID do anúncio inválido." }, 400);
         }
 
+        // Use public endpoint for description too
         const desc = await fetchMlJson(
           `${ML_API_BASE}/items/${itemId}/description`,
-          { headers: mlHeaders },
+          { headers: { "Content-Type": "application/json" } },
           "Erro ao buscar descrição"
         );
 
