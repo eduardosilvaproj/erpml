@@ -1841,6 +1841,36 @@ export type Database = {
           },
         ]
       }
+      system_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          user_email: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_email?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          user_email?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       transfer_items: {
         Row: {
           created_at: string

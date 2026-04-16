@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause } from "lucide-react";
 import { Tooltip as ShadTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import PendingUsersTab from "@/components/PendingUsersTab";
+import SystemResetCard from "@/components/SystemResetCard";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -401,6 +402,10 @@ export default function MasterAdmin() {
               )}
             </CardContent>
           </Card>
+
+          <div className="mt-6">
+            <SystemResetCard />
+          </div>
         </TabsContent>
 
         {/* Financeiro Tab */}
