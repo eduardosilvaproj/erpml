@@ -67,11 +67,19 @@ async function fetchMlJson(url: string, init: RequestInit, contextMessage: strin
 
   if (!response.ok) {
     const message = payload?.message || payload?.error || response.statusText;
+    console.error(`ML API error [${response.status}] ${url}:`, JSON.stringify(payload));
 
-    if ([400, 401, 403].includes(response.status)) {
+    if ([401].includes(response.status)) {
       throw new MlAuthError(
         "reauth_required",
         "Sua conexão do Mercado Livre expirou ou precisa ser reconectada."
+      );
+    }
+
+    if (response.status === 403) {
+      throw new MlAuthError(
+        "forbidden",
+        `Acesso negado: ${message}`
       );
     }
 
@@ -609,13 +617,25 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: "ID do anúncio inválido. Use o formato MLB1234567890." }, 400);
         }
 
-        const item = await fetchMlJson(
-          `${ML_API_BASE}/items/${encodeURIComponent(itemId)}`,
-          { headers: mlHeaders },
-          "Erro ao buscar anúncio"
-        );
+        console.log(`[get-item] Fetching item ${itemId} with token present: ${Boolean(accessToken)}`);
 
-        return jsonResponse(item);
+        try {
+          const item = await fetchMlJson(
+            `${ML_API_BASE}/items/${itemId}`,
+            { headers: mlHeaders },
+            "Erro ao buscar anúncio"
+          );
+          return jsonResponse(item);
+        } catch (err: any) {
+          if (err instanceof MlAuthError && err.code === "forbidden") {
+            const connection = await getConnection(serviceClient, userId);
+            const nick = connection?.seller_nickname || "desconhecida";
+            return jsonResponse({
+              error: `Este anúncio não pertence à conta ML conectada (${nick}).`
+            }, 403);
+          }
+          throw err;
+        }
       }
 
       case "get-item-description": {

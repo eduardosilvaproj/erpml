@@ -120,6 +120,7 @@ export default function DuplicadorAnuncios() {
       setVariations([]);
       toast.success("Anúncio carregado com sucesso!");
     } catch (err: any) {
+      console.error("[Duplicador] Erro ao buscar anúncio:", err);
       toast.error(err.message || "Erro ao buscar anúncio.");
     } finally {
       setLoading(false);
