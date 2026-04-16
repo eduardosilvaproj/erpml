@@ -194,9 +194,14 @@ export default function DuplicadorAnuncios() {
               (a: any) => !["SELLER_SKU", "GTIN", "SELLER_CUSTOM_FIELD"].includes(a.id)
             )
           : [],
+        variations: Array.isArray(data.variations) ? data.variations : [],
         description: desc,
         thumbnail: data.thumbnail || data.secure_thumbnail,
         permalink: data.permalink,
+        _seller_nickname: data._seller_nickname || null,
+        _seller_id: data._seller_id || null,
+        _is_own_item: data._is_own_item || false,
+        _connected_nickname: data._connected_nickname || null,
       };
 
       setSourceItem(item);
