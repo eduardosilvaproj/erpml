@@ -160,43 +160,51 @@ export default function DuplicadorAnuncios() {
 
     setLoading(true);
     try {
-      const data = await callML("get-item", { itemId: id });
-      if (!data || !data.id) throw new Error("Anúncio não encontrado.");
+      const data = await callML<any>("get-item", { itemId: id });
+      if (!data || typeof data !== "object" || !data.id) {
+        throw new Error("Anúncio não encontrado ou resposta inválida.");
+      }
 
       console.log("[Duplicador] Item loaded:", data.id, data.title);
 
       let desc = "";
       try {
-        const descData = await callML("get-item-description", { itemId: data.id });
+        const descData = await callML<any>("get-item-description", { itemId: data.id });
         desc = descData?.plain_text || descData?.text || "";
-      } catch {
-        /* description is optional */
+      } catch (descErr) {
+        console.warn("[Duplicador] Descrição não carregada:", descErr);
       }
 
+      const safePictures = Array.isArray(data.pictures)
+        ? data.pictures
+            .map((p: any) => ({
+              source: p?.secure_url || p?.url,
+              secure_url: p?.secure_url || p?.url,
+            }))
+            .filter((p: any) => !!p.secure_url)
+        : [];
+
       const item: SourceItem = {
-        id: data.id,
+        id: String(data.id),
         title: data.title || "",
-        price: data.price || 0,
+        price: Number(data.price) || 0,
         category_id: data.category_id || "",
         currency_id: data.currency_id || "BRL",
         buying_mode: data.buying_mode || "buy_it_now",
         condition: data.condition || "new",
         listing_type_id: data.listing_type_id || "gold_special",
-        available_quantity: data.available_quantity || 1,
-        pictures: Array.isArray(data.pictures)
-          ? data.pictures.map((p: any) => ({
-              source: p.secure_url || p.url,
-              secure_url: p.secure_url || p.url,
-            }))
-          : [],
+        available_quantity: Number(data.available_quantity) || 1,
+        pictures: safePictures,
         attributes: Array.isArray(data.attributes)
           ? data.attributes.filter(
-              (a: any) => !["SELLER_SKU", "GTIN", "SELLER_CUSTOM_FIELD"].includes(a.id)
+              (a: any) => a && !["SELLER_SKU", "GTIN", "SELLER_CUSTOM_FIELD"].includes(a.id)
             )
           : [],
         variations: Array.isArray(data.variations) ? data.variations : [],
         description: desc,
-        thumbnail: data.thumbnail || data.secure_thumbnail,
+        thumbnail: typeof data.thumbnail === "string"
+          ? data.thumbnail
+          : (typeof data.secure_thumbnail === "string" ? data.secure_thumbnail : ""),
         permalink: data.permalink,
         _seller_nickname: data._seller_nickname || null,
         _seller_id: data._seller_id || null,
@@ -214,7 +222,9 @@ export default function DuplicadorAnuncios() {
       toast.success("Anúncio carregado com sucesso!");
     } catch (err: any) {
       console.error("[Duplicador] Erro ao buscar anúncio:", err);
-      toast.error(err.message || "Erro ao buscar anúncio.");
+      toast.error(err?.message || "Erro ao buscar anúncio.");
+      // Keep user on step 1 with no partial state
+      setSourceItem(null);
     } finally {
       setLoading(false);
     }
