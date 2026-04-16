@@ -7,7 +7,17 @@ import { VitePWA } from "vite-plugin-pwa";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   define: {
-    __APP_VERSION__: JSON.stringify(Date.now().toString()),
+    __APP_VERSION__: JSON.stringify(
+      (() => {
+        try {
+          const pkg = require("./package.json");
+          return pkg.version || "1.0.0";
+        } catch {
+          return "1.0.0";
+        }
+      })()
+    ),
+    __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
   },
   server: {
     host: "::",

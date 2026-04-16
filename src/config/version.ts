@@ -1,5 +1,12 @@
-// App version — increment on each deploy
-export const APP_VERSION = "1.0.0";
+// App version — auto-generated at build time via Vite's define
+declare const __APP_VERSION__: string;
+declare const __BUILD_DATE__: string;
+
+export const APP_VERSION: string =
+  typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
+
+export const BUILD_DATE: string =
+  typeof __BUILD_DATE__ !== "undefined" ? __BUILD_DATE__ : new Date().toISOString();
 
 // Minimum required version — update when breaking changes occur
 export const MIN_REQUIRED_VERSION = "1.0.0";
@@ -19,5 +26,6 @@ export function compareSemver(a: string, b: string): number {
 }
 
 export function isVersionOutdated(): boolean {
+  if (APP_VERSION === "dev") return false;
   return compareSemver(APP_VERSION, MIN_REQUIRED_VERSION) < 0;
 }
