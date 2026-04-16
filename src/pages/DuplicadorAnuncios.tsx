@@ -452,6 +452,10 @@ export default function DuplicadorAnuncios() {
               </Button>
             </div>
 
+            <p className="text-xs text-muted-foreground mt-3">
+              ℹ️ Certifique-se de ter os direitos sobre as imagens e conteúdo utilizados.
+            </p>
+
             {!mlConnection && (
               <p className="text-sm text-destructive mt-3">
                 Nenhuma conta do Mercado Livre conectada. Vá em Integrações para conectar.
