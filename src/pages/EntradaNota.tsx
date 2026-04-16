@@ -24,6 +24,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { parseNFeXml, matchProducts, type NFeData, type MatchResult, type NFeProduct } from "@/lib/nfe-parser";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { EntradaNotaHistorico } from "@/components/EntradaNotaHistorico";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -1304,6 +1305,9 @@ const EntradaNota = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Histórico de entradas */}
+          <EntradaNotaHistorico />
         </div>
       )}
 
