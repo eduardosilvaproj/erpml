@@ -110,4 +110,25 @@
     transform: translateY(-3px);
     box-shadow: 0 14px 30px -4px hsl(0 0% 0% / 0.55), 0 0 0 1px hsl(217 91% 60% / 0.25);
   }
+
+  /* Responsive table containers */
+  .table-responsive {
+    @apply overflow-x-auto -mx-3 px-3;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Landscape tablet optimizations */
+@media (orientation: landscape) and (max-width: 1024px) {
+  .landscape-compact {
+    padding: 12px !important;
+  }
+}
+
+/* Modal responsiveness */
+@media (max-width: 1024px) {
+  [role="dialog"] > div {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+  }
 }

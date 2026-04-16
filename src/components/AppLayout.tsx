@@ -113,31 +113,31 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-14 flex items-center border-b border-border/40 bg-background/90 backdrop-blur-xl px-4 sm:px-6 sticky top-0 z-30 gap-3">
+        <header className="h-14 flex items-center border-b border-border/40 bg-background/90 backdrop-blur-xl px-3 sm:px-4 lg:px-6 sticky top-0 z-30 gap-2 lg:gap-3">
           {isMobile && (
             <SidebarTrigger className="min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg transition-colors active:scale-95" />
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-bold text-foreground leading-none truncate">{pageInfo.title}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5 truncate">{pageInfo.subtitle}</p>
+            <h1 className="text-xs lg:text-sm font-bold text-foreground leading-none truncate">{pageInfo.title}</h1>
+            <p className="text-[10px] lg:text-sm text-muted-foreground mt-0.5 truncate hidden sm:block">{pageInfo.subtitle}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 lg:gap-2 shrink-0">
             <GlobalSearch />
             {unansweredCount > 0 && (
               <button
                 onClick={() => navigate("/crm")}
-                className="relative flex items-center gap-1.5 min-h-[36px] px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-medium transition-colors active:scale-95"
+                className="relative flex items-center gap-1.5 min-h-[36px] px-2 lg:px-2.5 py-1.5 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-medium transition-colors active:scale-95"
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{unansweredCount}</span>
+                <span className="hidden lg:inline">{unansweredCount}</span>
                 <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
               </button>
             )}
             
             <HelpPanel />
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border/30">
+            <div className="hidden md:flex items-center gap-2 pl-2 border-l border-border/30">
               <AvatarUpload size="sm" editable={false} />
-              <div className="flex flex-col min-w-0">
+              <div className="hidden lg:flex flex-col min-w-0">
                 <span className="text-[11px] text-muted-foreground/70 truncate max-w-[120px]">{user?.email}</span>
                 {planName && (
                   <Badge variant="outline" className="w-fit text-[8px] border-primary/25 text-primary/70 bg-primary/5 mt-0.5 h-4">
@@ -149,7 +149,7 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto animate-fade-in">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 xl:p-8 overflow-auto animate-fade-in">
           {children}
         </main>
       </div>

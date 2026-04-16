@@ -63,13 +63,13 @@ function MetricCard({ icon: Icon, label, value, trend, iconColor }: {
     <Tooltip>
       <TooltipTrigger asChild>
         <Card className="hover-lift border-border/50">
-          <CardContent className="px-5 py-3">
-            <div className="flex items-center gap-2">
-              <Icon className={`h-4 w-4 ${iconColor}`} strokeWidth={1.75} />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</span>
+          <CardContent className="px-3 py-2 lg:px-5 lg:py-3">
+            <div className="flex items-center gap-1.5 lg:gap-2">
+              <Icon className={`h-3.5 w-3.5 lg:h-4 lg:w-4 ${iconColor}`} strokeWidth={1.75} />
+              <span className="text-[10px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{label}</span>
             </div>
-            <p className="text-3xl font-bold text-foreground leading-none mt-3">{value}</p>
-            <div className="mt-3">
+            <p className="text-xl lg:text-3xl font-bold text-foreground leading-none mt-2 lg:mt-3 truncate">{value}</p>
+            <div className="mt-2 lg:mt-3">
               {trend !== undefined && <TrendBadge value={trend} />}
             </div>
           </CardContent>
@@ -94,14 +94,14 @@ const Index = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 lg:space-y-8">
       {/* Period Filter */}
-      <div className="flex items-center justify-end gap-1.5">
+      <div className="flex items-center justify-end gap-1 lg:gap-1.5">
         {(Object.keys(periodLabels) as PeriodFilter[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`text-xs font-medium h-8 px-4 rounded-full border transition-all ${
+            className={`text-[11px] lg:text-xs font-medium h-7 lg:h-8 px-3 lg:px-4 rounded-full border transition-all ${
               period === p
                 ? "bg-foreground text-background border-foreground"
                 : "border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
@@ -114,16 +114,16 @@ const Index = () => {
 
       {isLoading ? (
         <div className="space-y-6">
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Card key={i}><CardContent className="p-5"><Skeleton className="h-20 w-full" /></CardContent></Card>
+              <Card key={i}><CardContent className="p-3 lg:p-5"><Skeleton className="h-16 lg:h-20 w-full" /></CardContent></Card>
             ))}
           </div>
         </div>
       ) : data ? (
         <>
           {/* Primary KPIs - row 1 */}
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard icon={ShoppingCart} label="Vendas" value={String(data.totalSales)} trend={data.salesTrend} iconColor="text-primary" />
             <MetricCard icon={DollarSign} label="Receita Bruta" value={formatCurrency(data.revenue)} trend={data.revenueTrend} iconColor="text-success" />
             <MetricCard icon={TrendingUp} label="Lucro Líquido" value={formatCurrency(data.netProfit)} trend={parseFloat(data.profitMargin.toFixed(1))} iconColor="text-warning" />
@@ -131,7 +131,7 @@ const Index = () => {
           </div>
 
           {/* Secondary KPIs - row 2 */}
-          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard icon={Percent} label="Margem" value={`${data.profitMargin.toFixed(1)}%`} iconColor="text-warning" />
             <MetricCard icon={Truck} label="Pendentes" value={String(data.pendingShipments)} iconColor="text-destructive" />
             <MetricCard icon={Send} label="Enviados" value={String(data.sentShipments)} iconColor="text-success" />
@@ -140,24 +140,24 @@ const Index = () => {
 
           {/* Ações Rápidas */}
           <div>
-            <div className="mb-4">
-              <h2 className="text-base font-semibold text-foreground">Ações Rápidas</h2>
-              <p className="text-xs text-muted-foreground/60 mt-0.5">Suas tarefas mais frequentes</p>
+            <div className="mb-3 lg:mb-4">
+              <h2 className="text-sm lg:text-base font-semibold text-foreground">Ações Rápidas</h2>
+              <p className="text-[10px] lg:text-xs text-muted-foreground/60 mt-0.5">Suas tarefas mais frequentes</p>
             </div>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-2 lg:gap-3 grid-cols-2 lg:grid-cols-4">
               {quickActions.map((action) => (
                 <Tooltip key={action.id}>
                   <TooltipTrigger asChild>
                     <button
                       onClick={() => action.route ? navigate(action.route) : setShowNewProduct(true)}
-                      className={`flex items-center gap-4 p-5 min-h-[80px] rounded-xl border border-border/30 border-l-[3px] ${action.borderColor} bg-muted/30 backdrop-blur transition-all duration-150 ${action.hoverBg} hover:scale-[1.02] text-left group cursor-pointer`}
+                      className={`flex items-center gap-2 lg:gap-4 p-2 lg:p-5 min-h-[60px] lg:min-h-[80px] rounded-xl border border-border/30 border-l-[3px] ${action.borderColor} bg-muted/30 backdrop-blur transition-all duration-150 ${action.hoverBg} hover:scale-[1.02] text-left group cursor-pointer`}
                     >
-                      <div className={`shrink-0 rounded-lg bg-background/60 p-2.5 ${action.color}`}>
-                        <action.icon className="h-6 w-6" strokeWidth={1.75} />
+                      <div className={`shrink-0 rounded-lg bg-background/60 p-1.5 lg:p-2.5 ${action.color}`}>
+                        <action.icon className="h-4 w-4 lg:h-6 lg:w-6" strokeWidth={1.75} />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-base font-semibold text-foreground truncate">{action.title}</p>
-                        <p className="text-sm text-muted-foreground truncate">{action.desc}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] lg:text-base font-semibold text-foreground truncate">{action.title}</p>
+                        <p className="text-[10px] lg:text-sm text-muted-foreground truncate">{action.desc}</p>
                       </div>
                     </button>
                   </TooltipTrigger>
@@ -172,20 +172,20 @@ const Index = () => {
 
           {/* Quick Access */}
           <div>
-            <h2 className="text-sm font-semibold text-foreground mb-4">Acesso Rápido</h2>
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <h2 className="text-xs lg:text-sm font-semibold text-foreground mb-3 lg:mb-4">Acesso Rápido</h2>
+            <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
               {quickAccessSections.map((sec) => (
                 <Tooltip key={sec.id}>
                   <TooltipTrigger asChild>
                     <Link to={sec.url}>
-                      <Card className="hover-lift cursor-pointer group border-border/40 bg-card/60 hover:border-primary/30 transition-all h-[130px]">
-                        <CardContent className="p-4 flex flex-col items-center justify-center text-center gap-2 h-full">
-                          <div className="rounded-xl bg-primary/10 p-2.5 group-hover:bg-primary/15 transition-colors">
-                            <sec.icon className="h-10 w-10 text-primary" strokeWidth={1.5} />
+                      <Card className="hover-lift cursor-pointer group border-border/40 bg-card/60 hover:border-primary/30 transition-all h-[100px] lg:h-[130px]">
+                        <CardContent className="p-3 lg:p-4 flex flex-col items-center justify-center text-center gap-1.5 lg:gap-2 h-full">
+                          <div className="rounded-xl bg-primary/10 p-2 lg:p-2.5 group-hover:bg-primary/15 transition-colors">
+                            <sec.icon className="h-6 w-6 lg:h-10 lg:w-10 text-primary" strokeWidth={1.5} />
                           </div>
-                          <div>
-                            <p className="font-semibold text-foreground text-base">{sec.title}</p>
-                            <p className="text-sm text-muted-foreground">{sec.desc}</p>
+                          <div className="min-w-0 w-full">
+                            <p className="font-semibold text-foreground text-[11px] lg:text-base truncate">{sec.title}</p>
+                            <p className="text-[10px] lg:text-sm text-muted-foreground truncate">{sec.desc}</p>
                           </div>
                         </CardContent>
                       </Card>
