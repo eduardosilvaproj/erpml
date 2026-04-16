@@ -9,7 +9,7 @@ export const BUILD_DATE: string =
   typeof __BUILD_DATE__ !== "undefined" ? __BUILD_DATE__ : new Date().toISOString();
 
 // Minimum required version — update when breaking changes occur
-export const MIN_REQUIRED_VERSION = "1.0.0";
+export const MIN_REQUIRED_VERSION = "1.2.1";
 
 /**
  * Compare two semver strings. Returns:
