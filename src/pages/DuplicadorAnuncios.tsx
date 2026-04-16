@@ -51,9 +51,14 @@ interface SourceItem {
   available_quantity: number;
   pictures: { id?: string; url?: string; source?: string; secure_url?: string }[];
   attributes: any[];
+  variations?: any[];
   description?: string;
   thumbnail?: string;
   permalink?: string;
+  _seller_nickname?: string;
+  _seller_id?: number;
+  _is_own_item?: boolean;
+  _connected_nickname?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────
