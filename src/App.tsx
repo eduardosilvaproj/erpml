@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { HelpProvider } from "@/contexts/HelpContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { VersionUpdateBanner } from "@/components/VersionUpdateBanner";
+import { UpdateRequiredModal } from "@/components/UpdateRequiredModal";
+import { isVersionOutdated } from "@/config/version";
 import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
@@ -69,7 +71,12 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
+const App = () => {
+  if (isVersionOutdated()) {
+    return <UpdateRequiredModal />;
+  }
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider delayDuration={500}>
       <Toaster />
@@ -145,6 +152,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

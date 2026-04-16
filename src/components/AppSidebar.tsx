@@ -315,6 +315,9 @@ function SidebarContent({
           </TooltipTrigger>
           <TooltipContent side="right">Encerrar sessão e sair do sistema</TooltipContent>
         </Tooltip>
+        <div className="mt-1 text-center">
+          <VersionBadge />
+        </div>
       </div>
     </>
   );
