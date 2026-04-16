@@ -674,12 +674,17 @@ Deno.serve(async (req) => {
                   _connected_nickname: connForRetry?.seller_nickname || null,
                 });
               }
-              // Auth retry also failed
+              // Auth retry also failed — try public CORS proxy as last resort
               const retryMsg = retryPayload?.message || retryPayload?.error || "Acesso negado";
               console.error(`[get-item] Auth retry also failed [${retryResp.status}]:`, JSON.stringify(retryPayload));
+              const proxyData = await tryProxyFallback(itemId);
+              if (proxyData) return jsonResponse(proxyData);
               return jsonResponse({ error: `Acesso negado pelo Mercado Livre: ${retryMsg}` }, 403);
             }
-            return jsonResponse({ error: `Acesso negado pelo Mercado Livre. Este anúncio pode estar restrito. Detalhes: ${msg}` }, 403);
+            // No connection — try proxy fallback
+            const proxyData = await tryProxyFallback(itemId);
+            if (proxyData) return jsonResponse(proxyData);
+            return jsonResponse({ error: `Acesso negado pelo Mercado Livre. Este anúncio pode estar restrito.` }, 403);
           }
           return jsonResponse({ error: `Erro ao buscar anúncio: ${msg}` }, itemResponse.status >= 400 ? itemResponse.status : 500);
         }
