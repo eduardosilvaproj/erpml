@@ -106,6 +106,11 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const pageInfo = getPageInfo(location.pathname);
 
+  const handleForceUpdate = () => {
+    toast.info("Atualizando...", { duration: 1500 });
+    setTimeout(() => forceCheckUpdate(), 1500);
+  };
+
   useSwipeGesture({
     onSwipeRight: () => { if (!openMobile) setOpenMobile(true); },
     onSwipeLeft: () => { if (openMobile) setOpenMobile(false); },
