@@ -472,11 +472,12 @@ export default function DuplicadorAnuncios() {
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="flex gap-4 items-start">
-                {sourceItem.thumbnail && (
+                {typeof sourceItem.thumbnail === "string" && sourceItem.thumbnail.length > 0 && (
                   <img
                     src={sourceItem.thumbnail.replace("http://", "https://")}
-                    alt={sourceItem.title}
+                    alt={sourceItem.title || "Anúncio"}
                     className="w-24 h-24 object-contain rounded-lg border bg-white flex-shrink-0"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                   />
                 )}
                 <div className="flex-1 min-w-0 space-y-2">
