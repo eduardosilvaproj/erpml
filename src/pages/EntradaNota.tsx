@@ -1305,6 +1305,9 @@ const EntradaNota = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Histórico de entradas */}
+          <EntradaNotaHistorico />
         </div>
       )}
 
