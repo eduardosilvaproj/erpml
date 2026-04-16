@@ -10,6 +10,29 @@ const corsHeaders = {
 const ML_API_BASE = "https://api.mercadolibre.com";
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const MAX_ITEMS_TO_SYNC = 1000;
+
+// Public CORS proxies as fallback when ML blocks our server
+async function tryProxyFallback(itemId: string): Promise<any | null> {
+  const target = `${ML_API_BASE}/items/${itemId}`;
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
+    `https://corsproxy.io/?${encodeURIComponent(target)}`,
+  ];
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, { headers: { "Content-Type": "application/json" } });
+      if (!r.ok) continue;
+      const d = await r.json().catch(() => null);
+      if (d?.id) {
+        console.log(`[get-item] Proxy fallback succeeded via ${new URL(url).host}`);
+        return { ...d, _seller_nickname: null, _seller_id: d.seller_id || null, _is_own_item: false, _connected_nickname: null };
+      }
+    } catch (e) {
+      console.warn(`[get-item] Proxy ${url} failed:`, e);
+    }
+  }
+  return null;
+}
 const SEARCH_PAGE_SIZE = 100;
 const DETAIL_BATCH_SIZE = 20;
 
@@ -674,12 +697,17 @@ Deno.serve(async (req) => {
                   _connected_nickname: connForRetry?.seller_nickname || null,
                 });
               }
-              // Auth retry also failed
+              // Auth retry also failed — try public CORS proxy as last resort
               const retryMsg = retryPayload?.message || retryPayload?.error || "Acesso negado";
               console.error(`[get-item] Auth retry also failed [${retryResp.status}]:`, JSON.stringify(retryPayload));
+              const proxyData = await tryProxyFallback(itemId);
+              if (proxyData) return jsonResponse(proxyData);
               return jsonResponse({ error: `Acesso negado pelo Mercado Livre: ${retryMsg}` }, 403);
             }
-            return jsonResponse({ error: `Acesso negado pelo Mercado Livre. Este anúncio pode estar restrito. Detalhes: ${msg}` }, 403);
+            // No connection — try proxy fallback
+            const proxyData = await tryProxyFallback(itemId);
+            if (proxyData) return jsonResponse(proxyData);
+            return jsonResponse({ error: `Acesso negado pelo Mercado Livre. Este anúncio pode estar restrito.` }, 403);
           }
           return jsonResponse({ error: `Erro ao buscar anúncio: ${msg}` }, itemResponse.status >= 400 ? itemResponse.status : 500);
         }
