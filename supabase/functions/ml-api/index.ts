@@ -642,9 +642,13 @@ Deno.serve(async (req) => {
 
         console.log(`[get-item] Fetching item ${itemId} via public API (no auth)`);
 
-        // Use public endpoint — NO Authorization header — so ANY listing can be fetched
+        // Use public endpoint with browser-like User-Agent (ML blocks requests without UA)
         const itemResponse = await fetch(`${ML_API_BASE}/items/${itemId}`, {
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "Mozilla/5.0 (compatible; ErpML/1.0)",
+          },
         });
         const itemPayload = await itemResponse.json().catch(() => null);
 
