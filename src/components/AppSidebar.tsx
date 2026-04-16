@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { VersionBadge } from "@/components/VersionBadge";
 
 // Re-export types and data for backward compat
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
@@ -315,6 +316,9 @@ function SidebarContent({
           </TooltipTrigger>
           <TooltipContent side="right">Encerrar sessão e sair do sistema</TooltipContent>
         </Tooltip>
+        <div className="mt-1 text-center">
+          <VersionBadge />
+        </div>
       </div>
     </>
   );
