@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Users, History, Save, Loader2, Crown, Star, Camera, UserPlus, Mail } from "lucide-react";
+import { APP_VERSION } from "@/config/version";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -425,6 +426,14 @@ export default function CompanyDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="mt-8 text-center">
+        <p className="text-[11px] text-muted-foreground/50 select-none">
+          Versão {APP_VERSION} — Atualizado em {new Date().toLocaleDateString("pt-BR")}
+        </p>
+      </div>
     </div>
+  );
+}
   );
 }
