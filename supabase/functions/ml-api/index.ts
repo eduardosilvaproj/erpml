@@ -636,7 +636,14 @@ Deno.serve(async (req) => {
             // Try again WITH auth token if the user has a connection
             const connForRetry = await getConnection(serviceClient, userId);
             if (connForRetry) {
-              const validToken = await ensureValidToken(serviceClient, connForRetry, appId, clientSecret);
+              // Ensure token is valid before retrying
+              let validToken = connForRetry.access_token;
+              const tokenExpiry = new Date(connForRetry.token_expires_at).getTime();
+              if (!Number.isNaN(tokenExpiry) && tokenExpiry <= Date.now() + 60_000) {
+                try {
+                  validToken = await refreshToken(serviceClient, connForRetry, appId, clientSecret);
+                } catch { /* if refresh fails, try with existing token */ }
+              }
               const retryResp = await fetch(`${ML_API_BASE}/items/${itemId}`, {
                 headers: {
                   "Content-Type": "application/json",
