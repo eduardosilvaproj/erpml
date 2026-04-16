@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { VersionBadge } from "@/components/VersionBadge";
 
 // Re-export types and data for backward compat
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
