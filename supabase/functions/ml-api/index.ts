@@ -17,20 +17,35 @@ async function tryProxyFallback(itemId: string): Promise<any | null> {
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
     `https://corsproxy.io/?${encodeURIComponent(target)}`,
+    `https://proxy.cors.sh/${target}`,
+    `https://thingproxy.freeboard.io/fetch/${target}`,
   ];
+  const browserHeaders = {
+    "Accept": "application/json,text/plain,*/*",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+  };
   for (const url of proxies) {
     try {
-      const r = await fetch(url, { headers: { "Content-Type": "application/json" } });
-      if (!r.ok) continue;
-      const d = await r.json().catch(() => null);
+      console.log(`[get-item] Trying proxy: ${new URL(url).host}`);
+      const r = await fetch(url, { headers: browserHeaders });
+      console.log(`[get-item] Proxy ${new URL(url).host} status: ${r.status}`);
+      if (!r.ok) {
+        await r.text().catch(() => null);
+        continue;
+      }
+      const text = await r.text();
+      let d: any = null;
+      try { d = JSON.parse(text); } catch { continue; }
       if (d?.id) {
         console.log(`[get-item] Proxy fallback succeeded via ${new URL(url).host}`);
         return { ...d, _seller_nickname: null, _seller_id: d.seller_id || null, _is_own_item: false, _connected_nickname: null };
       }
     } catch (e) {
-      console.warn(`[get-item] Proxy ${url} failed:`, e);
+      console.warn(`[get-item] Proxy ${url} failed:`, (e as Error).message);
     }
   }
+  console.error(`[get-item] All proxies failed for ${itemId}`);
   return null;
 }
 const SEARCH_PAGE_SIZE = 100;
