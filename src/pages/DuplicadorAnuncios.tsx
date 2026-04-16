@@ -193,55 +193,53 @@ export default function DuplicadorAnuncios() {
       const { data, error } = await supabase.functions.invoke("ml-proxy", {
         body: { itemId: id },
       });
-      console.log("[Duplicador] Resposta da Edge Function ml-proxy:", data, error);
+      console.log("[Duplicador] Resposta da Edge Function ml-proxy:", { data, error });
 
       if (error) {
-        setDebugError(safeStringify({
+        const technical = {
           source: "invoke",
           error: serializeUnknownError(error),
-        }));
+        };
+        setDebugError(safeStringify(technical));
         throw new Error(error.message || "Erro ao chamar proxy de anúncios.");
       }
 
-      if (data?.error) {
-        setDebugError(safeStringify({
+      if (!data?.ok) {
+        const technical = {
           source: "ml-proxy",
-          status: data?.status ?? null,
-          message: data?.message ?? null,
           error: data?.error ?? null,
-          cause: data?.cause ?? null,
-          error_type: data?.error_type ?? null,
-          blocked_by: data?.blocked_by ?? null,
-          attempts: data?.attempts ?? null,
-          details: data?.details ?? null,
-        }));
-        throw new Error(data.error || data.message || "Erro ao buscar anúncio");
+          diagnostics: data?.diagnostics ?? null,
+        };
+        setDebugError(safeStringify(technical));
+        throw new Error(data?.error || data?.diagnostics?.message || "Erro ao buscar anúncio");
       }
 
-      if (!data || typeof data !== "object" || !data.id) {
+      const itemData = data.data;
+      if (!itemData || typeof itemData !== "object" || !itemData.id) {
         setDebugError(safeStringify({ source: "ml-proxy", data }));
         throw new Error("Anúncio não encontrado ou resposta inválida.");
       }
 
       setDebugError(safeStringify({
         source: "ml-proxy",
-        status: 200,
-        itemId: data.id,
-        title: data.title,
+        ok: true,
+        diagnostics: data?.diagnostics ?? null,
+        itemId: itemData.id,
+        title: itemData.title,
       }));
 
-      console.log("[Duplicador] Item loaded:", data.id, data.title);
+      console.log("[Duplicador] Item loaded:", itemData.id, itemData.title);
 
       let desc = "";
       try {
-        const descData = await callML<any>("get-item-description", { itemId: data.id });
+        const descData = await callML<any>("get-item-description", { itemId: itemData.id });
         desc = descData?.plain_text || descData?.text || "";
       } catch (descErr) {
         console.warn("[Duplicador] Descrição não carregada:", descErr);
       }
 
-      const safePictures = Array.isArray(data.pictures)
-        ? data.pictures
+      const safePictures = Array.isArray(itemData.pictures)
+        ? itemData.pictures
             .map((p: any) => ({
               source: p?.secure_url || p?.url,
               secure_url: p?.secure_url || p?.url,
@@ -250,31 +248,31 @@ export default function DuplicadorAnuncios() {
         : [];
 
       const item: SourceItem = {
-        id: String(data.id),
-        title: data.title || "",
-        price: Number(data.price) || 0,
-        category_id: data.category_id || "",
-        currency_id: data.currency_id || "BRL",
-        buying_mode: data.buying_mode || "buy_it_now",
-        condition: data.condition || "new",
-        listing_type_id: data.listing_type_id || "gold_special",
-        available_quantity: Number(data.available_quantity) || 1,
+        id: String(itemData.id),
+        title: itemData.title || "",
+        price: Number(itemData.price) || 0,
+        category_id: itemData.category_id || "",
+        currency_id: itemData.currency_id || "BRL",
+        buying_mode: itemData.buying_mode || "buy_it_now",
+        condition: itemData.condition || "new",
+        listing_type_id: itemData.listing_type_id || "gold_special",
+        available_quantity: Number(itemData.available_quantity) || 1,
         pictures: safePictures,
-        attributes: Array.isArray(data.attributes)
-          ? data.attributes.filter(
+        attributes: Array.isArray(itemData.attributes)
+          ? itemData.attributes.filter(
               (a: any) => a && !["SELLER_SKU", "GTIN", "SELLER_CUSTOM_FIELD"].includes(a.id)
             )
           : [],
-        variations: Array.isArray(data.variations) ? data.variations : [],
+        variations: Array.isArray(itemData.variations) ? itemData.variations : [],
         description: desc,
-        thumbnail: typeof data.thumbnail === "string"
-          ? data.thumbnail
-          : (typeof data.secure_thumbnail === "string" ? data.secure_thumbnail : ""),
-        permalink: data.permalink,
-        _seller_nickname: data._seller_nickname || null,
-        _seller_id: data._seller_id || null,
-        _is_own_item: data._is_own_item || false,
-        _connected_nickname: data._connected_nickname || null,
+        thumbnail: typeof itemData.thumbnail === "string"
+          ? itemData.thumbnail
+          : (typeof itemData.secure_thumbnail === "string" ? itemData.secure_thumbnail : ""),
+        permalink: itemData.permalink,
+        _seller_nickname: itemData._seller_nickname || null,
+        _seller_id: itemData._seller_id || null,
+        _is_own_item: itemData._is_own_item || false,
+        _connected_nickname: itemData._connected_nickname || null,
       };
 
       setSourceItem(item);
@@ -287,18 +285,16 @@ export default function DuplicadorAnuncios() {
       toast.success("Anúncio carregado com sucesso!");
     } catch (err: any) {
       console.error("[Duplicador] Erro ao buscar anúncio:", err);
-      if (!debugError) {
-        setDebugError(safeStringify({
-          source: "catch",
-          error: serializeUnknownError(err),
-        }));
-      }
+      setDebugError((prev) => prev ?? safeStringify({
+        source: "catch",
+        error: serializeUnknownError(err),
+      }));
       toast.error(err?.message || "Erro ao buscar anúncio.");
       setSourceItem(null);
     } finally {
       setLoading(false);
     }
-  }, [itemIdInput, callML, debugError]);
+  }, [itemIdInput, callML]);
 
   const handleTestConnection = useCallback(async () => {
     const testItemId = "MLB3552891495";
@@ -312,7 +308,7 @@ export default function DuplicadorAnuncios() {
         body: { itemId: testItemId },
       });
 
-      console.log("[Duplicador] Resposta da Edge Function (teste):", data, error);
+      console.log("[Duplicador] Resposta da Edge Function (teste):", { data, error });
       setTestResult(safeStringify({
         itemId: testItemId,
         data,
