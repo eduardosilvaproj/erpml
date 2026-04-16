@@ -14,6 +14,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, Image,
 } from "lucide-react";
 import { useMLApi, useMLConnection } from "@/hooks/useMLData";
+import { supabase } from "@/integrations/supabase/client";
 import { generateEAN13 } from "@/lib/ean13";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -88,6 +89,30 @@ function generateUniqueEAN(existingEans: Set<string>): string {
   return ean;
 }
 
+function safeStringify(value: unknown) {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function serializeUnknownError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack ?? null,
+    };
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(error));
+  } catch {
+    return { value: String(error) };
+  }
+}
+
 /** Cartesian product of attribute value arrays */
 function cartesian(groups: AttrGroup[]): Record<string, string>[] {
   if (groups.length === 0) return [];
@@ -130,7 +155,10 @@ export default function DuplicadorAnuncios() {
   // Step 1 state
   const [itemIdInput, setItemIdInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [testingProxy, setTestingProxy] = useState(false);
   const [sourceItem, setSourceItem] = useState<SourceItem | null>(null);
+  const [debugError, setDebugError] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   // Step 2 state
   const [attrGroups, setAttrGroups] = useState<AttrGroup[]>([]);
@@ -159,11 +187,48 @@ export default function DuplicadorAnuncios() {
     }
 
     setLoading(true);
+    setDebugError(null);
     try {
-      const data = await callML<any>("get-item", { itemId: id });
+      console.log("[Duplicador] Chamando Edge Function ml-proxy com itemId:", id);
+      const { data, error } = await supabase.functions.invoke("ml-proxy", {
+        body: { itemId: id },
+      });
+      console.log("[Duplicador] Resposta da Edge Function ml-proxy:", data, error);
+
+      if (error) {
+        setDebugError(safeStringify({
+          source: "invoke",
+          error: serializeUnknownError(error),
+        }));
+        throw new Error(error.message || "Erro ao chamar proxy de anúncios.");
+      }
+
+      if (data?.error) {
+        setDebugError(safeStringify({
+          source: "ml-proxy",
+          status: data?.status ?? null,
+          message: data?.message ?? null,
+          error: data?.error ?? null,
+          cause: data?.cause ?? null,
+          error_type: data?.error_type ?? null,
+          blocked_by: data?.blocked_by ?? null,
+          attempts: data?.attempts ?? null,
+          details: data?.details ?? null,
+        }));
+        throw new Error(data.error || data.message || "Erro ao buscar anúncio");
+      }
+
       if (!data || typeof data !== "object" || !data.id) {
+        setDebugError(safeStringify({ source: "ml-proxy", data }));
         throw new Error("Anúncio não encontrado ou resposta inválida.");
       }
+
+      setDebugError(safeStringify({
+        source: "ml-proxy",
+        status: 200,
+        itemId: data.id,
+        title: data.title,
+      }));
 
       console.log("[Duplicador] Item loaded:", data.id, data.title);
 
@@ -222,18 +287,47 @@ export default function DuplicadorAnuncios() {
       toast.success("Anúncio carregado com sucesso!");
     } catch (err: any) {
       console.error("[Duplicador] Erro ao buscar anúncio:", err);
-      const raw = String(err?.message || "");
-      const friendly = /403|negado|forbidden|bloque/i.test(raw)
-        ? "Não foi possível buscar o anúncio. O Mercado Livre bloqueou a requisição. Tente novamente em alguns instantes."
-        : /404|não encontrado/i.test(raw)
-        ? "Anúncio não encontrado. Verifique o ID informado."
-        : "Não foi possível buscar o anúncio. Tente novamente em alguns instantes.";
-      toast.error(friendly);
+      if (!debugError) {
+        setDebugError(safeStringify({
+          source: "catch",
+          error: serializeUnknownError(err),
+        }));
+      }
+      toast.error(err?.message || "Erro ao buscar anúncio.");
       setSourceItem(null);
     } finally {
       setLoading(false);
     }
-  }, [itemIdInput, callML]);
+  }, [itemIdInput, callML, debugError]);
+
+  const handleTestConnection = useCallback(async () => {
+    const testItemId = "MLB3552891495";
+    setTestingProxy(true);
+    setTestResult("Testando conexão...");
+
+    console.log("[Duplicador] Chamando Edge Function ml-proxy com itemId fixo:", testItemId);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("ml-proxy", {
+        body: { itemId: testItemId },
+      });
+
+      console.log("[Duplicador] Resposta da Edge Function (teste):", data, error);
+      setTestResult(safeStringify({
+        itemId: testItemId,
+        data,
+        error: error ? serializeUnknownError(error) : null,
+      }));
+    } catch (invokeError) {
+      console.error("[Duplicador] Erro ao chamar Edge Function (teste):", invokeError);
+      setTestResult(safeStringify({
+        itemId: testItemId,
+        error: serializeUnknownError(invokeError),
+      }));
+    } finally {
+      setTestingProxy(false);
+    }
+  }, []);
 
   // ── Step 2: Attribute management ─────────────────────
 
@@ -453,7 +547,7 @@ export default function DuplicadorAnuncios() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input
                 placeholder="MLB1234567890 ou URL do anúncio"
                 value={itemIdInput}
@@ -461,9 +555,13 @@ export default function DuplicadorAnuncios() {
                 className="max-w-md"
                 onKeyDown={e => e.key === "Enter" && fetchItem()}
               />
-              <Button onClick={fetchItem} disabled={loading}>
+              <Button onClick={fetchItem} disabled={loading || testingProxy}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Search className="h-4 w-4 mr-1" />}
                 Buscar
+              </Button>
+              <Button variant="secondary" onClick={handleTestConnection} disabled={loading || testingProxy}>
+                {testingProxy ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Package className="h-4 w-4 mr-1" />}
+                Testar conexão
               </Button>
             </div>
 
@@ -475,6 +573,24 @@ export default function DuplicadorAnuncios() {
               <p className="text-sm text-destructive mt-3">
                 Nenhuma conta do Mercado Livre conectada. Vá em Integrações para conectar.
               </p>
+            )}
+
+            {debugError && (
+              <div className="mt-4 rounded-lg border border-destructive/40 bg-muted/30 p-3">
+                <p className="text-sm font-medium text-destructive">Debug da busca</p>
+                <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-foreground">
+                  {debugError}
+                </pre>
+              </div>
+            )}
+
+            {testResult && (
+              <div className="mt-4 rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-sm font-medium text-foreground">Resultado do teste da Edge Function</p>
+                <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs text-foreground">
+                  {testResult}
+                </pre>
+              </div>
             )}
           </CardContent>
         </Card>
