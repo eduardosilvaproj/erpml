@@ -434,4 +434,6 @@ export default function CompanyDashboard() {
       </div>
     </div>
   );
+}
+
 export default CompanyDashboard;
