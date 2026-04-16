@@ -619,33 +619,84 @@ Deno.serve(async (req) => {
 
         console.log(`[get-item] Fetching item ${itemId} via public API (no auth)`);
 
-        // Use public endpoint — no Authorization header — so ANY listing can be fetched
-        const item = await fetchMlJson(
-          `${ML_API_BASE}/items/${itemId}`,
-          { headers: { "Content-Type": "application/json" } },
-          "Erro ao buscar anúncio"
-        );
+        // Use public endpoint — NO Authorization header — so ANY listing can be fetched
+        const itemResponse = await fetch(`${ML_API_BASE}/items/${itemId}`, {
+          headers: { "Content-Type": "application/json" },
+        });
+        const itemPayload = await itemResponse.json().catch(() => null);
 
-        // Fetch seller info
+        if (!itemResponse.ok) {
+          const msg = itemPayload?.message || itemPayload?.error || itemResponse.statusText;
+          console.error(`ML API error [${itemResponse.status}] ${ML_API_BASE}/items/${itemId}:`, JSON.stringify(itemPayload));
+
+          if (itemResponse.status === 404) {
+            return jsonResponse({ error: "Anúncio não encontrado. Verifique o ID informado." }, 404);
+          }
+          if (itemResponse.status === 403) {
+            // Try again WITH auth token if the user has a connection
+            const connForRetry = await getConnection(serviceClient, userId);
+            if (connForRetry) {
+              const validToken = await ensureValidToken(serviceClient, connForRetry, appId, clientSecret);
+              const retryResp = await fetch(`${ML_API_BASE}/items/${itemId}`, {
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${validToken}`,
+                },
+              });
+              const retryPayload = await retryResp.json().catch(() => null);
+
+              if (retryResp.ok && retryPayload) {
+                console.log(`[get-item] Fetched ${itemId} with auth token (public was 403)`);
+                // Continue with retryPayload as item
+                let sellerInfo2: any = null;
+                if (retryPayload?.seller_id) {
+                  try {
+                    const sr = await fetch(`${ML_API_BASE}/users/${retryPayload.seller_id}`, {
+                      headers: { "Content-Type": "application/json" },
+                    });
+                    if (sr.ok) sellerInfo2 = await sr.json();
+                    else await sr.text();
+                  } catch { /* optional */ }
+                }
+                const isOwn2 = String(retryPayload?.seller_id) === String(connForRetry.ml_user_id);
+                return jsonResponse({
+                  ...retryPayload,
+                  _seller_nickname: sellerInfo2?.nickname || null,
+                  _seller_id: retryPayload?.seller_id || null,
+                  _is_own_item: isOwn2,
+                  _connected_nickname: connForRetry?.seller_nickname || null,
+                });
+              }
+              // Auth retry also failed
+              const retryMsg = retryPayload?.message || retryPayload?.error || "Acesso negado";
+              console.error(`[get-item] Auth retry also failed [${retryResp.status}]:`, JSON.stringify(retryPayload));
+              return jsonResponse({ error: `Acesso negado pelo Mercado Livre: ${retryMsg}` }, 403);
+            }
+            return jsonResponse({ error: `Acesso negado pelo Mercado Livre. Este anúncio pode estar restrito. Detalhes: ${msg}` }, 403);
+          }
+          return jsonResponse({ error: `Erro ao buscar anúncio: ${msg}` }, itemResponse.status >= 400 ? itemResponse.status : 500);
+        }
+
+        // Fetch seller info (public, no auth)
         let sellerInfo: any = null;
-        if (item?.seller_id) {
+        if (itemPayload?.seller_id) {
           try {
-            sellerInfo = await fetchMlJson(
-              `${ML_API_BASE}/users/${item.seller_id}`,
-              { headers: { "Content-Type": "application/json" } },
-              "Erro ao buscar vendedor"
-            );
+            const sellerResp = await fetch(`${ML_API_BASE}/users/${itemPayload.seller_id}`, {
+              headers: { "Content-Type": "application/json" },
+            });
+            if (sellerResp.ok) sellerInfo = await sellerResp.json();
+            else await sellerResp.text();
           } catch { /* seller info is optional */ }
         }
 
         // Check if this item belongs to the connected user
         const connection = await getConnection(serviceClient, userId);
-        const isOwnItem = connection ? String(item?.seller_id) === String(connection.ml_user_id) : false;
+        const isOwnItem = connection ? String(itemPayload?.seller_id) === String(connection.ml_user_id) : false;
 
         return jsonResponse({
-          ...item,
+          ...itemPayload,
           _seller_nickname: sellerInfo?.nickname || null,
-          _seller_id: item?.seller_id || null,
+          _seller_id: itemPayload?.seller_id || null,
           _is_own_item: isOwnItem,
           _connected_nickname: connection?.seller_nickname || null,
         });
