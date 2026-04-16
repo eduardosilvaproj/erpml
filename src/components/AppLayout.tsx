@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import SupportChat from "@/components/SupportChat";
 import HelpPanel from "@/components/HelpPanel";
 import { useUnansweredMLQuestionsCount } from "@/hooks/useMLNotifications";
-import { MessageSquare, ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronRight, RefreshCw } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,6 +13,9 @@ import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { Badge } from "@/components/ui/badge";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { forceCheckUpdate } from "@/components/VersionUpdateBanner";
+import { toast } from "sonner";
 
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
