@@ -113,26 +113,50 @@ const BalancoEstoque = () => {
     setLastScanned(null);
   };
 
-  // Apply adjustments: update stock_physical ONLY for items that received a count.
-  // Items not bipped/counted (counts[id] === null/undefined) keep their current stock untouched.
-  // Items intentionally registered with 0 will be zeroed.
-  const applyAdjustments = async () => {
-    const toApply = products
-      .map((p) => ({ p, counted: counts[p.id] }))
-      .filter(({ counted }) => counted !== null && counted !== undefined && !isNaN(counted as number))
-      .filter(({ p, counted }) => (counted as number) !== p.stock_physical);
+  // Toggle: also zero-out items that were NOT counted/bipped during this balance
+  const [zeroUnscanned, setZeroUnscanned] = useState(false);
 
-    if (toApply.length === 0) {
+  // Items that will be zeroed:
+  // - explicitly counted as 0
+  // - (if zeroUnscanned) not counted at all AND currently have stock > 0
+  const itemsToZero = useMemo(() => {
+    return products.filter((p) => {
+      const c = counts[p.id];
+      const explicitZero = c === 0;
+      const unscannedWithStock =
+        zeroUnscanned && (c === null || c === undefined) && p.stock_physical > 0;
+      return explicitZero || unscannedWithStock;
+    });
+  }, [products, counts, zeroUnscanned]);
+
+  // Apply adjustments: update stock_physical for counted items.
+  // If zeroUnscanned is enabled, also zero out items that were not bipped.
+  const applyAdjustments = async () => {
+    const updates = products
+      .map((p) => {
+        const counted = counts[p.id];
+        const hasCount = counted !== null && counted !== undefined && !isNaN(counted as number);
+        if (hasCount) {
+          return (counted as number) !== p.stock_physical ? { p, newQty: counted as number } : null;
+        }
+        if (zeroUnscanned && p.stock_physical > 0) {
+          return { p, newQty: 0 };
+        }
+        return null;
+      })
+      .filter(Boolean) as Array<{ p: typeof products[0]; newQty: number }>;
+
+    if (updates.length === 0) {
       toast({ title: "Nada a ajustar", description: "Nenhum item contado difere do estoque atual." });
       return;
     }
 
     setApplying(true);
     let ok = 0, fail = 0;
-    for (const { p, counted } of toApply) {
+    for (const { p, newQty } of updates) {
       const { error } = await supabase
         .from("products")
-        .update({ stock_physical: counted as number })
+        .update({ stock_physical: newQty })
         .eq("id", p.id);
       if (error) fail++; else ok++;
     }
@@ -140,7 +164,7 @@ const BalancoEstoque = () => {
 
     toast({
       title: "Balanço finalizado",
-      description: `${ok} produto(s) ajustado(s)${fail ? `, ${fail} falha(s)` : ""}. Itens não bipados foram preservados.`,
+      description: `${ok} produto(s) ajustado(s)${fail ? `, ${fail} falha(s)` : ""}.`,
     });
     queryClient.invalidateQueries({ queryKey: ["products"] });
     resetCounting();
