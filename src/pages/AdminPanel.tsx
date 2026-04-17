@@ -53,6 +53,21 @@ export default function AdminPanel() {
     }
   };
 
+  const handleGeneratePassword = async (targetUserId: string) => {
+    try {
+      const result = await setTempPassword.mutateAsync(targetUserId);
+      setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const copyPassword = async () => {
+    if (!tempPasswordInfo) return;
+    await navigator.clipboard.writeText(tempPasswordInfo.password);
+    toast.success("Senha copiada");
+  };
+
   const totalUsers = users?.length || 0;
   const confirmedUsers = users?.filter((u) => u.email_confirmed_at).length || 0;
   const adminCount = users?.filter((u) => u.roles.includes("admin")).length || 0;
