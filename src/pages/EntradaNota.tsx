@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
   Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check,
-  Upload, Files, XCircle, ChevronLeft, ChevronRight, Layers
+  Upload, Files, XCircle, ChevronLeft, ChevronRight, Layers, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1388,6 +1388,33 @@ const EntradaNota = () => {
           {/* Conference content (shared for single & batch once mode is selected) */}
           {(!isBatchMode || batchConferenceMode) && (
             <>
+              {/* Skip conference shortcut */}
+              {conferenceItems.length > 0 && (
+                <Card className="border-amber-500/30 bg-amber-500/5">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-2 text-sm text-amber-400">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                      <p>
+                        As quantidades serão confirmadas conforme a nota fiscal. Você pode ajustar depois pelo Balanço.
+                      </p>
+                    </div>
+                    <Button
+                      className="w-full bg-amber-500 hover:bg-amber-500/90 text-amber-950 font-semibold"
+                      onClick={() => {
+                        setConferenceItems((prev) =>
+                          prev.map((ci) => ({ ...ci, scannedQty: ci.expectedQty, status: "ok" as const }))
+                        );
+                        setCompletedSteps((p) => new Set([...p, 2, 3]));
+                        goToStep(5);
+                      }}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Pular conferência e confirmar quantidade da nota
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Bip Input */}
               <Card>
               <CardContent className="p-4 space-y-3">
