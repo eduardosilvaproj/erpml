@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useAdminUsers, useToggleRole, useDeleteUser, useIsAdmin } from "@/hooks/useAdminData";
+import { useAdminUsers, useToggleRole, useDeleteUser, useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Shield, ShieldCheck, Trash2, Users, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Shield, ShieldCheck, Trash2, Users, UserCheck, UserX, Loader2, KeyRound, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -18,6 +20,8 @@ export default function AdminPanel() {
   const { data: users, isLoading } = useAdminUsers();
   const toggleRole = useToggleRole();
   const deleteUser = useDeleteUser();
+  const setTempPassword = useSetTemporaryPassword();
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
   if (checkingAdmin) {
     return (
