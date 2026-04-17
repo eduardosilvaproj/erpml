@@ -186,6 +186,36 @@ export default function AdminPanel() {
                         {u.id !== user?.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={setTempPassword.isPending}
+                                title="Gerar nova senha temporária"
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Gerar nova senha?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Uma senha temporária será gerada para <strong>{u.email}</strong>. A senha atual será invalidada imediatamente. Você poderá copiar e enviar ao usuário, que deverá trocá-la após o login.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleGeneratePassword(u.id)}>
+                                  Gerar senha
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+
+                        {u.id !== user?.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon" className="h-8 w-8">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
