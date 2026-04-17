@@ -394,6 +394,23 @@ export default function MasterAdmin() {
                               >
                                 <KeyRound className="h-3 w-3 mr-1" /> Senha
                               </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                title="Gerar nova senha temporária e exibir na tela"
+                                disabled={setTempPassword.isPending}
+                                onClick={async () => {
+                                  if (!confirm(`Gerar nova senha temporária para ${c.email || "o dono da empresa"}?\n\nA senha atual será invalidada imediatamente.`)) return;
+                                  try {
+                                    const result = await setTempPassword.mutateAsync(c.owner_id);
+                                    setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+                                  } catch (e: any) {
+                                    toast.error(e.message);
+                                  }
+                                }}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" /> Nova senha
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
