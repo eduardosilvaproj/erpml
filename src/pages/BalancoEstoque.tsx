@@ -301,6 +301,28 @@ const BalancoEstoque = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={applying}>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {applying ? "Aplicando..." : "Finalizar e Aplicar"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar ajuste de estoque?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Apenas os produtos com contagem registrada terão o estoque atualizado.
+                      Itens <strong>não bipados/contados</strong> mantêm o estoque atual intacto.
+                      Itens registrados com <strong>0</strong> serão zerados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={applyAdjustments}>Confirmar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>
