@@ -198,7 +198,12 @@ export function EntradaNotaHistorico() {
 }
 
 function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClose: () => void }) {
-  const { data, isLoading } = useQuery({
+  const companyId = useCompanyId();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["entrada-nota-detalhe", invoiceId],
     enabled: !!invoiceId,
     queryFn: async () => {
@@ -211,6 +216,82 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       return inv;
     },
   });
+
+  const pendingItems = ((data?.invoice_items as any[]) || []).filter(
+    (it: any) => !it.product_id || !it.stock_updated
+  );
+
+  const reprocessar = async () => {
+    if (!data || !companyId) return;
+    setReprocessing(true);
+    let created = 0, updated = 0, skipped = 0;
+    try {
+      for (const it of pendingItems) {
+        const ean = (it.xml_ean || "").trim();
+        const sku = (it.xml_code || `NF-${data.number}-${Math.random().toString(36).slice(2, 6)}`).trim();
+        const qty = Math.floor(Number(it.quantity) || 0);
+        if (qty <= 0) { skipped++; continue; }
+
+        let productId: string | null = it.product_id || null;
+        let isNew = false;
+
+        if (!productId && ean) {
+          const { data: byEan } = await supabase
+            .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
+          if (byEan?.id) productId = byEan.id;
+        }
+        if (!productId) {
+          const { data: bySku } = await supabase
+            .from("products").select("id").eq("company_id", companyId).eq("sku", sku).maybeSingle();
+          if (bySku?.id) productId = bySku.id;
+        }
+        if (!productId) {
+          const { data: createdProd, error: ce } = await supabase
+            .from("products")
+            .insert({
+              name: (it.xml_description || "Produto sem nome").slice(0, 200),
+              sku, barcode: ean || null,
+              cost: Number(it.unit_value) || 0,
+              price: 0, stock_physical: qty, min_stock: 0, active: true,
+              company_id: companyId,
+            })
+            .select("id").single();
+          if (ce || !createdProd) { skipped++; continue; }
+          productId = createdProd.id;
+          isNew = true;
+          created++;
+        } else if (!it.stock_updated) {
+          const { data: prod } = await supabase
+            .from("products").select("stock_physical").eq("id", productId).single();
+          const current = Number(prod?.stock_physical || 0);
+          await supabase.from("products").update({ stock_physical: current + qty }).eq("id", productId);
+          updated++;
+        }
+
+        await supabase
+          .from("invoice_items")
+          .update({
+            product_id: productId,
+            stock_updated: true,
+            match_type: isNew ? "auto_created" : (it.match_type === "none" ? "retro_match" : it.match_type),
+          })
+          .eq("id", it.id);
+      }
+
+      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id);
+      toast({
+        title: "Reprocessamento concluído",
+        description: `${created} criado(s), ${updated} atualizado(s)${skipped ? `, ${skipped} ignorado(s)` : ""}.`,
+      });
+      await refetch();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["entrada-nota-historico"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao reprocessar", description: e.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const exportPdf = () => {
     if (!data) return;
