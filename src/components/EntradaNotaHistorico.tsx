@@ -211,13 +211,26 @@ export function EntradaNotaHistorico() {
     <>
       <Separator className="my-4" />
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" /> Entradas Recentes
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">Histórico das últimas notas importadas</p>
           </div>
+          {invoicesWithPending.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={reprocessarTodas}
+              disabled={reprocessingAll}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${reprocessingAll ? "animate-spin" : ""}`} />
+              {reprocessingAll
+                ? `Reprocessando... (${invoicesWithPending.length})`
+                : `Reprocessar Todas (${invoicesWithPending.length})`}
+            </Button>
+          )}
         </div>
 
         <Card>
