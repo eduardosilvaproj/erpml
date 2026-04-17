@@ -149,7 +149,7 @@ const Conferencia = () => {
     }
 
     // 2. Match by GTIN CX (box code)
-    const gtinProduct = allProducts.find((p) => p.gtin_cx && p.gtin_cx === trimmed);
+    const gtinProduct = allProducts.find((p) => p.gtin_cx && p.gtin_cx.toString().trim().toUpperCase() === normalized);
     if (gtinProduct) {
       const unitsPerBox = gtinProduct.box_quantity || 1;
       addScannedUnits(gtinProduct, unitsPerBox, {
