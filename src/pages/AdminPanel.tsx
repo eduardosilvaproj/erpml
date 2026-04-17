@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useAdminUsers, useToggleRole, useDeleteUser, useIsAdmin } from "@/hooks/useAdminData";
+import { useAdminUsers, useToggleRole, useDeleteUser, useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Shield, ShieldCheck, Trash2, Users, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Shield, ShieldCheck, Trash2, Users, UserCheck, UserX, Loader2, KeyRound, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -18,6 +20,8 @@ export default function AdminPanel() {
   const { data: users, isLoading } = useAdminUsers();
   const toggleRole = useToggleRole();
   const deleteUser = useDeleteUser();
+  const setTempPassword = useSetTemporaryPassword();
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
   if (checkingAdmin) {
     return (
@@ -47,6 +51,21 @@ export default function AdminPanel() {
     } catch (error: any) {
       toast.error(error.message);
     }
+  };
+
+  const handleGeneratePassword = async (targetUserId: string) => {
+    try {
+      const result = await setTempPassword.mutateAsync(targetUserId);
+      setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const copyPassword = async () => {
+    if (!tempPasswordInfo) return;
+    await navigator.clipboard.writeText(tempPasswordInfo.password);
+    toast.success("Senha copiada");
   };
 
   const totalUsers = users?.length || 0;
@@ -167,6 +186,36 @@ export default function AdminPanel() {
                         {u.id !== user?.id && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                className="h-8 w-8"
+                                disabled={setTempPassword.isPending}
+                                title="Gerar nova senha temporária"
+                              >
+                                <KeyRound className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Gerar nova senha?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Uma senha temporária será gerada para <strong>{u.email}</strong>. A senha atual será invalidada imediatamente. Você poderá copiar e enviar ao usuário, que deverá trocá-la após o login.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleGeneratePassword(u.id)}>
+                                  Gerar senha
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+
+                        {u.id !== user?.id && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon" className="h-8 w-8">
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -197,6 +246,28 @@ export default function AdminPanel() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!tempPasswordInfo} onOpenChange={(open) => !open && setTempPasswordInfo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" /> Senha temporária gerada
+            </DialogTitle>
+            <DialogDescription>
+              Copie e envie a senha abaixo para <strong>{tempPasswordInfo?.email}</strong> por um canal seguro. Por segurança, ela <strong>não será exibida novamente</strong>. Oriente o usuário a alterá-la após o login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input readOnly value={tempPasswordInfo?.password ?? ""} className="font-mono" />
+            <Button type="button" variant="outline" size="icon" onClick={copyPassword}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTempPasswordInfo(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -305,6 +305,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Generate temporary password and update user
+    if (action === "set-temporary-password") {
+      const { targetUserId } = await req.json();
+
+      if (!targetUserId) {
+        return new Response(
+          JSON.stringify({ error: "targetUserId é obrigatório" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (targetUserId === userId) {
+        return new Response(
+          JSON.stringify({ error: "Use o fluxo padrão de redefinição para sua própria conta" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: { user: targetUser }, error: getUserError } =
+        await adminClient.auth.admin.getUserById(targetUserId);
+
+      if (getUserError || !targetUser?.email) {
+        return new Response(
+          JSON.stringify({ error: "Usuário não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Generate cryptographically secure random password (14 chars, mixed)
+      const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+      const bytes = new Uint8Array(14);
+      crypto.getRandomValues(bytes);
+      const tempPassword = Array.from(bytes, (b) => charset[b % charset.length]).join("");
+
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(
+        targetUserId,
+        { password: tempPassword }
+      );
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Audit log (best-effort, no password stored)
+      await adminClient.from("system_logs").insert({
+        user_id: userId,
+        action: "admin_set_temporary_password",
+        details: { target_user_id: targetUserId, target_email: targetUser.email },
+      }).then(() => {}, () => {});
+
+      return new Response(
+        JSON.stringify({ success: true, email: targetUser.email, temporaryPassword: tempPassword }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     return new Response(
       JSON.stringify({ error: "Ação inválida" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
