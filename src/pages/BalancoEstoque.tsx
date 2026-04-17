@@ -332,13 +332,53 @@ const BalancoEstoque = () => {
                     {applying ? "Aplicando..." : "Finalizar e Aplicar"}
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent className="max-w-lg">
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirmar ajuste de estoque?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Apenas os produtos com contagem registrada terão o estoque atualizado.
-                      Itens <strong>não bipados/contados</strong> mantêm o estoque atual intacto.
-                      Itens registrados com <strong>0</strong> serão zerados.
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-3 text-sm">
+                        <p>
+                          Produtos com contagem registrada terão o estoque atualizado.
+                          Por padrão, itens <strong>não bipados</strong> mantêm o estoque atual.
+                        </p>
+                        <div className="flex items-start gap-2 p-3 rounded-md border bg-muted/40">
+                          <Switch
+                            id="zero-unscanned"
+                            checked={zeroUnscanned}
+                            onCheckedChange={setZeroUnscanned}
+                            className="mt-0.5"
+                          />
+                          <Label htmlFor="zero-unscanned" className="cursor-pointer leading-tight">
+                            <span className="font-medium text-foreground">Zerar itens não bipados</span>
+                            <span className="block text-xs text-muted-foreground mt-0.5">
+                              Considerar todos os produtos não contados como estoque zero.
+                            </span>
+                          </Label>
+                        </div>
+                        {itemsToZero.length > 0 && (
+                          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                            <p className="font-medium text-destructive flex items-center gap-1.5">
+                              <AlertTriangle className="h-4 w-4" />
+                              {itemsToZero.length} produto(s) serão zerados:
+                            </p>
+                            <div className="max-h-40 overflow-y-auto space-y-1 text-xs">
+                              {itemsToZero.slice(0, 50).map((p) => (
+                                <div key={p.id} className="flex justify-between gap-2 py-0.5 border-b border-destructive/10 last:border-0">
+                                  <span className="truncate">{p.name}</span>
+                                  <span className="text-muted-foreground shrink-0">
+                                    {p.stock_physical} → 0
+                                  </span>
+                                </div>
+                              ))}
+                              {itemsToZero.length > 50 && (
+                                <p className="text-muted-foreground italic pt-1">
+                                  ... e mais {itemsToZero.length - 50} item(ns)
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
