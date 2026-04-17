@@ -25,7 +25,9 @@ import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const BalancoEstoque = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const companyId = useCompanyId();
+  const [applying, setApplying] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
