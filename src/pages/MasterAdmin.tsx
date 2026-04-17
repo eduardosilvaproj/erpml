@@ -808,6 +808,39 @@ export default function MasterAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!tempPasswordInfo} onOpenChange={(open) => !open && setTempPasswordInfo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Senha temporária gerada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Copie e envie por canal seguro para <strong className="text-foreground">{tempPasswordInfo?.email}</strong>. Por segurança, ela <strong>não será exibida novamente</strong>. Oriente o usuário a alterá-la após o login.
+            </p>
+            <div className="flex gap-2">
+              <Input readOnly value={tempPasswordInfo?.password ?? ""} className="font-mono" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={async () => {
+                  if (!tempPasswordInfo) return;
+                  await navigator.clipboard.writeText(tempPasswordInfo.password);
+                  toast.success("Senha copiada");
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTempPasswordInfo(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
