@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword } from "@/hooks/useCompanyData";
-import { useIsAdmin } from "@/hooks/useAdminData";
+import { useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
