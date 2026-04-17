@@ -205,3 +205,32 @@ export function useCreateCompanyForUser() {
     },
   });
 }
+
+export function useSetTemporaryPassword() {
+  return useMutation({
+    mutationFn: async (targetUserId: string): Promise<{ email: string; temporaryPassword: string }> => {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users?action=set-temporary-password`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ targetUserId }),
+        }
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao gerar nova senha");
+      }
+
+      return res.json();
+    },
+  });
+}
