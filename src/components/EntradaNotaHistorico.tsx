@@ -393,8 +393,24 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
             </div>
           </div>
         )}
-        <DialogFooter>
+        {!isLoading && data && pendingItems.length > 0 && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            ⚠️ {pendingItems.length} item(ns) desta nota ainda não estão no estoque. Clique em "Reprocessar estoque" para criar/atualizar os produtos automaticamente.
+          </div>
+        )}
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Fechar</Button>
+          {pendingItems.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={reprocessar}
+              disabled={reprocessing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
+              {reprocessing ? "Reprocessando..." : "Reprocessar estoque"}
+            </Button>
+          )}
           <Button onClick={exportPdf} disabled={!data} className="gap-2">
             <Download className="h-4 w-4" /> Exportar PDF
           </Button>
