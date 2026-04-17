@@ -113,6 +113,39 @@ const BalancoEstoque = () => {
     setLastScanned(null);
   };
 
+  // Apply adjustments: update stock_physical ONLY for items that received a count.
+  // Items not bipped/counted (counts[id] === null/undefined) keep their current stock untouched.
+  // Items intentionally registered with 0 will be zeroed.
+  const applyAdjustments = async () => {
+    const toApply = products
+      .map((p) => ({ p, counted: counts[p.id] }))
+      .filter(({ counted }) => counted !== null && counted !== undefined && !isNaN(counted as number))
+      .filter(({ p, counted }) => (counted as number) !== p.stock_physical);
+
+    if (toApply.length === 0) {
+      toast({ title: "Nada a ajustar", description: "Nenhum item contado difere do estoque atual." });
+      return;
+    }
+
+    setApplying(true);
+    let ok = 0, fail = 0;
+    for (const { p, counted } of toApply) {
+      const { error } = await supabase
+        .from("products")
+        .update({ stock_physical: counted as number })
+        .eq("id", p.id);
+      if (error) fail++; else ok++;
+    }
+    setApplying(false);
+
+    toast({
+      title: "Balanço finalizado",
+      description: `${ok} produto(s) ajustado(s)${fail ? `, ${fail} falha(s)` : ""}. Itens não bipados foram preservados.`,
+    });
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+    resetCounting();
+  };
+
   const updateCount = (productId: string, value: string) => {
     const num = value === "" ? null : parseInt(value, 10);
     setCounts((prev) => ({ ...prev, [productId]: isNaN(num as number) ? null : num }));
