@@ -12,16 +12,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, useCategories } from "@/hooks/useProductData";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 const BalancoEstoque = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const companyId = useCompanyId();
+  const [applying, setApplying] = useState(false);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
@@ -105,6 +111,39 @@ const BalancoEstoque = () => {
     setCounts({});
     setBipMode(false);
     setLastScanned(null);
+  };
+
+  // Apply adjustments: update stock_physical ONLY for items that received a count.
+  // Items not bipped/counted (counts[id] === null/undefined) keep their current stock untouched.
+  // Items intentionally registered with 0 will be zeroed.
+  const applyAdjustments = async () => {
+    const toApply = products
+      .map((p) => ({ p, counted: counts[p.id] }))
+      .filter(({ counted }) => counted !== null && counted !== undefined && !isNaN(counted as number))
+      .filter(({ p, counted }) => (counted as number) !== p.stock_physical);
+
+    if (toApply.length === 0) {
+      toast({ title: "Nada a ajustar", description: "Nenhum item contado difere do estoque atual." });
+      return;
+    }
+
+    setApplying(true);
+    let ok = 0, fail = 0;
+    for (const { p, counted } of toApply) {
+      const { error } = await supabase
+        .from("products")
+        .update({ stock_physical: counted as number })
+        .eq("id", p.id);
+      if (error) fail++; else ok++;
+    }
+    setApplying(false);
+
+    toast({
+      title: "Balanço finalizado",
+      description: `${ok} produto(s) ajustado(s)${fail ? `, ${fail} falha(s)` : ""}. Itens não bipados foram preservados.`,
+    });
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+    resetCounting();
   };
 
   const updateCount = (productId: string, value: string) => {
@@ -262,6 +301,28 @@ const BalancoEstoque = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Exportar CSV
               </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button disabled={applying}>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {applying ? "Aplicando..." : "Finalizar e Aplicar"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar ajuste de estoque?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Apenas os produtos com contagem registrada terão o estoque atualizado.
+                      Itens <strong>não bipados/contados</strong> mantêm o estoque atual intacto.
+                      Itens registrados com <strong>0</strong> serão zerados.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={applyAdjustments}>Confirmar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
         </div>
