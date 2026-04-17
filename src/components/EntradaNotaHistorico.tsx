@@ -41,11 +41,83 @@ function tipoBadge(issuer: string | null) {
   );
 }
 
+async function reprocessInvoice(invoiceId: string, companyId: string) {
+  const { data: inv } = await supabase
+    .from("invoices")
+    .select("*, invoice_items(*)")
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (!inv) return { created: 0, updated: 0, skipped: 0 };
+
+  const pending = ((inv.invoice_items as any[]) || []).filter(
+    (it: any) => !it.product_id || !it.stock_updated
+  );
+  let created = 0, updated = 0, skipped = 0;
+
+  for (const it of pending) {
+    const ean = (it.xml_ean || "").trim();
+    const sku = (it.xml_code || `NF-${inv.number}-${Math.random().toString(36).slice(2, 6)}`).trim();
+    const qty = Math.floor(Number(it.quantity) || 0);
+    if (qty <= 0) { skipped++; continue; }
+
+    let productId: string | null = it.product_id || null;
+    let isNew = false;
+
+    if (!productId && ean) {
+      const { data: byEan } = await supabase
+        .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
+      if (byEan?.id) productId = byEan.id;
+    }
+    if (!productId) {
+      const { data: bySku } = await supabase
+        .from("products").select("id").eq("company_id", companyId).eq("sku", sku).maybeSingle();
+      if (bySku?.id) productId = bySku.id;
+    }
+    if (!productId) {
+      const { data: createdProd, error: ce } = await supabase
+        .from("products")
+        .insert({
+          name: (it.xml_description || "Produto sem nome").slice(0, 200),
+          sku, barcode: ean || null,
+          cost: Number(it.unit_value) || 0,
+          price: 0, stock_physical: qty, min_stock: 0, active: true,
+          company_id: companyId,
+        })
+        .select("id").single();
+      if (ce || !createdProd) { skipped++; continue; }
+      productId = createdProd.id;
+      isNew = true;
+      created++;
+    } else if (!it.stock_updated) {
+      const { data: prod } = await supabase
+        .from("products").select("stock_physical").eq("id", productId).single();
+      const current = Number(prod?.stock_physical || 0);
+      await supabase.from("products").update({ stock_physical: current + qty }).eq("id", productId);
+      updated++;
+    }
+
+    await supabase
+      .from("invoice_items")
+      .update({
+        product_id: productId,
+        stock_updated: true,
+        match_type: isNew ? "auto_created" : (it.match_type === "none" ? "retro_match" : it.match_type),
+      })
+      .eq("id", it.id);
+  }
+
+  await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id);
+  return { created, updated, skipped, pendingCount: pending.length };
+}
+
 export function EntradaNotaHistorico() {
   const companyId = useCompanyId();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState<Period>("all");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [reprocessingAll, setReprocessingAll] = useState(false);
 
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["entrada-nota-historico", companyId],
@@ -53,7 +125,7 @@ export function EntradaNotaHistorico() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("id, number, series, issuer_name, issuer_cnpj, total_value, items_count, status, imported_at, created_at")
+        .select("id, number, series, issuer_name, issuer_cnpj, total_value, items_count, status, imported_at, created_at, invoice_items(id, product_id, stock_updated)")
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -61,6 +133,38 @@ export function EntradaNotaHistorico() {
       return data || [];
     },
   });
+
+  const invoicesWithPending = useMemo(
+    () => invoices.filter((i: any) =>
+      ((i.invoice_items as any[]) || []).some((it: any) => !it.product_id || !it.stock_updated)
+    ),
+    [invoices]
+  );
+
+  const reprocessarTodas = async () => {
+    if (!companyId || invoicesWithPending.length === 0) return;
+    setReprocessingAll(true);
+    let totalCreated = 0, totalUpdated = 0, totalSkipped = 0, processedNotes = 0;
+    try {
+      for (const inv of invoicesWithPending) {
+        const r = await reprocessInvoice(inv.id, companyId);
+        totalCreated += r.created;
+        totalUpdated += r.updated;
+        totalSkipped += r.skipped;
+        processedNotes++;
+      }
+      toast({
+        title: "Reprocessamento em massa concluído",
+        description: `${processedNotes} nota(s): ${totalCreated} criado(s), ${totalUpdated} atualizado(s)${totalSkipped ? `, ${totalSkipped} ignorado(s)` : ""}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["entrada-nota-historico"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao reprocessar", description: e.message, variant: "destructive" });
+    } finally {
+      setReprocessingAll(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     const now = Date.now();
