@@ -869,7 +869,13 @@ const EntradaNota = () => {
         if (invError) continue;
 
         for (const match of nf.matches) {
-          const productId = match.matchedProductId;
+          let productId = match.matchedProductId;
+          const wasMatched = !!productId;
+
+          // Auto-create product if no match found
+          if (!productId && autoUpdateStock) {
+            productId = await autoCreateProductFromXml(match.xmlProduct);
+          }
 
           await supabase.from("invoice_items").insert({
             invoice_id: invoice.id,
@@ -883,12 +889,13 @@ const EntradaNota = () => {
             quantity: match.xmlProduct.quantity,
             unit_value: match.xmlProduct.unitValue,
             total_value: match.xmlProduct.totalValue,
-            match_type: productId ? match.matchType : "none",
+            match_type: productId ? (wasMatched ? match.matchType : "auto_created") : "none",
             match_confidence: match.confidence,
             stock_updated: !!productId && autoUpdateStock,
           });
 
-          if (productId && autoUpdateStock) {
+          // Only ADD to existing stock; auto-created already has the qty as initial stock
+          if (productId && wasMatched && autoUpdateStock) {
             const { data: current } = await supabase
               .from("products")
               .select("stock_physical, cost")
