@@ -126,14 +126,18 @@ const Conferencia = () => {
     setScanBuffer("");
 
     const trimmed = code.trim();
+    const normalized = trimmed.toUpperCase();
     const simProducts = (window as any).__simProducts || [];
 
-    // 1. Match by barcode or SKU
-    const product = allProducts.find(
-      (p) => p.barcode === trimmed || p.sku === trimmed
-    ) || simProducts.find(
-      (p: any) => p.barcode === trimmed || p.sku === trimmed
-    );
+    const matches = (p: any) => {
+      const barcode = (p.barcode || "").toString().trim().toUpperCase();
+      const sku = (p.sku || "").toString().trim().toUpperCase();
+      const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
+      return barcode === normalized || sku === normalized || skuMl === normalized;
+    };
+
+    // 1. Match by barcode, SKU, or SKU ML
+    const product = allProducts.find(matches) || simProducts.find(matches);
 
     if (product) {
       addScannedUnits(product, 1);
