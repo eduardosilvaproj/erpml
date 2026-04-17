@@ -41,6 +41,8 @@ export default function MasterAdmin() {
   const adminUpdateCompany = useAdminUpdateCompany();
   const adminChangePlan = useAdminChangeCompanyPlan();
   const adminResetPassword = useAdminResetPassword();
+  const setTempPassword = useSetTemporaryPassword();
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [planForm, setPlanForm] = useState<Partial<Plan>>({});
