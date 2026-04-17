@@ -246,6 +246,28 @@ export default function AdminPanel() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={!!tempPasswordInfo} onOpenChange={(open) => !open && setTempPasswordInfo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" /> Senha temporária gerada
+            </DialogTitle>
+            <DialogDescription>
+              Copie e envie a senha abaixo para <strong>{tempPasswordInfo?.email}</strong> por um canal seguro. Por segurança, ela <strong>não será exibida novamente</strong>. Oriente o usuário a alterá-la após o login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input readOnly value={tempPasswordInfo?.password ?? ""} className="font-mono" />
+            <Button type="button" variant="outline" size="icon" onClick={copyPassword}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTempPasswordInfo(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
