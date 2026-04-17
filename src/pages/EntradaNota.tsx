@@ -2,7 +2,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import {
   FileText, Loader2, CheckCircle, AlertTriangle, ArrowLeft, ScanBarcode,
   Keyboard, Package, ArrowRight, Bot, Search, Plus, Minus, Trash2, Check,
-  Upload, Files, XCircle, ChevronLeft, ChevronRight, Layers
+  Upload, Files, XCircle, ChevronLeft, ChevronRight, Layers, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
