@@ -666,6 +666,54 @@ const EntradaNota = () => {
   };
 
   // ========== STEP 5: CONFIRM ==========
+  // Auto-creates a product from XML data when no match exists. Returns the new product ID.
+  const autoCreateProductFromXml = async (xmlProduct: NFeProduct): Promise<string | null> => {
+    if (!companyId) return null;
+    const ean = (xmlProduct.ean || "").trim();
+    const sku = (xmlProduct.code || `NF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`).trim();
+    const qty = Math.floor(xmlProduct.quantity);
+
+    // Double-check: maybe product exists with same EAN/SKU in this company (race-safe)
+    if (ean) {
+      const { data: byEan } = await supabase
+        .from("products")
+        .select("id")
+        .eq("company_id", companyId)
+        .eq("barcode", ean)
+        .maybeSingle();
+      if (byEan?.id) return byEan.id;
+    }
+    const { data: bySku } = await supabase
+      .from("products")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("sku", sku)
+      .maybeSingle();
+    if (bySku?.id) return bySku.id;
+
+    const { data: created, error: createErr } = await supabase
+      .from("products")
+      .insert({
+        name: xmlProduct.description.slice(0, 200),
+        sku,
+        barcode: ean || null,
+        cost: xmlProduct.unitValue || 0,
+        price: 0,
+        stock_physical: qty,
+        min_stock: 0,
+        active: true,
+        company_id: companyId,
+      })
+      .select("id")
+      .single();
+
+    if (createErr) {
+      console.error("Erro ao criar produto auto:", createErr);
+      return null;
+    }
+    return created?.id ?? null;
+  };
+
   const confirmarEntrada = async () => {
     if (isBatchMode) {
       await confirmarEntradaLote();
@@ -718,6 +766,11 @@ const EntradaNota = () => {
       for (const match of itemsToImport) {
         let productId = match.matchedProductId;
 
+        // Auto-create product if no match found and stock update is enabled
+        if (!productId && autoUpdateStock) {
+          productId = await autoCreateProductFromXml(match.xmlProduct);
+        }
+
         await supabase.from("invoice_items").insert({
           invoice_id: invoice.id,
           product_id: productId,
@@ -730,12 +783,13 @@ const EntradaNota = () => {
           quantity: match.xmlProduct.quantity,
           unit_value: match.xmlProduct.unitValue,
           total_value: match.xmlProduct.totalValue,
-          match_type: productId ? match.matchType : "none",
+          match_type: productId ? (match.matchedProductId ? match.matchType : "auto_created") : "none",
           match_confidence: match.confidence,
           stock_updated: !!productId && autoUpdateStock,
         });
 
-        if (productId && autoUpdateStock) {
+        // Only ADD stock if product already existed (auto-created already has the qty as initial stock)
+        if (productId && match.matchedProductId && autoUpdateStock) {
           const { data: current } = await supabase
             .from("products")
             .select("stock_physical, cost")
@@ -815,7 +869,13 @@ const EntradaNota = () => {
         if (invError) continue;
 
         for (const match of nf.matches) {
-          const productId = match.matchedProductId;
+          let productId = match.matchedProductId;
+          const wasMatched = !!productId;
+
+          // Auto-create product if no match found
+          if (!productId && autoUpdateStock) {
+            productId = await autoCreateProductFromXml(match.xmlProduct);
+          }
 
           await supabase.from("invoice_items").insert({
             invoice_id: invoice.id,
@@ -829,12 +889,13 @@ const EntradaNota = () => {
             quantity: match.xmlProduct.quantity,
             unit_value: match.xmlProduct.unitValue,
             total_value: match.xmlProduct.totalValue,
-            match_type: productId ? match.matchType : "none",
+            match_type: productId ? (wasMatched ? match.matchType : "auto_created") : "none",
             match_confidence: match.confidence,
             stock_updated: !!productId && autoUpdateStock,
           });
 
-          if (productId && autoUpdateStock) {
+          // Only ADD to existing stock; auto-created already has the qty as initial stock
+          if (productId && wasMatched && autoUpdateStock) {
             const { data: current } = await supabase
               .from("products")
               .select("stock_physical, cost")
