@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword } from "@/hooks/useCompanyData";
-import { useIsAdmin } from "@/hooks/useAdminData";
+import { useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause } from "lucide-react";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause, Copy, Sparkles } from "lucide-react";
 import { Tooltip as ShadTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import PendingUsersTab from "@/components/PendingUsersTab";
 import SystemResetCard from "@/components/SystemResetCard";
@@ -41,6 +41,8 @@ export default function MasterAdmin() {
   const adminUpdateCompany = useAdminUpdateCompany();
   const adminChangePlan = useAdminChangeCompanyPlan();
   const adminResetPassword = useAdminResetPassword();
+  const setTempPassword = useSetTemporaryPassword();
+  const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [planForm, setPlanForm] = useState<Partial<Plan>>({});
@@ -391,6 +393,23 @@ export default function MasterAdmin() {
                                 }}
                               >
                                 <KeyRound className="h-3 w-3 mr-1" /> Senha
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                title="Gerar nova senha temporária e exibir na tela"
+                                disabled={setTempPassword.isPending}
+                                onClick={async () => {
+                                  if (!confirm(`Gerar nova senha temporária para ${c.email || "o dono da empresa"}?\n\nA senha atual será invalidada imediatamente.`)) return;
+                                  try {
+                                    const result = await setTempPassword.mutateAsync(c.owner_id);
+                                    setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+                                  } catch (e: any) {
+                                    toast.error(e.message);
+                                  }
+                                }}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" /> Nova senha
                               </Button>
                             </div>
                           </TableCell>
@@ -786,6 +805,39 @@ export default function MasterAdmin() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setGestaoDialog(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!tempPasswordInfo} onOpenChange={(open) => !open && setTempPasswordInfo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" /> Senha temporária gerada
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Copie e envie por canal seguro para <strong className="text-foreground">{tempPasswordInfo?.email}</strong>. Por segurança, ela <strong>não será exibida novamente</strong>. Oriente o usuário a alterá-la após o login.
+            </p>
+            <div className="flex gap-2">
+              <Input readOnly value={tempPasswordInfo?.password ?? ""} className="font-mono" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={async () => {
+                  if (!tempPasswordInfo) return;
+                  await navigator.clipboard.writeText(tempPasswordInfo.password);
+                  toast.success("Senha copiada");
+                }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTempPasswordInfo(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
