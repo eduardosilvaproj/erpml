@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Eye, Search, Download, FileText } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Eye, Search, Download, FileText, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { useToast } from "@/hooks/use-toast";
 
 type Period = "all" | "today" | "7d" | "30d";
 
@@ -197,7 +198,12 @@ export function EntradaNotaHistorico() {
 }
 
 function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClose: () => void }) {
-  const { data, isLoading } = useQuery({
+  const companyId = useCompanyId();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [reprocessing, setReprocessing] = useState(false);
+
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["entrada-nota-detalhe", invoiceId],
     enabled: !!invoiceId,
     queryFn: async () => {
@@ -210,6 +216,82 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       return inv;
     },
   });
+
+  const pendingItems = ((data?.invoice_items as any[]) || []).filter(
+    (it: any) => !it.product_id || !it.stock_updated
+  );
+
+  const reprocessar = async () => {
+    if (!data || !companyId) return;
+    setReprocessing(true);
+    let created = 0, updated = 0, skipped = 0;
+    try {
+      for (const it of pendingItems) {
+        const ean = (it.xml_ean || "").trim();
+        const sku = (it.xml_code || `NF-${data.number}-${Math.random().toString(36).slice(2, 6)}`).trim();
+        const qty = Math.floor(Number(it.quantity) || 0);
+        if (qty <= 0) { skipped++; continue; }
+
+        let productId: string | null = it.product_id || null;
+        let isNew = false;
+
+        if (!productId && ean) {
+          const { data: byEan } = await supabase
+            .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
+          if (byEan?.id) productId = byEan.id;
+        }
+        if (!productId) {
+          const { data: bySku } = await supabase
+            .from("products").select("id").eq("company_id", companyId).eq("sku", sku).maybeSingle();
+          if (bySku?.id) productId = bySku.id;
+        }
+        if (!productId) {
+          const { data: createdProd, error: ce } = await supabase
+            .from("products")
+            .insert({
+              name: (it.xml_description || "Produto sem nome").slice(0, 200),
+              sku, barcode: ean || null,
+              cost: Number(it.unit_value) || 0,
+              price: 0, stock_physical: qty, min_stock: 0, active: true,
+              company_id: companyId,
+            })
+            .select("id").single();
+          if (ce || !createdProd) { skipped++; continue; }
+          productId = createdProd.id;
+          isNew = true;
+          created++;
+        } else if (!it.stock_updated) {
+          const { data: prod } = await supabase
+            .from("products").select("stock_physical").eq("id", productId).single();
+          const current = Number(prod?.stock_physical || 0);
+          await supabase.from("products").update({ stock_physical: current + qty }).eq("id", productId);
+          updated++;
+        }
+
+        await supabase
+          .from("invoice_items")
+          .update({
+            product_id: productId,
+            stock_updated: true,
+            match_type: isNew ? "auto_created" : (it.match_type === "none" ? "retro_match" : it.match_type),
+          })
+          .eq("id", it.id);
+      }
+
+      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id);
+      toast({
+        title: "Reprocessamento concluído",
+        description: `${created} criado(s), ${updated} atualizado(s)${skipped ? `, ${skipped} ignorado(s)` : ""}.`,
+      });
+      await refetch();
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["entrada-nota-historico"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao reprocessar", description: e.message, variant: "destructive" });
+    } finally {
+      setReprocessing(false);
+    }
+  };
 
   const exportPdf = () => {
     if (!data) return;
@@ -311,8 +393,24 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
             </div>
           </div>
         )}
-        <DialogFooter>
+        {!isLoading && data && pendingItems.length > 0 && (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+            ⚠️ {pendingItems.length} item(ns) desta nota ainda não estão no estoque. Clique em "Reprocessar estoque" para criar/atualizar os produtos automaticamente.
+          </div>
+        )}
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>Fechar</Button>
+          {pendingItems.length > 0 && (
+            <Button
+              variant="secondary"
+              onClick={reprocessar}
+              disabled={reprocessing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${reprocessing ? "animate-spin" : ""}`} />
+              {reprocessing ? "Reprocessando..." : "Reprocessar estoque"}
+            </Button>
+          )}
           <Button onClick={exportPdf} disabled={!data} className="gap-2">
             <Download className="h-4 w-4" /> Exportar PDF
           </Button>
