@@ -84,7 +84,8 @@ const Conferencia = () => {
   });
   const [gtinSearch, setGtinSearch] = useState("");
   const [gtinSelectMode, setGtinSelectMode] = useState<"scan" | "list">("scan");
-  const gtinScanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const gtinScanInputRef = useRef<HTMLInputElement>(null);
+  const [gtinScanValue, setGtinScanValue] = useState("");
   const [gtinScanLoading, setGtinScanLoading] = useState(false);
   const [gtinScanError, setGtinScanError] = useState<string | null>(null);
   const [gtinScanFlash, setGtinScanFlash] = useState<"success" | "error" | null>(null);
