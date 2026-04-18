@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
   Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
-  ArrowRight, ArrowLeft, Download, RotateCcw, History, X
+  ArrowRight, ArrowLeft, Download, RotateCcw, History, X, Save
 } from "lucide-react";
 
 const STORAGE_KEY = "conferencia-session-v1";
