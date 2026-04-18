@@ -665,7 +665,7 @@ const Conferencia = () => {
             barcode: prod?.barcode ?? it.ean ?? null,
             imageUrl: prod?.image_url ?? null,
             scannedQty: Number(it.scanned_quantity) || 0,
-            systemQty: prod?.stock_physical ?? Number(it.expected_quantity) || 0,
+            systemQty: prod?.stock_physical ?? (Number(it.expected_quantity) || 0),
             lastBipAt: new Date(it.updated_at ?? it.created_at ?? Date.now()),
             boxInfo: it.detalhes_caixa ?? undefined,
           };
