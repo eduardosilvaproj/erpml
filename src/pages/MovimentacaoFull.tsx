@@ -25,10 +25,12 @@ import {
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
 import { useKits, type Kit } from "@/hooks/useKitData";
+import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada } from "@/hooks/useOrdensFull";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ClipboardList, X } from "lucide-react";
 
 interface SuccessInfo {
   orderNumber: string;
@@ -64,6 +66,10 @@ const MovimentacaoFull = () => {
   const updateStatus = useUpdateTransferStatus();
   const companyId = useCompanyId();
   const recorder = useFullRecorder();
+  const { data: envioPendente } = useEnvioPendente();
+  const limparPendente = useLimparEnvioPendente();
+  const marcarEnviada = useMarcarOrdemEnviada();
+  const [loadedOrdemIds, setLoadedOrdemIds] = useState<string[]>([]);
 
   // Recording UI state
   const [showAskRecord, setShowAskRecord] = useState(false);
