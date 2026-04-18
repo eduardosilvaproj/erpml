@@ -797,7 +797,56 @@ const Conferencia = () => {
     }
   };
 
-  const gtinTotalUnits = (parseInt(gtinModal.unitsPerBox) || 0) * (parseInt(gtinModal.boxQty) || 0);
+  // Quick register: opens the mini modal (also closes any source modal that triggered it)
+  const openQuickRegister = useCallback((code: string) => {
+    setUnregisteredModal({ open: false, code: "" });
+    setGtinModal((prev) => ({ ...prev, open: false }));
+    setQuickRegister({ open: true, code, name: "", sku: "", price: "", stock: "", saving: false });
+  }, []);
+
+  const handleQuickRegisterSave = async () => {
+    const name = quickRegister.name.trim();
+    if (!name) {
+      toast({ title: "Nome obrigatório", description: "Informe o nome do produto.", variant: "destructive" });
+      return;
+    }
+    if (!companyId) {
+      toast({ title: "Empresa não identificada", variant: "destructive" });
+      return;
+    }
+    setQuickRegister((q) => ({ ...q, saving: true }));
+    try {
+      const sku = quickRegister.sku.trim() || `SKU-${Date.now().toString(36).toUpperCase()}`;
+      const price = parseFloat(quickRegister.price.replace(",", ".")) || 0;
+      const stock = parseInt(quickRegister.stock) || 0;
+      const { data, error } = await supabase
+        .from("products")
+        .insert({
+          company_id: companyId,
+          name,
+          sku,
+          barcode: quickRegister.code,
+          price,
+          cost: 0,
+          stock_physical: stock,
+          stock_full: 0,
+          min_stock: 0,
+          active: true,
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      await refetchProducts();
+      const newProduct = data as any;
+      setQuickRegister({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
+      toast({ title: "✅ Produto cadastrado e adicionado à conferência!" });
+      // Open quantity popup so the user can confirm how many units
+      setTimeout(() => openConfirmPopup(newProduct), 100);
+    } catch (err: any) {
+      toast({ title: "Erro ao cadastrar produto", description: err.message, variant: "destructive" });
+      setQuickRegister((q) => ({ ...q, saving: false }));
+    }
+  };
   const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
