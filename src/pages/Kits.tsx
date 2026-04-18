@@ -103,6 +103,30 @@ const Kits = () => {
     setMoveQty(1);
   };
 
+  const generateLocalSuggestions = (): KitFormData[] => {
+    const byCategory: Record<string, typeof products> = {};
+    products.forEach((p) => {
+      const cat = p.categories?.name || "Geral";
+      if (!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(p);
+    });
+    const suggestions: KitFormData[] = [];
+    Object.entries(byCategory).slice(0, 3).forEach(([cat, prods]) => {
+      if (prods.length >= 2) {
+        const items = prods.slice(0, 3);
+        const totalPrice = items.reduce((sum, p) => sum + Number(p.price || 0), 0);
+        suggestions.push({
+          name: `Kit ${cat}`,
+          sku: `KIT-${cat.substring(0, 4).toUpperCase()}-${Date.now().toString(36).slice(-4)}`,
+          description: `Combinação de produtos da categoria ${cat}`,
+          price: Math.round(totalPrice * 0.9 * 100) / 100,
+          items: items.map((p) => ({ product_id: p.id, quantity: 1 })),
+        });
+      }
+    });
+    return suggestions;
+  };
+
   const handleAiSuggest = async () => {
     if (products.length === 0) {
       toast({ title: "Cadastre produtos antes de solicitar sugestões de IA.", variant: "destructive" });
@@ -125,16 +149,42 @@ const Kits = () => {
 
       if (error) throw error;
 
-      const text = data?.analysis || data?.result || "";
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const text: string = data?.content || data?.analysis || data?.result || "";
+      const cleaned = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/);
+
+      let suggestions: KitFormData[] = [];
       if (jsonMatch) {
-        const suggestions = JSON.parse(jsonMatch[0]) as KitFormData[];
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          suggestions = (Array.isArray(parsed) ? parsed : []).filter(
+            (s: any) => s?.name && Array.isArray(s?.items) && s.items.length > 0
+          );
+        } catch (e) {
+          console.error("Falha ao parsear JSON da IA:", e, cleaned);
+        }
+      }
+
+      if (suggestions.length > 0) {
         setAiSuggestions(suggestions);
       } else {
-        toast({ title: "IA não retornou sugestões válidas. Tente novamente.", variant: "destructive" });
+        const local = generateLocalSuggestions();
+        if (local.length > 0) {
+          setAiSuggestions(local);
+          toast({ title: "Sugestões geradas localmente", description: "IA indisponível — usando agrupamento por categoria." });
+        } else {
+          toast({ title: "IA não retornou sugestões válidas. Tente novamente.", variant: "destructive" });
+        }
       }
     } catch (err: any) {
-      toast({ title: "Erro na análise de IA", description: err.message, variant: "destructive" });
+      console.error("Erro handleAiSuggest:", err);
+      const local = generateLocalSuggestions();
+      if (local.length > 0) {
+        setAiSuggestions(local);
+        toast({ title: "Sugestões geradas localmente", description: "IA indisponível — usando agrupamento por categoria." });
+      } else {
+        toast({ title: "Erro na análise de IA", description: err.message, variant: "destructive" });
+      }
     } finally {
       setAiLoading(false);
     }
