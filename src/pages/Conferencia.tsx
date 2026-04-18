@@ -454,13 +454,13 @@ const Conferencia = () => {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
+                  <div className={`relative flex-1 transition-all rounded-xl ${gtinModal.open ? "ring-2 ring-blue-500/50" : ""}`}>
                     <BarcodeScannerInput
                       ref={scanInputRef}
                       value={scanBuffer}
                       onChange={(v) => setScanBuffer(v)}
                       onScan={(code) => { handleScan(code); setScanBuffer(""); }}
-                      placeholder="Bipe ou digite o código de barras..."
+                      placeholder={gtinModal.open ? "Aguardando confirmação da caixa..." : "Bipe o próximo código..."}
                       inputClassName="text-lg h-14 font-mono"
                       icon={<ScanBarcode className="h-5 w-5" />}
                       autoFocus
