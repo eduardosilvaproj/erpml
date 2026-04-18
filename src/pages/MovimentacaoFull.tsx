@@ -24,6 +24,15 @@ import {
 import { useKits, type Kit } from "@/hooks/useKitData";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
+interface SuccessInfo {
+  orderNumber: string;
+  durationSec: number;
+  videoUrl: string | null;
+  pdfBlobUrl: string;
+}
 
 interface BoxConfig {
   productId: string;
