@@ -794,7 +794,7 @@ const EntradaNota = () => {
         if (productId && match.matchedProductId && autoUpdateStock) {
           const { data: current } = await supabase
             .from("products")
-            .select("stock_physical, cost")
+            .select("stock_physical, cost, price")
             .eq("id", productId)
             .single();
 
@@ -803,26 +803,25 @@ const EntradaNota = () => {
             const newStock = current.stock_physical + qty;
             const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
             const currentCost = Number(current.cost) || 0;
+            const currentPrice = Number(current.price) || 0;
+
+            const update: Record<string, any> = { stock_physical: newStock };
 
             if (autoUpdateCost) {
               const totalOldCost = current.stock_physical * currentCost;
               const totalNewCost = match.xmlProduct.quantity * xmlUnit;
               const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
-              await supabase.from("products").update({
-                stock_physical: newStock,
-                cost: Math.round(avgCost * 100) / 100,
-              }).eq("id", productId);
+              update.cost = Math.round(avgCost * 100) / 100;
             } else if (currentCost === 0 && xmlUnit > 0) {
-              // Backfill cost when product has no cost yet to avoid zero-value items
-              await supabase.from("products").update({
-                stock_physical: newStock,
-                cost: Math.round(xmlUnit * 100) / 100,
-              }).eq("id", productId);
-            } else {
-              await supabase.from("products").update({
-                stock_physical: newStock,
-              }).eq("id", productId);
+              update.cost = Math.round(xmlUnit * 100) / 100;
             }
+
+            // Backfill price (1.5x markup) when product price is zero
+            if (currentPrice === 0 && xmlUnit > 0) {
+              update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
+            }
+
+            await supabase.from("products").update(update).eq("id", productId);
           }
         }
       }
