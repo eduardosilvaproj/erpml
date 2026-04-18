@@ -540,14 +540,27 @@ const Kits = () => {
             </DialogTitle>
           </DialogHeader>
           {aiSuggestions.length === 0 ? (
-            <div className="text-center py-8">
-              <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center py-8 space-y-4">
+              <Sparkles className="h-10 w-10 mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">
                 A IA analisará seus produtos e sugerirá kits que façam sentido comercial.
               </p>
+              <div className="flex items-center justify-center gap-2">
+                <label className="text-sm text-muted-foreground">Quantidade de kits:</label>
+                <Select value={String(aiKitCount)} onValueChange={(v) => setAiKitCount(Number(v))} disabled={aiLoading}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleAiSuggest} disabled={aiLoading}>
                 {aiLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                {aiLoading ? "Analisando..." : "Gerar Sugestões"}
+                {aiLoading ? "Analisando..." : `Gerar ${aiKitCount} Sugest${aiKitCount > 1 ? "ões" : "ão"}`}
               </Button>
             </div>
           ) : (
