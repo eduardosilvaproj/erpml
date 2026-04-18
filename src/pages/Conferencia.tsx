@@ -78,11 +78,16 @@ const Conferencia = () => {
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
-  // GTIN CX modal
+  // GTIN CX modal (unknown box code → user must select product)
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
   const [gtinSearch, setGtinSearch] = useState("");
+
+  // GTIN CX FOUND modal (already linked product → just confirm box qty)
+  const [gtinFoundModal, setGtinFoundModal] = useState<{
+    open: boolean; product: any | null; code: string; unitsPerBox: number; boxQty: string;
+  }>({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
 
   // Confirm-qty-on-scan settings
   const [confirmOnScan, setConfirmOnScan] = useState<boolean>(() => {
