@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { GravacoesFullTab } from "@/components/GravacoesFullTab";
+import { OrdensFullTab } from "@/components/OrdensFullTab";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
@@ -641,6 +642,7 @@ const MovimentacaoFull = () => {
       <Tabs defaultValue="envio" className="space-y-6">
         <TabsList>
           <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
+          <TabsTrigger value="ordens">📋 Ordens</TabsTrigger>
           <TabsTrigger value="gravacoes">📹 Gravações</TabsTrigger>
         </TabsList>
 
@@ -1122,6 +1124,10 @@ const MovimentacaoFull = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="ordens" className="mt-0">
+          <OrdensFullTab />
         </TabsContent>
 
         <TabsContent value="gravacoes" className="mt-0">
