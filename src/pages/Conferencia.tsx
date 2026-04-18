@@ -1275,12 +1275,12 @@ const Conferencia = () => {
         }
       }}>
         <DialogContent
-          className="p-0 gap-0 overflow-hidden border border-blue-500/40 rounded-xl bg-[hsl(var(--card))] flex flex-col w-[calc(100%-2rem)] max-w-[460px] max-h-[85vh] sm:max-h-[85vh]"
+          className="p-0 gap-0 overflow-hidden border border-blue-500/40 rounded-xl bg-[hsl(var(--card))] flex flex-col w-[calc(100%-1.5rem)] max-w-[420px] max-h-[88vh]"
         >
           {/* ============ HEADER ============ */}
-          <DialogHeader className="flex-shrink-0 p-4 border-b border-border/40 space-y-2">
+          <DialogHeader className="flex-shrink-0 p-3 border-b border-border/40 space-y-1.5">
             <div className="flex items-start justify-between gap-2">
-              <DialogTitle className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
+              <DialogTitle className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
                 <Package className="h-5 w-5 text-blue-400 shrink-0" />
                 <span className="truncate">📦 Caixa detectada</span>
               </DialogTitle>
