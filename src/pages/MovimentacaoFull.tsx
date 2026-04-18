@@ -69,6 +69,7 @@ const MovimentacaoFull = () => {
   const [recordingMode, setRecordingMode] = useState<"separacao" | "despacho">("separacao");
   const [despachoOrderId, setDespachoOrderId] = useState<{ id: string; number: string } | null>(null);
   const [askedOnce, setAskedOnce] = useState(false);
+  const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
 
   useEffect(() => {
     scanInputRef.current?.focus();
@@ -349,6 +350,40 @@ const MovimentacaoFull = () => {
     toast({ title: `📦 ${boxCount} cx × ${unitsPerBox} un = ${totalUnits} un aplicado!` });
   };
 
+  const generatePdf = (orderNumber: string, hasRecording: boolean): string => {
+    const doc = new jsPDF();
+    const now = new Date();
+    doc.setFontSize(16);
+    doc.text("Ordem de Envio FULL", 14, 18);
+    doc.setFontSize(10);
+    doc.text(`Nº da ordem: ${orderNumber}`, 14, 26);
+    doc.text(`Data: ${now.toLocaleDateString("pt-BR")} ${now.toLocaleTimeString("pt-BR")}`, 14, 32);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Nome", "SKU", "EAN", "Qtd"]],
+      body: items.map((i) => [i.productName, i.productSku, i.barcode || "-", String(i.quantity)]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [16, 185, 129] },
+    });
+
+    const finalY = (doc as any).lastAutoTable?.finalY || 40;
+    doc.setFontSize(10);
+    doc.text(`Total de itens: ${totalQty}`, 14, finalY + 10);
+    if (totalBoxes > 0) doc.text(`Total de caixas: ${totalBoxes}`, 14, finalY + 16);
+    doc.setFontSize(8);
+    doc.text(`Gravação disponível: ${hasRecording ? "Sim" : "Não"}`, 14, finalY + 24);
+
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    // Auto-download
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `OrdemFULL_${orderNumber}.pdf`;
+    a.click();
+    return url;
+  };
+
   const handleCreateOrder = async () => {
     if (items.length === 0) return;
     const boxNotes = Object.values(boxConfigs).map((bc) => {
@@ -359,11 +394,33 @@ const MovimentacaoFull = () => {
     const allNotes = [kitNotes, ...boxNotes].filter(Boolean).join(" | ");
     const order = await createOrder.mutateAsync({ items, notes: allNotes || undefined });
 
+    const wasRecording = recorder.status === "recording" || recorder.status === "paused";
+    const durationSec = recorder.seconds;
+    let videoUrl: string | null = null;
+
     // Sobe gravação da separação se ativa
-    if (order && (recorder.status === "recording" || recorder.status === "paused")) {
-      await stopAndUpload(order.id, order.order_number, "separacao");
+    if (order && wasRecording) {
+      const blob = await recorder.stop();
+      if (blob && blob.size > 0 && companyId) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          try {
+            const res = await recorder.uploadAndSave({
+              blob, companyId, userId: user.id, envioId: order.id,
+              orderNumber: order.order_number, tipo: "separacao", duracaoSegundos: durationSec,
+            });
+            videoUrl = res.url;
+          } catch (e: any) {
+            toast({ title: "Erro ao salvar gravação", description: e.message, variant: "destructive" });
+          }
+        }
+      }
+      recorder.reset();
     }
 
+    const pdfBlobUrl = generatePdf(order.order_number, !!videoUrl);
+
+    setSuccessInfo({ orderNumber: order.order_number, durationSec, videoUrl, pdfBlobUrl });
     setItems([]);
     setUsedKits([]);
     setBoxConfigs({});
@@ -501,6 +558,39 @@ const MovimentacaoFull = () => {
             <Button onClick={startRecording} disabled={!selectedCamera}>
               <Circle className="mr-2 h-4 w-4 fill-red-500 text-red-500" /> Iniciar gravação
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Sucesso ao gerar ordem */}
+      <Dialog open={!!successInfo} onOpenChange={(o) => !o && setSuccessInfo(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>✅ Ordem gerada com sucesso!</DialogTitle>
+            <DialogDescription>
+              Nº da ordem: <span className="font-mono font-semibold">{successInfo?.orderNumber}</span>
+              {successInfo?.videoUrl && (
+                <span className="block mt-1">📹 Gravação salva: {formatDuration(successInfo.durationSec)}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 flex-wrap">
+            {successInfo?.pdfBlobUrl && (
+              <Button variant="outline" onClick={() => {
+                const a = document.createElement("a");
+                a.href = successInfo.pdfBlobUrl;
+                a.download = `OrdemFULL_${successInfo.orderNumber}.pdf`;
+                a.click();
+              }}>
+                📄 Baixar PDF
+              </Button>
+            )}
+            {successInfo?.videoUrl && (
+              <Button variant="outline" onClick={() => window.open(successInfo.videoUrl!, "_blank")}>
+                ▶️ Ver gravação
+              </Button>
+            )}
+            <Button onClick={() => setSuccessInfo(null)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -837,6 +927,15 @@ const MovimentacaoFull = () => {
             </div>
 
             <div className="space-y-2 pt-2">
+              <Button
+                variant="outline"
+                className="w-full border-red-500/40 text-red-500 hover:bg-red-500/10"
+                onClick={() => { setRecordingMode("separacao"); openCameraPicker(); }}
+                disabled={isRecording}
+              >
+                <Video className="mr-2 h-4 w-4" />
+                {isRecording ? "Gravando..." : "📹 Iniciar gravação"}
+              </Button>
               <Button
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={handleCreateOrder}
