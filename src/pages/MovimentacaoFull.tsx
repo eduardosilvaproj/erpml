@@ -890,17 +890,32 @@ const MovimentacaoFull = () => {
                         <TableCell className="text-center font-medium">{order.total_items}</TableCell>
                         <TableCell>{statusBadge(order.status)}</TableCell>
                         <TableCell>
-                          {nextStep && (
+                          <div className="flex gap-1">
+                            {nextStep && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
+                                disabled={updateStatus.isPending}
+                              >
+                                <ChevronRight className="mr-1 h-3 w-3" />
+                                {nextStep.label}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
-                              disabled={updateStatus.isPending}
+                              variant="ghost"
+                              title="Gravar despacho"
+                              disabled={isRecording}
+                              onClick={() => {
+                                setRecordingMode("despacho");
+                                setDespachoOrderId({ id: order.id, number: order.order_number });
+                                setShowAskRecord(true);
+                              }}
                             >
-                              <ChevronRight className="mr-1 h-3 w-3" />
-                              {nextStep.label}
+                              <Video className="h-3 w-3 text-red-500" />
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
