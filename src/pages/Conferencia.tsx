@@ -1165,41 +1165,55 @@ const Conferencia = () => {
           </RadioGroup>
 
           {gtinModal.selectedProductId && (
-            <div className="space-y-4 pt-2">
-              <Separator />
+            <div className="space-y-4 pt-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground block mb-1">Unidades por caixa</label>
+                  <Label className="text-xs font-medium block mb-1.5">Unidades por caixa</Label>
                   <Input
                     type="number"
                     min="1"
                     value={gtinModal.unitsPerBox}
                     onChange={(e) => setGtinModal((prev) => ({ ...prev, unitsPerBox: e.target.value }))}
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
+                        e.preventDefault(); handleGtinConfirm();
+                      }
+                    }}
                     placeholder="Ex: 12"
+                    className="h-12 text-lg font-semibold text-center"
                     autoFocus
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground block mb-1">Qtd de caixas</label>
+                  <Label className="text-xs font-medium block mb-1.5">Qtd de caixas</Label>
                   <Input
                     type="number"
                     min="1"
                     value={gtinModal.boxQty}
                     onChange={(e) => setGtinModal((prev) => ({ ...prev, boxQty: e.target.value }))}
+                    onFocus={(e) => e.target.select()}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
+                        e.preventDefault(); handleGtinConfirm();
+                      }
+                    }}
                     placeholder="1"
+                    className="h-12 text-lg font-semibold text-center"
                   />
                 </div>
               </div>
 
               {gtinTotalUnits > 0 && (
-                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 text-center">
+                <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-3 text-center">
                   <p className="text-sm text-muted-foreground">
-                    Total: <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> × <span className="font-bold text-foreground">{gtinModal.boxQty}</span> = <span className="font-bold text-primary text-lg">{gtinTotalUnits} unidades</span>
+                    <span className="font-bold text-foreground">{gtinModal.boxQty}</span> cx × <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> un =
                   </p>
+                  <p className="font-bold text-blue-400 text-2xl mt-0.5">{gtinTotalUnits} unidades</p>
                 </div>
               )}
 
-              <div className="flex items-start gap-2 rounded-lg bg-blue-500/5 border border-blue-500/20 p-3">
+              <div className="flex items-start gap-2">
                 <Checkbox
                   id="save-gtin"
                   checked={gtinModal.saveGtin}
@@ -1207,9 +1221,9 @@ const Conferencia = () => {
                   className="mt-0.5"
                 />
                 <label htmlFor="save-gtin" className="text-sm cursor-pointer">
-                  <span className="font-medium">Salvar este código como GTIN CX do produto {selectedGtinProduct?.name}</span>
+                  <span className="font-medium">Salvar GTIN CX neste produto</span>
                   <br />
-                  <span className="text-xs text-muted-foreground">Nas próximas entradas será reconhecido automaticamente</span>
+                  <span className="text-xs text-muted-foreground">Nas próximas vezes reconhece automaticamente</span>
                 </label>
               </div>
             </div>
@@ -1229,7 +1243,7 @@ const Conferencia = () => {
               onClick={handleGtinConfirm}
               disabled={!gtinModal.selectedProductId || gtinTotalUnits <= 0}
             >
-              Confirmar
+              ✓ Confirmar {gtinTotalUnits > 0 ? `${gtinTotalUnits} unidades` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
