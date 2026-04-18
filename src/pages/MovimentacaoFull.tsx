@@ -1064,6 +1064,12 @@ const MovimentacaoFull = () => {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="gravacoes" className="mt-0">
+          <GravacoesFullTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
