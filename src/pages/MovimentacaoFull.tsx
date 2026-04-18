@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowRight, ScanBarcode, Package, Truck, Loader2, Plus, Minus,
   Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes, PackageOpen,
-  Video, Square, Pause, Play, Circle
+  Video, Square, Pause, Play, Circle, Maximize2, Minimize2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
