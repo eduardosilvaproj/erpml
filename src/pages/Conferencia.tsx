@@ -1176,7 +1176,12 @@ const Conferencia = () => {
                 const code = gtinFoundModal.code;
 
                 const doConfirm = async () => {
-                  if (totalNum <= 0 || !product) return;
+                  console.log('[Conferencia] 📦 Confirmando caixa:', { product: product?.name, productId: product?.id, unitsNum, boxesNum, totalNum });
+                  if (totalNum <= 0 || !product) {
+                    console.warn('[Conferencia] ⚠️ Caixa não confirmada — total ou produto inválido', { totalNum, hasProduct: !!product });
+                    toast({ title: "Informe unidades por caixa e quantidade", variant: "destructive" });
+                    return;
+                  }
                   if (unitsNum > 0 && unitsNum !== product.box_quantity) {
                     try {
                       await supabase.from("products").update({ box_quantity: unitsNum }).eq("id", product.id);
