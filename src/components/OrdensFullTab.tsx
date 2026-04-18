@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2 } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles } from "lucide-react";
+import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -41,6 +42,7 @@ export const OrdensFullTab = () => {
   const updateStatus = useUpdateOrdemStatus();
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [iaOpen, setIaOpen] = useState(false);
   const [executeOrdemId, setExecuteOrdemId] = useState<string | null>(null);
 
   // Form state
@@ -196,9 +198,15 @@ export const OrdensFullTab = () => {
             <ClipboardList className="h-4 w-4" /> Ordens de Envio FULL
           </CardTitle>
           {canManageOrders && (
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Nova ordem
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setIaOpen(true)}
+                className="border-purple-500/40 bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20">
+                <Sparkles className="h-4 w-4 mr-1 text-purple-400" /> Sugestão IA
+              </Button>
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Nova ordem
+              </Button>
+            </div>
           )}
         </CardHeader>
         <CardContent>
@@ -385,6 +393,20 @@ export const OrdensFullTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Sugestão IA */}
+      <SugestaoOrdemIADialog
+        open={iaOpen}
+        onOpenChange={setIaOpen}
+        onApply={(items: SugestaoItem[]) => {
+          setNovosItens(items.map((s) => ({
+            product_id: s.id, name: s.name, sku: s.sku, image_url: s.image_url,
+            stock_physical: s.stock_physical, qtd: s.qtd_sugerida,
+          })));
+          setDescricao(`Envio sugerido pela IA — ${new Date().toLocaleDateString("pt-BR")}`);
+          setCreateOpen(true);
+        }}
+      />
 
       {/* Execução / detalhes */}
       <OrdemSeparacaoDialog
