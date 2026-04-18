@@ -613,7 +613,7 @@ const Conferencia = () => {
           <ConferenceHistoryPanel
             onContinue={(c) => {
               setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
-              setMode(c.tipo === "inventario" ? "inventory" : "nf");
+              setMode(c.tipo === "inventario" ? "inventario" : "nf");
               setStep(2);
               toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
             }}
