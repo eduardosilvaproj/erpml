@@ -1104,6 +1104,7 @@ const Conferencia = () => {
         if (!open) {
           setGtinModal((prev) => ({ ...prev, open: false }));
           setGtinSearch("");
+          setGtinSelectMode("scan");
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
@@ -1117,54 +1118,146 @@ const Conferencia = () => {
               Código bipado: <span className="font-mono font-bold">{gtinModal.code}</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Bipe ou busque o produto que está dentro desta caixa:
+              Como deseja identificar o produto desta caixa?
             </p>
           </DialogHeader>
 
-          <Input
-            value={gtinSearch}
-            onChange={(e) => setGtinSearch(e.target.value)}
-            placeholder="🔍 Buscar produto por nome ou SKU..."
-            autoFocus
-          />
+          {/* Mode tabs */}
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted/30 border border-border/40">
+            <Button
+              type="button"
+              variant={gtinSelectMode === "scan" ? "default" : "ghost"}
+              className={gtinSelectMode === "scan" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}
+              onClick={() => {
+                setGtinSelectMode("scan");
+                setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+              }}
+            >
+              <ScanBarcode className="h-4 w-4" /> Bipar produto
+            </Button>
+            <Button
+              type="button"
+              variant={gtinSelectMode === "list" ? "default" : "ghost"}
+              className={gtinSelectMode === "list" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}
+              onClick={() => setGtinSelectMode("list")}
+            >
+              🔍 Buscar na lista
+            </Button>
+          </div>
 
-          <RadioGroup
-            value={gtinModal.selectedProductId}
-            onValueChange={(val) => setGtinModal((prev) => ({ ...prev, selectedProductId: val }))}
-            className="space-y-2 max-h-[200px] overflow-y-auto"
-          >
-            {allProducts
-              .filter((p) => {
-                if (!gtinSearch.trim()) return true;
-                const q = gtinSearch.toLowerCase();
-                return (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
-              })
-              .slice(0, 50)
-              .map((p) => (
-              <label
-                key={p.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  gtinModal.selectedProductId === p.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border/40 hover:border-primary/30"
-                }`}
+          {gtinSelectMode === "scan" && !gtinModal.selectedProductId && (
+            <div className="space-y-2 rounded-lg border-2 border-blue-500/50 bg-blue-500/5 p-4 animate-pulse-once">
+              <Label className="text-sm font-semibold flex items-center gap-2">
+                <ScanBarcode className="h-4 w-4 text-blue-400" /> Agora bipe o EAN/SKU do produto:
+              </Label>
+              <BarcodeScannerInput
+                ref={gtinScanInputRef}
+                value=""
+                onChange={() => {}}
+                onScan={(code) => {
+                  const trimmed = code.trim();
+                  if (!trimmed) return;
+                  const found = allProducts.find(
+                    (p) => p.barcode === trimmed || p.sku === trimmed
+                  );
+                  if (found) {
+                    const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
+                    setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
+                    playBeep(800, 100);
+                  } else {
+                    toast({
+                      title: "Produto não encontrado",
+                      description: `EAN/SKU "${trimmed}" não cadastrado. Tente novamente ou use a busca na lista.`,
+                      variant: "destructive",
+                    });
+                    playBeep(300, 200);
+                  }
+                }}
+                placeholder="Bipe o EAN do produto..."
+                inputClassName="h-12 font-mono"
+                icon={<ScanBarcode className="h-4 w-4" />}
+                autoFocus
+              />
+            </div>
+          )}
+
+          {gtinSelectMode === "list" && !gtinModal.selectedProductId && (
+            <>
+              <Input
+                value={gtinSearch}
+                onChange={(e) => setGtinSearch(e.target.value)}
+                placeholder="🔍 Buscar produto por nome ou SKU..."
+                autoFocus
+              />
+              <RadioGroup
+                value={gtinModal.selectedProductId}
+                onValueChange={(val) => {
+                  const p = allProducts.find((pp) => pp.id === val);
+                  const unitsPerBox = p?.box_quantity ? String(p.box_quantity) : "";
+                  setGtinModal((prev) => ({ ...prev, selectedProductId: val, unitsPerBox: prev.unitsPerBox || unitsPerBox }));
+                }}
+                className="space-y-2 max-h-[200px] overflow-y-auto"
               >
-                <RadioGroupItem value={p.id} />
-                {p.image_url ? (
-                  <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
+                {allProducts
+                  .filter((p) => {
+                    if (!gtinSearch.trim()) return true;
+                    const q = gtinSearch.toLowerCase();
+                    return (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
+                  })
+                  .slice(0, 50)
+                  .map((p) => (
+                  <label
+                    key={p.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      gtinModal.selectedProductId === p.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border/40 hover:border-primary/30"
+                    }`}
+                  >
+                    <RadioGroupItem value={p.id} />
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                        <Package className="h-4 w-4 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{p.name}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">Est: {p.stock_physical}</span>
+                  </label>
+                ))}
+              </RadioGroup>
+            </>
+          )}
+
+          {gtinModal.selectedProductId && (() => {
+            const sel = allProducts.find((p) => p.id === gtinModal.selectedProductId);
+            return (
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                {sel?.image_url ? (
+                  <img src={sel.image_url} alt={sel.name} className="h-12 w-12 rounded-lg object-cover" />
                 ) : (
-                  <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
-                    <Package className="h-4 w-4 text-muted-foreground/40" />
+                  <div className="h-12 w-12 rounded-lg bg-muted/30 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-muted-foreground/40" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{p.name}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                  <p className="font-medium truncate">{sel?.name}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{sel?.sku}</p>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">Est: {p.stock_physical}</span>
-              </label>
-            ))}
-          </RadioGroup>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setGtinModal((prev) => ({ ...prev, selectedProductId: "" }))}
+                >
+                  Trocar
+                </Button>
+              </div>
+            );
+          })()}
 
           {gtinModal.selectedProductId && (
             <div className="space-y-4 pt-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
