@@ -226,15 +226,33 @@ const Conferencia = () => {
     const normalized = trimmed.toUpperCase();
     const simProducts = (window as any).__simProducts || [];
 
-    const matches = (p: any) => {
+    const matchEan = (p: any) => {
       const barcode = (p.barcode || "").toString().trim().toUpperCase();
+      return barcode === normalized;
+    };
+    const matchGtinCx = (p: any) => {
+      const g = (p.gtin_cx || "").toString().trim().toUpperCase();
+      return !!g && g === normalized;
+    };
+    const matchSku = (p: any) => {
       const sku = (p.sku || "").toString().trim().toUpperCase();
       const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
-      return barcode === normalized || sku === normalized || skuMl === normalized;
+      return sku === normalized || skuMl === normalized;
     };
 
-    // 1. Match by barcode, SKU, or SKU ML
-    const product = allProducts.find(matches) || simProducts.find(matches);
+    // STEP 1 — EAN unitário
+    const porEan = allProducts.find(matchEan) || simProducts.find(matchEan);
+    // STEP 2 — GTIN CX (caixa vinculada)
+    const porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
+    // STEP 3 — SKU
+    const porSku = !porEan && !porGtinCx ? (allProducts.find(matchSku) || simProducts.find(matchSku)) : null;
+
+    console.log('[Conferencia] Código bipado:', trimmed);
+    console.log('[Conferencia] Busca EAN:', porEan);
+    console.log('[Conferencia] Busca GTIN CX:', porGtinCx);
+    console.log('[Conferencia] Busca SKU:', porSku);
+
+    const product = porEan || porSku;
 
     if (product) {
       if (confirmOnScan) {
@@ -249,28 +267,19 @@ const Conferencia = () => {
       return;
     }
 
-    // 2. Match by GTIN CX (box code)
-    const gtinProduct = allProducts.find((p) => p.gtin_cx && p.gtin_cx.toString().trim().toUpperCase() === normalized);
-    if (gtinProduct) {
-      const unitsPerBox = gtinProduct.box_quantity || 1;
-      addScannedUnits(gtinProduct, unitsPerBox, {
-        boxes: 1, unitsPerBox, totalUnits: unitsPerBox
+    if (porGtinCx) {
+      const unitsPerBox = porGtinCx.box_quantity || 1;
+      setGtinFoundModal({
+        open: true, product: porGtinCx, code: trimmed, unitsPerBox, boxQty: "1",
       });
-      setLastScan({ success: true, name: `📦 ${gtinProduct.name} (${unitsPerBox}un)`, code: trimmed });
       playBeep(800, 100);
-      scanInputRef.current?.flash(true);
-      setTimeout(() => scanInputRef.current?.focus(), 50);
       return;
     }
 
-    // 3. Unknown code — open GTIN CX modal
+    // STEP 4 — Não reconhecido
     setGtinModal({
-      open: true,
-      code: trimmed,
-      selectedProductId: "",
-      unitsPerBox: "",
-      boxQty: "1",
-      saveGtin: true,
+      open: true, code: trimmed, selectedProductId: "",
+      unitsPerBox: "", boxQty: "1", saveGtin: true,
     });
     playBeep(400, 200);
   }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup]);
