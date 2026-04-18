@@ -87,12 +87,35 @@ const MovimentacaoFull = () => {
 
   // Pergunta gravação ao bipar o primeiro item (apenas para separação)
   useEffect(() => {
-    if (items.length > 0 && !askedOnce && recorder.status === "idle") {
+    if (items.length > 0 && !askedOnce && recorder.status === "idle" && loadedOrdemIds.length === 0) {
       setRecordingMode("separacao");
       setAskedOnce(true);
       setShowAskRecord(true);
     }
-  }, [items.length, askedOnce, recorder.status]);
+  }, [items.length, askedOnce, recorder.status, loadedOrdemIds.length]);
+
+  // Carrega itens de envio_pendente automaticamente ao entrar na tela
+  useEffect(() => {
+    if (!envioPendente || envioPendente.length === 0) return;
+    // Apenas se a lista atual estiver vazia (evita sobrescrever uma sessão em andamento)
+    if (items.length > 0) return;
+    const loaded: TransferItem[] = envioPendente
+      .filter((ep: any) => ep.product)
+      .map((ep: any) => ({
+        productId: ep.product.id,
+        productName: ep.product.name,
+        productSku: ep.product.sku,
+        barcode: ep.product.barcode,
+        quantity: ep.quantidade,
+        stockPhysical: ep.product.stock_physical,
+      }));
+    if (loaded.length > 0) {
+      setItems(loaded);
+      const ordemIds = Array.from(new Set(envioPendente.map((ep: any) => ep.ordem_id))) as string[];
+      setLoadedOrdemIds(ordemIds);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envioPendente]);
 
   const openCameraPicker = async () => {
     setShowAskRecord(false);
@@ -430,12 +453,18 @@ const MovimentacaoFull = () => {
 
     const pdfBlobUrl = generatePdf(order.order_number, !!videoUrl);
 
+    // Marca ordens carregadas (envio_pendente) como enviadas e limpa a tabela
+    for (const ordemId of loadedOrdemIds) {
+      try { await marcarEnviada.mutateAsync(ordemId); } catch {}
+    }
+
     setSuccessInfo({ orderNumber: order.order_number, durationSec, videoUrl, pdfBlobUrl });
     setItems([]);
     setUsedKits([]);
     setBoxConfigs({});
     setLastScan(null);
     setAskedOnce(false);
+    setLoadedOrdemIds([]);
   };
 
 
