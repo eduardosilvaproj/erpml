@@ -1428,11 +1428,11 @@ const Conferencia = () => {
                 <Input
                   value={gtinSearch}
                   onChange={(e) => setGtinSearch(e.target.value)}
-                  placeholder="🔍 Buscar produto por nome ou SKU..."
-                  className="h-10"
+                  placeholder="🔍 Buscar produto..."
+                  className="h-9 text-sm"
                   autoFocus
                 />
-                <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto rounded-lg border border-border/40 p-1">
+                <div className="flex flex-col gap-0.5 max-h-[220px] overflow-y-auto rounded-md border border-border/40 p-1">
                   {allProducts
                     .filter((p) => {
                       if (!gtinSearch.trim()) return true;
@@ -1448,17 +1448,17 @@ const Conferencia = () => {
                           const unitsPerBox = p.box_quantity ? String(p.box_quantity) : "";
                           setGtinModal((prev) => ({ ...prev, selectedProductId: p.id, unitsPerBox: prev.unitsPerBox || unitsPerBox }));
                         }}
-                        className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-blue-500/10 transition-colors text-left"
+                        className="w-full flex items-center gap-2 p-1.5 rounded hover:bg-blue-500/10 transition-colors text-left"
                       >
                         {p.image_url ? (
-                          <img src={p.image_url} alt={p.name} className="h-8 w-8 rounded object-cover shrink-0" />
+                          <img src={p.image_url} alt={p.name} className="h-7 w-7 rounded object-cover shrink-0" />
                         ) : (
-                          <div className="h-8 w-8 rounded bg-muted/30 flex items-center justify-center shrink-0">
-                            <Package className="h-3.5 w-3.5 text-muted-foreground/40" />
+                          <div className="h-7 w-7 rounded bg-muted/30 flex items-center justify-center shrink-0">
+                            <Package className="h-3 w-3 text-muted-foreground/40" />
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] truncate leading-tight">{p.name}</p>
+                          <p className="text-xs truncate leading-tight">{p.name}</p>
                           <p className="text-[10px] font-mono text-muted-foreground truncate">{p.sku}</p>
                         </div>
                       </button>
@@ -1469,10 +1469,10 @@ const Conferencia = () => {
 
             {/* QUANTITY STEP */}
             {gtinModal.selectedProductId && (
-              <div className="space-y-3.5">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="text-xs text-muted-foreground block mb-1.5">Unidades por caixa</Label>
+                    <Label className="text-[11px] text-muted-foreground block mb-1">Unidades/caixa</Label>
                     <Input
                       type="number"
                       min="1"
@@ -1483,12 +1483,12 @@ const Conferencia = () => {
                         if (e.key === "Enter" && gtinTotalUnits > 0) { e.preventDefault(); handleGtinConfirm(); }
                       }}
                       placeholder="Ex: 12"
-                      className="h-11 text-lg font-semibold text-center"
+                      className="h-10 text-base font-semibold text-center"
                       autoFocus
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground block mb-1.5">Quantidade de caixas</Label>
+                    <Label className="text-[11px] text-muted-foreground block mb-1">Qtd de caixas</Label>
                     <Input
                       type="number"
                       min="1"
@@ -1499,17 +1499,17 @@ const Conferencia = () => {
                         if (e.key === "Enter" && gtinTotalUnits > 0) { e.preventDefault(); handleGtinConfirm(); }
                       }}
                       placeholder="1"
-                      className="h-11 text-lg font-semibold text-center"
+                      className="h-10 text-base font-semibold text-center"
                     />
                   </div>
                 </div>
 
                 {gtinTotalUnits > 0 && (
-                  <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 text-center">
-                    <p className="text-[11px] text-blue-300/80 mb-0.5">
+                  <div className="rounded-md border border-blue-500/40 bg-blue-500/10 p-2 text-center">
+                    <p className="text-[10px] text-blue-300/80">
                       {gtinModal.boxQty} cx × {gtinModal.unitsPerBox} un
                     </p>
-                    <p className="text-2xl font-bold text-foreground">
+                    <p className="text-lg font-bold text-foreground leading-tight">
                       = {gtinTotalUnits} unidades
                     </p>
                   </div>
@@ -1520,11 +1520,11 @@ const Conferencia = () => {
                     id="save-gtin"
                     checked={gtinModal.saveGtin}
                     onCheckedChange={(checked) => setGtinModal((prev) => ({ ...prev, saveGtin: !!checked }))}
-                    className="mt-0.5"
+                    className="mt-0.5 h-4 w-4"
                   />
-                  <span className="text-[13px] text-muted-foreground leading-tight">
+                  <span className="text-[11px] text-muted-foreground leading-tight">
                     <span className="font-medium text-foreground">Salvar GTIN CX neste produto</span>
-                    <span className="block text-[11px]">Reconhecimento automático nas próximas vezes</span>
+                    <span className="block text-[10px]">Reconhecimento automático nas próximas vezes</span>
                   </span>
                 </label>
               </div>
