@@ -179,10 +179,10 @@ export const useFullRecorder = () => {
   const uploadStandalone = useCallback(
     async (params: { blob: Blob; companyId: string; userId: string; duracaoSegundos: number }) => {
       setStatus("uploading");
-      const { blob, companyId } = params;
+      const { blob, companyId, userId, duracaoSegundos } = params;
       const dateStr = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `FULL_sem_ordem_${dateStr}.webm`;
-      const path = `${companyId}/separacao/${filename}`;
+      const path = `${companyId}/sem_ordem/${filename}`;
       const { error: upErr } = await supabase.storage
         .from("gravacoes-full")
         .upload(path, blob, { contentType: "video/webm", upsert: false });
@@ -190,6 +190,20 @@ export const useFullRecorder = () => {
       const { data: signed } = await supabase.storage
         .from("gravacoes-full")
         .createSignedUrl(path, 60 * 60 * 24 * 7);
+      const { error: insErr } = await supabase.from("gravacoes_full").insert({
+        company_id: companyId,
+        usuario_id: userId,
+        envio_id: null,
+        tipo: "sem_ordem",
+        url_video: signed?.signedUrl || path,
+        storage_path: path,
+        duracao_segundos: duracaoSegundos,
+        tamanho_bytes: blob.size,
+      });
+      if (insErr) {
+        console.error("[useFullRecorder] uploadStandalone insert error:", insErr);
+        throw insErr;
+      }
       setStatus("idle");
       return { path, url: signed?.signedUrl || path };
     },
