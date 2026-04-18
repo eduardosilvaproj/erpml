@@ -522,9 +522,13 @@ const MovimentacaoFull = () => {
 
     const pdfBlobUrl = generatePdf(order.order_number, !!videoUrl);
 
-    // Marca ordens carregadas (envio_pendente) como enviadas e limpa a tabela
+    // Marca ordens carregadas (envio_pendente / ordem ativa) como enviadas
     for (const ordemId of loadedOrdemIds) {
       try { await marcarEnviada.mutateAsync(ordemId); } catch {}
+    }
+    if (ordemAtiva) {
+      localStorage.removeItem("ordem_ativa");
+      toast({ title: `✅ Ordem ${ordemAtiva.numero} enviada!` });
     }
 
     setSuccessInfo({ orderNumber: order.order_number, durationSec, videoUrl, pdfBlobUrl });
@@ -534,6 +538,8 @@ const MovimentacaoFull = () => {
     setLastScan(null);
     setAskedOnce(false);
     setLoadedOrdemIds([]);
+    setOrdemAtiva(null);
+    setQtdBipada({});
   };
 
 
@@ -752,8 +758,59 @@ const MovimentacaoFull = () => {
 
         <TabsContent value="envio" className="space-y-6 mt-0">
 
-      {/* Banner: Ordem(ns) carregada(s) */}
-      {loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
+      {/* Banner: Ordem ativa (vinda do clique em "Executar") */}
+      {ordemAtiva && (() => {
+        const total = ordemAtiva.produtos.length;
+        const completos = ordemAtiva.produtos.filter((p) => (qtdBipada[p.product_id] ?? 0) >= p.qtd_solicitada && p.qtd_solicitada > 0).length;
+        const allDone = total > 0 && completos === total;
+        const pct = total > 0 ? Math.round((completos / total) * 100) : 0;
+        return (
+          <Card className={allDone ? "border-emerald-500/50 bg-emerald-500/10" : "border-blue-500/40 bg-blue-500/10"}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ClipboardList className={`h-5 w-5 shrink-0 ${allDone ? "text-emerald-400" : "text-blue-400"}`} />
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${allDone ? "text-emerald-300" : "text-blue-300"}`}>
+                      {allDone ? "✅ Todos os itens separados!" : `📋 Separando Ordem ${ordemAtiva.numero}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {ordemAtiva.descricao || "Sem descrição"} — {completos} de {total} produtos completos
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!window.confirm("Cancelar separação? O progresso será perdido.")) return;
+                    try {
+                      await updateStatusOrdem.mutateAsync({ id: ordemAtiva.id, status: "aguardando" });
+                    } catch {}
+                    localStorage.removeItem("ordem_ativa");
+                    setOrdemAtiva(null);
+                    setItems([]);
+                    setQtdBipada({});
+                    setLoadedOrdemIds([]);
+                    toast({ title: "Separação cancelada." });
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancelar separação
+                </Button>
+              </div>
+              <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className={`h-full transition-all ${allDone ? "bg-emerald-500" : "bg-blue-500"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Banner: envio_pendente legado */}
+      {!ordemAtiva && loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
         <Card className="border-blue-500/40 bg-blue-500/10">
           <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
