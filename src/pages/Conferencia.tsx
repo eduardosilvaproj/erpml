@@ -1119,6 +1119,18 @@ const Conferencia = () => {
                       : <><Save className="h-4 w-4 mr-2" /> Salvar e continuar depois</>
                     }
                   </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                    size="sm"
+                    onClick={handleCancelConference}
+                    disabled={cancelling}
+                  >
+                    {cancelling
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Cancelando...</>
+                      : <><X className="h-4 w-4 mr-2" /> Cancelar conferência</>
+                    }
+                  </Button>
                 </div>
               </CardContent>
             </Card>
