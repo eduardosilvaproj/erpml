@@ -609,6 +609,14 @@ const Conferencia = () => {
       {/* ========== STEP 1: INICIAR ========== */}
       {step === 1 && (
         <div className="space-y-6">
+          <ConferenceHistoryPanel
+            onContinue={(c) => {
+              setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
+              setMode(c.tipo === "inventario" ? "inventory" : "nf");
+              setStep(2);
+              toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
+            }}
+          />
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <button
               onClick={() => setMode("nf")}
