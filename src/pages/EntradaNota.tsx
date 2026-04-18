@@ -821,7 +821,7 @@ const EntradaNota = () => {
               update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
             }
 
-            await supabase.from("products").update(update).eq("id", productId);
+            await supabase.from("products").update(update as any).eq("id", productId);
           }
         }
       }
