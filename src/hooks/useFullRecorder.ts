@@ -67,7 +67,6 @@ export const useFullRecorder = () => {
       };
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      await attachStreamToVideo(stream);
       const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
         ? "video/webm;codecs=vp9"
         : MediaRecorder.isTypeSupported("video/webm")
@@ -75,17 +74,22 @@ export const useFullRecorder = () => {
         : "video/mp4";
       const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1_500_000 });
       chunksRef.current = [];
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+      };
       recorder.start(1000);
       recorderRef.current = recorder;
       setSeconds(0);
       timerRef.current = window.setInterval(() => setSeconds((s) => s + 1), 1000);
       setStatus("recording");
+      // Attach AFTER status change so the <video> element is mounted
+      setTimeout(() => { attachStreamToVideo(stream); }, 0);
     } catch (e: any) {
+      console.error("[useFullRecorder] start error:", e);
       setError(e?.message || "Não foi possível iniciar a gravação");
       setStatus("idle");
     }
-  }, []);
+  }, [attachStreamToVideo]);
 
   const pause = useCallback(() => {
     if (recorderRef.current?.state === "recording") {
@@ -111,11 +115,20 @@ export const useFullRecorder = () => {
         if (timerRef.current) window.clearInterval(timerRef.current);
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const mime = r.mimeType || "video/webm";
+        const blob = new Blob(chunksRef.current, { type: mime });
+        console.log("[useFullRecorder] stop — chunks:", chunksRef.current.length, "size:", blob.size);
         setStatus("stopped");
         resolve(blob);
       };
-      try { r.stop(); } catch { resolve(null); }
+      try {
+        if (r.state !== "inactive") {
+          try { r.requestData(); } catch { /* ignored */ }
+          r.stop();
+        } else {
+          resolve(null);
+        }
+      } catch { resolve(null); }
     });
   }, []);
 
