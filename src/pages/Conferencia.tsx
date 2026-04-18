@@ -894,9 +894,23 @@ const Conferencia = () => {
 
                 <Separator />
 
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => {
+                      toast({
+                        title: "Conferência salva",
+                        description: "Você pode continuar depois — seus bips ficam guardados neste dispositivo.",
+                      });
+                      setStep(1);
+                    }}
+                    disabled={scannedProducts.length === 0}
+                  >
+                    <Save className="h-4 w-4 mr-2" /> Salvar e continuar depois
                   </Button>
                   <Button
                     className="flex-1"
