@@ -414,15 +414,37 @@ const Conferencia = () => {
       return;
     }
 
-    // STEP 4 — Não reconhecido: diferenciar EAN válido (produto não cadastrado)
-    // de código sem formato (perguntar se é caixa/SKU)
-    if (isValidBarcodeFormat(trimmed)) {
+    // STEP 4 — Não reconhecido. Diferenciar:
+    //  • 14 dígitos OU 13 dígitos começando com 1-8 → formato de CAIXA (GTIN CX)
+    //  • 8/12/13 dígitos numéricos → EAN de produto não cadastrado
+    //  • outros formatos → desconhecido (perguntar)
+    const onlyDigits = /^\d+$/.test(trimmed);
+    const firstDigit = onlyDigits ? parseInt(trimmed[0], 10) : NaN;
+    const ehFormatoGtinCx = onlyDigits && (
+      trimmed.length === 14 ||
+      (trimmed.length === 13 && firstDigit >= 1 && firstDigit <= 8)
+    );
+
+    if (ehFormatoGtinCx) {
+      // Caixa não cadastrada — abrir modal para vincular a um produto
+      setGtinModal({
+        open: true, code: trimmed, selectedProductId: "",
+        unitsPerBox: "", boxQty: "1", saveGtin: true,
+      });
+      setLastScan({ success: false, name: "Caixa não cadastrada", code: trimmed });
+      playBeep(500, 150);
+      return;
+    }
+
+    const ehEanProduto = onlyDigits && (trimmed.length === 8 || trimmed.length === 12 || trimmed.length === 13);
+    if (ehEanProduto && isValidBarcodeFormat(trimmed)) {
       setUnregisteredModal({ open: true, code: trimmed });
       setLastScan({ success: false, name: "Produto não cadastrado", code: trimmed });
       playBeep(500, 150);
       return;
     }
 
+    // Formato desconhecido → perguntar (modal de GTIN/SKU)
     setGtinModal({
       open: true, code: trimmed, selectedProductId: "",
       unitsPerBox: "", boxQty: "1", saveGtin: true,
