@@ -309,6 +309,18 @@ Para CADA produto/oportunidade indicado, liste fornecedores com:
         break;
       }
 
+      case "kit-suggestion": {
+        if (!prompt || typeof prompt !== "string" || prompt.length > 50000) {
+          return new Response(JSON.stringify({ error: "prompt inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um especialista em e-commerce que sugere kits de produtos comercialmente viáveis. Responda SEMPRE apenas com JSON válido, sem markdown, sem texto adicional.`;
+        userPrompt = prompt;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: "Tipo de análise não reconhecido" }), {
           status: 400,
