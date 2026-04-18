@@ -226,8 +226,8 @@ export const OrdensFullTab = () => {
                         {o.total_produtos} produtos • {o.total_itens} unidades
                         {o.prazo && <> • Prazo {new Date(o.prazo).toLocaleDateString("pt-BR")}</>}
                       </div>
-                      <Button size="sm" className="w-full" onClick={() => setExecuteOrdemId(o.id)}>
-                        <Play className="h-3 w-3 mr-1" /> Iniciar separação
+                      <Button size="sm" className="w-full" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
+                        <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "Carregando..." : "Iniciar separação"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -295,11 +295,11 @@ export const OrdensFullTab = () => {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {podeExecutar && (
-                              <Button size="sm" variant="default" onClick={() => setExecuteOrdemId(o.id)}>
-                                <Play className="h-3 w-3 mr-1" /> Executar
+                              <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
+                                <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
-                            <Button size="icon" variant="ghost" title="Ver" onClick={() => setExecuteOrdemId(o.id)}>
+                            <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                             {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && (
@@ -455,10 +455,10 @@ export const OrdensFullTab = () => {
         }}
       />
 
-      {/* Execução / detalhes */}
+      {/* Visualização / detalhes (somente leitura via dialog) */}
       <OrdemSeparacaoDialog
-        ordemId={executeOrdemId}
-        onClose={() => setExecuteOrdemId(null)}
+        ordemId={viewOrdemId}
+        onClose={() => setViewOrdemId(null)}
       />
     </div>
   );
