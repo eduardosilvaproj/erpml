@@ -24,6 +24,20 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { useProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
+import { isValidEAN13 } from "@/lib/ean13";
+
+/**
+ * Verifica se o código tem formato válido de código de barras
+ * (EAN-8, UPC-A/12, EAN-13, EAN-14/GTIN-14 — usado em caixas)
+ */
+const isValidBarcodeFormat = (code: string): boolean => {
+  if (!/^\d+$/.test(code)) return false;
+  const len = code.length;
+  if (![8, 12, 13, 14].includes(len)) return false;
+  // Validamos dígito verificador apenas para EAN-13 (mais comum)
+  if (len === 13) return isValidEAN13(code);
+  return true;
+};
 
 type Step = 1 | 2 | 3;
 
