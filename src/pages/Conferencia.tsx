@@ -847,6 +847,8 @@ const Conferencia = () => {
       setQuickRegister((q) => ({ ...q, saving: false }));
     }
   };
+
+  const gtinTotalUnits = (parseInt(gtinModal.unitsPerBox) || 0) * (parseInt(gtinModal.boxQty) || 0);
   const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
