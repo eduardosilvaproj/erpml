@@ -16,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -81,6 +83,32 @@ const Conferencia = () => {
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
   const [gtinSearch, setGtinSearch] = useState("");
+
+  // Confirm-qty-on-scan settings
+  const [confirmOnScan, setConfirmOnScan] = useState<boolean>(() => {
+    try { return localStorage.getItem("conferencia-confirm-on-scan") !== "0"; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("conferencia-confirm-on-scan", confirmOnScan ? "1" : "0"); } catch {}
+  }, [confirmOnScan]);
+
+  // Quick-confirm popup
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    product: any | null;
+    qty: number;
+    edited: boolean;
+    existingQty: number;
+    replaceMode: boolean;
+  }>({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+  const [confirmProgress, setConfirmProgress] = useState(100);
+  const confirmTimerRef = useRef<number | null>(null);
+  const confirmIntervalRef = useRef<number | null>(null);
+  const confirmQtyInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline qty editing
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState<string>("");
 
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
@@ -153,6 +181,38 @@ const Conferencia = () => {
     });
   }, []);
 
+  const clearConfirmTimers = useCallback(() => {
+    if (confirmTimerRef.current) { window.clearTimeout(confirmTimerRef.current); confirmTimerRef.current = null; }
+    if (confirmIntervalRef.current) { window.clearInterval(confirmIntervalRef.current); confirmIntervalRef.current = null; }
+  }, []);
+
+  const startConfirmTimer = useCallback((product: any, qty: number) => {
+    clearConfirmTimers();
+    setConfirmProgress(100);
+    const total = 3000;
+    const start = Date.now();
+    confirmIntervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      setConfirmProgress(Math.max(0, 100 - (elapsed / total) * 100));
+    }, 50);
+    confirmTimerRef.current = window.setTimeout(() => {
+      clearConfirmTimers();
+      addScannedUnits(product, qty);
+      setLastScan({ success: true, name: product.name, code: product.barcode || product.sku });
+      playBeep(800, 100);
+      setConfirmModal((m) => ({ ...m, open: false }));
+      setTimeout(() => scanInputRef.current?.focus(), 50);
+    }, total);
+  }, [addScannedUnits, clearConfirmTimers]);
+
+  const openConfirmPopup = useCallback((product: any) => {
+    const existing = scannedProducts.find((p) => p.productId === product.id);
+    const existingQty = existing?.scannedQty ?? 0;
+    setConfirmModal({ open: true, product, qty: 1, edited: false, existingQty, replaceMode: false });
+    startConfirmTimer(product, 1);
+    setTimeout(() => confirmQtyInputRef.current?.select(), 100);
+  }, [scannedProducts, startConfirmTimer]);
+
   const handleScan = useCallback((code: string) => {
     if (!code.trim()) return;
     setScanBuffer("");
@@ -172,6 +232,10 @@ const Conferencia = () => {
     const product = allProducts.find(matches) || simProducts.find(matches);
 
     if (product) {
+      if (confirmOnScan) {
+        openConfirmPopup(product);
+        return;
+      }
       addScannedUnits(product, 1);
       setLastScan({ success: true, name: product.name, code: trimmed });
       playBeep(800, 100);
@@ -204,7 +268,65 @@ const Conferencia = () => {
       saveGtin: true,
     });
     playBeep(400, 200);
-  }, [allProducts, addScannedUnits]);
+  }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup]);
+
+  const adjustConfirmQty = (newQty: number) => {
+    clearConfirmTimers();
+    setConfirmModal((m) => ({ ...m, qty: Math.max(0, newQty), edited: true }));
+  };
+
+  const finalizeConfirm = () => {
+    clearConfirmTimers();
+    const { product, qty, replaceMode } = confirmModal;
+    if (!product) return;
+    if (replaceMode) {
+      // set absolute qty
+      setScannedProducts((prev) => {
+        const exists = prev.find((p) => p.productId === product.id);
+        if (exists) {
+          return prev.map((p) => p.productId === product.id ? { ...p, scannedQty: qty, lastBipAt: new Date() } : p).filter(p => p.scannedQty > 0);
+        }
+        if (qty <= 0) return prev;
+        return [{
+          productId: product.id, name: product.name, sku: product.sku,
+          barcode: product.barcode, imageUrl: product.image_url,
+          scannedQty: qty, systemQty: product.stock_physical, lastBipAt: new Date(),
+        }, ...prev];
+      });
+      setFlashId(product.id);
+      setTimeout(() => setFlashId(null), 1000);
+    } else if (qty > 0) {
+      addScannedUnits(product, qty);
+    }
+    setLastScan({ success: true, name: product.name, code: product.barcode || product.sku });
+    playBeep(800, 100);
+    setConfirmModal({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+    setTimeout(() => scanInputRef.current?.focus(), 50);
+  };
+
+  const cancelConfirm = () => {
+    clearConfirmTimers();
+    setConfirmModal({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+    setTimeout(() => scanInputRef.current?.focus(), 50);
+  };
+
+  // Inline qty editing
+  const startEditQty = (productId: string, currentQty: number) => {
+    setEditingQtyId(productId);
+    setEditingQtyValue(String(currentQty));
+  };
+  const commitEditQty = () => {
+    if (!editingQtyId) return;
+    const n = parseInt(editingQtyValue);
+    if (!isNaN(n) && n >= 0) {
+      setScannedProducts((prev) =>
+        prev.map((p) => p.productId === editingQtyId ? { ...p, scannedQty: n, lastBipAt: new Date() } : p).filter(p => p.scannedQty > 0)
+      );
+    }
+    setEditingQtyId(null);
+    setEditingQtyValue("");
+  };
+  const cancelEditQty = () => { setEditingQtyId(null); setEditingQtyValue(""); };
 
   const handleGtinConfirm = async () => {
     const product = allProducts.find((p) => p.id === gtinModal.selectedProductId);
@@ -483,6 +605,17 @@ const Conferencia = () => {
                     <span className="text-muted-foreground ml-auto font-mono text-xs">{lastScan.code}</span>
                   </div>
                 )}
+
+                <div className="flex items-center justify-between rounded-lg border border-border/30 bg-muted/10 p-2.5">
+                  <Label htmlFor="confirm-on-scan" className="text-xs font-medium cursor-pointer">
+                    Confirmar quantidade ao bipar
+                  </Label>
+                  <Switch
+                    id="confirm-on-scan"
+                    checked={confirmOnScan}
+                    onCheckedChange={setConfirmOnScan}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -534,7 +667,30 @@ const Conferencia = () => {
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="font-bold text-lg w-6 text-center">{sp.scannedQty}</span>
+                          {editingQtyId === sp.productId ? (
+                            <Input
+                              autoFocus
+                              type="number"
+                              value={editingQtyValue}
+                              onChange={(e) => setEditingQtyValue(e.target.value)}
+                              onFocus={(e) => e.target.select()}
+                              onBlur={commitEditQty}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); commitEditQty(); }
+                                else if (e.key === "Escape") { e.preventDefault(); cancelEditQty(); }
+                              }}
+                              className="h-8 w-16 text-center font-bold bg-blue-500/10 border-blue-500/40"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startEditQty(sp.productId, sp.scannedQty)}
+                              className="font-bold text-lg w-8 text-center hover:bg-muted/40 rounded px-1 transition-colors"
+                              title="Clique para editar"
+                            >
+                              {sp.scannedQty}
+                            </button>
+                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground/60 w-12 text-right">
                           {sp.lastBipAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
@@ -927,6 +1083,96 @@ const Conferencia = () => {
               onClick={handleGtinConfirm}
               disabled={!gtinModal.selectedProductId || gtinTotalUnits <= 0}
             >
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========== QUICK CONFIRM QTY POPUP ========== */}
+      <Dialog
+        open={confirmModal.open}
+        onOpenChange={(open) => { if (!open) cancelConfirm(); }}
+      >
+        <DialogContent className="max-w-sm border-emerald-500/40">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              {confirmModal.product?.name}
+            </DialogTitle>
+            <p className="text-xs font-mono text-muted-foreground">{confirmModal.product?.sku}</p>
+          </DialogHeader>
+
+          {confirmModal.existingQty > 0 && !confirmModal.replaceMode && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs space-y-1">
+              <p>Já contado: <span className="font-bold">{confirmModal.existingQty}</span> un.</p>
+              <p>Total ficará: <span className="font-bold">{confirmModal.existingQty + confirmModal.qty}</span> un.</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="text-xs">
+              {confirmModal.replaceMode ? "Substituir total para:" : "Quantidade a adicionar:"}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 shrink-0"
+                onClick={() => adjustConfirmQty(confirmModal.qty - 1)}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                ref={confirmQtyInputRef}
+                type="number"
+                value={confirmModal.qty}
+                onChange={(e) => adjustConfirmQty(parseInt(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); finalizeConfirm(); }
+                  else if (e.key === "Escape") { e.preventDefault(); cancelConfirm(); }
+                }}
+                className="text-center text-2xl font-bold h-12"
+              />
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 shrink-0"
+                onClick={() => adjustConfirmQty(confirmModal.qty + 1)}
+              >
+                <span className="text-lg">+</span>
+              </Button>
+            </div>
+          </div>
+
+          {!confirmModal.edited && !confirmModal.replaceMode && (
+            <div className="space-y-1">
+              <Progress value={confirmProgress} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground text-center">
+                Confirmação automática em instantes...
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={cancelConfirm} className="flex-1">
+              Cancelar
+            </Button>
+            {confirmModal.existingQty > 0 && !confirmModal.replaceMode && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  clearConfirmTimers();
+                  setConfirmModal((m) => ({ ...m, replaceMode: true, qty: m.existingQty, edited: true }));
+                  setTimeout(() => confirmQtyInputRef.current?.select(), 50);
+                }}
+                className="flex-1"
+              >
+                Substituir total
+              </Button>
+            )}
+            <Button onClick={finalizeConfirm} className="flex-1">
               Confirmar
             </Button>
           </DialogFooter>
