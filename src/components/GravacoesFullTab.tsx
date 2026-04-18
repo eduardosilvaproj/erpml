@@ -72,6 +72,12 @@ export const GravacoesFullTab = () => {
 
   useEffect(() => { load(); }, [companyId]);
 
+  useEffect(() => {
+    const handler = () => load();
+    window.addEventListener("gravacoes-full:refresh", handler);
+    return () => window.removeEventListener("gravacoes-full:refresh", handler);
+  }, [companyId]);
+
   const filtered = useMemo(() => items.filter((r) => {
     if (filterTipo !== "all" && r.tipo !== filterTipo) return false;
     if (filterVinculo === "linked" && !r.envio_id) return false;
