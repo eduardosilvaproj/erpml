@@ -1142,277 +1142,281 @@ const Conferencia = () => {
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border-blue-500/40">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-[500px] max-h-[85vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col">
+          {/* HEADER (fixed) */}
+          <DialogHeader className="flex-shrink-0 p-4 pb-3 border-b border-border/40 space-y-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
               <Package className="h-5 w-5 text-blue-400" />
               📦 Caixa detectada
             </DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Código bipado: <span className="font-mono font-bold">{gtinModal.code}</span>
+            <p className="text-xs text-muted-foreground">
+              Código: <span className="font-mono font-bold text-foreground">{gtinModal.code}</span>
             </p>
-            <p className="text-sm text-muted-foreground">
-              Como deseja identificar o produto desta caixa?
-            </p>
-          </DialogHeader>
 
-          {/* Mode tabs */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-muted/30 border border-border/40">
-            <Button
-              type="button"
-              variant={gtinSelectMode === "scan" ? "default" : "ghost"}
-              className={gtinSelectMode === "scan" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}
-              onClick={() => {
-                setGtinSelectMode("scan");
-                setTimeout(() => gtinScanInputRef.current?.focus(), 50);
-              }}
-            >
-              <ScanBarcode className="h-4 w-4" /> Bipar produto
-            </Button>
-            <Button
-              type="button"
-              variant={gtinSelectMode === "list" ? "default" : "ghost"}
-              className={gtinSelectMode === "list" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}
-              onClick={() => setGtinSelectMode("list")}
-            >
-              🔍 Buscar na lista
-            </Button>
-          </div>
-
-          {gtinSelectMode === "scan" && !gtinModal.selectedProductId && (
-            <div
-              className={`space-y-2 rounded-lg border-2 p-4 transition-colors ${
-                gtinScanFlash === "success"
-                  ? "border-emerald-500 bg-emerald-500/10"
-                  : gtinScanFlash === "error"
-                  ? "border-red-500 bg-red-500/10"
-                  : "border-blue-500/50 bg-blue-500/5 animate-pulse-once"
-              }`}
-            >
-              <Label className="text-sm font-semibold flex items-center gap-2">
-                <ScanBarcode className="h-4 w-4 text-blue-400" /> Agora bipe o EAN/SKU do produto:
-              </Label>
-              <BarcodeScannerInput
-                ref={gtinScanInputRef}
-                value=""
-                onChange={() => {}}
-                onScan={async (code) => {
-                  const trimmed = code.trim();
-                  if (!trimmed) return;
-                  setGtinScanError(null);
-                  setGtinScanLoading(true);
-                  try {
-                    const found = await searchProductByCode(trimmed);
-                    if (found) {
-                      const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
-                      setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
-                      setGtinScanFlash("success");
-                      playBeep(800, 100);
-                      setTimeout(() => setGtinScanFlash(null), 600);
-                    } else {
-                      setGtinScanError(trimmed);
-                      setGtinScanFlash("error");
-                      playBeep(300, 200);
-                      setTimeout(() => playBeep(300, 200), 220);
-                      setTimeout(() => setGtinScanFlash(null), 800);
-                      setTimeout(() => gtinScanInputRef.current?.focus(), 50);
-                    }
-                  } catch (err) {
-                    console.error("[Conferencia] Erro ao buscar produto:", err);
-                    setGtinScanError(trimmed);
-                    setGtinScanFlash("error");
-                    toast({ title: "Erro ao buscar produto", description: String((err as Error).message ?? err), variant: "destructive" });
-                  } finally {
-                    setGtinScanLoading(false);
-                  }
-                }}
-                placeholder={gtinScanLoading ? "Buscando..." : "Bipe o EAN do produto..."}
-                inputClassName="h-12 font-mono"
-                icon={gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanBarcode className="h-4 w-4" />}
-                autoFocus
-              />
-              {gtinScanError && (
-                <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-3 space-y-2 text-sm">
-                  <p className="font-semibold text-red-400">❌ Item não cadastrado</p>
-                  <p className="font-mono text-xs text-muted-foreground">Código: {gtinScanError}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Este produto não está cadastrado no sistema desta empresa.
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setGtinScanError(null);
-                        setGtinSelectMode("list");
-                      }}
-                    >
-                      🔍 Buscar na lista
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setGtinScanError(null);
-                        setTimeout(() => gtinScanInputRef.current?.focus(), 50);
-                      }}
-                    >
-                      ↩️ Tentar outro código
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {gtinSelectMode === "list" && !gtinModal.selectedProductId && (
-            <>
-              <Input
-                value={gtinSearch}
-                onChange={(e) => setGtinSearch(e.target.value)}
-                placeholder="🔍 Buscar produto por nome ou SKU..."
-                autoFocus
-              />
-              <RadioGroup
-                value={gtinModal.selectedProductId}
-                onValueChange={(val) => {
-                  const p = allProducts.find((pp) => pp.id === val);
-                  const unitsPerBox = p?.box_quantity ? String(p.box_quantity) : "";
-                  setGtinModal((prev) => ({ ...prev, selectedProductId: val, unitsPerBox: prev.unitsPerBox || unitsPerBox }));
-                }}
-                className="space-y-2 max-h-[200px] overflow-y-auto"
-              >
-                {allProducts
-                  .filter((p) => {
-                    if (!gtinSearch.trim()) return true;
-                    const q = gtinSearch.toLowerCase();
-                    return (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
-                  })
-                  .slice(0, 50)
-                  .map((p) => (
-                  <label
-                    key={p.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                      gtinModal.selectedProductId === p.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border/40 hover:border-primary/30"
-                    }`}
-                  >
-                    <RadioGroupItem value={p.id} />
-                    {p.image_url ? (
-                      <img src={p.image_url} alt={p.name} className="h-10 w-10 rounded-lg object-cover" />
-                    ) : (
-                      <div className="h-10 w-10 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
-                        <Package className="h-4 w-4 text-muted-foreground/40" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{p.name}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">Est: {p.stock_physical}</span>
-                  </label>
-                ))}
-              </RadioGroup>
-            </>
-          )}
-
-          {gtinModal.selectedProductId && (() => {
-            const sel = allProducts.find((p) => p.id === gtinModal.selectedProductId);
-            return (
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-                {sel?.image_url ? (
-                  <img src={sel.image_url} alt={sel.name} className="h-12 w-12 rounded-lg object-cover" />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg bg-muted/30 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-muted-foreground/40" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{sel?.name}</p>
-                  <p className="text-xs font-mono text-muted-foreground">{sel?.sku}</p>
-                </div>
+            {/* Mode tabs (only when no product selected) */}
+            {!gtinModal.selectedProductId && (
+              <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-muted/30 border border-border/40">
                 <Button
-                  variant="ghost"
+                  type="button"
                   size="sm"
-                  onClick={() => setGtinModal((prev) => ({ ...prev, selectedProductId: "" }))}
+                  variant={gtinSelectMode === "scan" ? "default" : "ghost"}
+                  className={`h-8 ${gtinSelectMode === "scan" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}`}
+                  onClick={() => {
+                    setGtinSelectMode("scan");
+                    setGtinScanError(null);
+                    setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+                  }}
                 >
-                  Trocar
+                  <ScanBarcode className="h-4 w-4 mr-1" /> Bipar produto
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={gtinSelectMode === "list" ? "default" : "ghost"}
+                  className={`h-8 ${gtinSelectMode === "list" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}`}
+                  onClick={() => setGtinSelectMode("list")}
+                >
+                  🔍 Buscar na lista
                 </Button>
               </div>
-            );
-          })()}
+            )}
 
-          {gtinModal.selectedProductId && (
-            <div className="space-y-4 pt-2 rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-medium block mb-1.5">Unidades por caixa</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={gtinModal.unitsPerBox}
-                    onChange={(e) => setGtinModal((prev) => ({ ...prev, unitsPerBox: e.target.value }))}
-                    onFocus={(e) => e.target.select()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
-                        e.preventDefault(); handleGtinConfirm();
+            {/* Selected product summary header */}
+            {gtinModal.selectedProductId && (() => {
+              const sel = allProducts.find((p) => p.id === gtinModal.selectedProductId);
+              return (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => setGtinModal((prev) => ({ ...prev, selectedProductId: "" }))}
+                    title="Voltar"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  {sel?.image_url ? (
+                    <img src={sel.image_url} alt={sel.name} className="h-8 w-8 rounded object-cover shrink-0" />
+                  ) : (
+                    <div className="h-8 w-8 rounded bg-muted/30 flex items-center justify-center shrink-0">
+                      <Package className="h-4 w-4 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate leading-tight">{sel?.name}</p>
+                    <p className="text-[10px] font-mono text-muted-foreground">{sel?.sku}</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </DialogHeader>
+
+          {/* BODY (scrollable) */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
+            {/* SCAN MODE */}
+            {!gtinModal.selectedProductId && gtinSelectMode === "scan" && (
+              <div
+                className={`space-y-2 rounded-lg border-2 p-3 transition-colors ${
+                  gtinScanFlash === "success"
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : gtinScanFlash === "error"
+                    ? "border-red-500 bg-red-500/10"
+                    : "border-blue-500/50 bg-blue-500/5"
+                }`}
+              >
+                <Label className="text-xs font-semibold flex items-center gap-2">
+                  <ScanBarcode className="h-4 w-4 text-blue-400" /> Bipe o EAN/SKU do produto
+                </Label>
+                <BarcodeScannerInput
+                  ref={gtinScanInputRef}
+                  value=""
+                  onChange={() => {}}
+                  onScan={async (code) => {
+                    const trimmed = code.trim();
+                    if (!trimmed) return;
+                    setGtinScanError(null);
+                    setGtinScanLoading(true);
+                    try {
+                      const found = await searchProductByCode(trimmed);
+                      if (found) {
+                        const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
+                        setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
+                        setGtinScanFlash("success");
+                        playBeep(800, 100);
+                        setTimeout(() => setGtinScanFlash(null), 600);
+                      } else {
+                        setGtinScanError(trimmed);
+                        setGtinScanFlash("error");
+                        playBeep(300, 200);
+                        setTimeout(() => playBeep(300, 200), 220);
+                        setTimeout(() => setGtinScanFlash(null), 800);
+                        setTimeout(() => gtinScanInputRef.current?.focus(), 50);
                       }
-                    }}
-                    placeholder="Ex: 12"
-                    className="h-12 text-lg font-semibold text-center"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-medium block mb-1.5">Qtd de caixas</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={gtinModal.boxQty}
-                    onChange={(e) => setGtinModal((prev) => ({ ...prev, boxQty: e.target.value }))}
-                    onFocus={(e) => e.target.select()}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
-                        e.preventDefault(); handleGtinConfirm();
-                      }
-                    }}
-                    placeholder="1"
-                    className="h-12 text-lg font-semibold text-center"
-                  />
-                </div>
-              </div>
-
-              {gtinTotalUnits > 0 && (
-                <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-3 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold text-foreground">{gtinModal.boxQty}</span> cx × <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> un =
-                  </p>
-                  <p className="font-bold text-blue-400 text-2xl mt-0.5">{gtinTotalUnits} unidades</p>
-                </div>
-              )}
-
-              <div className="flex items-start gap-2">
-                <Checkbox
-                  id="save-gtin"
-                  checked={gtinModal.saveGtin}
-                  onCheckedChange={(checked) => setGtinModal((prev) => ({ ...prev, saveGtin: !!checked }))}
-                  className="mt-0.5"
+                    } catch (err) {
+                      console.error("[Conferencia] Erro ao buscar produto:", err);
+                      setGtinScanError(trimmed);
+                      setGtinScanFlash("error");
+                      toast({ title: "Erro ao buscar produto", description: String((err as Error).message ?? err), variant: "destructive" });
+                    } finally {
+                      setGtinScanLoading(false);
+                    }
+                  }}
+                  placeholder={gtinScanLoading ? "Buscando..." : "Bipe o EAN do produto..."}
+                  inputClassName="h-11 font-mono"
+                  icon={gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanBarcode className="h-4 w-4" />}
+                  autoFocus
                 />
-                <label htmlFor="save-gtin" className="text-sm cursor-pointer">
-                  <span className="font-medium">Salvar GTIN CX neste produto</span>
-                  <br />
-                  <span className="text-xs text-muted-foreground">Nas próximas vezes reconhece automaticamente</span>
-                </label>
+                {gtinScanError && (
+                  <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-2.5 space-y-1.5 text-sm">
+                    <p className="font-semibold text-red-400 text-sm">❌ Item não cadastrado</p>
+                    <p className="font-mono text-xs text-muted-foreground">Código: {gtinScanError}</p>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setGtinScanError(null);
+                          setGtinSelectMode("list");
+                        }}
+                      >
+                        🔍 Buscar na lista
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setGtinScanError(null);
+                          setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+                        }}
+                      >
+                        ↩️ Tentar outro código
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
 
-          <DialogFooter className="gap-2">
+            {/* LIST MODE */}
+            {!gtinModal.selectedProductId && gtinSelectMode === "list" && (
+              <div className="space-y-2">
+                <Input
+                  value={gtinSearch}
+                  onChange={(e) => setGtinSearch(e.target.value)}
+                  placeholder="🔍 Buscar produto por nome ou SKU..."
+                  className="h-10"
+                  autoFocus
+                />
+                <div className="max-h-[300px] overflow-y-auto space-y-1 rounded-lg border border-border/40 p-1">
+                  {allProducts
+                    .filter((p) => {
+                      if (!gtinSearch.trim()) return true;
+                      const q = gtinSearch.toLowerCase();
+                      return (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
+                    })
+                    .slice(0, 50)
+                    .map((p) => (
+                      <button
+                        type="button"
+                        key={p.id}
+                        onClick={() => {
+                          const unitsPerBox = p.box_quantity ? String(p.box_quantity) : "";
+                          setGtinModal((prev) => ({ ...prev, selectedProductId: p.id, unitsPerBox: prev.unitsPerBox || unitsPerBox }));
+                        }}
+                        className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-primary/10 transition-colors text-left"
+                      >
+                        {p.image_url ? (
+                          <img src={p.image_url} alt={p.name} className="h-8 w-8 rounded object-cover shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded bg-muted/30 flex items-center justify-center shrink-0">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground/40" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate leading-tight">{p.name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                        </div>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* QUANTITY FIELDS */}
+            {gtinModal.selectedProductId && (
+              <div className="space-y-3 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-medium block mb-1.5">Unidades por caixa</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={gtinModal.unitsPerBox}
+                      onChange={(e) => setGtinModal((prev) => ({ ...prev, unitsPerBox: e.target.value }))}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
+                          e.preventDefault(); handleGtinConfirm();
+                        }
+                      }}
+                      placeholder="Ex: 12"
+                      className="h-11 text-lg font-semibold text-center"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium block mb-1.5">Qtd de caixas</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={gtinModal.boxQty}
+                      onChange={(e) => setGtinModal((prev) => ({ ...prev, boxQty: e.target.value }))}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
+                          e.preventDefault(); handleGtinConfirm();
+                        }
+                      }}
+                      placeholder="1"
+                      className="h-11 text-lg font-semibold text-center"
+                    />
+                  </div>
+                </div>
+
+                {gtinTotalUnits > 0 && (
+                  <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-2.5 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-bold text-foreground">{gtinModal.boxQty}</span> cx × <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> un =
+                    </p>
+                    <p className="font-bold text-blue-400 text-xl mt-0.5">{gtinTotalUnits} unidades</p>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="save-gtin"
+                    checked={gtinModal.saveGtin}
+                    onCheckedChange={(checked) => setGtinModal((prev) => ({ ...prev, saveGtin: !!checked }))}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="save-gtin" className="text-xs cursor-pointer">
+                    <span className="font-medium">Salvar GTIN CX neste produto</span>
+                    <span className="block text-[10px] text-muted-foreground">Reconhecimento automático nas próximas vezes</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* FOOTER (fixed) */}
+          <DialogFooter className="flex-shrink-0 p-3 border-t border-border/40 gap-2 sm:gap-2">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => {
                 setGtinModal((prev) => ({ ...prev, open: false }));
                 setTimeout(() => scanInputRef.current?.focus(), 50);
@@ -1421,10 +1425,11 @@ const Conferencia = () => {
               Cancelar
             </Button>
             <Button
+              size="sm"
               onClick={handleGtinConfirm}
               disabled={!gtinModal.selectedProductId || gtinTotalUnits <= 0}
             >
-              ✓ Confirmar {gtinTotalUnits > 0 ? `${gtinTotalUnits} unidades` : ""}
+              ✓ Confirmar {gtinTotalUnits > 0 ? `${gtinTotalUnits} un` : ""}
             </Button>
           </DialogFooter>
         </DialogContent>
