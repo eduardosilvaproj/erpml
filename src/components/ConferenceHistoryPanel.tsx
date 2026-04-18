@@ -99,7 +99,7 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
         </div>
 
         {ativa && (
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
             {c.status === "em_andamento" && (
               <Button
                 size="sm"
