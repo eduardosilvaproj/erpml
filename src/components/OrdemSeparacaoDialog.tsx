@@ -200,9 +200,10 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                       <BarcodeScannerInput
                         value={scan}
                         onChange={setScan}
-                        onSubmit={handleScan}
+                        onScan={handleScan}
                         placeholder="Bipe o código..."
                         autoFocus
+                        scanMode
                       />
                       {lastScan && (
                         <div className={`text-xs p-2 rounded ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
