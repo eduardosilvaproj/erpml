@@ -667,7 +667,30 @@ const Conferencia = () => {
                           >
                             <Minus className="h-3 w-3" />
                           </Button>
-                          <span className="font-bold text-lg w-6 text-center">{sp.scannedQty}</span>
+                          {editingQtyId === sp.productId ? (
+                            <Input
+                              autoFocus
+                              type="number"
+                              value={editingQtyValue}
+                              onChange={(e) => setEditingQtyValue(e.target.value)}
+                              onFocus={(e) => e.target.select()}
+                              onBlur={commitEditQty}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") { e.preventDefault(); commitEditQty(); }
+                                else if (e.key === "Escape") { e.preventDefault(); cancelEditQty(); }
+                              }}
+                              className="h-8 w-16 text-center font-bold bg-blue-500/10 border-blue-500/40"
+                            />
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startEditQty(sp.productId, sp.scannedQty)}
+                              className="font-bold text-lg w-8 text-center hover:bg-muted/40 rounded px-1 transition-colors"
+                              title="Clique para editar"
+                            >
+                              {sp.scannedQty}
+                            </button>
+                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground/60 w-12 text-right">
                           {sp.lastBipAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
