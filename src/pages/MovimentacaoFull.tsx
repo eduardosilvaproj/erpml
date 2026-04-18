@@ -103,10 +103,36 @@ const MovimentacaoFull = () => {
     }
   }, [items.length, askedOnce, recorder.status, loadedOrdemIds.length]);
 
-  // Carrega itens de envio_pendente automaticamente ao entrar na tela
+  // Carrega ordem ativa do localStorage (vinda do clique em "Executar"/"Iniciar separação")
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ordem_ativa");
+      if (!raw) return;
+      const ordem: OrdemAtiva = JSON.parse(raw);
+      if (!ordem?.produtos?.length) return;
+      setOrdemAtiva(ordem);
+      setLoadedOrdemIds([ordem.id]);
+      const loaded: TransferItem[] = ordem.produtos.map((p) => ({
+        productId: p.product_id,
+        productName: p.name,
+        productSku: p.sku,
+        barcode: p.barcode,
+        quantity: 0,
+        stockPhysical: p.stock_physical,
+      }));
+      setItems(loaded);
+      const initBipada: Record<string, number> = {};
+      ordem.produtos.forEach((p) => { initBipada[p.product_id] = 0; });
+      setQtdBipada(initBipada);
+      toast({ title: `📋 Ordem ${ordem.numero} carregada — bipe os produtos para confirmar` });
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Carrega itens de envio_pendente automaticamente (fluxo legado, só se não houver ordem ativa via localStorage)
+  useEffect(() => {
+    if (ordemAtiva) return;
     if (!envioPendente || envioPendente.length === 0) return;
-    // Apenas se a lista atual estiver vazia (evita sobrescrever uma sessão em andamento)
     if (items.length > 0) return;
     const loaded: TransferItem[] = envioPendente
       .filter((ep: any) => ep.product)
@@ -124,7 +150,7 @@ const MovimentacaoFull = () => {
       setLoadedOrdemIds(ordemIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envioPendente]);
+  }, [envioPendente, ordemAtiva]);
 
   const openCameraPicker = async () => {
     setShowAskRecord(false);
