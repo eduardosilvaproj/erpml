@@ -268,7 +268,65 @@ const Conferencia = () => {
       saveGtin: true,
     });
     playBeep(400, 200);
-  }, [allProducts, addScannedUnits]);
+  }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup]);
+
+  const adjustConfirmQty = (newQty: number) => {
+    clearConfirmTimers();
+    setConfirmModal((m) => ({ ...m, qty: Math.max(0, newQty), edited: true }));
+  };
+
+  const finalizeConfirm = () => {
+    clearConfirmTimers();
+    const { product, qty, replaceMode } = confirmModal;
+    if (!product) return;
+    if (replaceMode) {
+      // set absolute qty
+      setScannedProducts((prev) => {
+        const exists = prev.find((p) => p.productId === product.id);
+        if (exists) {
+          return prev.map((p) => p.productId === product.id ? { ...p, scannedQty: qty, lastBipAt: new Date() } : p).filter(p => p.scannedQty > 0);
+        }
+        if (qty <= 0) return prev;
+        return [{
+          productId: product.id, name: product.name, sku: product.sku,
+          barcode: product.barcode, imageUrl: product.image_url,
+          scannedQty: qty, systemQty: product.stock_physical, lastBipAt: new Date(),
+        }, ...prev];
+      });
+      setFlashId(product.id);
+      setTimeout(() => setFlashId(null), 1000);
+    } else if (qty > 0) {
+      addScannedUnits(product, qty);
+    }
+    setLastScan({ success: true, name: product.name, code: product.barcode || product.sku });
+    playBeep(800, 100);
+    setConfirmModal({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+    setTimeout(() => scanInputRef.current?.focus(), 50);
+  };
+
+  const cancelConfirm = () => {
+    clearConfirmTimers();
+    setConfirmModal({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+    setTimeout(() => scanInputRef.current?.focus(), 50);
+  };
+
+  // Inline qty editing
+  const startEditQty = (productId: string, currentQty: number) => {
+    setEditingQtyId(productId);
+    setEditingQtyValue(String(currentQty));
+  };
+  const commitEditQty = () => {
+    if (!editingQtyId) return;
+    const n = parseInt(editingQtyValue);
+    if (!isNaN(n) && n >= 0) {
+      setScannedProducts((prev) =>
+        prev.map((p) => p.productId === editingQtyId ? { ...p, scannedQty: n, lastBipAt: new Date() } : p).filter(p => p.scannedQty > 0)
+      );
+    }
+    setEditingQtyId(null);
+    setEditingQtyValue("");
+  };
+  const cancelEditQty = () => { setEditingQtyId(null); setEditingQtyValue(""); };
 
   const handleGtinConfirm = async () => {
     const product = allProducts.find((p) => p.id === gtinModal.selectedProductId);
