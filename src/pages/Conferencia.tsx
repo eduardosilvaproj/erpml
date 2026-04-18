@@ -318,36 +318,60 @@ const Conferencia = () => {
     setTimeout(() => confirmQtyInputRef.current?.select(), 100);
   }, [scannedProducts, startConfirmTimer]);
 
-  const handleScan = useCallback((code: string) => {
+  const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
     setScanBuffer("");
 
     const trimmed = code.trim();
     const normalized = trimmed.toUpperCase();
+    // Variants to handle leading-zero differences (DUN-14 vs EAN-13)
+    const variants = new Set<string>([normalized]);
+    if (/^\d+$/.test(normalized)) {
+      if (normalized.startsWith("0")) variants.add(normalized.replace(/^0+/, ""));
+      variants.add("0" + normalized);
+    }
     const simProducts = (window as any).__simProducts || [];
 
     const matchEan = (p: any) => {
       const barcode = (p.barcode || "").toString().trim().toUpperCase();
-      return barcode === normalized;
+      return variants.has(barcode);
     };
     const matchGtinCx = (p: any) => {
       const g = (p.gtin_cx || "").toString().trim().toUpperCase();
-      return !!g && g === normalized;
+      return !!g && variants.has(g);
     };
     const matchSku = (p: any) => {
       const sku = (p.sku || "").toString().trim().toUpperCase();
       const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
-      return sku === normalized || skuMl === normalized;
+      return variants.has(sku) || variants.has(skuMl);
     };
 
     // STEP 1 — EAN unitário
-    const porEan = allProducts.find(matchEan) || simProducts.find(matchEan);
+    let porEan = allProducts.find(matchEan) || simProducts.find(matchEan);
     // STEP 2 — GTIN CX (caixa vinculada)
-    const porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
+    let porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
     // STEP 3 — SKU
-    const porSku = !porEan && !porGtinCx ? (allProducts.find(matchSku) || simProducts.find(matchSku)) : null;
+    let porSku = !porEan && !porGtinCx ? (allProducts.find(matchSku) || simProducts.find(matchSku)) : null;
 
-    console.log('[Conferencia] Código bipado:', trimmed);
+    // STEP 3.5 — Fallback no banco (caso allProducts esteja desatualizado/limitado)
+    if (!porEan && !porGtinCx && !porSku) {
+      const variantList = Array.from(variants);
+      let q = supabase.from("products").select("*");
+      if (companyId) q = q.eq("company_id", companyId);
+      const { data: dbMatches } = await q
+        .or(
+          variantList.flatMap(v => [`barcode.eq.${v}`, `gtin_cx.eq.${v}`, `sku.eq.${v}`, `sku_ml.eq.${v}`]).join(",")
+        )
+        .limit(5);
+      if (dbMatches && dbMatches.length > 0) {
+        porEan = dbMatches.find(matchEan) || null;
+        porGtinCx = !porEan ? (dbMatches.find(matchGtinCx) || null) : null;
+        porSku = !porEan && !porGtinCx ? (dbMatches.find(matchSku) || null) : null;
+        if (!porEan && !porGtinCx && !porSku) porEan = dbMatches[0];
+      }
+    }
+
+    console.log('[Conferencia] Código bipado:', trimmed, 'variantes:', Array.from(variants));
     console.log('[Conferencia] Busca EAN:', porEan);
     console.log('[Conferencia] Busca GTIN CX:', porGtinCx);
     console.log('[Conferencia] Busca SKU:', porSku);
@@ -373,7 +397,6 @@ const Conferencia = () => {
         open: true, product: porGtinCx, code: trimmed, unitsPerBox, boxQty: "1",
       });
       playBeep(800, 100);
-      // Focus boxQty if units already filled, else focus units
       setTimeout(() => {
         if (unitsPerBox) gtinFoundBoxQtyRef.current?.select();
       }, 100);
@@ -394,7 +417,7 @@ const Conferencia = () => {
       unitsPerBox: "", boxQty: "1", saveGtin: true,
     });
     playBeep(400, 200);
-  }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup]);
+  }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup, companyId]);
 
   const adjustConfirmQty = (newQty: number) => {
     clearConfirmTimers();
