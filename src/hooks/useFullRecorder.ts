@@ -163,6 +163,26 @@ export const useFullRecorder = () => {
     []
   );
 
+  const uploadStandalone = useCallback(
+    async (params: { blob: Blob; companyId: string; userId: string; duracaoSegundos: number }) => {
+      setStatus("uploading");
+      const { blob, companyId } = params;
+      const dateStr = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `FULL_sem_ordem_${dateStr}.webm`;
+      const path = `${companyId}/separacao/${filename}`;
+      const { error: upErr } = await supabase.storage
+        .from("gravacoes-full")
+        .upload(path, blob, { contentType: "video/webm", upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed } = await supabase.storage
+        .from("gravacoes-full")
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+      setStatus("idle");
+      return { path, url: signed?.signedUrl || path };
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -176,7 +196,7 @@ export const useFullRecorder = () => {
 
   useEffect(() => () => { reset(); }, [reset]);
 
-  return { status, cameras, seconds, error, videoRef, listCameras, start, pause, resume, stop, uploadAndSave, reset };
+  return { status, cameras, seconds, error, videoRef, listCameras, start, pause, resume, stop, uploadAndSave, uploadStandalone, reset };
 };
 
 export const formatDuration = (s: number) => {
