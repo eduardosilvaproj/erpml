@@ -1281,17 +1281,17 @@ const Conferencia = () => {
           <DialogHeader className="flex-shrink-0 p-3 border-b border-border/40 space-y-1.5">
             <div className="flex items-start justify-between gap-2">
               <DialogTitle className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                <Package className="h-5 w-5 text-blue-400 shrink-0" />
+                <Package className="h-4 w-4 text-blue-400 shrink-0" />
                 <span className="truncate">📦 Caixa detectada</span>
               </DialogTitle>
             </div>
-            <p className="text-xs text-muted-foreground font-mono truncate">
+            <p className="text-[11px] text-muted-foreground font-mono truncate">
               Código: <span className="font-bold text-foreground">{gtinModal.code}</span>
             </p>
 
             {/* Tabs (selection step only) */}
             {!gtinModal.selectedProductId && (
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                 <button
                   type="button"
                   onClick={() => {
@@ -1299,24 +1299,24 @@ const Conferencia = () => {
                     setGtinScanError(null);
                     setTimeout(() => gtinScanInputRef.current?.focus(), 50);
                   }}
-                  className={`h-9 rounded-lg text-[13px] font-medium transition-colors ${
+                  className={`h-8 rounded-md text-xs font-medium transition-colors ${
                     gtinSelectMode === "scan"
                       ? "bg-blue-600 text-white"
                       : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                   }`}
                 >
-                  📷 Bipar produto
+                  📷 Bipar
                 </button>
                 <button
                   type="button"
                   onClick={() => setGtinSelectMode("list")}
-                  className={`h-9 rounded-lg text-[13px] font-medium transition-colors ${
+                  className={`h-8 rounded-md text-xs font-medium transition-colors ${
                     gtinSelectMode === "list"
                       ? "bg-blue-600 text-white"
                       : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
                   }`}
                 >
-                  🔍 Buscar na lista
+                  🔍 Buscar lista
                 </button>
               </div>
             )}
