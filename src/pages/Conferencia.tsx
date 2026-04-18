@@ -181,6 +181,38 @@ const Conferencia = () => {
     });
   }, []);
 
+  const clearConfirmTimers = useCallback(() => {
+    if (confirmTimerRef.current) { window.clearTimeout(confirmTimerRef.current); confirmTimerRef.current = null; }
+    if (confirmIntervalRef.current) { window.clearInterval(confirmIntervalRef.current); confirmIntervalRef.current = null; }
+  }, []);
+
+  const startConfirmTimer = useCallback((product: any, qty: number) => {
+    clearConfirmTimers();
+    setConfirmProgress(100);
+    const total = 3000;
+    const start = Date.now();
+    confirmIntervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      setConfirmProgress(Math.max(0, 100 - (elapsed / total) * 100));
+    }, 50);
+    confirmTimerRef.current = window.setTimeout(() => {
+      clearConfirmTimers();
+      addScannedUnits(product, qty);
+      setLastScan({ success: true, name: product.name, code: product.barcode || product.sku });
+      playBeep(800, 100);
+      setConfirmModal((m) => ({ ...m, open: false }));
+      setTimeout(() => scanInputRef.current?.focus(), 50);
+    }, total);
+  }, [addScannedUnits, clearConfirmTimers]);
+
+  const openConfirmPopup = useCallback((product: any) => {
+    const existing = scannedProducts.find((p) => p.productId === product.id);
+    const existingQty = existing?.scannedQty ?? 0;
+    setConfirmModal({ open: true, product, qty: 1, edited: false, existingQty, replaceMode: false });
+    startConfirmTimer(product, 1);
+    setTimeout(() => confirmQtyInputRef.current?.select(), 100);
+  }, [scannedProducts, startConfirmTimer]);
+
   const handleScan = useCallback((code: string) => {
     if (!code.trim()) return;
     setScanBuffer("");
@@ -200,6 +232,10 @@ const Conferencia = () => {
     const product = allProducts.find(matches) || simProducts.find(matches);
 
     if (product) {
+      if (confirmOnScan) {
+        openConfirmPopup(product);
+        return;
+      }
       addScannedUnits(product, 1);
       setLastScan({ success: true, name: product.name, code: trimmed });
       playBeep(800, 100);
