@@ -39,6 +39,7 @@ const Kits = () => {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<KitFormData[]>([]);
+  const [aiKitCount, setAiKitCount] = useState(1);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [search, setSearch] = useState("");
@@ -111,7 +112,7 @@ const Kits = () => {
       byCategory[cat].push(p);
     });
     const suggestions: KitFormData[] = [];
-    Object.entries(byCategory).slice(0, 3).forEach(([cat, prods]) => {
+    Object.entries(byCategory).slice(0, aiKitCount).forEach(([cat, prods]) => {
       if (prods.length >= 2) {
         const items = prods.slice(0, 3);
         const totalPrice = items.reduce((sum, p) => sum + Number(p.price || 0), 0);
@@ -143,7 +144,7 @@ const Kits = () => {
       const { data, error } = await supabase.functions.invoke("ai-analysis", {
         body: {
           type: "kit-suggestion",
-          prompt: `Analise estes produtos e sugira 3 kits que façam sentido comercial (combos, kits promocionais, kits complementares). Para cada kit, forneça: name (nome do kit), sku (sugestão de SKU), description (descrição curta), price (preço sugerido com desconto de kit), items (array com product_id e quantity). Produtos: ${JSON.stringify(productList)}. Responda APENAS em JSON válido no formato: [{ "name": "...", "sku": "...", "description": "...", "price": 0, "items": [{"product_id": "...", "quantity": 1}] }]`,
+          prompt: `Analise estes produtos e sugira ${aiKitCount} kit${aiKitCount > 1 ? "s" : ""} que faça${aiKitCount > 1 ? "m" : ""} sentido comercial (combos, kits promocionais, kits complementares). Para cada kit, forneça: name (nome do kit), sku (sugestão de SKU), description (descrição curta), price (preço sugerido com desconto de kit), items (array com product_id e quantity). Produtos: ${JSON.stringify(productList)}. Responda APENAS em JSON válido no formato: [{ "name": "...", "sku": "...", "description": "...", "price": 0, "items": [{"product_id": "...", "quantity": 1}] }]`,
         },
       });
 
@@ -539,14 +540,27 @@ const Kits = () => {
             </DialogTitle>
           </DialogHeader>
           {aiSuggestions.length === 0 ? (
-            <div className="text-center py-8">
-              <Sparkles className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center py-8 space-y-4">
+              <Sparkles className="h-10 w-10 mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">
                 A IA analisará seus produtos e sugerirá kits que façam sentido comercial.
               </p>
+              <div className="flex items-center justify-center gap-2">
+                <label className="text-sm text-muted-foreground">Quantidade de kits:</label>
+                <Select value={String(aiKitCount)} onValueChange={(v) => setAiKitCount(Number(v))} disabled={aiLoading}>
+                  <SelectTrigger className="w-20">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button onClick={handleAiSuggest} disabled={aiLoading}>
                 {aiLoading ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1" />}
-                {aiLoading ? "Analisando..." : "Gerar Sugestões"}
+                {aiLoading ? "Analisando..." : `Gerar ${aiKitCount} Sugest${aiKitCount > 1 ? "ões" : "ão"}`}
               </Button>
             </div>
           ) : (
