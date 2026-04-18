@@ -85,6 +85,40 @@ const Conferencia = () => {
   const [gtinSearch, setGtinSearch] = useState("");
   const [gtinSelectMode, setGtinSelectMode] = useState<"scan" | "list">("scan");
   const gtinScanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const [gtinScanLoading, setGtinScanLoading] = useState(false);
+  const [gtinScanError, setGtinScanError] = useState<string | null>(null);
+  const [gtinScanFlash, setGtinScanFlash] = useState<"success" | "error" | null>(null);
+
+  // Search a product directly in the DB by barcode / sku / gtin_cx, scoped by company
+  const searchProductByCode = useCallback(async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return null;
+    console.log("[Conferencia] Buscando produto:", trimmed, "company_id:", companyId);
+
+    let q = supabase.from("products").select("*").limit(1);
+    if (companyId) q = q.eq("company_id", companyId);
+
+    // Try barcode first
+    const { data: byBarcode, error: e1 } = await q.eq("barcode", trimmed).maybeSingle();
+    console.log("[Conferencia] por barcode:", byBarcode, e1);
+    if (byBarcode) return byBarcode;
+
+    // Try SKU
+    let q2 = supabase.from("products").select("*").limit(1);
+    if (companyId) q2 = q2.eq("company_id", companyId);
+    const { data: bySku, error: e2 } = await q2.eq("sku", trimmed).maybeSingle();
+    console.log("[Conferencia] por sku:", bySku, e2);
+    if (bySku) return bySku;
+
+    // Try GTIN CX
+    let q3 = supabase.from("products").select("*").limit(1);
+    if (companyId) q3 = q3.eq("company_id", companyId);
+    const { data: byGtin, error: e3 } = await q3.eq("gtin_cx", trimmed).maybeSingle();
+    console.log("[Conferencia] por gtin_cx:", byGtin, e3);
+    if (byGtin) return byGtin;
+
+    return null;
+  }, [companyId]);
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
@@ -1146,7 +1180,15 @@ const Conferencia = () => {
           </div>
 
           {gtinSelectMode === "scan" && !gtinModal.selectedProductId && (
-            <div className="space-y-2 rounded-lg border-2 border-blue-500/50 bg-blue-500/5 p-4 animate-pulse-once">
+            <div
+              className={`space-y-2 rounded-lg border-2 p-4 transition-colors ${
+                gtinScanFlash === "success"
+                  ? "border-emerald-500 bg-emerald-500/10"
+                  : gtinScanFlash === "error"
+                  ? "border-red-500 bg-red-500/10"
+                  : "border-blue-500/50 bg-blue-500/5 animate-pulse-once"
+              }`}
+            >
               <Label className="text-sm font-semibold flex items-center gap-2">
                 <ScanBarcode className="h-4 w-4 text-blue-400" /> Agora bipe o EAN/SKU do produto:
               </Label>
@@ -1154,30 +1196,74 @@ const Conferencia = () => {
                 ref={gtinScanInputRef}
                 value=""
                 onChange={() => {}}
-                onScan={(code) => {
+                onScan={async (code) => {
                   const trimmed = code.trim();
                   if (!trimmed) return;
-                  const found = allProducts.find(
-                    (p) => p.barcode === trimmed || p.sku === trimmed
-                  );
-                  if (found) {
-                    const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
-                    setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
-                    playBeep(800, 100);
-                  } else {
-                    toast({
-                      title: "Produto não encontrado",
-                      description: `EAN/SKU "${trimmed}" não cadastrado. Tente novamente ou use a busca na lista.`,
-                      variant: "destructive",
-                    });
-                    playBeep(300, 200);
+                  setGtinScanError(null);
+                  setGtinScanLoading(true);
+                  try {
+                    const found = await searchProductByCode(trimmed);
+                    if (found) {
+                      const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
+                      setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
+                      setGtinScanFlash("success");
+                      playBeep(800, 100);
+                      setTimeout(() => setGtinScanFlash(null), 600);
+                    } else {
+                      setGtinScanError(trimmed);
+                      setGtinScanFlash("error");
+                      playBeep(300, 200);
+                      setTimeout(() => playBeep(300, 200), 220);
+                      setTimeout(() => setGtinScanFlash(null), 800);
+                      setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+                    }
+                  } catch (err) {
+                    console.error("[Conferencia] Erro ao buscar produto:", err);
+                    setGtinScanError(trimmed);
+                    setGtinScanFlash("error");
+                    toast({ title: "Erro ao buscar produto", description: String((err as Error).message ?? err), variant: "destructive" });
+                  } finally {
+                    setGtinScanLoading(false);
                   }
                 }}
-                placeholder="Bipe o EAN do produto..."
+                placeholder={gtinScanLoading ? "Buscando..." : "Bipe o EAN do produto..."}
                 inputClassName="h-12 font-mono"
-                icon={<ScanBarcode className="h-4 w-4" />}
+                icon={gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanBarcode className="h-4 w-4" />}
                 autoFocus
               />
+              {gtinScanError && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-3 space-y-2 text-sm">
+                  <p className="font-semibold text-red-400">❌ Item não cadastrado</p>
+                  <p className="font-mono text-xs text-muted-foreground">Código: {gtinScanError}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Este produto não está cadastrado no sistema desta empresa.
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setGtinScanError(null);
+                        setGtinSelectMode("list");
+                      }}
+                    >
+                      🔍 Buscar na lista
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setGtinScanError(null);
+                        setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+                      }}
+                    >
+                      ↩️ Tentar outro código
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
