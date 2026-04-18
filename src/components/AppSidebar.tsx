@@ -40,6 +40,7 @@ const groups: NavGroup[] = [
       { label: "Entrada de Nota", url: "/entrada-nota", icon: ClipboardList, tooltip: "Receba mercadorias e atualize o estoque automaticamente" },
       { label: "Conferência", url: "/conferencia", icon: ScanBarcode, tooltip: "Bipe produtos para verificar se o estoque está correto" },
       { label: "Balanço", url: "/balanco-estoque", icon: BarChart, tooltip: "Realize inventário físico do estoque" },
+      { label: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, tooltip: "Transferir mercadorias para o FULL do Mercado Livre" },
     ],
   },
   {
