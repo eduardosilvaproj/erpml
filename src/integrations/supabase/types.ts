@@ -493,7 +493,7 @@ export type Database = {
           company_id: string
           created_at: string
           duracao_segundos: number
-          envio_id: string
+          envio_id: string | null
           id: string
           storage_path: string
           tamanho_bytes: number
@@ -505,7 +505,7 @@ export type Database = {
           company_id: string
           created_at?: string
           duracao_segundos?: number
-          envio_id: string
+          envio_id?: string | null
           id?: string
           storage_path: string
           tamanho_bytes?: number
@@ -517,7 +517,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           duracao_segundos?: number
-          envio_id?: string
+          envio_id?: string | null
           id?: string
           storage_path?: string
           tamanho_bytes?: number
