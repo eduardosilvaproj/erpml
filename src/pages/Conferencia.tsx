@@ -205,6 +205,12 @@ const Conferencia = () => {
   const confirmIntervalRef = useRef<number | null>(null);
   const confirmQtyInputRef = useRef<HTMLInputElement>(null);
 
+  // Modal: EAN válido mas produto não cadastrado
+  const [unregisteredModal, setUnregisteredModal] = useState<{ open: boolean; code: string }>({
+    open: false,
+    code: "",
+  });
+
   // Inline qty editing
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
   const [editingQtyValue, setEditingQtyValue] = useState<string>("");
