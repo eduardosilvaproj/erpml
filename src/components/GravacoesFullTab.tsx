@@ -188,7 +188,7 @@ export const GravacoesFullTab = () => {
                         </TableCell>
                         <TableCell>{tipoBadge(r.tipo)}</TableCell>
                         <TableCell className="font-mono text-xs">
-                          {ord ?? <span className="text-muted-foreground italic">Sem ordem</span>}
+                          {ord ? `#${ord}` : <Badge variant="outline" className="bg-muted text-muted-foreground">Sem ordem</Badge>}
                         </TableCell>
                         <TableCell className="text-xs">{formatDuration(r.duracao_segundos)}</TableCell>
                         <TableCell className="text-xs">{formatBytes(r.tamanho_bytes)}</TableCell>
