@@ -115,11 +115,20 @@ export const useFullRecorder = () => {
         if (timerRef.current) window.clearInterval(timerRef.current);
         streamRef.current?.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
+        const mime = r.mimeType || "video/webm";
+        const blob = new Blob(chunksRef.current, { type: mime });
+        console.log("[useFullRecorder] stop — chunks:", chunksRef.current.length, "size:", blob.size);
         setStatus("stopped");
         resolve(blob);
       };
-      try { r.stop(); } catch { resolve(null); }
+      try {
+        if (r.state !== "inactive") {
+          try { r.requestData(); } catch { /* ignored */ }
+          r.stop();
+        } else {
+          resolve(null);
+        }
+      } catch { resolve(null); }
     });
   }, []);
 
