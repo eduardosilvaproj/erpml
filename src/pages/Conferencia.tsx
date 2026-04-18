@@ -208,11 +208,22 @@ const Conferencia = () => {
   const confirmIntervalRef = useRef<number | null>(null);
   const confirmQtyInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal: EAN válido mas produto não cadastrado
+  // Modal: EAN válido mas produto não cadastrado (chooser: caixa OU produto novo)
   const [unregisteredModal, setUnregisteredModal] = useState<{ open: boolean; code: string }>({
     open: false,
     code: "",
   });
+
+  // Mini modal: cadastro rápido de produto a partir do código bipado
+  const [quickRegister, setQuickRegister] = useState<{
+    open: boolean;
+    code: string;
+    name: string;
+    sku: string;
+    price: string;
+    stock: string;
+    saving: boolean;
+  }>({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
 
   // Inline qty editing
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
@@ -783,6 +794,57 @@ const Conferencia = () => {
       toast({ title: "Erro ao cancelar", description: err.message, variant: "destructive" });
     } finally {
       setCancelling(false);
+    }
+  };
+
+  // Quick register: opens the mini modal (also closes any source modal that triggered it)
+  const openQuickRegister = useCallback((code: string) => {
+    setUnregisteredModal({ open: false, code: "" });
+    setGtinModal((prev) => ({ ...prev, open: false }));
+    setQuickRegister({ open: true, code, name: "", sku: "", price: "", stock: "", saving: false });
+  }, []);
+
+  const handleQuickRegisterSave = async () => {
+    const name = quickRegister.name.trim();
+    if (!name) {
+      toast({ title: "Nome obrigatório", description: "Informe o nome do produto.", variant: "destructive" });
+      return;
+    }
+    if (!companyId) {
+      toast({ title: "Empresa não identificada", variant: "destructive" });
+      return;
+    }
+    setQuickRegister((q) => ({ ...q, saving: true }));
+    try {
+      const sku = quickRegister.sku.trim() || `SKU-${Date.now().toString(36).toUpperCase()}`;
+      const price = parseFloat(quickRegister.price.replace(",", ".")) || 0;
+      const stock = parseInt(quickRegister.stock) || 0;
+      const { data, error } = await supabase
+        .from("products")
+        .insert({
+          company_id: companyId,
+          name,
+          sku,
+          barcode: quickRegister.code,
+          price,
+          cost: 0,
+          stock_physical: stock,
+          stock_full: 0,
+          min_stock: 0,
+          active: true,
+        } as any)
+        .select()
+        .single();
+      if (error) throw error;
+      await refetchProducts();
+      const newProduct = data as any;
+      setQuickRegister({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
+      toast({ title: "✅ Produto cadastrado e adicionado à conferência!" });
+      // Open quantity popup so the user can confirm how many units
+      setTimeout(() => openConfirmPopup(newProduct), 100);
+    } catch (err: any) {
+      toast({ title: "Erro ao cadastrar produto", description: err.message, variant: "destructive" });
+      setQuickRegister((q) => ({ ...q, saving: false }));
     }
   };
 
@@ -1467,7 +1529,7 @@ const Conferencia = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ========== EAN VÁLIDO, PRODUTO NÃO CADASTRADO ========== */}
+      {/* ========== CÓDIGO NÃO RECONHECIDO — CHOOSER ========== */}
       <Dialog
         open={unregisteredModal.open}
         onOpenChange={(open) => {
@@ -1477,11 +1539,11 @@ const Conferencia = () => {
           }
         }}
       >
-        <DialogContent className="max-w-[440px] w-[calc(100%-2rem)] border-amber-500/40">
+        <DialogContent className="max-w-[460px] w-[calc(100%-2rem)] border-amber-500/40">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-5 w-5 text-amber-400" />
-              Produto não cadastrado
+              Código não reconhecido
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -1491,13 +1553,40 @@ const Conferencia = () => {
                 {unregisteredModal.code}
               </p>
             </div>
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-sm text-amber-200">
-              Este código tem formato de EAN válido, mas o produto não está cadastrado no sistema.
-            </div>
+            <p className="text-sm text-muted-foreground">O que é este código?</p>
+            <button
+              type="button"
+              onClick={() => {
+                const code = unregisteredModal.code;
+                setUnregisteredModal({ open: false, code: "" });
+                setGtinModal({
+                  open: true, code, selectedProductId: "",
+                  unitsPerBox: "", boxQty: "1", saveGtin: true,
+                });
+              }}
+              className="w-full rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 p-4 text-left transition-colors flex items-start gap-3"
+            >
+              <Package className="h-6 w-6 text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-foreground">📦 É uma CAIXA</p>
+                <p className="text-xs text-muted-foreground">Vincular a um produto existente</p>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => openQuickRegister(unregisteredModal.code)}
+              className="w-full rounded-lg border border-border/40 bg-muted/20 hover:bg-muted/40 p-4 text-left transition-colors flex items-start gap-3"
+            >
+              <Package className="h-6 w-6 text-emerald-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-foreground">🏷️ É um PRODUTO novo</p>
+                <p className="text-xs text-muted-foreground">Cadastrar rapidamente no sistema</p>
+              </div>
+            </button>
           </div>
-          <DialogFooter className="gap-2 sm:gap-2">
+          <DialogFooter>
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => {
                 setUnregisteredModal({ open: false, code: "" });
                 setTimeout(() => scanInputRef.current?.focus(), 50);
@@ -1505,14 +1594,95 @@ const Conferencia = () => {
             >
               <X className="h-4 w-4 mr-1" /> Ignorar
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ========== MINI MODAL: CADASTRO RÁPIDO ========== */}
+      <Dialog
+        open={quickRegister.open}
+        onOpenChange={(open) => {
+          if (!open && !quickRegister.saving) {
+            setQuickRegister({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
+            setTimeout(() => scanInputRef.current?.focus(), 50);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[460px] w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Package className="h-5 w-5 text-emerald-400" />
+              ➕ Cadastrar produto rápido
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-muted/30 border border-border/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">EAN detectado</p>
+              <p className="font-mono text-sm font-semibold text-foreground break-all">
+                {quickRegister.code}
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="qr-name">Nome do produto *</Label>
+              <Input
+                id="qr-name"
+                autoFocus
+                value={quickRegister.name}
+                onChange={(e) => setQuickRegister((q) => ({ ...q, name: e.target.value }))}
+                placeholder="Ex.: Camiseta Azul M"
+              />
+            </div>
+            <div>
+              <Label htmlFor="qr-sku">SKU (opcional)</Label>
+              <Input
+                id="qr-sku"
+                value={quickRegister.sku}
+                onChange={(e) => setQuickRegister((q) => ({ ...q, sku: e.target.value }))}
+                placeholder="Gerado automaticamente se vazio"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label htmlFor="qr-price">Preço de venda (R$)</Label>
+                <Input
+                  id="qr-price"
+                  inputMode="decimal"
+                  value={quickRegister.price}
+                  onChange={(e) => setQuickRegister((q) => ({ ...q, price: e.target.value }))}
+                  placeholder="0,00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="qr-stock">Estoque inicial</Label>
+                <Input
+                  id="qr-stock"
+                  inputMode="numeric"
+                  value={quickRegister.stock}
+                  onChange={(e) => setQuickRegister((q) => ({ ...q, stock: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-xs text-amber-200">
+              ⚠️ Apenas o nome é obrigatório. Complete o cadastro depois em Produtos.
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
             <Button
+              variant="outline"
+              disabled={quickRegister.saving}
               onClick={() => {
-                const code = unregisteredModal.code;
-                setUnregisteredModal({ open: false, code: "" });
-                window.open(`/produtos?novo=1&barcode=${encodeURIComponent(code)}`, "_blank");
+                setQuickRegister({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
+                setTimeout(() => scanInputRef.current?.focus(), 50);
               }}
             >
-              <Package className="h-4 w-4 mr-1" /> Cadastrar produto
+              Cancelar
+            </Button>
+            <Button onClick={handleQuickRegisterSave} disabled={quickRegister.saving || !quickRegister.name.trim()}>
+              {quickRegister.saving
+                ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Salvando...</>
+                : <><Check className="h-4 w-4 mr-1" /> Cadastrar e bipar</>
+              }
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1807,6 +1977,16 @@ const Conferencia = () => {
             >
               Cancelar
             </Button>
+            {!gtinModal.selectedProductId && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => openQuickRegister(gtinModal.code)}
+                className="text-emerald-300"
+              >
+                🏷️ Na verdade é um produto
+              </Button>
+            )}
             {gtinModal.selectedProductId && (
               <Button
                 size="sm"
