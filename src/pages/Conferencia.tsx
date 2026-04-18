@@ -1212,6 +1212,57 @@ const Conferencia = () => {
         </DialogContent>
       </Dialog>
 
+      {/* ========== EAN VÁLIDO, PRODUTO NÃO CADASTRADO ========== */}
+      <Dialog
+        open={unregisteredModal.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setUnregisteredModal({ open: false, code: "" });
+            setTimeout(() => scanInputRef.current?.focus(), 50);
+          }
+        }}
+      >
+        <DialogContent className="max-w-[440px] w-[calc(100%-2rem)] border-amber-500/40">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              Produto não cadastrado
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-muted/30 border border-border/40 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Código bipado</p>
+              <p className="font-mono text-base font-semibold text-foreground break-all">
+                {unregisteredModal.code}
+              </p>
+            </div>
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-sm text-amber-200">
+              Este código tem formato de EAN válido, mas o produto não está cadastrado no sistema.
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setUnregisteredModal({ open: false, code: "" });
+                setTimeout(() => scanInputRef.current?.focus(), 50);
+              }}
+            >
+              <X className="h-4 w-4 mr-1" /> Ignorar
+            </Button>
+            <Button
+              onClick={() => {
+                const code = unregisteredModal.code;
+                setUnregisteredModal({ open: false, code: "" });
+                window.open(`/produtos?novo=1&barcode=${encodeURIComponent(code)}`, "_blank");
+              }}
+            >
+              <Package className="h-4 w-4 mr-1" /> Cadastrar produto
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ========== GTIN CX MODAL ========== */}
       <Dialog open={gtinModal.open} onOpenChange={(open) => {
         if (!open) {
