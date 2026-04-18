@@ -1098,6 +1098,116 @@ export type Database = {
         }
         Relationships: []
       }
+      ordens_full: {
+        Row: {
+          atribuido_para: string | null
+          company_id: string
+          concluida_em: string | null
+          created_at: string
+          criado_por: string
+          descricao: string | null
+          gravacao_id: string | null
+          id: string
+          iniciada_em: string | null
+          numero: string
+          prazo: string | null
+          status: Database["public"]["Enums"]["ordem_full_status"]
+          total_itens: number
+          total_produtos: number
+          updated_at: string
+        }
+        Insert: {
+          atribuido_para?: string | null
+          company_id: string
+          concluida_em?: string | null
+          created_at?: string
+          criado_por: string
+          descricao?: string | null
+          gravacao_id?: string | null
+          id?: string
+          iniciada_em?: string | null
+          numero?: string
+          prazo?: string | null
+          status?: Database["public"]["Enums"]["ordem_full_status"]
+          total_itens?: number
+          total_produtos?: number
+          updated_at?: string
+        }
+        Update: {
+          atribuido_para?: string | null
+          company_id?: string
+          concluida_em?: string | null
+          created_at?: string
+          criado_por?: string
+          descricao?: string | null
+          gravacao_id?: string | null
+          id?: string
+          iniciada_em?: string | null
+          numero?: string
+          prazo?: string | null
+          status?: Database["public"]["Enums"]["ordem_full_status"]
+          total_itens?: number
+          total_produtos?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_full_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ordens_full_itens: {
+        Row: {
+          created_at: string
+          id: string
+          ordem_id: string
+          product_id: string
+          qtd_separada: number
+          qtd_solicitada: number
+          status: Database["public"]["Enums"]["ordem_item_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ordem_id: string
+          product_id: string
+          qtd_separada?: number
+          qtd_solicitada?: number
+          status?: Database["public"]["Enums"]["ordem_item_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ordem_id?: string
+          product_id?: string
+          qtd_separada?: number
+          qtd_solicitada?: number
+          status?: Database["public"]["Enums"]["ordem_item_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ordens_full_itens_ordem_id_fkey"
+            columns: ["ordem_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_full"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ordens_full_itens_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_logs: {
         Row: {
           asaas_payment_id: string | null
@@ -2028,6 +2138,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      concluir_ordem_full: { Args: { _ordem_id: string }; Returns: undefined }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -2040,11 +2151,22 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_company_owner_or_manager: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
       company_role: "owner" | "manager" | "member"
       company_status: "active" | "suspended" | "cancelled"
+      ordem_full_status:
+        | "rascunho"
+        | "aguardando"
+        | "em_separacao"
+        | "concluida"
+        | "cancelada"
+      ordem_item_status: "pendente" | "parcial" | "completo" | "excesso"
       plan_type: "free" | "basic" | "premium" | "enterprise"
       store_payment_method: "pix" | "cartao" | "boleto"
       store_payment_status: "pendente" | "pago" | "cancelado" | "expirado"
@@ -2179,6 +2301,14 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       company_role: ["owner", "manager", "member"],
       company_status: ["active", "suspended", "cancelled"],
+      ordem_full_status: [
+        "rascunho",
+        "aguardando",
+        "em_separacao",
+        "concluida",
+        "cancelada",
+      ],
+      ordem_item_status: ["pendente", "parcial", "completo", "excesso"],
       plan_type: ["free", "basic", "premium", "enterprise"],
       store_payment_method: ["pix", "cartao", "boleto"],
       store_payment_status: ["pendente", "pago", "cancelado", "expirado"],
