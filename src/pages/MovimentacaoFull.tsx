@@ -72,6 +72,7 @@ const MovimentacaoFull = () => {
   const [despachoOrderId, setDespachoOrderId] = useState<{ id: string; number: string } | null>(null);
   const [askedOnce, setAskedOnce] = useState(false);
   const [successInfo, setSuccessInfo] = useState<SuccessInfo | null>(null);
+  const [previewExpanded, setPreviewExpanded] = useState(false);
 
   useEffect(() => {
     scanInputRef.current?.focus();
