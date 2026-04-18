@@ -383,7 +383,7 @@ const MovimentacaoFull = () => {
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [items, kits, boxModeEnabled]);
+  }, [items, kits, boxModeEnabled, ordemAtiva, qtdBipada]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
