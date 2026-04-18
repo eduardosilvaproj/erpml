@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { GravacoesFullTab } from "@/components/GravacoesFullTab";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
@@ -619,6 +621,14 @@ const MovimentacaoFull = () => {
         <h1 className="text-2xl font-bold text-foreground">Movimentação Físico → FULL</h1>
         <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
       </div>
+
+      <Tabs defaultValue="envio" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
+          <TabsTrigger value="gravacoes">📹 Gravações</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="envio" className="space-y-6 mt-0">
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
