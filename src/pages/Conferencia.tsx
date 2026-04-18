@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
+import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 
 type Step = 1 | 2 | 3;
 
