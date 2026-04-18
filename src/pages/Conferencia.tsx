@@ -80,6 +80,7 @@ const Conferencia = () => {
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
+  const [gtinSearch, setGtinSearch] = useState("");
 
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
@@ -453,13 +454,13 @@ const Conferencia = () => {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
+                  <div className={`relative flex-1 transition-all rounded-xl ${gtinModal.open ? "ring-2 ring-blue-500/50" : ""}`}>
                     <BarcodeScannerInput
                       ref={scanInputRef}
                       value={scanBuffer}
                       onChange={(v) => setScanBuffer(v)}
                       onScan={(code) => { handleScan(code); setScanBuffer(""); }}
-                      placeholder="Bipe ou digite o código de barras..."
+                      placeholder={gtinModal.open ? "Aguardando confirmação da caixa..." : "Bipe o próximo código..."}
                       inputClassName="text-lg h-14 font-mono"
                       icon={<ScanBarcode className="h-5 w-5" />}
                       autoFocus
@@ -798,29 +799,44 @@ const Conferencia = () => {
       <Dialog open={gtinModal.open} onOpenChange={(open) => {
         if (!open) {
           setGtinModal((prev) => ({ ...prev, open: false }));
+          setGtinSearch("");
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto border-blue-500/40">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-400" />
-              Código não reconhecido
+              <Package className="h-5 w-5 text-blue-400" />
+              📦 Caixa detectada
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
               Código bipado: <span className="font-mono font-bold">{gtinModal.code}</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Selecione a qual produto desta nota pertence esta caixa:
+              Bipe ou busque o produto que está dentro desta caixa:
             </p>
           </DialogHeader>
+
+          <Input
+            value={gtinSearch}
+            onChange={(e) => setGtinSearch(e.target.value)}
+            placeholder="🔍 Buscar produto por nome ou SKU..."
+            autoFocus
+          />
 
           <RadioGroup
             value={gtinModal.selectedProductId}
             onValueChange={(val) => setGtinModal((prev) => ({ ...prev, selectedProductId: val }))}
             className="space-y-2 max-h-[200px] overflow-y-auto"
           >
-            {allProducts.map((p) => (
+            {allProducts
+              .filter((p) => {
+                if (!gtinSearch.trim()) return true;
+                const q = gtinSearch.toLowerCase();
+                return (p.name || "").toLowerCase().includes(q) || (p.sku || "").toLowerCase().includes(q);
+              })
+              .slice(0, 50)
+              .map((p) => (
               <label
                 key={p.id}
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
