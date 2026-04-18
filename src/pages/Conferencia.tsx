@@ -1263,107 +1263,108 @@ const Conferencia = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ========== GTIN CX MODAL ========== */}
+      {/* ========== GTIN CX MODAL — CAIXA DETECTADA ========== */}
       <Dialog open={gtinModal.open} onOpenChange={(open) => {
         if (!open) {
           setGtinModal((prev) => ({ ...prev, open: false }));
           setGtinSearch("");
           setGtinSelectMode("scan");
+          setGtinScanError(null);
+          setGtinScanValue("");
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-[480px] w-[calc(100%-2rem)] max-h-[90vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col rounded-xl">
-          {/* HEADER (fixed) */}
-          <DialogHeader className="flex-shrink-0 p-4 pb-3 border-b border-border/40 space-y-2">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <Package className="h-5 w-5 text-blue-400" />
-              📦 Caixa detectada
-            </DialogTitle>
-            <p className="text-xs text-muted-foreground">
-              Código: <span className="font-mono font-bold text-foreground">{gtinModal.code}</span>
+        <DialogContent
+          className="p-0 gap-0 overflow-hidden border border-blue-500/40 rounded-xl bg-[hsl(var(--card))] flex flex-col w-[calc(100%-2rem)] max-w-[460px] max-h-[85vh] sm:max-h-[85vh]"
+        >
+          {/* ============ HEADER ============ */}
+          <DialogHeader className="flex-shrink-0 p-4 border-b border-border/40 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <DialogTitle className="flex items-center gap-2 text-[15px] font-semibold leading-tight">
+                <Package className="h-5 w-5 text-blue-400 shrink-0" />
+                <span className="truncate">📦 Caixa detectada</span>
+              </DialogTitle>
+            </div>
+            <p className="text-xs text-muted-foreground font-mono truncate">
+              Código: <span className="font-bold text-foreground">{gtinModal.code}</span>
             </p>
 
-            {/* Mode tabs (only when no product selected) */}
+            {/* Tabs (selection step only) */}
             {!gtinModal.selectedProductId && (
-              <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-muted/30 border border-border/40">
-                <Button
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
                   type="button"
-                  size="sm"
-                  variant={gtinSelectMode === "scan" ? "default" : "ghost"}
-                  className={`h-8 ${gtinSelectMode === "scan" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}`}
                   onClick={() => {
                     setGtinSelectMode("scan");
                     setGtinScanError(null);
                     setTimeout(() => gtinScanInputRef.current?.focus(), 50);
                   }}
+                  className={`h-9 rounded-lg text-[13px] font-medium transition-colors ${
+                    gtinSelectMode === "scan"
+                      ? "bg-blue-600 text-white"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                  }`}
                 >
-                  <ScanBarcode className="h-4 w-4 mr-1" /> Bipar produto
-                </Button>
-                <Button
+                  📷 Bipar produto
+                </button>
+                <button
                   type="button"
-                  size="sm"
-                  variant={gtinSelectMode === "list" ? "default" : "ghost"}
-                  className={`h-8 ${gtinSelectMode === "list" ? "bg-blue-500 hover:bg-blue-500/90 text-white" : ""}`}
                   onClick={() => setGtinSelectMode("list")}
+                  className={`h-9 rounded-lg text-[13px] font-medium transition-colors ${
+                    gtinSelectMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted/60"
+                  }`}
                 >
                   🔍 Buscar na lista
-                </Button>
+                </button>
               </div>
             )}
 
-            {/* Selected product summary header */}
+            {/* Selected product summary */}
             {gtinModal.selectedProductId && (() => {
               const sel = allProducts.find((p) => p.id === gtinModal.selectedProductId);
               return (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
+                <div className="flex items-center gap-2 rounded-lg border border-blue-500/40 bg-blue-500/5 p-2 mt-1">
+                  <button
+                    type="button"
                     onClick={() => setGtinModal((prev) => ({ ...prev, selectedProductId: "" }))}
+                    className="h-7 w-7 rounded-md hover:bg-muted/40 flex items-center justify-center shrink-0"
                     title="Voltar"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                  </Button>
+                  </button>
                   {sel?.image_url ? (
-                    <img src={sel.image_url} alt={sel.name} className="h-8 w-8 rounded object-cover shrink-0" />
+                    <img src={sel.image_url} alt={sel.name} className="h-9 w-9 rounded-md object-cover shrink-0" />
                   ) : (
-                    <div className="h-8 w-8 rounded bg-muted/30 flex items-center justify-center shrink-0">
+                    <div className="h-9 w-9 rounded-md bg-muted/30 flex items-center justify-center shrink-0">
                       <Package className="h-4 w-4 text-muted-foreground/40" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate leading-tight">{sel?.name}</p>
-                    <p className="text-[10px] font-mono text-muted-foreground">{sel?.sku}</p>
+                    <p className="text-[11px] font-mono text-muted-foreground truncate">{sel?.sku}</p>
                   </div>
                 </div>
               );
             })()}
           </DialogHeader>
 
-          {/* BODY (scrollable) */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* ============ BODY ============ */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {/* SCAN MODE */}
             {!gtinModal.selectedProductId && gtinSelectMode === "scan" && (
-              <div
-                className={`space-y-2 rounded-lg border-2 p-3 transition-colors ${
-                  gtinScanFlash === "success"
-                    ? "border-emerald-500 bg-emerald-500/10"
-                    : gtinScanFlash === "error"
-                    ? "border-red-500 bg-red-500/10"
-                    : "border-blue-500/50 bg-blue-500/5"
-                }`}
-              >
-                <Label className="text-xs font-semibold flex items-center gap-2">
-                  <ScanBarcode className="h-4 w-4 text-blue-400" /> Bipe o EAN/SKU do produto
-                </Label>
+              <div className="space-y-2.5">
+                <p className="text-[13px] text-muted-foreground">
+                  Bipe o EAN/SKU do produto desta caixa:
+                </p>
                 <div className="flex gap-2">
                   <Input
                     ref={gtinScanInputRef}
                     type="text"
                     inputMode="numeric"
                     value={gtinScanValue}
-                    onChange={(e) => setGtinScanValue(e.target.value)}
+                    onChange={(e) => { setGtinScanValue(e.target.value); setGtinScanError(null); }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -1371,38 +1372,38 @@ const Conferencia = () => {
                         handleGtinModalScan(gtinScanValue);
                       }
                     }}
-                    placeholder={gtinScanLoading ? "Buscando..." : "Bipe ou digite o EAN/SKU..."}
+                    placeholder={gtinScanLoading ? "Buscando..." : "Bipe ou digite..."}
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck={false}
                     disabled={gtinScanLoading}
                     autoFocus
-                    className="h-11 font-mono flex-1"
+                    className={`h-11 font-mono flex-1 transition-colors ${
+                      gtinScanFlash === "success" ? "border-emerald-500 bg-emerald-500/5" :
+                      gtinScanFlash === "error" ? "border-red-500 bg-red-500/5" : ""
+                    }`}
                   />
                   <Button
                     type="button"
                     onClick={() => handleGtinModalScan(gtinScanValue)}
                     disabled={!gtinScanValue.trim() || gtinScanLoading}
-                    className="h-11 shrink-0 bg-blue-500 hover:bg-blue-500/90 text-white"
+                    className="h-11 shrink-0 bg-blue-600 hover:bg-blue-600/90 text-white px-4"
                   >
-                    {gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bipar"}
+                    {gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
                   </Button>
                 </div>
                 {gtinScanError && (
-                  <div className="rounded-lg border border-red-500/40 bg-red-500/5 p-2.5 space-y-1.5 text-sm">
-                    <p className="font-semibold text-red-400 text-sm">❌ Item não cadastrado</p>
-                    <p className="font-mono text-xs text-muted-foreground">Código: {gtinScanError}</p>
+                  <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-2.5 space-y-1.5">
+                    <p className="text-[13px] font-semibold text-red-400">❌ Item não cadastrado</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">Código: {gtinScanError}</p>
                     <div className="flex flex-wrap gap-2 pt-1">
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
                         className="h-7 text-xs"
-                        onClick={() => {
-                          setGtinScanError(null);
-                          setGtinSelectMode("list");
-                        }}
+                        onClick={() => { setGtinScanError(null); setGtinSelectMode("list"); }}
                       >
                         🔍 Buscar na lista
                       </Button>
@@ -1411,12 +1412,9 @@ const Conferencia = () => {
                         size="sm"
                         variant="ghost"
                         className="h-7 text-xs"
-                        onClick={() => {
-                          setGtinScanError(null);
-                          setTimeout(() => gtinScanInputRef.current?.focus(), 50);
-                        }}
+                        onClick={() => { setGtinScanError(null); setGtinScanValue(""); setTimeout(() => gtinScanInputRef.current?.focus(), 50); }}
                       >
-                        ↩️ Tentar outro código
+                        ↩️ Tentar outro
                       </Button>
                     </div>
                   </div>
@@ -1434,7 +1432,7 @@ const Conferencia = () => {
                   className="h-10"
                   autoFocus
                 />
-                <div className="max-h-[300px] overflow-y-auto space-y-1 rounded-lg border border-border/40 p-1">
+                <div className="flex flex-col gap-1 max-h-[260px] overflow-y-auto rounded-lg border border-border/40 p-1">
                   {allProducts
                     .filter((p) => {
                       if (!gtinSearch.trim()) return true;
@@ -1450,7 +1448,7 @@ const Conferencia = () => {
                           const unitsPerBox = p.box_quantity ? String(p.box_quantity) : "";
                           setGtinModal((prev) => ({ ...prev, selectedProductId: p.id, unitsPerBox: prev.unitsPerBox || unitsPerBox }));
                         }}
-                        className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-primary/10 transition-colors text-left"
+                        className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-blue-500/10 transition-colors text-left"
                       >
                         {p.image_url ? (
                           <img src={p.image_url} alt={p.name} className="h-8 w-8 rounded object-cover shrink-0" />
@@ -1460,8 +1458,8 @@ const Conferencia = () => {
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate leading-tight">{p.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground">{p.sku}</p>
+                          <p className="text-[13px] truncate leading-tight">{p.name}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground truncate">{p.sku}</p>
                         </div>
                       </button>
                     ))}
@@ -1469,12 +1467,12 @@ const Conferencia = () => {
               </div>
             )}
 
-            {/* QUANTITY FIELDS */}
+            {/* QUANTITY STEP */}
             {gtinModal.selectedProductId && (
-              <div className="space-y-3 rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+              <div className="space-y-3.5">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs font-medium block mb-1.5">Unidades por caixa</Label>
+                    <Label className="text-xs text-muted-foreground block mb-1.5">Unidades por caixa</Label>
                     <Input
                       type="number"
                       min="1"
@@ -1482,9 +1480,7 @@ const Conferencia = () => {
                       onChange={(e) => setGtinModal((prev) => ({ ...prev, unitsPerBox: e.target.value }))}
                       onFocus={(e) => e.target.select()}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
-                          e.preventDefault(); handleGtinConfirm();
-                        }
+                        if (e.key === "Enter" && gtinTotalUnits > 0) { e.preventDefault(); handleGtinConfirm(); }
                       }}
                       placeholder="Ex: 12"
                       className="h-11 text-lg font-semibold text-center"
@@ -1492,7 +1488,7 @@ const Conferencia = () => {
                     />
                   </div>
                   <div>
-                    <Label className="text-xs font-medium block mb-1.5">Qtd de caixas</Label>
+                    <Label className="text-xs text-muted-foreground block mb-1.5">Quantidade de caixas</Label>
                     <Input
                       type="number"
                       min="1"
@@ -1500,9 +1496,7 @@ const Conferencia = () => {
                       onChange={(e) => setGtinModal((prev) => ({ ...prev, boxQty: e.target.value }))}
                       onFocus={(e) => e.target.select()}
                       onKeyDown={(e) => {
-                        if (e.key === "Enter" && gtinModal.selectedProductId && gtinTotalUnits > 0) {
-                          e.preventDefault(); handleGtinConfirm();
-                        }
+                        if (e.key === "Enter" && gtinTotalUnits > 0) { e.preventDefault(); handleGtinConfirm(); }
                       }}
                       placeholder="1"
                       className="h-11 text-lg font-semibold text-center"
@@ -1511,32 +1505,43 @@ const Conferencia = () => {
                 </div>
 
                 {gtinTotalUnits > 0 && (
-                  <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-2.5 text-center">
-                    <p className="text-xs text-muted-foreground">
-                      <span className="font-bold text-foreground">{gtinModal.boxQty}</span> cx × <span className="font-bold text-foreground">{gtinModal.unitsPerBox}</span> un =
+                  <div className="rounded-lg border border-blue-500/40 bg-blue-500/10 p-3 text-center">
+                    <p className="text-[11px] text-blue-300/80 mb-0.5">
+                      {gtinModal.boxQty} cx × {gtinModal.unitsPerBox} un
                     </p>
-                    <p className="font-bold text-blue-400 text-xl mt-0.5">{gtinTotalUnits} unidades</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      = {gtinTotalUnits} unidades
+                    </p>
                   </div>
                 )}
 
-                <div className="flex items-start gap-2">
+                <label htmlFor="save-gtin" className="flex items-start gap-2 cursor-pointer">
                   <Checkbox
                     id="save-gtin"
                     checked={gtinModal.saveGtin}
                     onCheckedChange={(checked) => setGtinModal((prev) => ({ ...prev, saveGtin: !!checked }))}
                     className="mt-0.5"
                   />
-                  <label htmlFor="save-gtin" className="text-xs cursor-pointer">
-                    <span className="font-medium">Salvar GTIN CX neste produto</span>
-                    <span className="block text-[10px] text-muted-foreground">Reconhecimento automático nas próximas vezes</span>
-                  </label>
-                </div>
+                  <span className="text-[13px] text-muted-foreground leading-tight">
+                    <span className="font-medium text-foreground">Salvar GTIN CX neste produto</span>
+                    <span className="block text-[11px]">Reconhecimento automático nas próximas vezes</span>
+                  </span>
+                </label>
               </div>
             )}
           </div>
 
-          {/* FOOTER (fixed) */}
-          <DialogFooter className="flex-shrink-0 p-3 border-t border-border/40 gap-2 sm:gap-2">
+          {/* ============ FOOTER ============ */}
+          <div className="flex-shrink-0 p-3 border-t border-border/40 flex items-center justify-end gap-2">
+            {gtinModal.selectedProductId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setGtinModal((prev) => ({ ...prev, selectedProductId: "" }))}
+              >
+                ← Voltar
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -1547,14 +1552,17 @@ const Conferencia = () => {
             >
               Cancelar
             </Button>
-            <Button
-              size="sm"
-              onClick={handleGtinConfirm}
-              disabled={!gtinModal.selectedProductId || gtinTotalUnits <= 0}
-            >
-              ✓ Confirmar {gtinTotalUnits > 0 ? `${gtinTotalUnits} un` : ""}
-            </Button>
-          </DialogFooter>
+            {gtinModal.selectedProductId && (
+              <Button
+                size="sm"
+                onClick={handleGtinConfirm}
+                disabled={gtinTotalUnits <= 0}
+                className="bg-blue-600 hover:bg-blue-600/90 text-white"
+              >
+                ✓ Confirmar {gtinTotalUnits > 0 ? `${gtinTotalUnits} un` : ""}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
