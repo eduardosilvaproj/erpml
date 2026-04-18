@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   ArrowRight, ScanBarcode, Package, Truck, Loader2, Plus, Minus,
-  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes, PackageOpen
+  Trash2, Check, ChevronRight, Clock, CheckCircle, AlertTriangle, Boxes, PackageOpen,
+  Video, Square, Pause, Play, Circle
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import {
   useTransferOrders, useCreateTransferOrder, useUpdateTransferStatus,
   type TransferItem, type TransferOrder
@@ -46,10 +50,70 @@ const MovimentacaoFull = () => {
   const { data: kits } = useKits();
   const createOrder = useCreateTransferOrder();
   const updateStatus = useUpdateTransferStatus();
+  const companyId = useCompanyId();
+  const recorder = useFullRecorder();
+
+  // Recording UI state
+  const [showAskRecord, setShowAskRecord] = useState(false);
+  const [showCameraPicker, setShowCameraPicker] = useState(false);
+  const [selectedCamera, setSelectedCamera] = useState<string>("");
+  const [recordingMode, setRecordingMode] = useState<"separacao" | "despacho">("separacao");
+  const [despachoOrderId, setDespachoOrderId] = useState<{ id: string; number: string } | null>(null);
+  const [askedOnce, setAskedOnce] = useState(false);
 
   useEffect(() => {
     scanInputRef.current?.focus();
   }, []);
+
+  // Pergunta gravação ao bipar o primeiro item (apenas para separação)
+  useEffect(() => {
+    if (items.length > 0 && !askedOnce && recorder.status === "idle") {
+      setRecordingMode("separacao");
+      setAskedOnce(true);
+      setShowAskRecord(true);
+    }
+  }, [items.length, askedOnce, recorder.status]);
+
+  const openCameraPicker = async () => {
+    setShowAskRecord(false);
+    const list = await recorder.listCameras();
+    if (list.length === 0) {
+      toast({ title: "Nenhuma câmera detectada ou permissão negada.", description: "Permita o acesso à câmera nas configurações do navegador.", variant: "destructive" });
+      return;
+    }
+    setSelectedCamera(list[0].deviceId);
+    setShowCameraPicker(true);
+  };
+
+  const startRecording = async () => {
+    setShowCameraPicker(false);
+    await recorder.start(selectedCamera);
+    if (recordingMode === "despacho") {
+      toast({ title: "🔴 Gravando despacho..." });
+    } else {
+      toast({ title: "🔴 Gravando separação..." });
+    }
+  };
+
+  const stopAndUpload = async (envioId: string, orderNumber: string, tipo: "separacao" | "despacho") => {
+    if (!companyId) return;
+    const blob = await recorder.stop();
+    if (!blob || blob.size === 0) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    try {
+      await recorder.uploadAndSave({
+        blob, companyId, userId: user.id, envioId, orderNumber, tipo,
+        duracaoSegundos: recorder.seconds,
+      });
+      toast({ title: `📹 Gravação salva (${formatDuration(recorder.seconds)})` });
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar gravação", description: e.message, variant: "destructive" });
+    } finally {
+      recorder.reset();
+    }
+  };
+
 
   const addOrIncrementItem = (
     currentItems: TransferItem[],
@@ -284,12 +348,20 @@ const MovimentacaoFull = () => {
     }).filter(Boolean);
     const kitNotes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : "";
     const allNotes = [kitNotes, ...boxNotes].filter(Boolean).join(" | ");
-    await createOrder.mutateAsync({ items, notes: allNotes || undefined });
+    const order = await createOrder.mutateAsync({ items, notes: allNotes || undefined });
+
+    // Sobe gravação da separação se ativa
+    if (order && (recorder.status === "recording" || recorder.status === "paused")) {
+      await stopAndUpload(order.id, order.order_number, "separacao");
+    }
+
     setItems([]);
     setUsedKits([]);
     setBoxConfigs({});
     setLastScan(null);
+    setAskedOnce(false);
   };
+
 
   const playBeep = (freq: number, duration: number) => {
     try {
@@ -334,8 +406,96 @@ const MovimentacaoFull = () => {
     conferido: orders?.filter((o) => o.status === "conferido_full").length ?? 0,
   };
 
+  const isRecording = recorder.status === "recording" || recorder.status === "paused";
+
   return (
     <div className="space-y-6">
+      {/* Floating REC mini-preview */}
+      {isRecording && (
+        <div className="fixed top-20 right-6 z-50 rounded-lg border-2 border-red-500 bg-background shadow-2xl overflow-hidden">
+          <div className="relative">
+            <video ref={recorder.videoRef} muted playsInline className="w-[160px] h-[90px] object-cover bg-black" />
+            <Badge className="absolute top-1 left-1 bg-red-600 text-white border-none animate-pulse text-[10px] px-1.5 py-0">
+              <Circle className="h-2 w-2 mr-1 fill-current" />
+              {recordingMode === "despacho" ? "REC DESPACHO" : "REC"}
+            </Badge>
+            <span className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/70 text-white px-1.5 rounded">
+              {formatDuration(recorder.seconds)}
+            </span>
+          </div>
+          <div className="flex gap-1 p-1 bg-card">
+            {recorder.status === "recording" ? (
+              <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={recorder.pause}>
+                <Pause className="h-3 w-3" />
+              </Button>
+            ) : (
+              <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={recorder.resume}>
+                <Play className="h-3 w-3" />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 flex-1 text-xs"
+              onClick={async () => {
+                if (recordingMode === "despacho" && despachoOrderId) {
+                  await stopAndUpload(despachoOrderId.id, despachoOrderId.number, "despacho");
+                  setDespachoOrderId(null);
+                } else {
+                  await recorder.stop();
+                  recorder.reset();
+                  toast({ title: "Gravação descartada (não vinculada a uma ordem)." });
+                }
+              }}
+            >
+              <Square className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Deseja gravar? */}
+      <Dialog open={showAskRecord} onOpenChange={setShowAskRecord}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>📹 Deseja gravar a {recordingMode === "despacho" ? "despacho" : "separação"}?</DialogTitle>
+            <DialogDescription>
+              Grave para ter prova em caso de divergências com o Mercado Livre.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowAskRecord(false)}>Continuar sem gravar</Button>
+            <Button onClick={openCameraPicker}>
+              <Video className="mr-2 h-4 w-4" /> Gravar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Seleção de câmera */}
+      <Dialog open={showCameraPicker} onOpenChange={setShowCameraPicker}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecione a câmera</DialogTitle>
+            <DialogDescription>Escolha qual câmera usar para gravar.</DialogDescription>
+          </DialogHeader>
+          <Select value={selectedCamera} onValueChange={setSelectedCamera}>
+            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {recorder.cameras.map((c) => (
+                <SelectItem key={c.deviceId} value={c.deviceId}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCameraPicker(false)}>Cancelar</Button>
+            <Button onClick={startRecording} disabled={!selectedCamera}>
+              <Circle className="mr-2 h-4 w-4 fill-red-500 text-red-500" /> Iniciar gravação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Movimentação Físico → FULL</h1>
         <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
@@ -730,17 +890,32 @@ const MovimentacaoFull = () => {
                         <TableCell className="text-center font-medium">{order.total_items}</TableCell>
                         <TableCell>{statusBadge(order.status)}</TableCell>
                         <TableCell>
-                          {nextStep && (
+                          <div className="flex gap-1">
+                            {nextStep && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
+                                disabled={updateStatus.isPending}
+                              >
+                                <ChevronRight className="mr-1 h-3 w-3" />
+                                {nextStep.label}
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              variant="outline"
-                              onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
-                              disabled={updateStatus.isPending}
+                              variant="ghost"
+                              title="Gravar despacho"
+                              disabled={isRecording}
+                              onClick={() => {
+                                setRecordingMode("despacho");
+                                setDespachoOrderId({ id: order.id, number: order.order_number });
+                                setShowAskRecord(true);
+                              }}
                             >
-                              <ChevronRight className="mr-1 h-3 w-3" />
-                              {nextStep.label}
+                              <Video className="h-3 w-3 text-red-500" />
                             </Button>
-                          )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
