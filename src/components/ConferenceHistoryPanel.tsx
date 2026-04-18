@@ -18,8 +18,8 @@ interface Props {
 }
 
 const statusBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  em_andamento: { label: "Em andamento", variant: "default" },
-  pausada: { label: "Pausada", variant: "secondary" },
+  em_andamento: { label: "Aguardando conferência", variant: "default" },
+  pausada: { label: "Aguardando conferência", variant: "default" },
   conferida: { label: "Conferida", variant: "outline" },
   divergente: { label: "Divergente", variant: "destructive" },
   concluida: { label: "Concluída", variant: "outline" },
@@ -41,10 +41,34 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
     return (
       <div
         key={c.id}
-        className={`rounded-lg border p-4 flex flex-col gap-2 bg-card ${
-          c.status === "em_andamento" ? "border-primary/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.2)]" : ""
+        role={ativa ? "button" : undefined}
+        tabIndex={ativa ? 0 : undefined}
+        onClick={ativa ? () => onContinue(c) : undefined}
+        onKeyDown={
+          ativa
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onContinue(c);
+                }
+              }
+            : undefined
+        }
+        className={`rounded-lg border p-4 flex flex-col gap-2 transition-colors ${
+          ativa
+            ? "bg-primary/5 border-primary/50 shadow-[0_0_0_1px_hsl(var(--primary)/0.25)] cursor-pointer hover:bg-primary/10 hover:border-primary"
+            : "bg-card"
         }`}
       >
+        {ativa && (
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary -mb-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            Clique para continuar de onde parou
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -60,7 +84,7 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
               {formatDistanceToNow(new Date(c.updated_at), { addSuffix: true, locale: ptBR })}
             </div>
           </div>
-          <div className="flex gap-1 shrink-0">
+          <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
             {ativa && (
               <Button size="sm" onClick={() => onContinue(c)}>
                 <Play className="h-4 w-4 mr-1" /> Continuar
@@ -75,7 +99,7 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
         </div>
 
         {ativa && (
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
             {c.status === "em_andamento" && (
               <Button
                 size="sm"
