@@ -406,8 +406,96 @@ const MovimentacaoFull = () => {
     conferido: orders?.filter((o) => o.status === "conferido_full").length ?? 0,
   };
 
+  const isRecording = recorder.status === "recording" || recorder.status === "paused";
+
   return (
     <div className="space-y-6">
+      {/* Floating REC mini-preview */}
+      {isRecording && (
+        <div className="fixed top-20 right-6 z-50 rounded-lg border-2 border-red-500 bg-background shadow-2xl overflow-hidden">
+          <div className="relative">
+            <video ref={recorder.videoRef} muted playsInline className="w-[160px] h-[90px] object-cover bg-black" />
+            <Badge className="absolute top-1 left-1 bg-red-600 text-white border-none animate-pulse text-[10px] px-1.5 py-0">
+              <Circle className="h-2 w-2 mr-1 fill-current" />
+              {recordingMode === "despacho" ? "REC DESPACHO" : "REC"}
+            </Badge>
+            <span className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/70 text-white px-1.5 rounded">
+              {formatDuration(recorder.seconds)}
+            </span>
+          </div>
+          <div className="flex gap-1 p-1 bg-card">
+            {recorder.status === "recording" ? (
+              <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={recorder.pause}>
+                <Pause className="h-3 w-3" />
+              </Button>
+            ) : (
+              <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={recorder.resume}>
+                <Play className="h-3 w-3" />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-7 flex-1 text-xs"
+              onClick={async () => {
+                if (recordingMode === "despacho" && despachoOrderId) {
+                  await stopAndUpload(despachoOrderId.id, despachoOrderId.number, "despacho");
+                  setDespachoOrderId(null);
+                } else {
+                  await recorder.stop();
+                  recorder.reset();
+                  toast({ title: "Gravação descartada (não vinculada a uma ordem)." });
+                }
+              }}
+            >
+              <Square className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Deseja gravar? */}
+      <Dialog open={showAskRecord} onOpenChange={setShowAskRecord}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>📹 Deseja gravar a {recordingMode === "despacho" ? "despacho" : "separação"}?</DialogTitle>
+            <DialogDescription>
+              Grave para ter prova em caso de divergências com o Mercado Livre.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowAskRecord(false)}>Continuar sem gravar</Button>
+            <Button onClick={openCameraPicker}>
+              <Video className="mr-2 h-4 w-4" /> Gravar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Seleção de câmera */}
+      <Dialog open={showCameraPicker} onOpenChange={setShowCameraPicker}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecione a câmera</DialogTitle>
+            <DialogDescription>Escolha qual câmera usar para gravar.</DialogDescription>
+          </DialogHeader>
+          <Select value={selectedCamera} onValueChange={setSelectedCamera}>
+            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+            <SelectContent>
+              {recorder.cameras.map((c) => (
+                <SelectItem key={c.deviceId} value={c.deviceId}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCameraPicker(false)}>Cancelar</Button>
+            <Button onClick={startRecording} disabled={!selectedCamera}>
+              <Circle className="mr-2 h-4 w-4 fill-red-500 text-red-500" /> Iniciar gravação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div>
         <h1 className="text-2xl font-bold text-foreground">Movimentação Físico → FULL</h1>
         <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
