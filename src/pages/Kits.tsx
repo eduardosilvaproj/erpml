@@ -144,7 +144,7 @@ const Kits = () => {
       const { data, error } = await supabase.functions.invoke("ai-analysis", {
         body: {
           type: "kit-suggestion",
-          prompt: `Analise estes produtos e sugira 3 kits que façam sentido comercial (combos, kits promocionais, kits complementares). Para cada kit, forneça: name (nome do kit), sku (sugestão de SKU), description (descrição curta), price (preço sugerido com desconto de kit), items (array com product_id e quantity). Produtos: ${JSON.stringify(productList)}. Responda APENAS em JSON válido no formato: [{ "name": "...", "sku": "...", "description": "...", "price": 0, "items": [{"product_id": "...", "quantity": 1}] }]`,
+          prompt: `Analise estes produtos e sugira ${aiKitCount} kit${aiKitCount > 1 ? "s" : ""} que faça${aiKitCount > 1 ? "m" : ""} sentido comercial (combos, kits promocionais, kits complementares). Para cada kit, forneça: name (nome do kit), sku (sugestão de SKU), description (descrição curta), price (preço sugerido com desconto de kit), items (array com product_id e quantity). Produtos: ${JSON.stringify(productList)}. Responda APENAS em JSON válido no formato: [{ "name": "...", "sku": "...", "description": "...", "price": 0, "items": [{"product_id": "...", "quantity": 1}] }]`,
         },
       });
 
