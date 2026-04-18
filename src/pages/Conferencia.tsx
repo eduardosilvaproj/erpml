@@ -78,11 +78,16 @@ const Conferencia = () => {
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
-  // GTIN CX modal
+  // GTIN CX modal (unknown box code → user must select product)
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
   const [gtinSearch, setGtinSearch] = useState("");
+
+  // GTIN CX FOUND modal (already linked product → just confirm box qty)
+  const [gtinFoundModal, setGtinFoundModal] = useState<{
+    open: boolean; product: any | null; code: string; unitsPerBox: number; boxQty: string;
+  }>({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
 
   // Confirm-qty-on-scan settings
   const [confirmOnScan, setConfirmOnScan] = useState<boolean>(() => {
@@ -221,15 +226,33 @@ const Conferencia = () => {
     const normalized = trimmed.toUpperCase();
     const simProducts = (window as any).__simProducts || [];
 
-    const matches = (p: any) => {
+    const matchEan = (p: any) => {
       const barcode = (p.barcode || "").toString().trim().toUpperCase();
+      return barcode === normalized;
+    };
+    const matchGtinCx = (p: any) => {
+      const g = (p.gtin_cx || "").toString().trim().toUpperCase();
+      return !!g && g === normalized;
+    };
+    const matchSku = (p: any) => {
       const sku = (p.sku || "").toString().trim().toUpperCase();
       const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
-      return barcode === normalized || sku === normalized || skuMl === normalized;
+      return sku === normalized || skuMl === normalized;
     };
 
-    // 1. Match by barcode, SKU, or SKU ML
-    const product = allProducts.find(matches) || simProducts.find(matches);
+    // STEP 1 — EAN unitário
+    const porEan = allProducts.find(matchEan) || simProducts.find(matchEan);
+    // STEP 2 — GTIN CX (caixa vinculada)
+    const porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
+    // STEP 3 — SKU
+    const porSku = !porEan && !porGtinCx ? (allProducts.find(matchSku) || simProducts.find(matchSku)) : null;
+
+    console.log('[Conferencia] Código bipado:', trimmed);
+    console.log('[Conferencia] Busca EAN:', porEan);
+    console.log('[Conferencia] Busca GTIN CX:', porGtinCx);
+    console.log('[Conferencia] Busca SKU:', porSku);
+
+    const product = porEan || porSku;
 
     if (product) {
       if (confirmOnScan) {
@@ -244,28 +267,19 @@ const Conferencia = () => {
       return;
     }
 
-    // 2. Match by GTIN CX (box code)
-    const gtinProduct = allProducts.find((p) => p.gtin_cx && p.gtin_cx.toString().trim().toUpperCase() === normalized);
-    if (gtinProduct) {
-      const unitsPerBox = gtinProduct.box_quantity || 1;
-      addScannedUnits(gtinProduct, unitsPerBox, {
-        boxes: 1, unitsPerBox, totalUnits: unitsPerBox
+    if (porGtinCx) {
+      const unitsPerBox = porGtinCx.box_quantity || 1;
+      setGtinFoundModal({
+        open: true, product: porGtinCx, code: trimmed, unitsPerBox, boxQty: "1",
       });
-      setLastScan({ success: true, name: `📦 ${gtinProduct.name} (${unitsPerBox}un)`, code: trimmed });
       playBeep(800, 100);
-      scanInputRef.current?.flash(true);
-      setTimeout(() => scanInputRef.current?.focus(), 50);
       return;
     }
 
-    // 3. Unknown code — open GTIN CX modal
+    // STEP 4 — Não reconhecido
     setGtinModal({
-      open: true,
-      code: trimmed,
-      selectedProductId: "",
-      unitsPerBox: "",
-      boxQty: "1",
-      saveGtin: true,
+      open: true, code: trimmed, selectedProductId: "",
+      unitsPerBox: "", boxQty: "1", saveGtin: true,
     });
     playBeep(400, 200);
   }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup]);
@@ -950,6 +964,105 @@ const Conferencia = () => {
           </Card>
         </div>
       )}
+
+      {/* ========== GTIN CX FOUND (auto) MODAL ========== */}
+      <Dialog open={gtinFoundModal.open} onOpenChange={(open) => {
+        if (!open) {
+          setGtinFoundModal((p) => ({ ...p, open: false }));
+          setTimeout(() => scanInputRef.current?.focus(), 50);
+        }
+      }}>
+        <DialogContent className="max-w-md border-emerald-500/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-emerald-400" />
+              📦 Caixa vinculada encontrada!
+            </DialogTitle>
+          </DialogHeader>
+
+          {gtinFoundModal.product && (
+            <>
+              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                {gtinFoundModal.product.image_url ? (
+                  <img src={gtinFoundModal.product.image_url} alt={gtinFoundModal.product.name} className="h-14 w-14 rounded-lg object-cover" />
+                ) : (
+                  <div className="h-14 w-14 rounded-lg bg-muted/30 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-muted-foreground/50" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{gtinFoundModal.product.name}</p>
+                  <p className="text-xs font-mono text-muted-foreground">{gtinFoundModal.product.sku}</p>
+                  <p className="text-[10px] font-mono text-emerald-400 mt-0.5">GTIN CX: {gtinFoundModal.code} ✓</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                Qtd padrão por caixa: <span className="font-bold text-foreground">{gtinFoundModal.unitsPerBox}</span> un. (conforme cadastro)
+              </p>
+
+              <div>
+                <Label className="text-xs">Quantas caixas?</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={gtinFoundModal.boxQty}
+                  onChange={(e) => setGtinFoundModal((p) => ({ ...p, boxQty: e.target.value }))}
+                  onFocus={(e) => e.target.select()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const boxes = parseInt(gtinFoundModal.boxQty) || 1;
+                      const total = boxes * gtinFoundModal.unitsPerBox;
+                      addScannedUnits(gtinFoundModal.product, total, {
+                        boxes, unitsPerBox: gtinFoundModal.unitsPerBox, totalUnits: total, gtinSaved: true,
+                      });
+                      setLastScan({ success: true, name: `📦 ${gtinFoundModal.product.name} (${total}un)`, code: gtinFoundModal.code });
+                      playBeep(800, 100);
+                      setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
+                      setTimeout(() => scanInputRef.current?.focus(), 50);
+                    }
+                  }}
+                  autoFocus
+                  className="text-center text-2xl font-bold h-12 mt-1"
+                />
+              </div>
+
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Total: <span className="font-bold text-emerald-400 text-lg">
+                    {(parseInt(gtinFoundModal.boxQty) || 0) * gtinFoundModal.unitsPerBox} unidades
+                  </span>
+                </p>
+              </div>
+            </>
+          )}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
+              setTimeout(() => scanInputRef.current?.focus(), 50);
+            }}>Cancelar</Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700"
+              onClick={() => {
+                const boxes = parseInt(gtinFoundModal.boxQty) || 1;
+                const total = boxes * gtinFoundModal.unitsPerBox;
+                if (total <= 0 || !gtinFoundModal.product) return;
+                addScannedUnits(gtinFoundModal.product, total, {
+                  boxes, unitsPerBox: gtinFoundModal.unitsPerBox, totalUnits: total, gtinSaved: true,
+                });
+                setLastScan({ success: true, name: `📦 ${gtinFoundModal.product.name} (${total}un)`, code: gtinFoundModal.code });
+                playBeep(800, 100);
+                setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
+                setTimeout(() => scanInputRef.current?.focus(), 50);
+              }}
+            >
+              ✓ Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ========== GTIN CX MODAL ========== */}
       <Dialog open={gtinModal.open} onOpenChange={(open) => {
