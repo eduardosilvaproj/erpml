@@ -1977,6 +1977,16 @@ const Conferencia = () => {
             >
               Cancelar
             </Button>
+            {!gtinModal.selectedProductId && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => openQuickRegister(gtinModal.code)}
+                className="text-emerald-300"
+              >
+                🏷️ Na verdade é um produto
+              </Button>
+            )}
             {gtinModal.selectedProductId && (
               <Button
                 size="sm"
