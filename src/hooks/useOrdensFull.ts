@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 
-export type OrdemStatus = "rascunho" | "aguardando" | "em_separacao" | "concluida" | "cancelada";
+export type OrdemStatus = "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "enviada" | "cancelada";
 export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 
 export interface OrdemFull {
@@ -184,6 +184,66 @@ export const useConcluirOrdem = () => {
   });
 };
 
+export const useMarcarOrdemSeparada = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ordemId: string) => {
+      const { error } = await supabase.rpc("marcar_ordem_separada", { _ordem_id: ordemId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ordens-full"] });
+      qc.invalidateQueries({ queryKey: ["ordem-full"] });
+      qc.invalidateQueries({ queryKey: ["envio-pendente"] });
+    },
+  });
+};
+
+export const useMarcarOrdemEnviada = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ordemId: string) => {
+      const { error } = await supabase.rpc("marcar_ordem_enviada", { _ordem_id: ordemId });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ordens-full"] });
+      qc.invalidateQueries({ queryKey: ["envio-pendente"] });
+    },
+  });
+};
+
+export const useEnvioPendente = () => {
+  const companyId = useCompanyId();
+  return useQuery({
+    queryKey: ["envio-pendente", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("envio_pendente" as any)
+        .select("*, ordem:ordens_full(id, numero), product:products(id, name, sku, barcode, image_url, stock_physical)")
+        .eq("company_id", companyId!)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+};
+
+export const useLimparEnvioPendente = () => {
+  const qc = useQueryClient();
+  const companyId = useCompanyId();
+  return useMutation({
+    mutationFn: async (ordemId?: string) => {
+      let q = supabase.from("envio_pendente" as any).delete().eq("company_id", companyId!);
+      if (ordemId) q = q.eq("ordem_id", ordemId);
+      const { error } = await q;
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["envio-pendente"] }),
+  });
+};
+
 export const useDeleteOrdem = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -200,7 +260,9 @@ export const ordemStatusBadge = (s: OrdemStatus) => {
     rascunho: { label: "Rascunho", cls: "bg-muted text-muted-foreground" },
     aguardando: { label: "Aguardando", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" },
     em_separacao: { label: "Em separação", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-400 animate-pulse" },
+    separada: { label: "Separada", cls: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
     concluida: { label: "Concluída", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
+    enviada: { label: "Enviada ao FULL", cls: "bg-emerald-700/20 text-emerald-700 dark:text-emerald-300" },
     cancelada: { label: "Cancelada", cls: "bg-destructive/15 text-destructive" },
   };
   return map[s];
