@@ -25,7 +25,7 @@ import {
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
 import { useKits, type Kit } from "@/hooks/useKitData";
-import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada } from "@/hooks/useOrdensFull";
+import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada, useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import jsPDF from "jspdf";
@@ -78,6 +78,7 @@ const MovimentacaoFull = () => {
   const { data: envioPendente } = useEnvioPendente();
   const limparPendente = useLimparEnvioPendente();
   const marcarEnviada = useMarcarOrdemEnviada();
+  const updateStatusOrdem = useUpdateOrdemStatus();
   const [loadedOrdemIds, setLoadedOrdemIds] = useState<string[]>([]);
 
   // Recording UI state
