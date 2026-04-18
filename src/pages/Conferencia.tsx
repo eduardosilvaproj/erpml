@@ -121,6 +121,47 @@ const Conferencia = () => {
     return null;
   }, [companyId]);
 
+  // Handler for the in-modal scan input (Enter / Bipar button / USB scanner)
+  const handleGtinModalScan = useCallback(async (rawCode: string) => {
+    const trimmed = rawCode.trim();
+    if (!trimmed) return;
+    setGtinScanError(null);
+    setGtinScanLoading(true);
+    try {
+      const found = await searchProductByCode(trimmed);
+      if (found) {
+        const unitsPerBox = found.box_quantity ? String(found.box_quantity) : "";
+        setGtinModal((prev) => ({ ...prev, selectedProductId: found.id, unitsPerBox }));
+        setGtinScanFlash("success");
+        setGtinScanValue("");
+        playBeep(800, 100);
+        setTimeout(() => setGtinScanFlash(null), 600);
+      } else {
+        setGtinScanError(trimmed);
+        setGtinScanFlash("error");
+        setGtinScanValue("");
+        playBeep(300, 200);
+        setTimeout(() => playBeep(300, 200), 220);
+        setTimeout(() => setGtinScanFlash(null), 800);
+        setTimeout(() => gtinScanInputRef.current?.focus(), 50);
+      }
+    } catch (err) {
+      console.error("[Conferencia] Erro ao buscar produto:", err);
+      setGtinScanError(trimmed);
+      setGtinScanFlash("error");
+    } finally {
+      setGtinScanLoading(false);
+    }
+  }, [searchProductByCode]);
+
+  // Auto-focus scan input when modal opens or tab switches to "scan"
+  useEffect(() => {
+    if (gtinModal.open && gtinSelectMode === "scan" && !gtinModal.selectedProductId) {
+      const t = setTimeout(() => gtinScanInputRef.current?.focus(), 150);
+      return () => clearTimeout(t);
+    }
+  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId]);
+
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
     open: boolean; product: any | null; code: string; unitsPerBox: string; boxQty: string;
