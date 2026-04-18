@@ -171,6 +171,7 @@ export const useFullRecorder = () => {
       if (insErr) throw insErr;
 
       setStatus("idle");
+      try { window.dispatchEvent(new CustomEvent("gravacoes-full:refresh")); } catch { /* ignored */ }
       return { path, url: signed?.signedUrl || path };
     },
     []
@@ -205,6 +206,7 @@ export const useFullRecorder = () => {
         throw insErr;
       }
       setStatus("idle");
+      try { window.dispatchEvent(new CustomEvent("gravacoes-full:refresh")); } catch { /* ignored */ }
       return { path, url: signed?.signedUrl || path };
     },
     []
