@@ -84,6 +84,32 @@ const Conferencia = () => {
   });
   const [gtinSearch, setGtinSearch] = useState("");
 
+  // Confirm-qty-on-scan settings
+  const [confirmOnScan, setConfirmOnScan] = useState<boolean>(() => {
+    try { return localStorage.getItem("conferencia-confirm-on-scan") !== "0"; } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("conferencia-confirm-on-scan", confirmOnScan ? "1" : "0"); } catch {}
+  }, [confirmOnScan]);
+
+  // Quick-confirm popup
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    product: any | null;
+    qty: number;
+    edited: boolean;
+    existingQty: number;
+    replaceMode: boolean;
+  }>({ open: false, product: null, qty: 1, edited: false, existingQty: 0, replaceMode: false });
+  const [confirmProgress, setConfirmProgress] = useState(100);
+  const confirmTimerRef = useRef<number | null>(null);
+  const confirmIntervalRef = useRef<number | null>(null);
+  const confirmQtyInputRef = useRef<HTMLInputElement>(null);
+
+  // Inline qty editing
+  const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
+  const [editingQtyValue, setEditingQtyValue] = useState<string>("");
+
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
 
