@@ -194,7 +194,7 @@ const Conferencia = () => {
   const startConfirmTimer = useCallback((product: any, qty: number) => {
     clearConfirmTimers();
     setConfirmProgress(100);
-    const total = 3000;
+    const total = 30000;
     const start = Date.now();
     confirmIntervalRef.current = window.setInterval(() => {
       const elapsed = Date.now() - start;
