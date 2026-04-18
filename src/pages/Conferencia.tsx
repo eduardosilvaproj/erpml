@@ -1184,7 +1184,7 @@ const Conferencia = () => {
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-[500px] max-h-[85vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col">
+        <DialogContent className="max-w-[480px] w-[calc(100%-2rem)] max-h-[90vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col rounded-xl">
           {/* HEADER (fixed) */}
           <DialogHeader className="flex-shrink-0 p-4 pb-3 border-b border-border/40 space-y-2">
             <DialogTitle className="flex items-center gap-2 text-base">
