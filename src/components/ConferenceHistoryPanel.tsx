@@ -18,8 +18,8 @@ interface Props {
 }
 
 const statusBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  em_andamento: { label: "Em andamento", variant: "default" },
-  pausada: { label: "Pausada", variant: "secondary" },
+  em_andamento: { label: "Aguardando conferência", variant: "default" },
+  pausada: { label: "Aguardando conferência", variant: "default" },
   conferida: { label: "Conferida", variant: "outline" },
   divergente: { label: "Divergente", variant: "destructive" },
   concluida: { label: "Concluída", variant: "outline" },
