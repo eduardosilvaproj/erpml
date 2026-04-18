@@ -348,12 +348,20 @@ const MovimentacaoFull = () => {
     }).filter(Boolean);
     const kitNotes = usedKits.length > 0 ? `Kits: ${usedKits.join(", ")}` : "";
     const allNotes = [kitNotes, ...boxNotes].filter(Boolean).join(" | ");
-    await createOrder.mutateAsync({ items, notes: allNotes || undefined });
+    const order = await createOrder.mutateAsync({ items, notes: allNotes || undefined });
+
+    // Sobe gravação da separação se ativa
+    if (order && (recorder.status === "recording" || recorder.status === "paused")) {
+      await stopAndUpload(order.id, order.order_number, "separacao");
+    }
+
     setItems([]);
     setUsedKits([]);
     setBoxConfigs({});
     setLastScan(null);
+    setAskedOnce(false);
   };
+
 
   const playBeep = (freq: number, duration: number) => {
     try {
