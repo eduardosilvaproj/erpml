@@ -329,6 +329,40 @@ const MovimentacaoFull = () => {
         return;
       }
 
+      // Modo Ordem Ativa: incrementa qtd_bipada e valida com qtd_solicitada
+      if (ordemAtiva) {
+        const inOrdem = ordemAtiva.produtos.find((p) => p.product_id === product.id);
+        if (!inOrdem) {
+          const ok = window.confirm(`⚠️ "${product.name}" NÃO está na ordem ${ordemAtiva.numero}.\n\nDeseja adicionar mesmo assim?`);
+          if (!ok) {
+            setLastScan({ success: false, message: `Produto fora da ordem — ignorado.` });
+            playBeep(300, 300);
+            setScanBuffer("");
+            setTimeout(() => scanInputRef.current?.focus(), 50);
+            return;
+          }
+        }
+        const result = addOrIncrementItem(items, product, 1);
+        setItems(result.items);
+        const newBipada = (qtdBipada[product.id] ?? 0) + 1;
+        setQtdBipada({ ...qtdBipada, [product.id]: newBipada });
+        if (inOrdem) {
+          if (newBipada > inOrdem.qtd_solicitada) {
+            setLastScan({ success: false, message: `⚠️ Excesso em "${product.name}" — ${newBipada}/${inOrdem.qtd_solicitada}` });
+            playBeep(400, 200);
+          } else {
+            setLastScan({ success: true, message: `✓ ${product.name} — ${newBipada} de ${inOrdem.qtd_solicitada}` });
+            playBeep(800, 100);
+          }
+        } else {
+          setLastScan({ success: true, message: `${product.name} adicionado (fora da ordem) — ${newBipada} un.` });
+          playBeep(800, 100);
+        }
+        setScanBuffer("");
+        setTimeout(() => scanInputRef.current?.focus(), 50);
+        return;
+      }
+
       const result = addOrIncrementItem(items, product, 1);
       setItems(result.items);
       setLastScan({ success: result.added, message: result.message });
