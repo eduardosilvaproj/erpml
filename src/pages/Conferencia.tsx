@@ -52,13 +52,27 @@ const Conferencia = () => {
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
 
-  const [step, setStep] = useState<Step>(1);
-  const [mode, setMode] = useState<ConferenceMode | null>(null);
-  const [conferenceName, setConferenceName] = useState("");
+  // Restore session from localStorage
+  const restored = (() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || (data.step === 1 && !data.mode && !data.conferenceName && (!data.scannedProducts || data.scannedProducts.length === 0))) return null;
+      return data;
+    } catch { return null; }
+  })();
+
+  const [step, setStep] = useState<Step>(restored?.step ?? 1);
+  const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
+  const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [sessionRestored, setSessionRestored] = useState(!!restored);
 
   // Step 2
   const [scanBuffer, setScanBuffer] = useState("");
-  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
+  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>(
+    (restored?.scannedProducts ?? []).map((p: any) => ({ ...p, lastBipAt: new Date(p.lastBipAt) }))
+  );
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
@@ -72,6 +86,20 @@ const Conferencia = () => {
 
   const { data: productsData, refetch: refetchProducts } = useProducts();
   const allProducts = productsData?.products ?? [];
+
+  // Auto-save session to localStorage
+  useEffect(() => {
+    try {
+      if (step === 1 && !mode && !conferenceName && scannedProducts.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        step, mode, conferenceName, scannedProducts,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {}
+  }, [step, mode, conferenceName, scannedProducts]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
