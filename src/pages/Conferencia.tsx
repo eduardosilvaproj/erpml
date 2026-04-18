@@ -257,32 +257,43 @@ const Conferencia = () => {
   };
 
   const addScannedUnits = useCallback((product: any, units: number, boxInfo?: ScannedProduct["boxInfo"]) => {
+    console.log('[Conferencia] ➕ addScannedUnits:', {
+      productId: product?.id,
+      productName: product?.name,
+      units,
+      boxInfo,
+    });
+    if (!product?.id || !units || units <= 0) {
+      console.warn('[Conferencia] ⚠️ Bipagem ignorada — produto inválido ou unidades = 0', { product, units });
+      return;
+    }
     setFlashId(product.id);
     setTimeout(() => setFlashId(null), 1000);
 
     setScannedProducts((prev) => {
       const existing = prev.find((p) => p.productId === product.id);
-      if (existing) {
-        return prev.map((p) =>
-          p.productId === product.id
-            ? { ...p, scannedQty: p.scannedQty + units, lastBipAt: new Date(), boxInfo: boxInfo || p.boxInfo }
-            : p
-        );
-      }
-      return [
-        {
-          productId: product.id,
-          name: product.name,
-          sku: product.sku,
-          barcode: product.barcode,
-          imageUrl: product.image_url,
-          scannedQty: units,
-          systemQty: product.stock_physical,
-          lastBipAt: new Date(),
-          boxInfo,
-        },
-        ...prev,
-      ];
+      const next = existing
+        ? prev.map((p) =>
+            p.productId === product.id
+              ? { ...p, scannedQty: p.scannedQty + units, lastBipAt: new Date(), boxInfo: boxInfo || p.boxInfo }
+              : p,
+          )
+        : [
+            {
+              productId: product.id,
+              name: product.name,
+              sku: product.sku,
+              barcode: product.barcode,
+              imageUrl: product.image_url,
+              scannedQty: units,
+              systemQty: product.stock_physical,
+              lastBipAt: new Date(),
+              boxInfo,
+            },
+            ...prev,
+          ];
+      console.log('[Conferencia] ✅ scannedProducts atualizado:', next.map(p => ({ name: p.name, qty: p.scannedQty })));
+      return next;
     });
   }, []);
 
