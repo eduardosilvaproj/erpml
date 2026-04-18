@@ -39,6 +39,7 @@ const Kits = () => {
   const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<KitFormData[]>([]);
+  const [aiKitCount, setAiKitCount] = useState(1);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkText, setBulkText] = useState("");
   const [search, setSearch] = useState("");
