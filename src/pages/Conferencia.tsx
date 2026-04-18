@@ -1254,7 +1254,7 @@ const Conferencia = () => {
           </DialogHeader>
 
           {/* BODY (scrollable) */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {/* SCAN MODE */}
             {!gtinModal.selectedProductId && gtinSelectMode === "scan" && (
               <div
