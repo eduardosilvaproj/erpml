@@ -337,36 +337,54 @@ export type Database = {
       }
       conference_items: {
         Row: {
+          atualizado_por: string | null
           conference_id: string
           created_at: string
+          detalhes_caixa: Json | null
+          ean: string | null
           expected_quantity: number
           id: string
-          invoice_item_id: string
+          invoice_item_id: string | null
+          nome_produto: string | null
           product_id: string | null
           scanned_quantity: number
+          sku: string | null
           status: string
+          tipo_contagem: string
           updated_at: string
         }
         Insert: {
+          atualizado_por?: string | null
           conference_id: string
           created_at?: string
+          detalhes_caixa?: Json | null
+          ean?: string | null
           expected_quantity?: number
           id?: string
-          invoice_item_id: string
+          invoice_item_id?: string | null
+          nome_produto?: string | null
           product_id?: string | null
           scanned_quantity?: number
+          sku?: string | null
           status?: string
+          tipo_contagem?: string
           updated_at?: string
         }
         Update: {
+          atualizado_por?: string | null
           conference_id?: string
           created_at?: string
+          detalhes_caixa?: Json | null
+          ean?: string | null
           expected_quantity?: number
           id?: string
-          invoice_item_id?: string
+          invoice_item_id?: string | null
+          nome_produto?: string | null
           product_id?: string | null
           scanned_quantity?: number
+          sku?: string | null
           status?: string
+          tipo_contagem?: string
           updated_at?: string
         }
         Relationships: [
@@ -395,34 +413,49 @@ export type Database = {
       }
       conferences: {
         Row: {
+          atualizado_por: string | null
           company_id: string | null
           created_at: string
+          criado_por: string | null
           finished_at: string | null
           id: string
-          invoice_id: string
+          invoice_id: string | null
+          nome: string | null
           notes: string | null
           started_at: string
           status: string
+          tipo: string
+          updated_at: string
         }
         Insert: {
+          atualizado_por?: string | null
           company_id?: string | null
           created_at?: string
+          criado_por?: string | null
           finished_at?: string | null
           id?: string
-          invoice_id: string
+          invoice_id?: string | null
+          nome?: string | null
           notes?: string | null
           started_at?: string
           status?: string
+          tipo?: string
+          updated_at?: string
         }
         Update: {
+          atualizado_por?: string | null
           company_id?: string | null
           created_at?: string
+          criado_por?: string | null
           finished_at?: string | null
           id?: string
-          invoice_id?: string
+          invoice_id?: string | null
+          nome?: string | null
           notes?: string | null
           started_at?: string
           status?: string
+          tipo?: string
+          updated_at?: string
         }
         Relationships: [
           {
