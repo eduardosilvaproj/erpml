@@ -683,6 +683,42 @@ const MovimentacaoFull = () => {
 
         <TabsContent value="envio" className="space-y-6 mt-0">
 
+      {/* Banner: Ordem(ns) carregada(s) */}
+      {loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
+        <Card className="border-blue-500/40 bg-blue-500/10">
+          <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <ClipboardList className="h-5 w-5 text-blue-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-blue-300">
+                  📋 Ordem{loadedOrdemIds.length > 1 ? "s" : ""}{" "}
+                  {Array.from(new Set(envioPendente.map((ep: any) => ep.ordem?.numero).filter(Boolean))).join(", ")} carregada
+                  {loadedOrdemIds.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {envioPendente.length} produto(s) prontos para envio — confira a lista abaixo e gere a ordem de envio FULL.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                for (const oid of loadedOrdemIds) {
+                  try { await limparPendente.mutateAsync(oid); } catch {}
+                }
+                setItems([]);
+                setLoadedOrdemIds([]);
+                toast({ title: "Lista limpa." });
+              }}
+            >
+              <X className="h-4 w-4 mr-1" /> Limpar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
