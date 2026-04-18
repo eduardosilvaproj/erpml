@@ -239,6 +239,20 @@ const Conferencia = () => {
     } catch {}
   }, [step, mode, conferenceName, conferenceId, scannedProducts]);
 
+  // Auto-persist each scan to the DB (debounced) so nothing is lost on browser crash.
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveSessionRef = useRef<() => Promise<boolean>>();
+  useEffect(() => {
+    if (step !== 2) return;
+    if (!companyId) return;
+    if (scannedProducts.length === 0 && !conferenceId) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      saveSessionRef.current?.().catch(() => {});
+    }, 800);
+    return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
+  }, [scannedProducts, step, companyId, conferenceId]);
+
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
       scanInputRef.current.focus();
