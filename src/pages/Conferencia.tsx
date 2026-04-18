@@ -1002,70 +1002,96 @@ const Conferencia = () => {
                 </div>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                Qtd padrão por caixa: <span className="font-bold text-foreground">{gtinFoundModal.unitsPerBox}</span> un. (conforme cadastro)
-              </p>
+              {(() => {
+                const unitsNum = parseInt(gtinFoundModal.unitsPerBox) || 0;
+                const boxesNum = parseInt(gtinFoundModal.boxQty) || 0;
+                const totalNum = unitsNum * boxesNum;
+                const product = gtinFoundModal.product;
+                const code = gtinFoundModal.code;
 
-              <div>
-                <Label className="text-xs">Quantas caixas?</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={gtinFoundModal.boxQty}
-                  onChange={(e) => setGtinFoundModal((p) => ({ ...p, boxQty: e.target.value }))}
-                  onFocus={(e) => e.target.select()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const boxes = parseInt(gtinFoundModal.boxQty) || 1;
-                      const total = boxes * gtinFoundModal.unitsPerBox;
-                      addScannedUnits(gtinFoundModal.product, total, {
-                        boxes, unitsPerBox: gtinFoundModal.unitsPerBox, totalUnits: total, gtinSaved: true,
-                      });
-                      setLastScan({ success: true, name: `📦 ${gtinFoundModal.product.name} (${total}un)`, code: gtinFoundModal.code });
-                      playBeep(800, 100);
-                      setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
-                      setTimeout(() => scanInputRef.current?.focus(), 50);
-                    }
-                  }}
-                  autoFocus
-                  className="text-center text-2xl font-bold h-12 mt-1"
-                />
-              </div>
+                const doConfirm = async () => {
+                  if (totalNum <= 0 || !product) return;
+                  if (unitsNum > 0 && unitsNum !== product.box_quantity) {
+                    try {
+                      await supabase.from("products").update({ box_quantity: unitsNum }).eq("id", product.id);
+                      refetchProducts();
+                    } catch {}
+                  }
+                  addScannedUnits(product, totalNum, {
+                    boxes: boxesNum, unitsPerBox: unitsNum, totalUnits: totalNum, gtinSaved: true,
+                  });
+                  setLastScan({
+                    success: true,
+                    name: `📦 ${product.name} — ${boxesNum}cx × ${unitsNum}un = ${totalNum} un.`,
+                    code,
+                  });
+                  playBeep(800, 100);
+                  setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: "", boxQty: "1" });
+                  setTimeout(() => scanInputRef.current?.focus(), 50);
+                };
 
-              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-3 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Total: <span className="font-bold text-emerald-400 text-lg">
-                    {(parseInt(gtinFoundModal.boxQty) || 0) * gtinFoundModal.unitsPerBox} unidades
-                  </span>
-                </p>
-              </div>
-            </>
-          )}
+                const closeAll = () => {
+                  setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: "", boxQty: "1" });
+                  setTimeout(() => scanInputRef.current?.focus(), 50);
+                };
 
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => {
-              setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
-              setTimeout(() => scanInputRef.current?.focus(), 50);
-            }}>Cancelar</Button>
-            <Button
-              className="bg-emerald-600 hover:bg-emerald-700"
-              onClick={() => {
-                const boxes = parseInt(gtinFoundModal.boxQty) || 1;
-                const total = boxes * gtinFoundModal.unitsPerBox;
-                if (total <= 0 || !gtinFoundModal.product) return;
-                addScannedUnits(gtinFoundModal.product, total, {
-                  boxes, unitsPerBox: gtinFoundModal.unitsPerBox, totalUnits: total, gtinSaved: true,
-                });
-                setLastScan({ success: true, name: `📦 ${gtinFoundModal.product.name} (${total}un)`, code: gtinFoundModal.code });
-                playBeep(800, 100);
-                setGtinFoundModal({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
-                setTimeout(() => scanInputRef.current?.focus(), 50);
-              }}
-            >
-              ✓ Confirmar
-            </Button>
-          </DialogFooter>
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs">Unidades por caixa</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={gtinFoundModal.unitsPerBox}
+                          onChange={(e) => setGtinFoundModal((p) => ({ ...p, unitsPerBox: e.target.value }))}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); closeAll(); } }}
+                          autoFocus={!gtinFoundModal.unitsPerBox}
+                          placeholder="Ex: 12"
+                          className="text-center text-2xl font-bold h-12 mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Quantidade de caixas</Label>
+                        <Input
+                          ref={gtinFoundBoxQtyRef}
+                          type="number"
+                          min="1"
+                          value={gtinFoundModal.boxQty}
+                          onChange={(e) => setGtinFoundModal((p) => ({ ...p, boxQty: e.target.value }))}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") { e.preventDefault(); doConfirm(); }
+                            else if (e.key === "Escape") { e.preventDefault(); closeAll(); }
+                          }}
+                          autoFocus={!!gtinFoundModal.unitsPerBox}
+                          className="text-center text-2xl font-bold h-12 mt-1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-4 text-center space-y-1">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Total</p>
+                      <p className="text-3xl font-bold text-blue-400">{totalNum} unidades</p>
+                      <p className="text-xs text-muted-foreground">
+                        {boxesNum} {boxesNum === 1 ? "caixa" : "caixas"} × {unitsNum} un = {totalNum} un
+                      </p>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                      <Button variant="outline" onClick={closeAll}>Cancelar</Button>
+                      <Button
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                        disabled={totalNum <= 0}
+                        onClick={doConfirm}
+                      >
+                        ✓ Confirmar
+                      </Button>
+                    </DialogFooter>
+                  </>
+                );
+              })()}
         </DialogContent>
       </Dialog>
 
