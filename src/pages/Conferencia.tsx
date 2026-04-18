@@ -86,8 +86,9 @@ const Conferencia = () => {
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
-    open: boolean; product: any | null; code: string; unitsPerBox: number; boxQty: string;
-  }>({ open: false, product: null, code: "", unitsPerBox: 1, boxQty: "1" });
+    open: boolean; product: any | null; code: string; unitsPerBox: string; boxQty: string;
+  }>({ open: false, product: null, code: "", unitsPerBox: "", boxQty: "1" });
+  const gtinFoundBoxQtyRef = useRef<HTMLInputElement>(null);
 
   // Confirm-qty-on-scan settings
   const [confirmOnScan, setConfirmOnScan] = useState<boolean>(() => {
