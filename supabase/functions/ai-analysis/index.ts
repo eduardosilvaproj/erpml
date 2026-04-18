@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, productName, products, message, history } = body;
+    const { type, productName, products, message, history, prompt } = body;
 
     if (!type || typeof type !== "string") {
       return new Response(JSON.stringify({ error: "type is required" }), {
@@ -306,6 +306,18 @@ Para CADA produto/oportunidade indicado, liste fornecedores com:
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        break;
+      }
+
+      case "kit-suggestion": {
+        if (!prompt || typeof prompt !== "string" || prompt.length > 50000) {
+          return new Response(JSON.stringify({ error: "prompt inválido" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        systemPrompt = `Você é um especialista em e-commerce que sugere kits de produtos comercialmente viáveis. Responda SEMPRE apenas com JSON válido, sem markdown, sem texto adicional.`;
+        userPrompt = prompt;
         break;
       }
 
