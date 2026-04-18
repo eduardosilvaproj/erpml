@@ -37,21 +37,42 @@ export const useFullRecorder = () => {
     }
   }, []);
 
+  const attachStreamToVideo = useCallback(async (stream: MediaStream) => {
+    const tryAttach = async (attempt = 0): Promise<void> => {
+      const v = videoRef.current;
+      if (!v) {
+        if (attempt < 20) {
+          await new Promise((r) => setTimeout(r, 50));
+          return tryAttach(attempt + 1);
+        }
+        return;
+      }
+      v.srcObject = stream;
+      v.muted = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      try { await v.play(); } catch { /* ignored */ }
+    };
+    await tryAttach();
+  }, []);
+
   const start = useCallback(async (deviceId: string) => {
     try {
       setError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: deviceId ? { exact: deviceId } : undefined, width: 1280, height: 720 },
+      const constraints: MediaStreamConstraints = {
+        video: deviceId
+          ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+          : { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: { ideal: "environment" } },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
+      await attachStreamToVideo(stream);
       const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
         ? "video/webm;codecs=vp9"
-        : "video/webm";
+        : MediaRecorder.isTypeSupported("video/webm")
+        ? "video/webm"
+        : "video/mp4";
       const recorder = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 1_500_000 });
       chunksRef.current = [];
       recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
@@ -142,6 +163,26 @@ export const useFullRecorder = () => {
     []
   );
 
+  const uploadStandalone = useCallback(
+    async (params: { blob: Blob; companyId: string; userId: string; duracaoSegundos: number }) => {
+      setStatus("uploading");
+      const { blob, companyId } = params;
+      const dateStr = new Date().toISOString().replace(/[:.]/g, "-");
+      const filename = `FULL_sem_ordem_${dateStr}.webm`;
+      const path = `${companyId}/separacao/${filename}`;
+      const { error: upErr } = await supabase.storage
+        .from("gravacoes-full")
+        .upload(path, blob, { contentType: "video/webm", upsert: false });
+      if (upErr) throw upErr;
+      const { data: signed } = await supabase.storage
+        .from("gravacoes-full")
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+      setStatus("idle");
+      return { path, url: signed?.signedUrl || path };
+    },
+    []
+  );
+
   const reset = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -155,7 +196,7 @@ export const useFullRecorder = () => {
 
   useEffect(() => () => { reset(); }, [reset]);
 
-  return { status, cameras, seconds, error, videoRef, listCameras, start, pause, resume, stop, uploadAndSave, reset };
+  return { status, cameras, seconds, error, videoRef, listCameras, start, pause, resume, stop, uploadAndSave, uploadStandalone, reset };
 };
 
 export const formatDuration = (s: number) => {
