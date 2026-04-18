@@ -1115,28 +1115,28 @@ const Conferencia = () => {
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-md border-emerald-500/50 max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg pr-6">
-              <Package className="h-5 w-5 text-emerald-400 shrink-0" />
+        <DialogContent className="max-w-[420px] w-[calc(100%-2rem)] p-4 gap-3 border-emerald-500/50 max-h-[88vh] overflow-y-auto overflow-x-hidden">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-sm sm:text-base pr-6">
+              <Package className="h-4 w-4 text-emerald-400 shrink-0" />
               <span className="truncate">📦 Caixa vinculada encontrada!</span>
             </DialogTitle>
           </DialogHeader>
 
           {gtinFoundModal.product && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+            <div className="space-y-3 min-w-0">
+              <div className="flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-2.5 min-w-0">
                 {gtinFoundModal.product.image_url ? (
-                  <img src={gtinFoundModal.product.image_url} alt={gtinFoundModal.product.name} className="h-14 w-14 rounded-lg object-cover" />
+                  <img src={gtinFoundModal.product.image_url} alt={gtinFoundModal.product.name} className="h-11 w-11 rounded-lg object-cover shrink-0" />
                 ) : (
-                  <div className="h-14 w-14 rounded-lg bg-muted/30 flex items-center justify-center">
-                    <Package className="h-5 w-5 text-muted-foreground/50" />
+                  <div className="h-11 w-11 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                    <Package className="h-4 w-4 text-muted-foreground/50" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{gtinFoundModal.product.name}</p>
-                  <p className="text-xs font-mono text-muted-foreground">{gtinFoundModal.product.sku}</p>
-                  <p className="text-[10px] font-mono text-emerald-400 mt-0.5">GTIN CX: {gtinFoundModal.code} ✓</p>
+                  <p className="text-sm font-medium truncate">{gtinFoundModal.product.name}</p>
+                  <p className="text-[11px] font-mono text-muted-foreground truncate">{gtinFoundModal.product.sku}</p>
+                  <p className="text-[10px] font-mono text-emerald-400 mt-0.5 truncate">GTIN CX: {gtinFoundModal.code} ✓</p>
                 </div>
               </div>
 
@@ -1175,9 +1175,9 @@ const Conferencia = () => {
 
                 return (
                   <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-xs">Unidades por caixa</Label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="min-w-0">
+                        <Label className="text-[11px]">Unidades por caixa</Label>
                         <Input
                           type="number"
                           min="1"
@@ -1187,11 +1187,11 @@ const Conferencia = () => {
                           onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); closeAll(); } }}
                           autoFocus={!gtinFoundModal.unitsPerBox}
                           placeholder="Ex: 12"
-                          className="text-center text-2xl font-bold h-12 mt-1"
+                          className="text-center text-base font-bold h-10 mt-1 w-full"
                         />
                       </div>
-                      <div>
-                        <Label className="text-xs">Quantidade de caixas</Label>
+                      <div className="min-w-0">
+                        <Label className="text-[11px]">Qtd. de caixas</Label>
                         <Input
                           ref={gtinFoundBoxQtyRef}
                           type="number"
@@ -1204,22 +1204,23 @@ const Conferencia = () => {
                             else if (e.key === "Escape") { e.preventDefault(); closeAll(); }
                           }}
                           autoFocus={!!gtinFoundModal.unitsPerBox}
-                          className="text-center text-2xl font-bold h-12 mt-1"
+                          className="text-center text-base font-bold h-10 mt-1 w-full"
                         />
                       </div>
                     </div>
 
-                    <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-4 text-center space-y-1">
-                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Total</p>
-                      <p className="text-3xl font-bold text-blue-400">{totalNum} unidades</p>
-                      <p className="text-xs text-muted-foreground">
-                        {boxesNum} {boxesNum === 1 ? "caixa" : "caixas"} × {unitsNum} un = {totalNum} un
+                    <div className="rounded-lg bg-blue-500/10 border border-blue-500/40 p-2.5 text-center min-w-0">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total</p>
+                      <p className="text-xl font-bold text-blue-400 leading-tight">{totalNum} un</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                        {boxesNum} cx × {unitsNum} un = {totalNum} un
                       </p>
                     </div>
 
-                    <DialogFooter className="gap-2">
-                      <Button variant="outline" onClick={closeAll}>Cancelar</Button>
+                    <DialogFooter className="flex-row justify-end gap-2 pt-1">
+                      <Button variant="outline" size="sm" onClick={closeAll}>Cancelar</Button>
                       <Button
+                        size="sm"
                         className="bg-emerald-600 hover:bg-emerald-700"
                         disabled={totalNum <= 0}
                         onClick={doConfirm}
