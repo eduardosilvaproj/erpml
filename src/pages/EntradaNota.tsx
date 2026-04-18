@@ -799,14 +799,22 @@ const EntradaNota = () => {
           if (current) {
             const qty = Math.floor(match.xmlProduct.quantity);
             const newStock = current.stock_physical + qty;
-            
+            const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
+            const currentCost = Number(current.cost) || 0;
+
             if (autoUpdateCost) {
-              const totalOldCost = current.stock_physical * current.cost;
-              const totalNewCost = match.xmlProduct.quantity * match.xmlProduct.unitValue;
-              const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : match.xmlProduct.unitValue;
+              const totalOldCost = current.stock_physical * currentCost;
+              const totalNewCost = match.xmlProduct.quantity * xmlUnit;
+              const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
               await supabase.from("products").update({
                 stock_physical: newStock,
                 cost: Math.round(avgCost * 100) / 100,
+              }).eq("id", productId);
+            } else if (currentCost === 0 && xmlUnit > 0) {
+              // Backfill cost when product has no cost yet to avoid zero-value items
+              await supabase.from("products").update({
+                stock_physical: newStock,
+                cost: Math.round(xmlUnit * 100) / 100,
               }).eq("id", productId);
             } else {
               await supabase.from("products").update({
