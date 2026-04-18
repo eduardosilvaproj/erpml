@@ -380,7 +380,15 @@ const Conferencia = () => {
       return;
     }
 
-    // STEP 4 — Não reconhecido
+    // STEP 4 — Não reconhecido: diferenciar EAN válido (produto não cadastrado)
+    // de código sem formato (perguntar se é caixa/SKU)
+    if (isValidBarcodeFormat(trimmed)) {
+      setUnregisteredModal({ open: true, code: trimmed });
+      setLastScan({ success: false, name: "Produto não cadastrado", code: trimmed });
+      playBeep(500, 150);
+      return;
+    }
+
     setGtinModal({
       open: true, code: trimmed, selectedProductId: "",
       unitsPerBox: "", boxQty: "1", saveGtin: true,
