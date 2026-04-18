@@ -208,11 +208,22 @@ const Conferencia = () => {
   const confirmIntervalRef = useRef<number | null>(null);
   const confirmQtyInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal: EAN válido mas produto não cadastrado
+  // Modal: EAN válido mas produto não cadastrado (chooser: caixa OU produto novo)
   const [unregisteredModal, setUnregisteredModal] = useState<{ open: boolean; code: string }>({
     open: false,
     code: "",
   });
+
+  // Mini modal: cadastro rápido de produto a partir do código bipado
+  const [quickRegister, setQuickRegister] = useState<{
+    open: boolean;
+    code: string;
+    name: string;
+    sku: string;
+    price: string;
+    stock: string;
+    saving: boolean;
+  }>({ open: false, code: "", name: "", sku: "", price: "", stock: "", saving: false });
 
   // Inline qty editing
   const [editingQtyId, setEditingQtyId] = useState<string | null>(null);
