@@ -482,7 +482,7 @@ const MovimentacaoFull = () => {
       {isRecording && (
         <div className="fixed top-20 right-6 z-50 rounded-lg border-2 border-red-500 bg-background shadow-2xl overflow-hidden">
           <div className="relative">
-            <video ref={recorder.videoRef} muted playsInline className="w-[160px] h-[90px] object-cover bg-black" />
+            <video ref={recorder.videoRef} autoPlay muted playsInline className="w-[160px] h-[90px] object-cover bg-black" />
             <Badge className="absolute top-1 left-1 bg-red-600 text-white border-none animate-pulse text-[10px] px-1.5 py-0">
               <Circle className="h-2 w-2 mr-1 fill-current" />
               {recordingMode === "despacho" ? "REC DESPACHO" : "REC"}
