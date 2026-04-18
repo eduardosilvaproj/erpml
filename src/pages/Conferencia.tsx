@@ -751,6 +751,9 @@ const Conferencia = () => {
     }
   }, [companyId, conferenceId, conferenceName, mode, scannedProducts, toast]);
 
+  // Keep ref pointing at latest saveSessionToDb for the auto-save effect.
+  useEffect(() => { saveSessionRef.current = saveSessionToDb; }, [saveSessionToDb]);
+
   const reset = () => {
     setStep(1);
     setMode(null);
