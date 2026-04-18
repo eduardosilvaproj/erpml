@@ -1092,16 +1092,16 @@ const Conferencia = () => {
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-md border-emerald-500/50">
+        <DialogContent className="max-w-md border-emerald-500/50 max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-emerald-400" />
-              📦 Caixa vinculada encontrada!
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg pr-6">
+              <Package className="h-5 w-5 text-emerald-400 shrink-0" />
+              <span className="truncate">📦 Caixa vinculada encontrada!</span>
             </DialogTitle>
           </DialogHeader>
 
           {gtinFoundModal.product && (
-            <>
+            <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
                 {gtinFoundModal.product.image_url ? (
                   <img src={gtinFoundModal.product.image_url} alt={gtinFoundModal.product.name} className="h-14 w-14 rounded-lg object-cover" />
