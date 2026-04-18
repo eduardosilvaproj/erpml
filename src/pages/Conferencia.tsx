@@ -1207,7 +1207,7 @@ const Conferencia = () => {
                   </>
                 );
               })()}
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>
