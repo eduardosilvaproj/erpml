@@ -507,11 +507,31 @@ const MovimentacaoFull = () => {
                 if (recordingMode === "despacho" && despachoOrderId) {
                   await stopAndUpload(despachoOrderId.id, despachoOrderId.number, "despacho");
                   setDespachoOrderId(null);
-                } else {
-                  await recorder.stop();
-                  recorder.reset();
-                  toast({ title: "Gravação descartada (não vinculada a uma ordem)." });
+                  return;
                 }
+                const blob = await recorder.stop();
+                const dur = recorder.seconds;
+                if (!blob || blob.size === 0 || !companyId) {
+                  recorder.reset();
+                  return;
+                }
+                const save = window.confirm(
+                  `Deseja salvar a gravação (${formatDuration(dur)}) mesmo sem ordem vinculada?\n\nOK = Salvar  •  Cancelar = Descartar`
+                );
+                if (save) {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      await recorder.uploadStandalone({ blob, companyId, userId: user.id, duracaoSegundos: dur });
+                      toast({ title: `📹 Gravação salva sem ordem (${formatDuration(dur)})` });
+                    }
+                  } catch (e: any) {
+                    toast({ title: "Erro ao salvar gravação", description: e.message, variant: "destructive" });
+                  }
+                } else {
+                  toast({ title: "Gravação descartada." });
+                }
+                recorder.reset();
               }}
             >
               <Square className="h-3 w-3" />
