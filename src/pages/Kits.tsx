@@ -112,7 +112,7 @@ const Kits = () => {
       byCategory[cat].push(p);
     });
     const suggestions: KitFormData[] = [];
-    Object.entries(byCategory).slice(0, 3).forEach(([cat, prods]) => {
+    Object.entries(byCategory).slice(0, aiKitCount).forEach(([cat, prods]) => {
       if (prods.length >= 2) {
         const items = prods.slice(0, 3);
         const totalPrice = items.reduce((sum, p) => sum + Number(p.price || 0), 0);
