@@ -90,9 +90,13 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
       created++;
     } else if (!it.stock_updated) {
       const { data: prod } = await supabase
-        .from("products").select("stock_physical").eq("id", productId).single();
+        .from("products").select("stock_physical, cost").eq("id", productId).single();
       const current = Number(prod?.stock_physical || 0);
-      await supabase.from("products").update({ stock_physical: current + qty }).eq("id", productId);
+      const currentCost = Number(prod?.cost || 0);
+      const xmlUnit = Number(it.unit_value) || 0;
+      const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
+      if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
+      await supabase.from("products").update(updatePayload).eq("id", productId);
       updated++;
     }
 
@@ -379,9 +383,13 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           created++;
         } else if (!it.stock_updated) {
           const { data: prod } = await supabase
-            .from("products").select("stock_physical").eq("id", productId).single();
+            .from("products").select("stock_physical, cost").eq("id", productId).single();
           const current = Number(prod?.stock_physical || 0);
-          await supabase.from("products").update({ stock_physical: current + qty }).eq("id", productId);
+          const currentCost = Number(prod?.cost || 0);
+          const xmlUnit = Number(it.unit_value) || 0;
+          const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
+          if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
+          await supabase.from("products").update(updatePayload).eq("id", productId);
           updated++;
         }
 
