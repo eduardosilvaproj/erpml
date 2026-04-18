@@ -1088,6 +1088,96 @@ const Conferencia = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ========== QUICK CONFIRM QTY POPUP ========== */}
+      <Dialog
+        open={confirmModal.open}
+        onOpenChange={(open) => { if (!open) cancelConfirm(); }}
+      >
+        <DialogContent className="max-w-sm border-emerald-500/40">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-emerald-400" />
+              {confirmModal.product?.name}
+            </DialogTitle>
+            <p className="text-xs font-mono text-muted-foreground">{confirmModal.product?.sku}</p>
+          </DialogHeader>
+
+          {confirmModal.existingQty > 0 && !confirmModal.replaceMode && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-2.5 text-xs space-y-1">
+              <p>Já contado: <span className="font-bold">{confirmModal.existingQty}</span> un.</p>
+              <p>Total ficará: <span className="font-bold">{confirmModal.existingQty + confirmModal.qty}</span> un.</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="text-xs">
+              {confirmModal.replaceMode ? "Substituir total para:" : "Quantidade a adicionar:"}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 shrink-0"
+                onClick={() => adjustConfirmQty(confirmModal.qty - 1)}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                ref={confirmQtyInputRef}
+                type="number"
+                value={confirmModal.qty}
+                onChange={(e) => adjustConfirmQty(parseInt(e.target.value) || 0)}
+                onFocus={(e) => e.target.select()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); finalizeConfirm(); }
+                  else if (e.key === "Escape") { e.preventDefault(); cancelConfirm(); }
+                }}
+                className="text-center text-2xl font-bold h-12"
+              />
+              <Button
+                size="icon"
+                variant="outline"
+                className="h-10 w-10 shrink-0"
+                onClick={() => adjustConfirmQty(confirmModal.qty + 1)}
+              >
+                <span className="text-lg">+</span>
+              </Button>
+            </div>
+          </div>
+
+          {!confirmModal.edited && !confirmModal.replaceMode && (
+            <div className="space-y-1">
+              <Progress value={confirmProgress} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground text-center">
+                Confirmação automática em instantes...
+              </p>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <Button variant="outline" onClick={cancelConfirm} className="flex-1">
+              Cancelar
+            </Button>
+            {confirmModal.existingQty > 0 && !confirmModal.replaceMode && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  clearConfirmTimers();
+                  setConfirmModal((m) => ({ ...m, replaceMode: true, qty: m.existingQty, edited: true }));
+                  setTimeout(() => confirmQtyInputRef.current?.select(), 50);
+                }}
+                className="flex-1"
+              >
+                Substituir total
+              </Button>
+            )}
+            <Button onClick={finalizeConfirm} className="flex-1">
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
