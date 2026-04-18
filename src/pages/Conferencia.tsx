@@ -1351,11 +1351,11 @@ const Conferencia = () => {
           </DialogHeader>
 
           {/* ============ BODY ============ */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
+          <div className="flex-1 overflow-y-auto p-3 space-y-2.5 min-h-0">
             {/* SCAN MODE */}
             {!gtinModal.selectedProductId && gtinSelectMode === "scan" && (
-              <div className="space-y-2.5">
-                <p className="text-[13px] text-muted-foreground">
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
                   Bipe o EAN/SKU do produto desta caixa:
                 </p>
                 <div className="flex gap-2">
@@ -1379,7 +1379,7 @@ const Conferencia = () => {
                     spellCheck={false}
                     disabled={gtinScanLoading}
                     autoFocus
-                    className={`h-11 font-mono flex-1 transition-colors ${
+                    className={`h-9 text-sm font-mono flex-1 transition-colors ${
                       gtinScanFlash === "success" ? "border-emerald-500 bg-emerald-500/5" :
                       gtinScanFlash === "error" ? "border-red-500 bg-red-500/5" : ""
                     }`}
@@ -1388,9 +1388,9 @@ const Conferencia = () => {
                     type="button"
                     onClick={() => handleGtinModalScan(gtinScanValue)}
                     disabled={!gtinScanValue.trim() || gtinScanLoading}
-                    className="h-11 shrink-0 bg-blue-600 hover:bg-blue-600/90 text-white px-4"
+                    className="h-9 shrink-0 bg-blue-600 hover:bg-blue-600/90 text-white px-3 text-xs"
                   >
-                    {gtinScanLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
+                    {gtinScanLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Buscar"}
                   </Button>
                 </div>
                 {gtinScanError && (
