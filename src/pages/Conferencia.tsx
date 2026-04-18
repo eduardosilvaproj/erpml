@@ -83,7 +83,10 @@ const Conferencia = () => {
   const [step, setStep] = useState<Step>(restored?.step ?? 1);
   const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
   const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [conferenceId, setConferenceId] = useState<string | null>(restored?.conferenceId ?? null);
   const [sessionRestored, setSessionRestored] = useState(!!restored);
+  const [savingSession, setSavingSession] = useState(false);
+  const [loadingConference, setLoadingConference] = useState(false);
 
   // Step 2
   const [scanBuffer, setScanBuffer] = useState("");
