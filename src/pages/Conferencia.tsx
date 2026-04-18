@@ -2,8 +2,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
   Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
-  ArrowRight, ArrowLeft, Download, RotateCcw
+  ArrowRight, ArrowLeft, Download, RotateCcw, History, X
 } from "lucide-react";
+
+const STORAGE_KEY = "conferencia-session-v1";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,13 +52,27 @@ const Conferencia = () => {
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
 
-  const [step, setStep] = useState<Step>(1);
-  const [mode, setMode] = useState<ConferenceMode | null>(null);
-  const [conferenceName, setConferenceName] = useState("");
+  // Restore session from localStorage
+  const restored = (() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || (data.step === 1 && !data.mode && !data.conferenceName && (!data.scannedProducts || data.scannedProducts.length === 0))) return null;
+      return data;
+    } catch { return null; }
+  })();
+
+  const [step, setStep] = useState<Step>(restored?.step ?? 1);
+  const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
+  const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [sessionRestored, setSessionRestored] = useState(!!restored);
 
   // Step 2
   const [scanBuffer, setScanBuffer] = useState("");
-  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>([]);
+  const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>(
+    (restored?.scannedProducts ?? []).map((p: any) => ({ ...p, lastBipAt: new Date(p.lastBipAt) }))
+  );
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
@@ -70,6 +86,20 @@ const Conferencia = () => {
 
   const { data: productsData, refetch: refetchProducts } = useProducts();
   const allProducts = productsData?.products ?? [];
+
+  // Auto-save session to localStorage
+  useEffect(() => {
+    try {
+      if (step === 1 && !mode && !conferenceName && scannedProducts.length === 0) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        step, mode, conferenceName, scannedProducts,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {}
+  }, [step, mode, conferenceName, scannedProducts]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
@@ -291,6 +321,8 @@ const Conferencia = () => {
     setScannedProducts([]);
     setLastScan(null);
     setScanBuffer("");
+    setSessionRestored(false);
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   };
 
   const gtinTotalUnits = (parseInt(gtinModal.unitsPerBox) || 0) * (parseInt(gtinModal.boxQty) || 0);
@@ -298,6 +330,21 @@ const Conferencia = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
+      {/* Session restored indicator */}
+      {sessionRestored && (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 text-sm">
+          <History className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-foreground font-medium">Sessão restaurada</span>
+          <span className="text-muted-foreground hidden sm:inline">— continuamos de onde você parou.</span>
+          <Button variant="ghost" size="sm" className="ml-auto h-7" onClick={() => setSessionRestored(false)}>
+            <X className="h-3 w-3" />
+          </Button>
+          <Button variant="outline" size="sm" className="h-7" onClick={reset}>
+            Descartar
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">Conferência de Estoque</h1>
