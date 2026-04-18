@@ -813,10 +813,13 @@ const Conferencia = () => {
       {step === 1 && (
         <div className="space-y-6">
           <ConferenceHistoryPanel
-            onContinue={(c) => {
+            onContinue={async (c) => {
               setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
               setMode(c.tipo === "inventario" ? "inventario" : "nf");
+              setConferenceId(c.id);
+              await loadConferenceItems(c.id);
               setStep(2);
+              setSessionRestored(true);
               toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
             }}
           />
