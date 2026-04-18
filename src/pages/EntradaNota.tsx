@@ -691,14 +691,16 @@ const EntradaNota = () => {
       .maybeSingle();
     if (bySku?.id) return bySku.id;
 
+    const xmlUnit = Number(xmlProduct.unitValue) || 0;
+    const suggestedPrice = xmlUnit > 0 ? Math.round(xmlUnit * 1.5 * 100) / 100 : 0;
     const { data: created, error: createErr } = await supabase
       .from("products")
       .insert({
         name: xmlProduct.description.slice(0, 200),
         sku,
         barcode: ean || null,
-        cost: xmlProduct.unitValue || 0,
-        price: 0,
+        cost: xmlUnit,
+        price: suggestedPrice,
         stock_physical: qty,
         min_stock: 0,
         active: true,
