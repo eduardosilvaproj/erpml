@@ -488,6 +488,44 @@ export type Database = {
           },
         ]
       }
+      envio_pendente: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          ordem_id: string
+          product_id: string
+          quantidade: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          ordem_id: string
+          product_id: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          ordem_id?: string
+          product_id?: string
+          quantidade?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envio_pendente_ordem_id_fkey"
+            columns: ["ordem_id"]
+            isOneToOne: false
+            referencedRelation: "ordens_full"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gravacoes_full: {
         Row: {
           company_id: string
@@ -2155,6 +2193,8 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      marcar_ordem_enviada: { Args: { _ordem_id: string }; Returns: undefined }
+      marcar_ordem_separada: { Args: { _ordem_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
@@ -2166,6 +2206,8 @@ export type Database = {
         | "em_separacao"
         | "concluida"
         | "cancelada"
+        | "separada"
+        | "enviada"
       ordem_item_status: "pendente" | "parcial" | "completo" | "excesso"
       plan_type: "free" | "basic" | "premium" | "enterprise"
       store_payment_method: "pix" | "cartao" | "boleto"
@@ -2307,6 +2349,8 @@ export const Constants = {
         "em_separacao",
         "concluida",
         "cancelada",
+        "separada",
+        "enviada",
       ],
       ordem_item_status: ["pendente", "parcial", "completo", "excesso"],
       plan_type: ["free", "basic", "premium", "enterprise"],

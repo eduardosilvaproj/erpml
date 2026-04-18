@@ -25,10 +25,12 @@ import {
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
 import { useKits, type Kit } from "@/hooks/useKitData";
+import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada } from "@/hooks/useOrdensFull";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ClipboardList, X } from "lucide-react";
 
 interface SuccessInfo {
   orderNumber: string;
@@ -64,6 +66,10 @@ const MovimentacaoFull = () => {
   const updateStatus = useUpdateTransferStatus();
   const companyId = useCompanyId();
   const recorder = useFullRecorder();
+  const { data: envioPendente } = useEnvioPendente();
+  const limparPendente = useLimparEnvioPendente();
+  const marcarEnviada = useMarcarOrdemEnviada();
+  const [loadedOrdemIds, setLoadedOrdemIds] = useState<string[]>([]);
 
   // Recording UI state
   const [showAskRecord, setShowAskRecord] = useState(false);
@@ -81,12 +87,35 @@ const MovimentacaoFull = () => {
 
   // Pergunta gravação ao bipar o primeiro item (apenas para separação)
   useEffect(() => {
-    if (items.length > 0 && !askedOnce && recorder.status === "idle") {
+    if (items.length > 0 && !askedOnce && recorder.status === "idle" && loadedOrdemIds.length === 0) {
       setRecordingMode("separacao");
       setAskedOnce(true);
       setShowAskRecord(true);
     }
-  }, [items.length, askedOnce, recorder.status]);
+  }, [items.length, askedOnce, recorder.status, loadedOrdemIds.length]);
+
+  // Carrega itens de envio_pendente automaticamente ao entrar na tela
+  useEffect(() => {
+    if (!envioPendente || envioPendente.length === 0) return;
+    // Apenas se a lista atual estiver vazia (evita sobrescrever uma sessão em andamento)
+    if (items.length > 0) return;
+    const loaded: TransferItem[] = envioPendente
+      .filter((ep: any) => ep.product)
+      .map((ep: any) => ({
+        productId: ep.product.id,
+        productName: ep.product.name,
+        productSku: ep.product.sku,
+        barcode: ep.product.barcode,
+        quantity: ep.quantidade,
+        stockPhysical: ep.product.stock_physical,
+      }));
+    if (loaded.length > 0) {
+      setItems(loaded);
+      const ordemIds = Array.from(new Set(envioPendente.map((ep: any) => ep.ordem_id))) as string[];
+      setLoadedOrdemIds(ordemIds);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [envioPendente]);
 
   const openCameraPicker = async () => {
     setShowAskRecord(false);
@@ -424,12 +453,18 @@ const MovimentacaoFull = () => {
 
     const pdfBlobUrl = generatePdf(order.order_number, !!videoUrl);
 
+    // Marca ordens carregadas (envio_pendente) como enviadas e limpa a tabela
+    for (const ordemId of loadedOrdemIds) {
+      try { await marcarEnviada.mutateAsync(ordemId); } catch {}
+    }
+
     setSuccessInfo({ orderNumber: order.order_number, durationSec, videoUrl, pdfBlobUrl });
     setItems([]);
     setUsedKits([]);
     setBoxConfigs({});
     setLastScan(null);
     setAskedOnce(false);
+    setLoadedOrdemIds([]);
   };
 
 
@@ -647,6 +682,42 @@ const MovimentacaoFull = () => {
         </TabsList>
 
         <TabsContent value="envio" className="space-y-6 mt-0">
+
+      {/* Banner: Ordem(ns) carregada(s) */}
+      {loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
+        <Card className="border-blue-500/40 bg-blue-500/10">
+          <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
+              <ClipboardList className="h-5 w-5 text-blue-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-blue-300">
+                  📋 Ordem{loadedOrdemIds.length > 1 ? "s" : ""}{" "}
+                  {Array.from(new Set(envioPendente.map((ep: any) => ep.ordem?.numero).filter(Boolean))).join(", ")} carregada
+                  {loadedOrdemIds.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {envioPendente.length} produto(s) prontos para envio — confira a lista abaixo e gere a ordem de envio FULL.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                for (const oid of loadedOrdemIds) {
+                  try { await limparPendente.mutateAsync(oid); } catch {}
+                }
+                setItems([]);
+                setLoadedOrdemIds([]);
+                toast({ title: "Lista limpa." });
+              }}
+            >
+              <X className="h-4 w-4 mr-1" /> Limpar
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">

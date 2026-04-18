@@ -10,11 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import {
-  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useConcluirOrdem,
+  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada,
   itemStatusBadge, ordemStatusBadge, type OrdemItem,
 } from "@/hooks/useOrdensFull";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   ordemId: string | null;
@@ -23,12 +24,13 @@ interface Props {
 
 export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const companyId = useCompanyId();
   const { data, isLoading, refetch } = useOrdemFull(ordemId);
   const updateItem = useUpdateItemQuantity();
   const updateStatus = useUpdateOrdemStatus();
-  const concluir = useConcluirOrdem();
+  const marcarSeparada = useMarcarOrdemSeparada();
   const recorder = useFullRecorder();
 
   const [askRecord, setAskRecord] = useState(false);
@@ -113,7 +115,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
   const finalizar = async () => {
     if (!ordem || !user || !companyId) return;
-    if (!allComplete && !confirm("Existem itens pendentes/parciais. Concluir mesmo assim?")) return;
+    if (!allComplete && !confirm("Existem itens pendentes/parciais. Marcar como separada mesmo assim?")) return;
     try {
       // Para gravação se ativa
       if (recorder.status === "recording" || recorder.status === "paused") {
@@ -127,9 +129,10 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           });
         }
       }
-      await concluir.mutateAsync(ordem.id);
-      toast({ title: "Ordem concluída! Estoque transferido para FULL." });
+      await marcarSeparada.mutateAsync(ordem.id);
+      toast({ title: "✅ Separação concluída!", description: "Produtos carregados para envio." });
       onClose();
+      navigate("/movimentacao-full");
     } catch (e: any) {
       toast({ title: "Erro ao concluir", description: e.message, variant: "destructive" });
     }
@@ -227,9 +230,9 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3">
             <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
             {isExec && (
-              <Button onClick={finalizar} disabled={concluir.isPending} className="w-full sm:w-auto">
-                {concluir.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir
+              <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="w-full sm:w-auto">
+                {marcarSeparada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
               </Button>
             )}
           </DialogFooter>
