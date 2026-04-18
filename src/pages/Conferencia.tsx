@@ -233,11 +233,11 @@ const Conferencia = () => {
         return;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, mode, conferenceName, scannedProducts,
+        step, mode, conferenceName, conferenceId, scannedProducts,
         savedAt: new Date().toISOString(),
       }));
     } catch {}
-  }, [step, mode, conferenceName, scannedProducts]);
+  }, [step, mode, conferenceName, conferenceId, scannedProducts]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
