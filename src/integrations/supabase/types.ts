@@ -488,6 +488,45 @@ export type Database = {
           },
         ]
       }
+      gravacoes_full: {
+        Row: {
+          company_id: string
+          created_at: string
+          duracao_segundos: number
+          envio_id: string
+          id: string
+          storage_path: string
+          tamanho_bytes: number
+          tipo: string
+          url_video: string
+          usuario_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          duracao_segundos?: number
+          envio_id: string
+          id?: string
+          storage_path: string
+          tamanho_bytes?: number
+          tipo: string
+          url_video: string
+          usuario_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          duracao_segundos?: number
+          envio_id?: string
+          id?: string
+          storage_path?: string
+          tamanho_bytes?: number
+          tipo?: string
+          url_video?: string
+          usuario_id?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           created_at: string
