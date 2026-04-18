@@ -2,8 +2,10 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
   Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
-  ArrowRight, ArrowLeft, Download, RotateCcw
+  ArrowRight, ArrowLeft, Download, RotateCcw, History, X
 } from "lucide-react";
+
+const STORAGE_KEY = "conferencia-session-v1";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
