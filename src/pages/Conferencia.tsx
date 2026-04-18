@@ -1065,16 +1065,22 @@ const Conferencia = () => {
                     variant="secondary"
                     className="w-full"
                     size="sm"
-                    onClick={() => {
-                      toast({
-                        title: "Conferência salva",
-                        description: "Você pode continuar depois — seus bips ficam guardados neste dispositivo.",
-                      });
-                      setStep(1);
+                    onClick={async () => {
+                      const ok = await saveSessionToDb();
+                      if (ok) {
+                        toast({
+                          title: "Conferência salva",
+                          description: "Seus bips ficaram guardados. Você pode continuar de qualquer dispositivo.",
+                        });
+                        setStep(1);
+                      }
                     }}
-                    disabled={scannedProducts.length === 0}
+                    disabled={scannedProducts.length === 0 || savingSession}
                   >
-                    <Save className="h-4 w-4 mr-2" /> Salvar e continuar depois
+                    {savingSession
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+                      : <><Save className="h-4 w-4 mr-2" /> Salvar e continuar depois</>
+                    }
                   </Button>
                 </div>
               </CardContent>
