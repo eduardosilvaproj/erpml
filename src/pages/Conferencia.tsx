@@ -83,7 +83,10 @@ const Conferencia = () => {
   const [step, setStep] = useState<Step>(restored?.step ?? 1);
   const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
   const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [conferenceId, setConferenceId] = useState<string | null>(restored?.conferenceId ?? null);
   const [sessionRestored, setSessionRestored] = useState(!!restored);
+  const [savingSession, setSavingSession] = useState(false);
+  const [loadingConference, setLoadingConference] = useState(false);
 
   // Step 2
   const [scanBuffer, setScanBuffer] = useState("");
@@ -230,11 +233,11 @@ const Conferencia = () => {
         return;
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, mode, conferenceName, scannedProducts,
+        step, mode, conferenceName, conferenceId, scannedProducts,
         savedAt: new Date().toISOString(),
       }));
     } catch {}
-  }, [step, mode, conferenceName, scannedProducts]);
+  }, [step, mode, conferenceName, conferenceId, scannedProducts]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
@@ -612,18 +615,133 @@ const Conferencia = () => {
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
   const uniqueProducts = scannedProducts.length;
 
-  const startConference = () => {
+  const startConference = async () => {
     if (!mode) {
       toast({ title: "Selecione um modo", variant: "destructive" });
       return;
     }
+    // Create the conference row in DB so it appears in history & can be resumed from any device.
+    if (!conferenceId && companyId) {
+      try {
+        const { data, error } = await supabase
+          .from("conferences")
+          .insert({
+            company_id: companyId,
+            tipo: mode === "inventario" ? "inventario" : "nota_fiscal",
+            nome: conferenceName || `Conferência ${new Date().toLocaleString("pt-BR")}`,
+            status: "em_andamento",
+          } as any)
+          .select()
+          .single();
+        if (error) throw error;
+        setConferenceId((data as any).id);
+      } catch (err: any) {
+        toast({ title: "Erro ao iniciar conferência", description: err.message, variant: "destructive" });
+        return;
+      }
+    }
     setStep(2);
   };
+
+  const loadConferenceItems = useCallback(async (confId: string) => {
+    setLoadingConference(true);
+    try {
+      const { data, error } = await supabase
+        .from("conference_items")
+        .select("*")
+        .eq("conference_id", confId);
+      if (error) throw error;
+
+      const items = (data ?? []) as any[];
+      // Map DB rows -> ScannedProduct shape using product info from allProducts when possible.
+      const mapped: ScannedProduct[] = items
+        .filter((it) => it.product_id)
+        .map((it) => {
+          const prod = allProducts.find((p) => p.id === it.product_id);
+          return {
+            productId: it.product_id,
+            name: prod?.name ?? it.nome_produto ?? "Produto",
+            sku: prod?.sku ?? it.sku ?? "",
+            barcode: prod?.barcode ?? it.ean ?? null,
+            imageUrl: prod?.image_url ?? null,
+            scannedQty: Number(it.scanned_quantity) || 0,
+            systemQty: prod?.stock_physical ?? (Number(it.expected_quantity) || 0),
+            lastBipAt: new Date(it.updated_at ?? it.created_at ?? Date.now()),
+            boxInfo: it.detalhes_caixa ?? undefined,
+          };
+        });
+      setScannedProducts(mapped);
+    } catch (err: any) {
+      toast({ title: "Erro ao carregar itens", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingConference(false);
+    }
+  }, [allProducts, toast]);
+
+  const saveSessionToDb = useCallback(async () => {
+    if (!companyId) {
+      toast({ title: "Empresa não identificada", variant: "destructive" });
+      return false;
+    }
+    setSavingSession(true);
+    try {
+      let confId = conferenceId;
+      // Create the conference if it doesn't exist yet.
+      if (!confId) {
+        const { data, error } = await supabase
+          .from("conferences")
+          .insert({
+            company_id: companyId,
+            tipo: mode === "inventario" ? "inventario" : "nota_fiscal",
+            nome: conferenceName || `Conferência ${new Date().toLocaleString("pt-BR")}`,
+            status: "em_andamento",
+          } as any)
+          .select()
+          .single();
+        if (error) throw error;
+        confId = (data as any).id;
+        setConferenceId(confId);
+      }
+
+      // Replace items: delete existing then re-insert (simple & reliable).
+      await supabase.from("conference_items").delete().eq("conference_id", confId!);
+
+      if (scannedProducts.length > 0) {
+        const rows = scannedProducts.map((p) => ({
+          conference_id: confId!,
+          product_id: p.productId,
+          nome_produto: p.name,
+          sku: p.sku,
+          ean: p.barcode,
+          expected_quantity: p.systemQty,
+          scanned_quantity: p.scannedQty,
+          status: "ok",
+          tipo_contagem: p.boxInfo ? "caixa" : "unidade",
+          detalhes_caixa: p.boxInfo ?? null,
+        }));
+        const { error: insErr } = await supabase.from("conference_items").insert(rows as any);
+        if (insErr) throw insErr;
+      }
+
+      await supabase
+        .from("conferences")
+        .update({ updated_at: new Date().toISOString(), status: "em_andamento" } as any)
+        .eq("id", confId!);
+
+      return true;
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar conferência", description: err.message, variant: "destructive" });
+      return false;
+    } finally {
+      setSavingSession(false);
+    }
+  }, [companyId, conferenceId, conferenceName, mode, scannedProducts, toast]);
 
   const reset = () => {
     setStep(1);
     setMode(null);
     setConferenceName("");
+    setConferenceId(null);
     setScannedProducts([]);
     setLastScan(null);
     setScanBuffer("");
@@ -695,10 +813,13 @@ const Conferencia = () => {
       {step === 1 && (
         <div className="space-y-6">
           <ConferenceHistoryPanel
-            onContinue={(c) => {
+            onContinue={async (c) => {
               setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
               setMode(c.tipo === "inventario" ? "inventario" : "nf");
+              setConferenceId(c.id);
+              await loadConferenceItems(c.id);
               setStep(2);
+              setSessionRestored(true);
               toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
             }}
           />
@@ -944,16 +1065,22 @@ const Conferencia = () => {
                     variant="secondary"
                     className="w-full"
                     size="sm"
-                    onClick={() => {
-                      toast({
-                        title: "Conferência salva",
-                        description: "Você pode continuar depois — seus bips ficam guardados neste dispositivo.",
-                      });
-                      setStep(1);
+                    onClick={async () => {
+                      const ok = await saveSessionToDb();
+                      if (ok) {
+                        toast({
+                          title: "Conferência salva",
+                          description: "Seus bips ficaram guardados. Você pode continuar de qualquer dispositivo.",
+                        });
+                        setStep(1);
+                      }
                     }}
-                    disabled={scannedProducts.length === 0}
+                    disabled={scannedProducts.length === 0 || savingSession}
                   >
-                    <Save className="h-4 w-4 mr-2" /> Salvar e continuar depois
+                    {savingSession
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+                      : <><Save className="h-4 w-4 mr-2" /> Salvar e continuar depois</>
+                    }
                   </Button>
                 </div>
               </CardContent>
