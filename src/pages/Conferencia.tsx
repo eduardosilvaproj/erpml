@@ -269,11 +269,15 @@ const Conferencia = () => {
     }
 
     if (porGtinCx) {
-      const unitsPerBox = porGtinCx.box_quantity || 1;
+      const unitsPerBox = porGtinCx.box_quantity ? String(porGtinCx.box_quantity) : "";
       setGtinFoundModal({
         open: true, product: porGtinCx, code: trimmed, unitsPerBox, boxQty: "1",
       });
       playBeep(800, 100);
+      // Focus boxQty if units already filled, else focus units
+      setTimeout(() => {
+        if (unitsPerBox) gtinFoundBoxQtyRef.current?.select();
+      }, 100);
       return;
     }
 
