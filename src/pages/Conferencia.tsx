@@ -766,7 +766,25 @@ const Conferencia = () => {
     try { localStorage.removeItem(STORAGE_KEY); } catch {}
   };
 
-  const gtinTotalUnits = (parseInt(gtinModal.unitsPerBox) || 0) * (parseInt(gtinModal.boxQty) || 0);
+  const [cancelling, setCancelling] = useState(false);
+  const handleCancelConference = async () => {
+    if (!confirm("Cancelar esta conferência? Os bips serão descartados e a conferência será marcada como cancelada.")) return;
+    setCancelling(true);
+    try {
+      if (conferenceId) {
+        await supabase
+          .from("conferences")
+          .update({ status: "cancelada", finished_at: new Date().toISOString() } as any)
+          .eq("id", conferenceId);
+      }
+      toast({ title: "Conferência cancelada" });
+      reset();
+    } catch (err: any) {
+      toast({ title: "Erro ao cancelar", description: err.message, variant: "destructive" });
+    } finally {
+      setCancelling(false);
+    }
+  };
   const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
