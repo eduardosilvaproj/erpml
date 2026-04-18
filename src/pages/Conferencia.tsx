@@ -84,7 +84,8 @@ const Conferencia = () => {
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
 
-  const { data: productsData, refetch: refetchProducts } = useProducts();
+  // Load ALL products for conference (large pageSize to bypass default 10-row limit)
+  const { data: productsData, refetch: refetchProducts } = useProducts({ pageSize: 10000, page: 1 });
   const allProducts = productsData?.products ?? [];
 
   // Auto-save session to localStorage
