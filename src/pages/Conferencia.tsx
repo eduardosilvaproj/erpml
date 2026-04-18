@@ -1184,7 +1184,7 @@ const Conferencia = () => {
           setTimeout(() => scanInputRef.current?.focus(), 50);
         }
       }}>
-        <DialogContent className="max-w-[500px] max-h-[85vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col">
+        <DialogContent className="max-w-[480px] w-[calc(100%-2rem)] max-h-[90vh] p-0 gap-0 overflow-hidden border-blue-500/40 flex flex-col rounded-xl">
           {/* HEADER (fixed) */}
           <DialogHeader className="flex-shrink-0 p-4 pb-3 border-b border-border/40 space-y-2">
             <DialogTitle className="flex items-center gap-2 text-base">
@@ -1254,7 +1254,7 @@ const Conferencia = () => {
           </DialogHeader>
 
           {/* BODY (scrollable) */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {/* SCAN MODE */}
             {!gtinModal.selectedProductId && gtinSelectMode === "scan" && (
               <div
