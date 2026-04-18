@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,7 @@ interface NovoItem {
 
 export const OrdensFullTab = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const companyId = useCompanyId();
   const { data: company } = useMyCompany();
@@ -43,7 +46,51 @@ export const OrdensFullTab = () => {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
-  const [executeOrdemId, setExecuteOrdemId] = useState<string | null>(null);
+  const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+
+  // Carrega a ordem em localStorage e navega para /movimentacao-full
+  const handleStartSeparation = async (ordem: OrdemFull) => {
+    try {
+      setStartingId(ordem.id);
+      const { data: itens, error } = await supabase
+        .from("ordens_full_itens")
+        .select("*, product:products(id, name, sku, barcode, image_url, stock_physical)")
+        .eq("ordem_id", ordem.id);
+      if (error) throw error;
+
+      const produtos = (itens || [])
+        .filter((it: any) => it.product)
+        .map((it: any) => ({
+          product_id: it.product.id,
+          name: it.product.name,
+          sku: it.product.sku,
+          barcode: it.product.barcode,
+          image_url: it.product.image_url,
+          stock_physical: it.product.stock_physical,
+          qtd_solicitada: it.qtd_solicitada,
+        }));
+
+      localStorage.setItem("ordem_ativa", JSON.stringify({
+        id: ordem.id,
+        numero: ordem.numero,
+        descricao: ordem.descricao,
+        produtos,
+      }));
+
+      // Marca como em_separacao se ainda estiver aguardando
+      if (ordem.status === "aguardando") {
+        try { await updateStatus.mutateAsync({ id: ordem.id, status: "em_separacao" }); } catch {}
+      }
+
+      toast({ title: `📋 Ordem ${ordem.numero} carregada para separação` });
+      navigate("/movimentacao-full");
+    } catch (e: any) {
+      toast({ title: "Erro ao iniciar separação", description: e.message, variant: "destructive" });
+    } finally {
+      setStartingId(null);
+    }
+  };
 
   // Form state
   const [descricao, setDescricao] = useState("");
@@ -179,8 +226,8 @@ export const OrdensFullTab = () => {
                         {o.total_produtos} produtos • {o.total_itens} unidades
                         {o.prazo && <> • Prazo {new Date(o.prazo).toLocaleDateString("pt-BR")}</>}
                       </div>
-                      <Button size="sm" className="w-full" onClick={() => setExecuteOrdemId(o.id)}>
-                        <Play className="h-3 w-3 mr-1" /> Iniciar separação
+                      <Button size="sm" className="w-full" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
+                        <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "Carregando..." : "Iniciar separação"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -248,11 +295,11 @@ export const OrdensFullTab = () => {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {podeExecutar && (
-                              <Button size="sm" variant="default" onClick={() => setExecuteOrdemId(o.id)}>
-                                <Play className="h-3 w-3 mr-1" /> Executar
+                              <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
+                                <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
-                            <Button size="icon" variant="ghost" title="Ver" onClick={() => setExecuteOrdemId(o.id)}>
+                            <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
                             {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && (
@@ -408,10 +455,10 @@ export const OrdensFullTab = () => {
         }}
       />
 
-      {/* Execução / detalhes */}
+      {/* Visualização / detalhes (somente leitura via dialog) */}
       <OrdemSeparacaoDialog
-        ordemId={executeOrdemId}
-        onClose={() => setExecuteOrdemId(null)}
+        ordemId={viewOrdemId}
+        onClose={() => setViewOrdemId(null)}
       />
     </div>
   );

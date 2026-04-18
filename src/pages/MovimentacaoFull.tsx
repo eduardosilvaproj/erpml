@@ -25,7 +25,7 @@ import {
   type TransferItem, type TransferOrder
 } from "@/hooks/useTransferData";
 import { useKits, type Kit } from "@/hooks/useKitData";
-import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada } from "@/hooks/useOrdensFull";
+import { useEnvioPendente, useLimparEnvioPendente, useMarcarOrdemEnviada, useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import jsPDF from "jspdf";
@@ -54,6 +54,15 @@ const MovimentacaoFull = () => {
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Ordem ativa carregada via localStorage (vinda da aba Ordens)
+  type OrdemAtivaProduto = {
+    product_id: string; name: string; sku: string; barcode: string | null;
+    image_url: string | null; stock_physical: number; qtd_solicitada: number;
+  };
+  type OrdemAtiva = { id: string; numero: string; descricao: string | null; produtos: OrdemAtivaProduto[] };
+  const [ordemAtiva, setOrdemAtiva] = useState<OrdemAtiva | null>(null);
+  const [qtdBipada, setQtdBipada] = useState<Record<string, number>>({});
+
   // Box mode state
   const [boxModeEnabled, setBoxModeEnabled] = useState(false);
   const [boxConfigs, setBoxConfigs] = useState<Record<string, BoxConfig>>({});
@@ -69,6 +78,7 @@ const MovimentacaoFull = () => {
   const { data: envioPendente } = useEnvioPendente();
   const limparPendente = useLimparEnvioPendente();
   const marcarEnviada = useMarcarOrdemEnviada();
+  const updateStatusOrdem = useUpdateOrdemStatus();
   const [loadedOrdemIds, setLoadedOrdemIds] = useState<string[]>([]);
 
   // Recording UI state
@@ -94,10 +104,36 @@ const MovimentacaoFull = () => {
     }
   }, [items.length, askedOnce, recorder.status, loadedOrdemIds.length]);
 
-  // Carrega itens de envio_pendente automaticamente ao entrar na tela
+  // Carrega ordem ativa do localStorage (vinda do clique em "Executar"/"Iniciar separação")
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ordem_ativa");
+      if (!raw) return;
+      const ordem: OrdemAtiva = JSON.parse(raw);
+      if (!ordem?.produtos?.length) return;
+      setOrdemAtiva(ordem);
+      setLoadedOrdemIds([ordem.id]);
+      const loaded: TransferItem[] = ordem.produtos.map((p) => ({
+        productId: p.product_id,
+        productName: p.name,
+        productSku: p.sku,
+        barcode: p.barcode,
+        quantity: 0,
+        stockPhysical: p.stock_physical,
+      }));
+      setItems(loaded);
+      const initBipada: Record<string, number> = {};
+      ordem.produtos.forEach((p) => { initBipada[p.product_id] = 0; });
+      setQtdBipada(initBipada);
+      toast({ title: `📋 Ordem ${ordem.numero} carregada — bipe os produtos para confirmar` });
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Carrega itens de envio_pendente automaticamente (fluxo legado, só se não houver ordem ativa via localStorage)
+  useEffect(() => {
+    if (ordemAtiva) return;
     if (!envioPendente || envioPendente.length === 0) return;
-    // Apenas se a lista atual estiver vazia (evita sobrescrever uma sessão em andamento)
     if (items.length > 0) return;
     const loaded: TransferItem[] = envioPendente
       .filter((ep: any) => ep.product)
@@ -115,7 +151,7 @@ const MovimentacaoFull = () => {
       setLoadedOrdemIds(ordemIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [envioPendente]);
+  }, [envioPendente, ordemAtiva]);
 
   const openCameraPicker = async () => {
     setShowAskRecord(false);
@@ -294,6 +330,40 @@ const MovimentacaoFull = () => {
         return;
       }
 
+      // Modo Ordem Ativa: incrementa qtd_bipada e valida com qtd_solicitada
+      if (ordemAtiva) {
+        const inOrdem = ordemAtiva.produtos.find((p) => p.product_id === product.id);
+        if (!inOrdem) {
+          const ok = window.confirm(`⚠️ "${product.name}" NÃO está na ordem ${ordemAtiva.numero}.\n\nDeseja adicionar mesmo assim?`);
+          if (!ok) {
+            setLastScan({ success: false, message: `Produto fora da ordem — ignorado.` });
+            playBeep(300, 300);
+            setScanBuffer("");
+            setTimeout(() => scanInputRef.current?.focus(), 50);
+            return;
+          }
+        }
+        const result = addOrIncrementItem(items, product, 1);
+        setItems(result.items);
+        const newBipada = (qtdBipada[product.id] ?? 0) + 1;
+        setQtdBipada({ ...qtdBipada, [product.id]: newBipada });
+        if (inOrdem) {
+          if (newBipada > inOrdem.qtd_solicitada) {
+            setLastScan({ success: false, message: `⚠️ Excesso em "${product.name}" — ${newBipada}/${inOrdem.qtd_solicitada}` });
+            playBeep(400, 200);
+          } else {
+            setLastScan({ success: true, message: `✓ ${product.name} — ${newBipada} de ${inOrdem.qtd_solicitada}` });
+            playBeep(800, 100);
+          }
+        } else {
+          setLastScan({ success: true, message: `${product.name} adicionado (fora da ordem) — ${newBipada} un.` });
+          playBeep(800, 100);
+        }
+        setScanBuffer("");
+        setTimeout(() => scanInputRef.current?.focus(), 50);
+        return;
+      }
+
       const result = addOrIncrementItem(items, product, 1);
       setItems(result.items);
       setLastScan({ success: result.added, message: result.message });
@@ -314,7 +384,7 @@ const MovimentacaoFull = () => {
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [items, kits, boxModeEnabled]);
+  }, [items, kits, boxModeEnabled, ordemAtiva, qtdBipada]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -453,9 +523,13 @@ const MovimentacaoFull = () => {
 
     const pdfBlobUrl = generatePdf(order.order_number, !!videoUrl);
 
-    // Marca ordens carregadas (envio_pendente) como enviadas e limpa a tabela
+    // Marca ordens carregadas (envio_pendente / ordem ativa) como enviadas
     for (const ordemId of loadedOrdemIds) {
       try { await marcarEnviada.mutateAsync(ordemId); } catch {}
+    }
+    if (ordemAtiva) {
+      localStorage.removeItem("ordem_ativa");
+      toast({ title: `✅ Ordem ${ordemAtiva.numero} enviada!` });
     }
 
     setSuccessInfo({ orderNumber: order.order_number, durationSec, videoUrl, pdfBlobUrl });
@@ -465,6 +539,8 @@ const MovimentacaoFull = () => {
     setLastScan(null);
     setAskedOnce(false);
     setLoadedOrdemIds([]);
+    setOrdemAtiva(null);
+    setQtdBipada({});
   };
 
 
@@ -683,8 +759,59 @@ const MovimentacaoFull = () => {
 
         <TabsContent value="envio" className="space-y-6 mt-0">
 
-      {/* Banner: Ordem(ns) carregada(s) */}
-      {loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
+      {/* Banner: Ordem ativa (vinda do clique em "Executar") */}
+      {ordemAtiva && (() => {
+        const total = ordemAtiva.produtos.length;
+        const completos = ordemAtiva.produtos.filter((p) => (qtdBipada[p.product_id] ?? 0) >= p.qtd_solicitada && p.qtd_solicitada > 0).length;
+        const allDone = total > 0 && completos === total;
+        const pct = total > 0 ? Math.round((completos / total) * 100) : 0;
+        return (
+          <Card className={allDone ? "border-emerald-500/50 bg-emerald-500/10" : "border-blue-500/40 bg-blue-500/10"}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  <ClipboardList className={`h-5 w-5 shrink-0 ${allDone ? "text-emerald-400" : "text-blue-400"}`} />
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold ${allDone ? "text-emerald-300" : "text-blue-300"}`}>
+                      {allDone ? "✅ Todos os itens separados!" : `📋 Separando Ordem ${ordemAtiva.numero}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {ordemAtiva.descricao || "Sem descrição"} — {completos} de {total} produtos completos
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!window.confirm("Cancelar separação? O progresso será perdido.")) return;
+                    try {
+                      await updateStatusOrdem.mutateAsync({ id: ordemAtiva.id, status: "aguardando" });
+                    } catch {}
+                    localStorage.removeItem("ordem_ativa");
+                    setOrdemAtiva(null);
+                    setItems([]);
+                    setQtdBipada({});
+                    setLoadedOrdemIds([]);
+                    toast({ title: "Separação cancelada." });
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancelar separação
+                </Button>
+              </div>
+              <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className={`h-full transition-all ${allDone ? "bg-emerald-500" : "bg-blue-500"}`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* Banner: envio_pendente legado */}
+      {!ordemAtiva && loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
         <Card className="border-blue-500/40 bg-blue-500/10">
           <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
             <div className="flex items-center gap-3 min-w-0">
