@@ -80,6 +80,7 @@ const Conferencia = () => {
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
+  const [gtinSearch, setGtinSearch] = useState("");
 
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
