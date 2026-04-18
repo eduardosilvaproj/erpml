@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { type, productName, products, message, history } = body;
+    const { type, productName, products, message, history, prompt } = body;
 
     if (!type || typeof type !== "string") {
       return new Response(JSON.stringify({ error: "type is required" }), {
