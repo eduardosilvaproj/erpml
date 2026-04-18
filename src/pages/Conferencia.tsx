@@ -83,6 +83,8 @@ const Conferencia = () => {
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
   const [gtinSearch, setGtinSearch] = useState("");
+  const [gtinSelectMode, setGtinSelectMode] = useState<"scan" | "list">("scan");
+  const gtinScanInputRef = useRef<BarcodeScannerInputHandle>(null);
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
