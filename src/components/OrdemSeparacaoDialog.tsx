@@ -150,7 +150,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   return (
     <>
       <Dialog open={!!ordemId} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span>Ordem {ordem?.numero}</span>
@@ -190,11 +190,11 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
               {/* Bipagem */}
               {isExec && (
-                <div className="grid md:grid-cols-[1fr,300px] gap-4">
-                  <div className="space-y-3">
+                <div className="flex flex-col lg:grid lg:grid-cols-[1fr,300px] gap-4">
+                  <div className="space-y-3 order-2 lg:order-1 min-w-0">
                     <ItensTable itens={itens} onAdjust={ajustarQtd} />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3 order-1 lg:order-2 min-w-0 lg:border-l-0 border-b lg:border-b-0 border-border pb-3 lg:pb-0">
                     <div className="border border-border rounded-md p-3 space-y-2">
                       <p className="text-sm font-medium flex items-center gap-2"><ScanBarcode className="h-4 w-4" /> Bipar produto</p>
                       <BarcodeScannerInput
@@ -206,7 +206,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                         scanMode
                       />
                       {lastScan && (
-                        <div className={`text-xs p-2 rounded ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
+                        <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
                           {lastScan.ok ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : <AlertTriangle className="h-3 w-3 inline mr-1" />}
                           {lastScan.msg}
                         </div>
@@ -224,12 +224,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             </div>
           )}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
             {isExec && (
-              <Button onClick={finalizar} disabled={concluir.isPending}>
+              <Button onClick={finalizar} disabled={concluir.isPending} className="w-full sm:w-auto">
                 {concluir.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir
               </Button>
             )}
           </DialogFooter>
