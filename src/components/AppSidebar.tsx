@@ -3,7 +3,7 @@ import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
-  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy
+  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
