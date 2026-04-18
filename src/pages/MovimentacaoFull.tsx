@@ -54,6 +54,15 @@ const MovimentacaoFull = () => {
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
 
+  // Ordem ativa carregada via localStorage (vinda da aba Ordens)
+  type OrdemAtivaProduto = {
+    product_id: string; name: string; sku: string; barcode: string | null;
+    image_url: string | null; stock_physical: number; qtd_solicitada: number;
+  };
+  type OrdemAtiva = { id: string; numero: string; descricao: string | null; produtos: OrdemAtivaProduto[] };
+  const [ordemAtiva, setOrdemAtiva] = useState<OrdemAtiva | null>(null);
+  const [qtdBipada, setQtdBipada] = useState<Record<string, number>>({});
+
   // Box mode state
   const [boxModeEnabled, setBoxModeEnabled] = useState(false);
   const [boxConfigs, setBoxConfigs] = useState<Record<string, BoxConfig>>({});
