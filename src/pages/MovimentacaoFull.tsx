@@ -50,10 +50,70 @@ const MovimentacaoFull = () => {
   const { data: kits } = useKits();
   const createOrder = useCreateTransferOrder();
   const updateStatus = useUpdateTransferStatus();
+  const companyId = useCompanyId();
+  const recorder = useFullRecorder();
+
+  // Recording UI state
+  const [showAskRecord, setShowAskRecord] = useState(false);
+  const [showCameraPicker, setShowCameraPicker] = useState(false);
+  const [selectedCamera, setSelectedCamera] = useState<string>("");
+  const [recordingMode, setRecordingMode] = useState<"separacao" | "despacho">("separacao");
+  const [despachoOrderId, setDespachoOrderId] = useState<{ id: string; number: string } | null>(null);
+  const [askedOnce, setAskedOnce] = useState(false);
 
   useEffect(() => {
     scanInputRef.current?.focus();
   }, []);
+
+  // Pergunta gravação ao bipar o primeiro item (apenas para separação)
+  useEffect(() => {
+    if (items.length > 0 && !askedOnce && recorder.status === "idle") {
+      setRecordingMode("separacao");
+      setAskedOnce(true);
+      setShowAskRecord(true);
+    }
+  }, [items.length, askedOnce, recorder.status]);
+
+  const openCameraPicker = async () => {
+    setShowAskRecord(false);
+    const list = await recorder.listCameras();
+    if (list.length === 0) {
+      toast({ title: "Nenhuma câmera detectada ou permissão negada.", description: "Permita o acesso à câmera nas configurações do navegador.", variant: "destructive" });
+      return;
+    }
+    setSelectedCamera(list[0].deviceId);
+    setShowCameraPicker(true);
+  };
+
+  const startRecording = async () => {
+    setShowCameraPicker(false);
+    await recorder.start(selectedCamera);
+    if (recordingMode === "despacho") {
+      toast({ title: "🔴 Gravando despacho..." });
+    } else {
+      toast({ title: "🔴 Gravando separação..." });
+    }
+  };
+
+  const stopAndUpload = async (envioId: string, orderNumber: string, tipo: "separacao" | "despacho") => {
+    if (!companyId) return;
+    const blob = await recorder.stop();
+    if (!blob || blob.size === 0) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    try {
+      await recorder.uploadAndSave({
+        blob, companyId, userId: user.id, envioId, orderNumber, tipo,
+        duracaoSegundos: recorder.seconds,
+      });
+      toast({ title: `📹 Gravação salva (${formatDuration(recorder.seconds)})` });
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar gravação", description: e.message, variant: "destructive" });
+    } finally {
+      recorder.reset();
+    }
+  };
+
 
   const addOrIncrementItem = (
     currentItems: TransferItem[],
