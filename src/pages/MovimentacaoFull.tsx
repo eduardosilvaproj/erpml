@@ -483,11 +483,26 @@ const MovimentacaoFull = () => {
       {isRecording && (
         <div className="fixed top-20 right-6 z-50 rounded-lg border-2 border-red-500 bg-background shadow-2xl overflow-hidden">
           <div className="relative">
-            <video ref={recorder.videoRef} autoPlay muted playsInline className="w-[160px] h-[90px] object-cover bg-black" />
+            <video
+              ref={recorder.videoRef}
+              autoPlay
+              muted
+              playsInline
+              className={`object-cover bg-black transition-all ${previewExpanded ? "w-[320px] h-[180px]" : "w-[160px] h-[90px]"}`}
+            />
             <Badge className="absolute top-1 left-1 bg-red-600 text-white border-none animate-pulse text-[10px] px-1.5 py-0">
               <Circle className="h-2 w-2 mr-1 fill-current" />
               {recordingMode === "despacho" ? "REC DESPACHO" : "REC"}
             </Badge>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute top-1 right-1 h-6 w-6 bg-black/60 hover:bg-black/80 text-white"
+              onClick={() => setPreviewExpanded((v) => !v)}
+              title={previewExpanded ? "Minimizar" : "Expandir"}
+            >
+              {previewExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            </Button>
             <span className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/70 text-white px-1.5 rounded">
               {formatDuration(recorder.seconds)}
             </span>
