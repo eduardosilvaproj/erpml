@@ -605,6 +605,17 @@ const Conferencia = () => {
                     <span className="text-muted-foreground ml-auto font-mono text-xs">{lastScan.code}</span>
                   </div>
                 )}
+
+                <div className="flex items-center justify-between rounded-lg border border-border/30 bg-muted/10 p-2.5">
+                  <Label htmlFor="confirm-on-scan" className="text-xs font-medium cursor-pointer">
+                    Confirmar quantidade ao bipar
+                  </Label>
+                  <Switch
+                    id="confirm-on-scan"
+                    checked={confirmOnScan}
+                    onCheckedChange={setConfirmOnScan}
+                  />
+                </div>
               </CardContent>
             </Card>
 
