@@ -980,6 +980,48 @@ const MovimentacaoFull = () => {
               </Button>
               <Button
                 variant="outline"
+                className="w-full text-xs"
+                onClick={async () => {
+                  if (!companyId) {
+                    toast({ title: "Empresa não identificada", variant: "destructive" });
+                    return;
+                  }
+                  const list = await recorder.listCameras();
+                  if (list.length === 0) {
+                    toast({ title: "Nenhuma câmera detectada", variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "🧪 Teste iniciado — gravando 5s..." });
+                  await recorder.start(list[0].deviceId);
+                  await new Promise((r) => setTimeout(r, 5000));
+                  const blob = await recorder.stop();
+                  console.log("[TEST] blob size:", blob?.size);
+                  if (!blob || blob.size === 0) {
+                    toast({ title: "❌ Blob vazio", description: `Chunks insuficientes`, variant: "destructive" });
+                    recorder.reset();
+                    return;
+                  }
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) throw new Error("Sem usuário");
+                    const res = await recorder.uploadStandalone({ blob, companyId, userId: user.id, duracaoSegundos: 5 });
+                    console.log("[TEST] uploaded:", res);
+                    toast({
+                      title: "✅ Teste OK",
+                      description: `Blob: ${blob.size} bytes • Path: ${res.path}`,
+                    });
+                  } catch (e: any) {
+                    console.error("[TEST] upload error:", e);
+                    toast({ title: "❌ Falha no upload", description: e.message, variant: "destructive" });
+                  } finally {
+                    recorder.reset();
+                  }
+                }}
+              >
+                🧪 Testar gravação (5s)
+              </Button>
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => { setItems([]); setUsedKits([]); setBoxConfigs({}); setLastScan(null); }}
                 disabled={items.length === 0}
