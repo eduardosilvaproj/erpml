@@ -113,11 +113,11 @@ const RecuperarConferencia = () => {
   const restore = async (row: ConferenceRecoveryRow) => {
     setRestoring(row.id);
     try {
-      const { items: rawItems } = await fetchAllConferenceItems(row.id, "RecuperarConferencia");
+      const rawItems = await fetchAllConferenceItems(row.id, "RecuperarConferencia");
       const scannedProducts = mapConferenceItemsToScannedProducts(rawItems);
 
       const totalBips = scannedProducts.reduce((sum, item) => sum + item.scannedQty, 0);
-      const uniqueProducts = new Set(scannedProducts.map((item) => item.productId).filter(Boolean)).size;
+      const uniqueProducts = new Set(rawItems.map((item) => item.product_id)).size;
 
       const session = {
         step: 2,

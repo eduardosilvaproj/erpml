@@ -25,7 +25,7 @@ import { useProducts, useAllProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
-import { fetchAllConferenceItems, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
+import { fetchAllConferenceItems, getConferenceUniqueProductsCount, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
 
 /**
  * Verifica se o código tem formato válido de código de barras
@@ -682,7 +682,7 @@ const Conferencia = () => {
     setLoadingConference(true);
     try {
       const productsById = new Map(allProducts.map((product) => [product.id, product]));
-      const { items: allItems } = await fetchAllConferenceItems(confId, "Conferencia restore");
+      const allItems = await fetchAllConferenceItems(confId, "Conferencia restore");
       const mapped: ScannedProduct[] = mapConferenceItemsToScannedProducts(allItems, productsById);
 
       console.log(`[Conferencia restore] produtos únicos: ${mapped.length} | total bipado (soma): ${mapped.reduce((s, p) => s + p.scannedQty, 0)}`);
@@ -693,9 +693,9 @@ const Conferencia = () => {
         .rpc("get_conference_distinct_product_count", { _conference_id: confId });
       if (countError) {
         console.warn("[Conferencia restore] RPC distinct count falhou, usando fallback local", countError);
-        setDistinctProductsCount(mapped.length);
+        setDistinctProductsCount(getConferenceUniqueProductsCount(allItems));
       } else {
-        setDistinctProductsCount(Number(distinctCount ?? mapped.length));
+        setDistinctProductsCount(Number(distinctCount ?? getConferenceUniqueProductsCount(allItems)));
       }
     } catch (err: any) {
       console.error("[Conferencia restore] erro ao carregar itens", err);
