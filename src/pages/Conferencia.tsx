@@ -232,8 +232,8 @@ const Conferencia = () => {
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
 
-  // Load ALL products for conference (large pageSize to bypass default 10-row limit)
-  const { data: productsData, refetch: refetchProducts } = useProducts({ pageSize: 10000, page: 1 });
+  // Load ALL products for conference using paginated fetch (bypass Supabase 1000-row cap)
+  const { data: productsData, refetch: refetchProducts } = useAllProducts();
   const allProducts = productsData?.products ?? [];
 
   // Auto-save session to localStorage
