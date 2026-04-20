@@ -638,7 +638,8 @@ const Conferencia = () => {
   };
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
-  const uniqueProducts = useMemo(() => new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size, [scannedProducts]);
+  const [distinctProductsCount, setDistinctProductsCount] = useState<number | null>(null);
+  const uniqueProducts = distinctProductsCount ?? new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
 
   const startConference = async () => {
     if (!mode) {
@@ -727,6 +728,11 @@ const Conferencia = () => {
       });
 
       setScannedProducts(mapped);
+
+      const { data: distinctCount, error: countError } = await supabase
+        .rpc("get_conference_distinct_product_count", { _conference_id: confId });
+      if (countError) throw countError;
+      setDistinctProductsCount(Number(distinctCount ?? mapped.length));
     } catch (err: any) {
       toast({ title: "Erro ao carregar itens", description: err.message, variant: "destructive" });
     } finally {
@@ -802,6 +808,7 @@ const Conferencia = () => {
     setConferenceName("");
     setConferenceId(null);
     setScannedProducts([]);
+    setDistinctProductsCount(null);
     setLastScan(null);
     setScanBuffer("");
     setSessionRestored(false);
@@ -943,15 +950,16 @@ const Conferencia = () => {
       {step === 1 && (
         <div className="space-y-6">
           <ConferenceHistoryPanel
-            onContinue={async (c) => {
-              setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
-              setMode(c.tipo === "inventario" ? "inventario" : "nf");
-              setConferenceId(c.id);
-              await loadConferenceItems(c.id);
-              setStep(2);
-              setSessionRestored(true);
-              toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
-            }}
+              onContinue={async (c) => {
+                setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
+                setMode(c.tipo === "inventario" ? "inventario" : "nf");
+                setConferenceId(c.id);
+                setScannedProducts([]);
+                await loadConferenceItems(c.id);
+                setStep(2);
+                setSessionRestored(true);
+                toast({ title: "Continuando conferência", description: c.nome ?? c.id.slice(0, 6) });
+              }}
           />
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             <button
