@@ -638,7 +638,7 @@ const Conferencia = () => {
   };
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
-  const uniqueProducts = scannedProducts.length;
+  const uniqueProducts = useMemo(() => new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size, [scannedProducts]);
 
   const startConference = async () => {
     if (!mode) {
@@ -671,30 +671,61 @@ const Conferencia = () => {
   const loadConferenceItems = useCallback(async (confId: string) => {
     setLoadingConference(true);
     try {
-      const { data, error } = await supabase
-        .from("conference_items")
-        .select("*")
-        .eq("conference_id", confId);
-      if (error) throw error;
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let allItems: any[] = [];
 
-      const items = (data ?? []) as any[];
-      // Map DB rows -> ScannedProduct shape using product info from allProducts when possible.
-      const mapped: ScannedProduct[] = items
-        .filter((it) => it.product_id)
-        .map((it) => {
-          const prod = allProducts.find((p) => p.id === it.product_id);
-          return {
-            productId: it.product_id,
-            name: prod?.name ?? it.nome_produto ?? "Produto",
-            sku: prod?.sku ?? it.sku ?? "",
-            barcode: prod?.barcode ?? it.ean ?? null,
-            imageUrl: prod?.image_url ?? null,
-            scannedQty: Number(it.scanned_quantity) || 0,
-            systemQty: prod?.stock_physical ?? (Number(it.expected_quantity) || 0),
-            lastBipAt: new Date(it.updated_at ?? it.created_at ?? Date.now()),
-            boxInfo: it.detalhes_caixa ?? undefined,
-          };
-        });
+      while (true) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data, error } = await supabase
+          .from("conference_items")
+          .select("*")
+          .eq("conference_id", confId)
+          .range(from, to);
+        if (error) throw error;
+
+        const batch = data ?? [];
+        allItems = allItems.concat(batch);
+        if (batch.length < PAGE_SIZE) break;
+        page += 1;
+      }
+
+      const aggregated = new Map<string, any>();
+      for (const it of allItems) {
+        if (!it.product_id) continue;
+        const existing = aggregated.get(it.product_id);
+        if (existing) {
+          existing.scanned_quantity = Number(existing.scanned_quantity || 0) + Number(it.scanned_quantity || 0);
+          existing.expected_quantity = Math.max(Number(existing.expected_quantity || 0), Number(it.expected_quantity || 0));
+          existing.updated_at = new Date(existing.updated_at ?? existing.created_at ?? 0) > new Date(it.updated_at ?? it.created_at ?? 0)
+            ? existing.updated_at
+            : (it.updated_at ?? it.created_at);
+          existing.created_at = existing.created_at ?? it.created_at;
+          existing.detalhes_caixa = existing.detalhes_caixa ?? it.detalhes_caixa;
+          existing.nome_produto = existing.nome_produto ?? it.nome_produto;
+          existing.sku = existing.sku ?? it.sku;
+          existing.ean = existing.ean ?? it.ean;
+        } else {
+          aggregated.set(it.product_id, { ...it });
+        }
+      }
+
+      const mapped: ScannedProduct[] = Array.from(aggregated.values()).map((it) => {
+        const prod = allProducts.find((p) => p.id === it.product_id);
+        return {
+          productId: it.product_id,
+          name: prod?.name ?? it.nome_produto ?? "Produto",
+          sku: prod?.sku ?? it.sku ?? "",
+          barcode: prod?.barcode ?? it.ean ?? null,
+          imageUrl: prod?.image_url ?? null,
+          scannedQty: Number(it.scanned_quantity) || 0,
+          systemQty: prod?.stock_physical ?? (Number(it.expected_quantity) || 0),
+          lastBipAt: new Date(it.updated_at ?? it.created_at ?? Date.now()),
+          boxInfo: it.detalhes_caixa ?? undefined,
+        };
+      });
+
       setScannedProducts(mapped);
     } catch (err: any) {
       toast({ title: "Erro ao carregar itens", description: err.message, variant: "destructive" });
