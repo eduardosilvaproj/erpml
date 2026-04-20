@@ -112,19 +112,69 @@ const RecuperarConferencia = () => {
   const restore = async (row: ConferenceRecoveryRow) => {
     setRestoring(row.id);
     try {
+      const restoreLimit = Math.max(100000, Number(row.total_rows ?? 0));
+      const { data: items, error } = await supabase
+        .from("conference_items")
+        .select("*")
+        .eq("conference_id", row.id)
+        .limit(restoreLimit);
+
+      if (error) throw error;
+
+      const rawItems = items ?? [];
+      console.log(`[RecuperarConferencia] ${row.id}: ${rawItems.length} conference_items retornados do banco`);
+
+      const aggregated = new Map<string, any>();
+      for (const item of rawItems) {
+        const key = item.product_id ?? `orphan:${item.sku ?? item.ean ?? item.nome_produto ?? item.id}`;
+        const existing = aggregated.get(key);
+
+        if (existing) {
+          existing.scanned_quantity = Number(existing.scanned_quantity || 0) + Number(item.scanned_quantity || 0);
+          existing.expected_quantity = Math.max(Number(existing.expected_quantity || 0), Number(item.expected_quantity || 0));
+          existing.updated_at = new Date(existing.updated_at ?? existing.created_at ?? 0) > new Date(item.updated_at ?? item.created_at ?? 0)
+            ? existing.updated_at
+            : (item.updated_at ?? item.created_at);
+          existing.created_at = existing.created_at ?? item.created_at;
+          existing.detalhes_caixa = existing.detalhes_caixa ?? item.detalhes_caixa;
+          existing.nome_produto = existing.nome_produto ?? item.nome_produto;
+          existing.sku = existing.sku ?? item.sku;
+          existing.ean = existing.ean ?? item.ean;
+        } else {
+          aggregated.set(key, { ...item });
+        }
+      }
+
+      const scannedProducts = Array.from(aggregated.values()).map((item) => ({
+        productId: item.product_id ?? `orphan-${item.id}`,
+        name: item.nome_produto ?? "Produto",
+        sku: item.sku ?? "",
+        barcode: item.ean ?? null,
+        imageUrl: null,
+        scannedQty: Number(item.scanned_quantity) || 0,
+        systemQty: Number(item.expected_quantity) || 0,
+        lastBipAt: new Date(item.updated_at ?? item.created_at ?? Date.now()),
+        boxInfo: item.detalhes_caixa ?? undefined,
+      }));
+
+      const totalBips = scannedProducts.reduce((sum, item) => sum + item.scannedQty, 0);
+      const uniqueProducts = new Set(scannedProducts.map((item) => item.productId).filter(Boolean)).size;
+
       const session = {
         step: 2,
         mode: row.tipo === "inventario" ? "inventario" : "nf",
         conferenceName: row.nome ?? `Conferência ${row.id.slice(0, 6)}`,
         conferenceId: row.id,
-        scannedProducts: [],
+        scannedProducts,
+        distinctProductsCount: uniqueProducts,
+        totalBips,
         savedAt: new Date().toISOString(),
-        forceReload: true,
       };
+
       localStorage.setItem("conferencia-session-v1", JSON.stringify(session));
       toast({
         title: "Conferência restaurada",
-        description: `${row.distinct_products} produtos diferentes • ${row.total_rows} bips no banco.`,
+        description: `${uniqueProducts} produtos diferentes • ${totalBips} bips carregados.`,
       });
       navigate("/conferencia");
     } catch (err: any) {
