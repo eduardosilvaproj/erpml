@@ -93,6 +93,7 @@ const Conferencia = () => {
   const [scannedProducts, setScannedProducts] = useState<ScannedProduct[]>(
     (restored?.scannedProducts ?? []).map((p: any) => ({ ...p, lastBipAt: new Date(p.lastBipAt) }))
   );
+  const [distinctProductsCount, setDistinctProductsCount] = useState<number | null>(null);
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
@@ -638,7 +639,6 @@ const Conferencia = () => {
   };
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
-  const [distinctProductsCount, setDistinctProductsCount] = useState<number | null>(null);
   const uniqueProducts = distinctProductsCount ?? new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
 
   const startConference = async () => {
@@ -739,6 +739,11 @@ const Conferencia = () => {
       setLoadingConference(false);
     }
   }, [allProducts, toast]);
+
+  useEffect(() => {
+    if (step !== 2 || !conferenceId || !sessionRestored || allProducts.length === 0) return;
+    loadConferenceItems(conferenceId);
+  }, [step, conferenceId, sessionRestored, allProducts.length, loadConferenceItems]);
 
   const saveSessionToDb = useCallback(async () => {
     if (!companyId) {
