@@ -237,17 +237,25 @@ const Conferencia = () => {
   const { data: productsData, refetch: refetchProducts } = useAllProducts();
   const allProducts = productsData?.products ?? [];
 
-  // Auto-save session to localStorage
+  // Auto-save session to localStorage. Sessões ativas com itens em memória ou um conferenceId
+  // válido NUNCA são apagadas — para evitar perder bipagens em uma recarga acidental da página.
   useEffect(() => {
     try {
-      if (step === 1 && !mode && !conferenceName && scannedProducts.length === 0) {
+      const isEmptySession =
+        step === 1 && !mode && !conferenceName && !conferenceId && scannedProducts.length === 0;
+      if (isEmptySession) {
         localStorage.removeItem(STORAGE_KEY);
         return;
       }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, mode, conferenceName, conferenceId, scannedProducts,
+      const payload: Record<string, unknown> = {
+        step,
+        mode,
+        conferenceName,
+        conferenceId,
+        scannedProducts,
         savedAt: new Date().toISOString(),
-      }));
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch {}
   }, [step, mode, conferenceName, conferenceId, scannedProducts]);
 
@@ -740,10 +748,22 @@ const Conferencia = () => {
     }
   }, [allProducts, toast]);
 
+  // Recarrega itens quando a sessão veio do recovery EXPLICITAMENTE (forceReload).
+  // Recargas comuns da página NUNCA disparam reload automático para não sobrescrever
+  // bipagens em andamento que ainda estão guardadas em memória.
   useEffect(() => {
-    if (step !== 2 || !conferenceId || !sessionRestored || allProducts.length === 0) return;
+    if (step !== 2 || !conferenceId || allProducts.length === 0) return;
+    if (!restored?.forceReload) return;
     loadConferenceItems(conferenceId);
-  }, [step, conferenceId, sessionRestored, allProducts.length, loadConferenceItems]);
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        delete parsed.forceReload;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+    } catch {}
+  }, [step, conferenceId, allProducts.length, loadConferenceItems, restored?.forceReload]);
 
   const saveSessionToDb = useCallback(async () => {
     if (!companyId) {
@@ -896,6 +916,15 @@ const Conferencia = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => (window.location.href = "/conferencia/recuperar")}
+        >
+          <History className="h-4 w-4 mr-2" /> Recuperar conferência
+        </Button>
+      </div>
       {/* Session restored indicator */}
       {sessionRestored && (
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 text-sm">
