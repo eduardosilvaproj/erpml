@@ -25,6 +25,7 @@ import { useProducts, useAllProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
+import { fetchAllConferenceItems, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
 
 /**
  * Verifica se o código tem formato válido de código de barras
@@ -680,66 +681,9 @@ const Conferencia = () => {
   const loadConferenceItems = useCallback(async (confId: string) => {
     setLoadingConference(true);
     try {
-      const PAGE_SIZE = 1000;
-      let page = 0;
-      let allItems: any[] = [];
-
-      while (true) {
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-        const { data, error } = await supabase
-          .from("conference_items")
-          .select("*")
-          .eq("conference_id", confId)
-          .order("created_at", { ascending: true })
-          .range(from, to)
-          .limit(PAGE_SIZE);
-        if (error) throw error;
-
-        const batch = data ?? [];
-        allItems = allItems.concat(batch);
-        console.log(`[Conferencia restore] página ${page} → ${batch.length} registros (total acumulado: ${allItems.length})`);
-        if (batch.length < PAGE_SIZE) break;
-        page += 1;
-      }
-
-      console.log(`[Conferencia restore] TOTAL retornado do Supabase para ${confId}: ${allItems.length} registros`);
-
-      const aggregated = new Map<string, any>();
-      for (const it of allItems) {
-        // Chave: product_id quando existir; senão tenta SKU/EAN/nome para não perder bips órfãos
-        const key = it.product_id ?? `orphan:${it.sku ?? it.ean ?? it.nome_produto ?? it.id}`;
-        const existing = aggregated.get(key);
-        if (existing) {
-          existing.scanned_quantity = Number(existing.scanned_quantity || 0) + Number(it.scanned_quantity || 0);
-          existing.expected_quantity = Math.max(Number(existing.expected_quantity || 0), Number(it.expected_quantity || 0));
-          existing.updated_at = new Date(existing.updated_at ?? existing.created_at ?? 0) > new Date(it.updated_at ?? it.created_at ?? 0)
-            ? existing.updated_at
-            : (it.updated_at ?? it.created_at);
-          existing.created_at = existing.created_at ?? it.created_at;
-          existing.detalhes_caixa = existing.detalhes_caixa ?? it.detalhes_caixa;
-          existing.nome_produto = existing.nome_produto ?? it.nome_produto;
-          existing.sku = existing.sku ?? it.sku;
-          existing.ean = existing.ean ?? it.ean;
-        } else {
-          aggregated.set(it.product_id, { ...it });
-        }
-      }
-
-      const mapped: ScannedProduct[] = Array.from(aggregated.values()).map((it) => {
-        const prod = it.product_id ? allProducts.find((p) => p.id === it.product_id) : undefined;
-        return {
-          productId: it.product_id ?? `orphan-${it.id}`,
-          name: prod?.name ?? it.nome_produto ?? "Produto",
-          sku: prod?.sku ?? it.sku ?? "",
-          barcode: prod?.barcode ?? it.ean ?? null,
-          imageUrl: prod?.image_url ?? null,
-          scannedQty: Number(it.scanned_quantity) || 0,
-          systemQty: prod?.stock_physical ?? (Number(it.expected_quantity) || 0),
-          lastBipAt: new Date(it.updated_at ?? it.created_at ?? Date.now()),
-          boxInfo: it.detalhes_caixa ?? undefined,
-        };
-      });
+      const productsById = new Map(allProducts.map((product) => [product.id, product]));
+      const { items: allItems } = await fetchAllConferenceItems(confId, "Conferencia restore");
+      const mapped: ScannedProduct[] = mapConferenceItemsToScannedProducts(allItems, productsById);
 
       console.log(`[Conferencia restore] produtos únicos: ${mapped.length} | total bipado (soma): ${mapped.reduce((s, p) => s + p.scannedQty, 0)}`);
 
