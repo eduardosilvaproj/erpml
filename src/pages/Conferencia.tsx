@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
-import { useProducts } from "@/hooks/useProductData";
+import { useProducts, useAllProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";

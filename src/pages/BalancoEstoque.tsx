@@ -17,7 +17,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts, useCategories } from "@/hooks/useProductData";
+import { useProducts, useAllProducts, useCategories } from "@/hooks/useProductData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -40,16 +40,25 @@ const BalancoEstoque = () => {
   const bipBufferRef = useRef("");
   const bipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data, isLoading } = useProducts({
-    search: search || undefined,
-    category_id: categoryFilter || undefined,
-    page: 1,
-    pageSize: 500,
-    sortBy: "name",
-    sortOrder: "asc",
-  });
+  // Carrega TODOS os produtos (paginado) para evitar o teto de 1000 do Supabase.
+  // Os filtros de busca/categoria são aplicados em memória abaixo.
+  const { data, isLoading } = useAllProducts();
   const { data: categories } = useCategories();
-  const products = data?.products || [];
+  const allProductsRaw = data?.products || [];
+  const products = useMemo(() => {
+    let list = allProductsRaw;
+    if (categoryFilter) list = list.filter((p) => p.category_id === categoryFilter);
+    if (search) {
+      const s = search.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+      );
+    }
+    return list;
+  }, [allProductsRaw, categoryFilter, search]);
 
   // Fetch invoices from the last N months for comparison
   const sinceDate = useMemo(() => {
