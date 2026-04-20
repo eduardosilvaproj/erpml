@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllConferenceItems, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
+import { fetchAllConferenceItems, getConferenceUniqueProductsCount, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -117,7 +117,7 @@ const RecuperarConferencia = () => {
       const scannedProducts = mapConferenceItemsToScannedProducts(rawItems);
 
       const totalBips = scannedProducts.reduce((sum, item) => sum + item.scannedQty, 0);
-      const uniqueProducts = new Set(rawItems.map((item) => item.product_id)).size;
+      const uniqueProducts = getConferenceUniqueProductsCount(rawItems);
 
       const session = {
         step: 2,

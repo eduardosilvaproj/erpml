@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchConferenceItemsInBatches } from "@/lib/conference-recovery";
 
 export type ConferenceTipo = "inventario" | "nota_fiscal";
 export type ConferenceStatus =
@@ -98,24 +99,7 @@ export function useConferenceDetail(conferenceId: string | null) {
         .single();
       if (error) throw error;
 
-      const PAGE_SIZE = 1000;
-      let page = 0;
-      let allItems: ConferenceItemRow[] = [];
-      while (true) {
-        const from = page * PAGE_SIZE;
-        const to = from + PAGE_SIZE - 1;
-        const { data: items, error: e2 } = await supabase
-          .from("conference_items")
-          .select("*")
-          .eq("conference_id", conferenceId!)
-          .order("created_at", { ascending: true })
-          .range(from, to);
-        if (e2) throw e2;
-        const batch = (items ?? []) as unknown as ConferenceItemRow[];
-        allItems = allItems.concat(batch);
-        if (batch.length < PAGE_SIZE) break;
-        page += 1;
-      }
+      const allItems = await fetchConferenceItemsInBatches<ConferenceItemRow>(conferenceId!, "*", "ConferenceHistory");
 
       return { conference: conf as unknown as ConferenceRow, items: allItems };
     },
