@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
-import { useProducts } from "@/hooks/useProductData";
+import { useProducts, useAllProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
@@ -232,8 +232,8 @@ const Conferencia = () => {
   // Step 3
   const [adjusting, setAdjusting] = useState(false);
 
-  // Load ALL products for conference (large pageSize to bypass default 10-row limit)
-  const { data: productsData, refetch: refetchProducts } = useProducts({ pageSize: 10000, page: 1 });
+  // Load ALL products for conference using paginated fetch (bypass Supabase 1000-row cap)
+  const { data: productsData, refetch: refetchProducts } = useAllProducts();
   const allProducts = productsData?.products ?? [];
 
   // Auto-save session to localStorage

@@ -106,6 +106,46 @@ export function useProducts(filters?: {
   });
 }
 
+/**
+ * Carrega TODOS os produtos da empresa, paginando em lotes de 1000
+ * para contornar o limite padrão do Supabase. Use em telas como
+ * Conferência e Balanço de Estoque, onde é necessário a base completa.
+ */
+export function useAllProducts(opts?: { activeOnly?: boolean }) {
+  const companyId = useCompanyId();
+  const activeOnly = opts?.activeOnly ?? false;
+
+  return useQuery({
+    queryKey: ["products-all", companyId, activeOnly],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const PAGE = 1000;
+      let all: Product[] = [];
+      let page = 0;
+      // Loop seguro até esvaziar
+      while (true) {
+        let q = supabase
+          .from("products")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))")
+          .eq("company_id", companyId!)
+          .order("name", { ascending: true })
+          .range(page * PAGE, (page + 1) * PAGE - 1);
+        if (activeOnly) q = q.eq("active", true);
+
+        const { data, error } = await q;
+        if (error) throw error;
+        const batch = (data ?? []) as unknown as Product[];
+        all = all.concat(batch);
+        if (batch.length < PAGE) break;
+        page++;
+        // Salvaguarda contra loops anômalos (>200k produtos)
+        if (page > 200) break;
+      }
+      return { products: all, total: all.length };
+    },
+  });
+}
+
 export function useCreateProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
