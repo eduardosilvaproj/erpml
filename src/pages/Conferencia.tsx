@@ -691,19 +691,25 @@ const Conferencia = () => {
           .from("conference_items")
           .select("*")
           .eq("conference_id", confId)
-          .range(from, to);
+          .order("created_at", { ascending: true })
+          .range(from, to)
+          .limit(PAGE_SIZE);
         if (error) throw error;
 
         const batch = data ?? [];
         allItems = allItems.concat(batch);
+        console.log(`[Conferencia restore] página ${page} → ${batch.length} registros (total acumulado: ${allItems.length})`);
         if (batch.length < PAGE_SIZE) break;
         page += 1;
       }
 
+      console.log(`[Conferencia restore] TOTAL retornado do Supabase para ${confId}: ${allItems.length} registros`);
+
       const aggregated = new Map<string, any>();
       for (const it of allItems) {
-        if (!it.product_id) continue;
-        const existing = aggregated.get(it.product_id);
+        // Chave: product_id quando existir; senão tenta SKU/EAN/nome para não perder bips órfãos
+        const key = it.product_id ?? `orphan:${it.sku ?? it.ean ?? it.nome_produto ?? it.id}`;
+        const existing = aggregated.get(key);
         if (existing) {
           existing.scanned_quantity = Number(existing.scanned_quantity || 0) + Number(it.scanned_quantity || 0);
           existing.expected_quantity = Math.max(Number(existing.expected_quantity || 0), Number(it.expected_quantity || 0));
@@ -721,9 +727,9 @@ const Conferencia = () => {
       }
 
       const mapped: ScannedProduct[] = Array.from(aggregated.values()).map((it) => {
-        const prod = allProducts.find((p) => p.id === it.product_id);
+        const prod = it.product_id ? allProducts.find((p) => p.id === it.product_id) : undefined;
         return {
-          productId: it.product_id,
+          productId: it.product_id ?? `orphan-${it.id}`,
           name: prod?.name ?? it.nome_produto ?? "Produto",
           sku: prod?.sku ?? it.sku ?? "",
           barcode: prod?.barcode ?? it.ean ?? null,
@@ -735,13 +741,20 @@ const Conferencia = () => {
         };
       });
 
+      console.log(`[Conferencia restore] produtos únicos: ${mapped.length} | total bipado (soma): ${mapped.reduce((s, p) => s + p.scannedQty, 0)}`);
+
       setScannedProducts(mapped);
 
       const { data: distinctCount, error: countError } = await supabase
         .rpc("get_conference_distinct_product_count", { _conference_id: confId });
-      if (countError) throw countError;
-      setDistinctProductsCount(Number(distinctCount ?? mapped.length));
+      if (countError) {
+        console.warn("[Conferencia restore] RPC distinct count falhou, usando fallback local", countError);
+        setDistinctProductsCount(mapped.length);
+      } else {
+        setDistinctProductsCount(Number(distinctCount ?? mapped.length));
+      }
     } catch (err: any) {
+      console.error("[Conferencia restore] erro ao carregar itens", err);
       toast({ title: "Erro ao carregar itens", description: err.message, variant: "destructive" });
     } finally {
       setLoadingConference(false);
@@ -749,10 +762,10 @@ const Conferencia = () => {
   }, [allProducts, toast]);
 
   // Recarrega itens quando a sessão veio do recovery EXPLICITAMENTE (forceReload).
-  // Recargas comuns da página NUNCA disparam reload automático para não sobrescrever
-  // bipagens em andamento que ainda estão guardadas em memória.
+  // Não exige allProducts carregado — produtos só enriquecem nome/imagem; sku/ean/nome do bip
+  // já vêm do banco, então a restauração funciona mesmo sem o catálogo pronto.
   useEffect(() => {
-    if (step !== 2 || !conferenceId || allProducts.length === 0) return;
+    if (step !== 2 || !conferenceId) return;
     if (!restored?.forceReload) return;
     loadConferenceItems(conferenceId);
     try {
@@ -763,7 +776,7 @@ const Conferencia = () => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
       }
     } catch {}
-  }, [step, conferenceId, allProducts.length, loadConferenceItems, restored?.forceReload]);
+  }, [step, conferenceId, loadConferenceItems, restored?.forceReload]);
 
   const saveSessionToDb = useCallback(async () => {
     if (!companyId) {
