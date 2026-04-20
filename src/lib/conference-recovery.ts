@@ -1,4 +1,24 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
+
+type ConferenceBoxInfo = { boxes: number; unitsPerBox: number; totalUnits: number; gtinSaved?: boolean };
+
+const parseBoxInfo = (value: Json | null): ConferenceBoxInfo | null => {
+  if (!value || Array.isArray(value) || typeof value !== "object") return null;
+
+  const boxes = Number(value.boxes);
+  const unitsPerBox = Number(value.unitsPerBox);
+  const totalUnits = Number(value.totalUnits);
+
+  if ([boxes, unitsPerBox, totalUnits].some((n) => Number.isNaN(n))) return null;
+
+  return {
+    boxes,
+    unitsPerBox,
+    totalUnits,
+    gtinSaved: typeof value.gtinSaved === "boolean" ? value.gtinSaved : undefined,
+  };
+};
 
 export interface ConferenceItemRow {
   id: string;
@@ -11,7 +31,7 @@ export interface ConferenceItemRow {
   ean: string | null;
   scanned_quantity: number | string | null;
   expected_quantity: number | string | null;
-  detalhes_caixa: { boxes: number; unitsPerBox: number; totalUnits: number; gtinSaved?: boolean } | null;
+  detalhes_caixa: ConferenceBoxInfo | null;
 }
 
 export interface RestoredScannedProduct {
@@ -23,7 +43,7 @@ export interface RestoredScannedProduct {
   scannedQty: number;
   systemQty: number;
   lastBipAt: Date;
-  boxInfo?: { boxes: number; unitsPerBox: number; totalUnits: number; gtinSaved?: boolean };
+  boxInfo?: ConferenceBoxInfo;
 }
 
 export const createConferenceItemKey = (item: Pick<ConferenceItemRow, "id" | "product_id" | "sku" | "ean" | "nome_produto">) =>
@@ -54,7 +74,10 @@ export const fetchAllConferenceItems = async (conferenceId: string, logLabel = "
 
     if (error) throw error;
 
-    const batch = (data ?? []) as ConferenceItemRow[];
+    const batch: ConferenceItemRow[] = (data ?? []).map((item) => ({
+      ...item,
+      detalhes_caixa: parseBoxInfo(item.detalhes_caixa),
+    }));
     console.log(
       `[${logLabel}] lote ${batchIndex} (${offset}-${offset + PAGE_SIZE - 1}) → ${batch.length} registros`,
     );
