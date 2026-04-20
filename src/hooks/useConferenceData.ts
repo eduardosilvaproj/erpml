@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { fetchConferenceItemsInBatches } from "@/lib/conference-recovery";
 
 export interface ConferenceItem {
   id: string;
@@ -137,11 +138,11 @@ export function useScanItem() {
 
   return useMutation({
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
-      const { data: confItems, error } = await supabase
-        .from("conference_items")
-        .select("*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode))")
-        .eq("conference_id", conferenceId);
-      if (error) throw error;
+      const confItems = await fetchConferenceItemsInBatches<ConferenceItem>(
+        conferenceId,
+        "*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode))",
+        "ConferenceData scan",
+      );
 
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
         const prod = ci.invoice_items?.products;
@@ -183,11 +184,7 @@ export function useFinishConference() {
 
   return useMutation({
     mutationFn: async (conferenceId: string) => {
-      const { data: items, error } = await supabase
-        .from("conference_items")
-        .select("*")
-        .eq("conference_id", conferenceId);
-      if (error) throw error;
+      const items = await fetchConferenceItemsInBatches<ConferenceItem>(conferenceId, "*", "ConferenceData finish");
 
       const allOk = items.every((i) => i.status === "ok");
       const finalStatus = allOk ? "conferida" : "divergente";

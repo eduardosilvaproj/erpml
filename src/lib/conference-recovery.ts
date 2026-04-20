@@ -49,53 +49,52 @@ export interface RestoredScannedProduct {
 export const createConferenceItemKey = (item: Pick<ConferenceItemRow, "id" | "product_id" | "sku" | "ean" | "nome_produto">) =>
   item.product_id ?? `orphan:${item.sku ?? item.ean ?? item.nome_produto ?? item.id}`;
 
-export const fetchAllConferenceItems = async (conferenceId: string, logLabel = "ConferenceRecovery") => {
-  const PAGE_SIZE = 5000;
+export const getConferenceUniqueProductsCount = (items: Array<Pick<ConferenceItemRow, "product_id">>) =>
+  new Set(items.map((item) => item.product_id)).size;
 
-  const { count, error: countError } = await supabase
-    .from("conference_items")
-    .select("id", { count: "exact", head: true })
-    .eq("conference_id", conferenceId);
+export const fetchConferenceItemsInBatches = async <T = ConferenceItemRow>(
+  conferenceId: string,
+  select = "*",
+  logLabel = "ConferenceRecovery",
+) => {
+  const batchSize = 1000;
+  const allItems: T[] = [];
+  let from = 0;
+  let hasMore = true;
 
-  if (countError) throw countError;
-
-  const expectedTotal = Number(count ?? 0);
-  let offset = 0;
-  let batchIndex = 0;
-  const allItems: ConferenceItemRow[] = [];
-
-  while (true) {
+  while (hasMore) {
     const { data, error } = await supabase
       .from("conference_items")
-      .select("*")
+      .select(select)
       .eq("conference_id", conferenceId)
-      .order("created_at", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .range(from, from + batchSize - 1);
 
     if (error) throw error;
 
-    const batch: ConferenceItemRow[] = (data ?? []).map((item) => ({
-      ...item,
-      detalhes_caixa: parseBoxInfo(item.detalhes_caixa),
-    }));
-    console.log(
-      `[${logLabel}] lote ${batchIndex} (${offset}-${offset + PAGE_SIZE - 1}) → ${batch.length} registros`,
-    );
+    const batch = (data ?? []) as T[];
+    console.log(`[${logLabel}] lote ${from}-${from + batchSize - 1} → ${batch.length} registros`);
 
-    if (batch.length === 0) break;
-
-    allItems.push(...batch);
-    offset += batch.length;
-    batchIndex += 1;
-
-    if (expectedTotal > 0 && allItems.length >= expectedTotal) break;
+    if (batch.length === 0) {
+      hasMore = false;
+    } else {
+      allItems.push(...batch);
+      from += batchSize;
+      if (batch.length < batchSize) hasMore = false;
+    }
   }
 
-  console.log(
-    `[${logLabel}] TOTAL retornado do banco para ${conferenceId}: ${allItems.length} de ${expectedTotal} registros`,
-  );
+  console.log(`[${logLabel}] TOTAL retornado do banco para ${conferenceId}: ${allItems.length} registros`);
 
-  return { items: allItems, expectedTotal };
+  return allItems;
+};
+
+export const fetchAllConferenceItems = async (conferenceId: string, logLabel = "ConferenceRecovery") => {
+  const items = await fetchConferenceItemsInBatches<ConferenceItemRow>(conferenceId, "*", logLabel);
+
+  return items.map((item) => ({
+    ...item,
+    detalhes_caixa: parseBoxInfo(item.detalhes_caixa as Json | null),
+  }));
 };
 
 export const aggregateConferenceItems = (items: ConferenceItemRow[]) => {
