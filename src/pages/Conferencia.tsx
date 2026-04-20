@@ -691,19 +691,25 @@ const Conferencia = () => {
           .from("conference_items")
           .select("*")
           .eq("conference_id", confId)
-          .range(from, to);
+          .order("created_at", { ascending: true })
+          .range(from, to)
+          .limit(PAGE_SIZE);
         if (error) throw error;
 
         const batch = data ?? [];
         allItems = allItems.concat(batch);
+        console.log(`[Conferencia restore] página ${page} → ${batch.length} registros (total acumulado: ${allItems.length})`);
         if (batch.length < PAGE_SIZE) break;
         page += 1;
       }
 
+      console.log(`[Conferencia restore] TOTAL retornado do Supabase para ${confId}: ${allItems.length} registros`);
+
       const aggregated = new Map<string, any>();
       for (const it of allItems) {
-        if (!it.product_id) continue;
-        const existing = aggregated.get(it.product_id);
+        // Chave: product_id quando existir; senão tenta SKU/EAN/nome para não perder bips órfãos
+        const key = it.product_id ?? `orphan:${it.sku ?? it.ean ?? it.nome_produto ?? it.id}`;
+        const existing = aggregated.get(key);
         if (existing) {
           existing.scanned_quantity = Number(existing.scanned_quantity || 0) + Number(it.scanned_quantity || 0);
           existing.expected_quantity = Math.max(Number(existing.expected_quantity || 0), Number(it.expected_quantity || 0));
