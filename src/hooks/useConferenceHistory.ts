@@ -98,14 +98,26 @@ export function useConferenceDetail(conferenceId: string | null) {
         .single();
       if (error) throw error;
 
-      const { data: items, error: e2 } = await supabase
-        .from("conference_items")
-        .select("*")
-        .eq("conference_id", conferenceId!)
-        .order("created_at", { ascending: true });
-      if (e2) throw e2;
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let allItems: ConferenceItemRow[] = [];
+      while (true) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        const { data: items, error: e2 } = await supabase
+          .from("conference_items")
+          .select("*")
+          .eq("conference_id", conferenceId!)
+          .order("created_at", { ascending: true })
+          .range(from, to);
+        if (e2) throw e2;
+        const batch = (items ?? []) as unknown as ConferenceItemRow[];
+        allItems = allItems.concat(batch);
+        if (batch.length < PAGE_SIZE) break;
+        page += 1;
+      }
 
-      return { conference: conf as unknown as ConferenceRow, items: (items ?? []) as unknown as ConferenceItemRow[] };
+      return { conference: conf as unknown as ConferenceRow, items: allItems };
     },
   });
 }
