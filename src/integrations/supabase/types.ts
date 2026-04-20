@@ -2210,6 +2210,10 @@ export type Database = {
     }
     Functions: {
       concluir_ordem_full: { Args: { _ordem_id: string }; Returns: undefined }
+      get_conference_distinct_product_count: {
+        Args: { _conference_id: string }
+        Returns: number
+      }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
