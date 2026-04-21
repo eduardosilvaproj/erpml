@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAllConferenceItems, getConferenceUniqueProductsCount, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
+import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/conference-recovery";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -113,11 +113,10 @@ const RecuperarConferencia = () => {
   const restore = async (row: ConferenceRecoveryRow) => {
     setRestoring(row.id);
     try {
-      const rawItems = await fetchAllConferenceItems(row.id, "RecuperarConferencia");
-      const scannedProducts = mapConferenceItemsToScannedProducts(rawItems);
-
-      const totalBips = scannedProducts.reduce((sum, item) => sum + item.scannedQty, 0);
-      const uniqueProducts = getConferenceUniqueProductsCount(rawItems);
+      const [scannedProducts, totals] = await Promise.all([
+        fetchConferenceItemsGrouped(row.id),
+        fetchConferenceTotals(row.id),
+      ]);
 
       const session = {
         step: 2,
@@ -125,15 +124,16 @@ const RecuperarConferencia = () => {
         conferenceName: row.nome ?? `Conferência ${row.id.slice(0, 6)}`,
         conferenceId: row.id,
         scannedProducts,
-        distinctProductsCount: uniqueProducts,
-        totalBips,
+        distinctProductsCount: totals.uniqueProducts,
+        totalBips: totals.totalBips,
         savedAt: new Date().toISOString(),
+        forceReload: true,
       };
 
       localStorage.setItem("conferencia-session-v1", JSON.stringify(session));
       toast({
         title: "Conferência restaurada",
-        description: `${uniqueProducts} produtos diferentes • ${totalBips} bips carregados.`,
+        description: `${totals.uniqueProducts} produtos diferentes • ${totals.totalBips} bips carregados.`,
       });
       navigate("/conferencia");
     } catch (err: any) {

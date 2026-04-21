@@ -25,7 +25,7 @@ import { useProducts, useAllProducts } from "@/hooks/useProductData";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
-import { fetchAllConferenceItems, getConferenceUniqueProductsCount, mapConferenceItemsToScannedProducts } from "@/lib/conference-recovery";
+import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/conference-recovery";
 
 /**
  * Verifica se o código tem formato válido de código de barras
@@ -681,22 +681,16 @@ const Conferencia = () => {
   const loadConferenceItems = useCallback(async (confId: string) => {
     setLoadingConference(true);
     try {
-      const productsById = new Map(allProducts.map((product) => [product.id, product]));
-      const allItems = await fetchAllConferenceItems(confId, "Conferencia restore");
-      const mapped: ScannedProduct[] = mapConferenceItemsToScannedProducts(allItems, productsById);
+      const productImagesById = new Map(allProducts.map((p) => [p.id, p.image_url ?? null] as const));
+      const [mapped, totals] = await Promise.all([
+        fetchConferenceItemsGrouped(confId, productImagesById),
+        fetchConferenceTotals(confId),
+      ]);
 
-      console.log(`[Conferencia restore] produtos únicos: ${mapped.length} | total bipado (soma): ${mapped.reduce((s, p) => s + p.scannedQty, 0)}`);
+      console.log(`[Conferencia restore] produtos únicos: ${totals.uniqueProducts} | total bipado: ${totals.totalBips}`);
 
-      setScannedProducts(mapped);
-
-      const { data: distinctCount, error: countError } = await supabase
-        .rpc("get_conference_distinct_product_count", { _conference_id: confId });
-      if (countError) {
-        console.warn("[Conferencia restore] RPC distinct count falhou, usando fallback local", countError);
-        setDistinctProductsCount(getConferenceUniqueProductsCount(allItems));
-      } else {
-        setDistinctProductsCount(Number(distinctCount ?? getConferenceUniqueProductsCount(allItems)));
-      }
+      setScannedProducts(mapped as ScannedProduct[]);
+      setDistinctProductsCount(totals.uniqueProducts);
     } catch (err: any) {
       console.error("[Conferencia restore] erro ao carregar itens", err);
       toast({ title: "Erro ao carregar itens", description: err.message, variant: "destructive" });
