@@ -57,35 +57,21 @@ export const fetchConferenceItemsInBatches = async <T = ConferenceItemRow>(
   select = "*",
   logLabel = "ConferenceRecovery",
 ) => {
-  const batchSize = 1000;
-  const allItems: T[] = [];
-  let from = 0;
-  let hasMore = true;
+  const { data, error } = await supabase
+    .from("conference_items")
+    .select(select)
+    .eq("conference_id", conferenceId)
+    .limit(10000);
 
-  while (hasMore) {
-    const { data, error } = await supabase
-      .from("conference_items")
-      .select(select)
-      .eq("conference_id", conferenceId)
-      .range(from, from + batchSize - 1);
+  if (error) throw error;
 
-    if (error) throw error;
+  const uniqueItems = Array.from(
+    new Map(((data ?? []) as T[]).map((item: any) => [item?.id ?? JSON.stringify(item), item])).values(),
+  );
 
-    const batch = (data ?? []) as T[];
-    console.log(`[${logLabel}] lote ${from}-${from + batchSize - 1} → ${batch.length} registros`);
+  console.log(`[${logLabel}] TOTAL retornado do banco para ${conferenceId}: ${uniqueItems.length} registros`);
 
-    if (batch.length === 0) {
-      hasMore = false;
-    } else {
-      allItems.push(...batch);
-      from += batchSize;
-      if (batch.length < batchSize) hasMore = false;
-    }
-  }
-
-  console.log(`[${logLabel}] TOTAL retornado do banco para ${conferenceId}: ${allItems.length} registros`);
-
-  return allItems;
+  return uniqueItems;
 };
 
 export const fetchAllConferenceItems = async (conferenceId: string, logLabel = "ConferenceRecovery") => {
@@ -99,8 +85,12 @@ export const fetchAllConferenceItems = async (conferenceId: string, logLabel = "
 
 export const aggregateConferenceItems = (items: ConferenceItemRow[]) => {
   const aggregated = new Map<string, ConferenceItemRow>();
+  const seenIds = new Set<string>();
 
   for (const item of items) {
+    if (seenIds.has(item.id)) continue;
+    seenIds.add(item.id);
+
     const key = createConferenceItemKey(item);
     const existing = aggregated.get(key);
 
