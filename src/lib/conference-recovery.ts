@@ -37,6 +37,25 @@ export interface ConferenceTotals {
   uniqueProducts: number;
 }
 
+type ConferenceIdentitySource = {
+  productId?: string | null;
+  sku?: string | null;
+  barcode?: string | null;
+  name?: string | null;
+};
+
+export const buildConferenceItemIdentity = ({ productId, sku, barcode, name }: ConferenceIdentitySource): string => {
+  const normalizedSku = sku?.trim();
+  const normalizedBarcode = barcode?.trim();
+  const normalizedName = name?.trim();
+
+  if (productId) return productId;
+  if (normalizedSku) return `sku:${normalizedSku}`;
+  if (normalizedBarcode) return `ean:${normalizedBarcode}`;
+  if (normalizedName) return `name:${normalizedName}`;
+  return "orphan:unknown";
+};
+
 /**
  * Busca os totais reais da conferência (sem nenhum limite) usando RPC SQL.
  * Sempre use esta função para os contadores — nunca calcule no cliente
@@ -80,15 +99,28 @@ export const fetchConferenceItemsGrouped = async (
   const { data, error } = await supabase.rpc("get_conference_items_grouped" as any, { conf_id: conferenceId });
   if (error) throw error;
 
-  return ((data ?? []) as any[]).map((row) => ({
-    productId: row.product_id ?? `orphan-${row.sku ?? row.ean ?? Math.random().toString(36).slice(2)}`,
-    name: row.product_name ?? "Produto",
-    sku: row.sku ?? "",
-    barcode: row.ean ?? null,
-    imageUrl: row.product_id ? productImagesById?.get(row.product_id) ?? null : null,
-    scannedQty: Number(row.total_qty ?? 0),
-    systemQty: Number(row.expected_qty ?? 0),
-    lastBipAt: row.last_scan ? new Date(row.last_scan) : new Date(),
-    boxInfo: parseBoxInfo(row.detalhes_caixa as Json | null),
-  }));
+  return ((data ?? []) as any[])
+    .map((row) => {
+      const name = row.product_name ?? "Produto";
+      const sku = row.sku ?? "";
+      const barcode = row.ean ?? null;
+
+      return {
+        productId: buildConferenceItemIdentity({
+          productId: row.product_id,
+          sku,
+          barcode,
+          name,
+        }),
+        name,
+        sku,
+        barcode,
+        imageUrl: row.product_id ? productImagesById?.get(row.product_id) ?? null : null,
+        scannedQty: Number(row.total_qty ?? 0),
+        systemQty: Number(row.expected_qty ?? 0),
+        lastBipAt: row.last_scan ? new Date(row.last_scan) : new Date(),
+        boxInfo: parseBoxInfo(row.detalhes_caixa as Json | null),
+      };
+    })
+    .filter((item) => item.scannedQty > 0);
 };
