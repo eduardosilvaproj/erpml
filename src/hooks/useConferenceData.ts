@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
-import { fetchConferenceItemsInBatches } from "@/lib/conference-recovery";
+import { fetchConferenceItemsRaw } from "@/lib/conference-recovery";
 
 export interface ConferenceItem {
   id: string;
@@ -138,10 +138,9 @@ export function useScanItem() {
 
   return useMutation({
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
-      const confItems = await fetchConferenceItemsInBatches<ConferenceItem>(
+      const confItems = await fetchConferenceItemsRaw<ConferenceItem>(
         conferenceId,
         "*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode))",
-        "ConferenceData scan",
       );
 
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
@@ -184,7 +183,7 @@ export function useFinishConference() {
 
   return useMutation({
     mutationFn: async (conferenceId: string) => {
-      const items = await fetchConferenceItemsInBatches<ConferenceItem>(conferenceId, "*", "ConferenceData finish");
+      const items = await fetchConferenceItemsRaw<ConferenceItem>(conferenceId, "*");
 
       const allOk = items.every((i) => i.status === "ok");
       const finalStatus = allOk ? "conferida" : "divergente";

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
-import { fetchConferenceItemsInBatches } from "@/lib/conference-recovery";
+import { fetchConferenceItemsRaw } from "@/lib/conference-recovery";
 
 export type ConferenceTipo = "inventario" | "nota_fiscal";
 export type ConferenceStatus =
@@ -99,7 +99,7 @@ export function useConferenceDetail(conferenceId: string | null) {
         .single();
       if (error) throw error;
 
-      const allItems = await fetchConferenceItemsInBatches<ConferenceItemRow>(conferenceId!, "*", "ConferenceHistory");
+      const allItems = await fetchConferenceItemsRaw<ConferenceItemRow>(conferenceId!, "*");
 
       return { conference: conf as unknown as ConferenceRow, items: allItems };
     },
