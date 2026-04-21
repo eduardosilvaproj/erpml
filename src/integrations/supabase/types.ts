@@ -2210,6 +2210,13 @@ export type Database = {
     }
     Functions: {
       concluir_ordem_full: { Args: { _ordem_id: string }; Returns: undefined }
+      dedupe_conference_items: {
+        Args: { conf_id: string }
+        Returns: {
+          kept_rows: number
+          removed_rows: number
+        }[]
+      }
       get_conference_distinct_product_count: {
         Args: { _conference_id: string }
         Returns: number
