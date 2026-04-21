@@ -65,6 +65,16 @@ interface GtinModalState {
   saveGtin: boolean;
 }
 
+const isUuid = (value: string | null | undefined) =>
+  !!value && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+
+const getConferenceItemStatus = (scannedQty: number, expectedQty: number) => {
+  if (expectedQty <= 0) return scannedQty > 0 ? "ok" : "pendente";
+  if (scannedQty === expectedQty) return "ok";
+  if (scannedQty > expectedQty) return "excedente";
+  return scannedQty > 0 ? "pendente" : "pendente";
+};
+
 const Conferencia = () => {
   const { toast } = useToast();
   const companyId = useCompanyId();
@@ -648,7 +658,7 @@ const Conferencia = () => {
   };
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
-  const uniqueProducts = distinctProductsCount ?? new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
+  const uniqueProducts = new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
 
   const startConference = async () => {
     if (!mode) {
@@ -741,25 +751,60 @@ const Conferencia = () => {
         setConferenceId(confId);
       }
 
-      // Replace items: delete existing then re-insert (simple & reliable).
-      await supabase.from("conference_items").delete().eq("conference_id", confId!);
+      const { data: existingRows, error: existingErr } = await supabase
+        .from("conference_items")
+        .select("id, product_id, sku, ean, nome_produto")
+        .eq("conference_id", confId!);
+      if (existingErr) throw existingErr;
 
-      if (scannedProducts.length > 0) {
-        const rows = scannedProducts.map((p) => ({
+      const existingByKey = new Map(
+        (existingRows ?? []).map((row: any) => [
+          `${row.product_id ?? ""}::${row.sku ?? ""}::${row.ean ?? ""}::${row.nome_produto ?? ""}`,
+          row,
+        ]),
+      );
+
+      const nextKeys = new Set<string>();
+      const updates = scannedProducts.map(async (p) => {
+        const productId = isUuid(p.productId) ? p.productId : null;
+        const key = `${productId ?? ""}::${p.sku ?? ""}::${p.barcode ?? ""}::${p.name ?? ""}`;
+        nextKeys.add(key);
+
+        const payload = {
           conference_id: confId!,
-          product_id: p.productId,
+          product_id: productId,
           nome_produto: p.name,
           sku: p.sku,
           ean: p.barcode,
           expected_quantity: p.systemQty,
           scanned_quantity: p.scannedQty,
-          status: "ok",
+          status: getConferenceItemStatus(p.scannedQty, p.systemQty),
           tipo_contagem: p.boxInfo ? "caixa" : "unidade",
           detalhes_caixa: p.boxInfo ?? null,
-        }));
-        const { error: insErr } = await supabase.from("conference_items").insert(rows as any);
-        if (insErr) throw insErr;
-      }
+        };
+
+        const existing = existingByKey.get(key);
+        if (existing) {
+          const { error } = await supabase.from("conference_items").update(payload as any).eq("id", existing.id);
+          if (error) throw error;
+          return;
+        }
+
+        const { error } = await supabase.from("conference_items").insert(payload as any);
+        if (error) throw error;
+      });
+
+      const resets = (existingRows ?? [])
+        .filter((row: any) => !nextKeys.has(`${row.product_id ?? ""}::${row.sku ?? ""}::${row.ean ?? ""}::${row.nome_produto ?? ""}`))
+        .map(async (row: any) => {
+          const { error } = await supabase
+            .from("conference_items")
+            .update({ scanned_quantity: 0, status: "pendente", detalhes_caixa: null } as any)
+            .eq("id", row.id);
+          if (error) throw error;
+        });
+
+      await Promise.all([...updates, ...resets]);
 
       await supabase
         .from("conferences")
