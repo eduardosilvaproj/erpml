@@ -53,6 +53,23 @@ export const fetchConferenceTotals = async (conferenceId: string): Promise<Confe
 };
 
 /**
+ * Busca todos os registros brutos de conference_items (sem limite).
+ * Use apenas quando precisar do detalhe linha-a-linha (ex: matching de bip,
+ * checagem de status final). Para popular UI/contadores, prefira as RPCs.
+ */
+export const fetchConferenceItemsRaw = async <T = any>(
+  conferenceId: string,
+  select = "*",
+): Promise<T[]> => {
+  const { data, error } = await supabase
+    .from("conference_items")
+    .select(select)
+    .eq("conference_id", conferenceId);
+  if (error) throw error;
+  return (data ?? []) as T[];
+};
+
+/**
  * Busca os itens da conferência já agrupados por produto (sem nenhum limite),
  * pronto para popular o estado da tela de bipagem.
  */
