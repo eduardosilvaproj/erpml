@@ -2214,6 +2214,26 @@ export type Database = {
         Args: { _conference_id: string }
         Returns: number
       }
+      get_conference_items_grouped: {
+        Args: { conf_id: string }
+        Returns: {
+          detalhes_caixa: Json
+          ean: string
+          expected_qty: number
+          last_scan: string
+          product_id: string
+          product_name: string
+          sku: string
+          total_qty: number
+        }[]
+      }
+      get_conference_totals: {
+        Args: { conf_id: string }
+        Returns: {
+          total_bips: number
+          unique_products: number
+        }[]
+      }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
