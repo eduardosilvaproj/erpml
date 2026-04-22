@@ -33,7 +33,7 @@ interface StatusBadgeProps {
 
 export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
-  const { isAuditMode } = useAudit();
+  const { isAuditMode, initialized } = useAudit();
 
   const getStatusConfig = (status: string | null | undefined) => {
     const s = (status?.trim() || "DESCONHECIDO").toUpperCase();

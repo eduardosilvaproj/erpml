@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from "react";
 
 interface AuditContextType {
   isAuditMode: boolean;
+  initialized: boolean;
   toggleAuditMode: () => void;
   setAuditMode: (enabled: boolean) => void;
 }
@@ -9,10 +10,16 @@ interface AuditContextType {
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
 export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuditMode, setIsAuditMode] = useState(() => {
+  const [isAuditMode, setIsAuditMode] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  useLayoutEffect(() => {
     const saved = localStorage.getItem("audit_mode");
-    return saved === "true";
-  });
+    if (saved === "true") {
+      setIsAuditMode(true);
+    }
+    setInitialized(true);
+  }, []);
 
   const toggleAuditMode = () => {
     setIsAuditMode((prev) => !prev);
@@ -23,11 +30,13 @@ export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    localStorage.setItem("audit_mode", String(isAuditMode));
-  }, [isAuditMode]);
+    if (initialized) {
+      localStorage.setItem("audit_mode", String(isAuditMode));
+    }
+  }, [isAuditMode, initialized]);
 
   return (
-    <AuditContext.Provider value={{ isAuditMode, toggleAuditMode, setAuditMode }}>
+    <AuditContext.Provider value={{ isAuditMode, initialized, toggleAuditMode, setAuditMode }}>
       {children}
     </AuditContext.Provider>
   );
