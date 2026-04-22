@@ -415,12 +415,12 @@ const BalancoEstoque = () => {
         action = "Fora do filtro";
       } else if (isCounted) {
         status = "Contado";
-        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)}`;
+        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)} (${formatDifference(difference)})`;
       } else {
         const willBeZeroed = balanceType === "full" && zeroUnscanned;
         if (willBeZeroed) {
           status = "Zerar";
-          action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)}`;
+          action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)} (${formatDifference(difference)})`;
         } else {
 
           status = "Protegido";
