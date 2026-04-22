@@ -42,6 +42,32 @@ const BalancoEstoque = () => {
   const bipInputRef = useRef<HTMLInputElement>(null);
   const bipBufferRef = useRef("");
   const bipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [decimalPlaces, setDecimalPlaces] = useState(0);
+
+  const formatNumber = useCallback((num: number, decimals: number = decimalPlaces) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(num);
+  }, [decimalPlaces]);
+
+  const formatDifference = useCallback((num: number, decimals: number = decimalPlaces) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+      signDisplay: 'exceptZero',
+    }).format(num);
+  }, [decimalPlaces]);
+
+  const formatPercent = useCallback((num: number, decimals: number = 1) => {
+    if (num === 0) return "0%";
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+      signDisplay: 'always',
+    }).format(num) + '%';
+  }, []);
+
 
   // Carrega TODOS os produtos (paginado) para evitar o teto de 1000 do Supabase.
   // Os filtros de busca/categoria são aplicados em memória abaixo.
@@ -206,9 +232,10 @@ const BalancoEstoque = () => {
   };
 
   const updateCount = (productId: string, value: string) => {
-    const num = value === "" ? null : parseInt(value, 10);
+    const num = value === "" ? null : parseFloat(value.replace(',', '.'));
     setCounts((prev) => ({ ...prev, [productId]: isNaN(num as number) ? null : num }));
   };
+
 
   // Handle barcode scan (from bip or camera) — increment count by 1
   const handleBarcodeScan = useCallback((code: string) => {
@@ -388,13 +415,14 @@ const BalancoEstoque = () => {
         action = "Fora do filtro";
       } else if (isCounted) {
         status = "Contado";
-        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${p.stock_physical} → ${counted}`;
+        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)}`;
       } else {
         const willBeZeroed = balanceType === "full" && zeroUnscanned;
         if (willBeZeroed) {
           status = "Zerar";
-          action = `Zerar: ${p.stock_physical} → 0`;
+          action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)}`;
         } else {
+
           status = "Protegido";
           action = "Protegido";
         }
@@ -763,7 +791,7 @@ const BalancoEstoque = () => {
                           >
                             <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                             <TableCell className="font-medium">{p.name}</TableCell>
-                            <TableCell className="text-center font-bold">{p.stock_physical}</TableCell>
+                            <TableCell className="text-center font-bold">{formatNumber(p.stock_physical)}</TableCell>
                             <TableCell className="text-center text-muted-foreground">
                               {invoiceInfo ? invoiceInfo.totalQty : "—"}
                             </TableCell>
@@ -772,7 +800,9 @@ const BalancoEstoque = () => {
                                 <Input
                                   type="number"
                                   min={0}
-                                  className="w-20 mx-auto text-center"
+                                  step="any"
+                                  className="w-24 mx-auto text-center"
+
                                   value={counted ?? ""}
                                   onChange={(e) => updateCount(p.id, e.target.value)}
                                   placeholder="0"
@@ -783,10 +813,11 @@ const BalancoEstoque = () => {
                               <TableCell className="text-center font-bold">
                                 {diff != null ? (
                                   <span className={diff === 0 ? "text-primary" : "text-destructive"}>
-                                    {diff > 0 ? `+${diff}` : diff}
+                                    {formatDifference(diff)}
                                   </span>
                                 ) : "—"}
                               </TableCell>
+
                             )}
                             {isCounting && (
                               <TableCell>
@@ -872,16 +903,17 @@ const BalancoEstoque = () => {
                         <TableRow key={d.product.id} className={d.diff !== 0 ? "bg-destructive/5" : ""}>
                           <TableCell className="font-mono text-xs">{d.product.sku}</TableCell>
                           <TableCell className="font-medium">{d.product.name}</TableCell>
-                          <TableCell className="text-center">{d.registered}</TableCell>
-                          <TableCell className="text-center font-bold">{d.counted}</TableCell>
+                          <TableCell className="text-center">{formatNumber(d.registered)}</TableCell>
+                          <TableCell className="text-center font-bold">{formatNumber(d.counted)}</TableCell>
                           <TableCell className="text-center font-bold">
                             <span className={d.diff === 0 ? "text-primary" : "text-destructive"}>
-                              {d.diff > 0 ? `+${d.diff}` : d.diff}
+                              {formatDifference(d.diff)}
                             </span>
                           </TableCell>
                           <TableCell className="text-center text-muted-foreground">
-                            {d.invoiceQtyEntered > 0 ? `${d.invoiceQtyEntered} (${d.invoiceCount} NFs)` : "—"}
+                            {d.invoiceQtyEntered > 0 ? `${formatNumber(d.invoiceQtyEntered)} (${d.invoiceCount} NFs)` : "—"}
                           </TableCell>
+
                           <TableCell>
                             {d.diff === 0 ? (
                               <Badge className="bg-primary/15 text-primary">OK</Badge>
@@ -997,13 +1029,31 @@ const BalancoEstoque = () => {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ClipboardList className="h-5 w-5 text-muted-foreground" />
                   Detalhamento da Auditoria
                 </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="decimal-places" className="text-xs text-muted-foreground">Casas decimais:</Label>
+                  <Select 
+                    value={String(decimalPlaces)} 
+                    onValueChange={(v) => setDecimalPlaces(Number(v))}
+                  >
+                    <SelectTrigger id="decimal-places" className="h-7 w-[70px] text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0</SelectItem>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
+
                 <div className="rounded-md border max-h-[400px] overflow-y-auto">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
@@ -1034,14 +1084,15 @@ const BalancoEstoque = () => {
                             <TableCell className="max-w-[150px] md:max-w-[200px] truncate text-xs" title={item.name}>
                               {item.name}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-medium">{item.currentStock}</TableCell>
-                            <TableCell className="text-right text-xs font-semibold">{item.countedStock}</TableCell>
+                            <TableCell className="text-right text-xs font-medium">{formatNumber(item.currentStock)}</TableCell>
+                            <TableCell className="text-right text-xs font-semibold">{formatNumber(item.countedStock)}</TableCell>
                             <TableCell className={`text-right text-xs font-bold ${item.difference > 0 ? 'text-emerald-600' : item.difference < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
-                              {item.difference > 0 ? `+${item.difference}` : item.difference}
+                              {formatDifference(item.difference)}
                             </TableCell>
                             <TableCell className={`text-right text-[10px] font-medium ${item.variationPercentage > 0 ? 'text-emerald-600' : item.variationPercentage < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
-                              {item.variationPercentage === 0 && item.difference === 0 ? "0%" : `${item.variationPercentage > 0 ? '+' : ''}${item.variationPercentage.toFixed(1)}%`}
+                              {formatPercent(item.variationPercentage)}
                             </TableCell>
+
                             <TableCell>
                               <Badge 
                                 variant={
