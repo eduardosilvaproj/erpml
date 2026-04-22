@@ -88,7 +88,7 @@ export function ResetCompanyData({ companyId }: ResetCompanyDataProps) {
                 <li>Todas as conferências e histórico</li>
                 <li>Todas as campanhas e kits</li>
                 <li>Toda a equipe (exceto sua conta admin)</li>
-                <li>Todas as integrações configuradas</li>
+                <li>Configurações operacionais e logs</li>
               </ul>
               <p className="mt-6 font-bold text-destructive">
                 Esta ação NÃO pode ser desfeita.
