@@ -27,9 +27,10 @@ export const StatusBadgeProvider = StatusBadgeContext.Provider;
 interface StatusBadgeProps {
   status: AuditStatus | string;
   className?: string;
+  isAudit?: boolean;
 }
 
-export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
+export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
 
   const getStatusConfig = (status: string | null | undefined) => {
