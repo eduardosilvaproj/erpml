@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { formatNumber as sharedFormatNumber, formatDifference as sharedFormatDifference, formatPercent as sharedFormatPercent } from "@/lib/formatters";
 
 const BalancoEstoque = () => {
   const { toast } = useToast();
