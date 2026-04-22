@@ -833,6 +833,103 @@ const BalancoEstoque = () => {
           </Card>
         </TabsContent>
 
+        {/* Tab: Auditoria */}
+        {isCounting && (
+          <TabsContent value="audit" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Itens Contados
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-baseline justify-between">
+                    <p className="text-2xl font-bold">{auditStats?.countedCount}</p>
+                    <p className="text-xs text-muted-foreground">de {auditStats?.itemsInScopeCount} no escopo</p>
+                  </div>
+                  <div className="mt-3 h-2 w-full rounded-full bg-primary/10">
+                    <div 
+                      className="h-full rounded-full bg-primary transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (auditStats?.countedCount || 0) / (auditStats?.itemsInScopeCount || 1) * 100)}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-orange-500/20 bg-orange-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-orange-600">
+                    <Filter className="h-4 w-4" />
+                    Ignorados por Filtro
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{auditStats?.ignoredByFilterCount}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Produtos ocultos pelos filtros atuais (Categoria/Busca).
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-blue-500/20 bg-blue-500/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-blue-600">
+                    <ShieldCheck className="h-4 w-4" />
+                    Itens Protegidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{auditStats?.protectedCount}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Itens que <strong>NÃO</strong> terão o estoque alterado.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Info className="h-5 w-5 text-muted-foreground" />
+                  Resumo da Operação
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 p-3 rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-sm">Escopo do Balanço ({balanceType === "full" ? "Geral" : "Parcial"})</h4>
+                    <ul className="text-xs space-y-1 text-muted-foreground list-disc list-inside">
+                      <li>Total no sistema: {auditStats?.totalInSystem}</li>
+                      <li>Itens visíveis (escopo): {auditStats?.itemsInScopeCount}</li>
+                      <li>Itens fora do escopo: {auditStats?.ignoredByFilterCount}</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2 p-3 rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-sm">Previsão de Atualização</h4>
+                    <ul className="text-xs space-y-1 text-muted-foreground list-disc list-inside">
+                      <li>Total a atualizar: {auditStats?.countedCount}</li>
+                      <li>Total a zerar: {zeroUnscanned && balanceType === "full" ? (auditStats?.itemsInScopeCount || 0) - (auditStats?.countedCount || 0) : 0}</li>
+                      <li>Total protegidos: {auditStats?.protectedCount}</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2 p-3 rounded-md border bg-primary/5 text-xs text-primary/80">
+                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                  <p>
+                    {balanceType === "partial" 
+                      ? "Em modo Balanço Parcial, apenas produtos que você contar explicitamente serão atualizados. Itens filtrados ou não bipados permanecem com seu estoque atual inalterado."
+                      : "Em modo Balanço Geral, se a opção 'Zerar itens não bipados' estiver ativada, todos os itens do sistema não contados serão zerados. Caso contrário, apenas os contados são atualizados."
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {/* Tab: Notas Fiscais */}
         <TabsContent value="invoices" className="space-y-4">
           <Card>
