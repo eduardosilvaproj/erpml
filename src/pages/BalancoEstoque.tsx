@@ -31,6 +31,8 @@ const BalancoEstoque = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
+  const [showOnlyCounted, setShowOnlyCounted] = useState(false);
+  const [balanceType, setBalanceType] = useState<"full" | "partial">("full");
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [isCounting, setIsCounting] = useState(false);
   const [monthsBack, setMonthsBack] = useState("3");
@@ -57,8 +59,11 @@ const BalancoEstoque = () => {
           p.barcode?.toLowerCase().includes(s)
       );
     }
+    if (showOnlyCounted && isCounting) {
+      list = list.filter((p) => counts[p.id] !== null && counts[p.id] !== undefined);
+    }
     return list;
-  }, [allProductsRaw, categoryFilter, search]);
+  }, [allProductsRaw, categoryFilter, search, showOnlyCounted, counts, isCounting]);
 
   // Fetch invoices from the last N months for comparison
   const sinceDate = useMemo(() => {
@@ -110,9 +115,20 @@ const BalancoEstoque = () => {
   const startCounting = () => {
     setIsCounting(true);
     const initial: Record<string, number | null> = {};
+    
+    // In partial mode, we might want to start with a blank list or just the filtered ones
+    // But for now, let's keep the product list as the base
     products.forEach((p) => { initial[p.id] = null; });
+    
     setCounts(initial);
-    toast({ title: "Balanço iniciado", description: "Insira a contagem física ou use o bip/câmera." });
+    setZeroUnscanned(balanceType === "full");
+    
+    toast({ 
+      title: balanceType === "full" ? "Balanço Geral iniciado" : "Balanço Parcial iniciado", 
+      description: balanceType === "full" 
+        ? "Todos os produtos da lista foram incluídos." 
+        : "Apenas produtos selecionados serão ajustados." 
+    });
   };
 
   const resetCounting = () => {
@@ -120,6 +136,7 @@ const BalancoEstoque = () => {
     setCounts({});
     setBipMode(false);
     setLastScanned(null);
+    setShowOnlyCounted(false);
   };
 
   // Toggle: also zero-out items that were NOT counted/bipped during this balance
@@ -315,15 +332,36 @@ const BalancoEstoque = () => {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <ClipboardList className="h-6 w-6 text-primary" />
             Balanço de Estoque
+            {isCounting && (
+              <Badge variant={balanceType === "full" ? "default" : "outline"} className="ml-2">
+                {balanceType === "full" ? "Geral" : "Parcial"}
+              </Badge>
+            )}
           </h1>
-          <p className="text-muted-foreground">Contagem física do inventário com comparação de notas fiscais</p>
+          <p className="text-muted-foreground">
+            {isCounting 
+              ? `Contagem em andamento (${balanceType === "full" ? "Geral" : "Parcial"})`
+              : "Contagem física do inventário com comparação de notas fiscais"
+            }
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {!isCounting ? (
-            <Button onClick={startCounting} disabled={isLoading || products.length === 0}>
-              <PackageCheck className="h-4 w-4 mr-2" />
-              Iniciar Balanço
-            </Button>
+            <div className="flex gap-2">
+              <Select value={balanceType} onValueChange={(v: "full" | "partial") => setBalanceType(v)}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Tipo de Balanço" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Balanço Geral</SelectItem>
+                  <SelectItem value="partial">Balanço Parcial</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={startCounting} disabled={isLoading || products.length === 0}>
+                <PackageCheck className="h-4 w-4 mr-2" />
+                Iniciar
+              </Button>
+            </div>
           ) : (
             <>
               <Button variant="outline" onClick={resetCounting}>
@@ -548,6 +586,19 @@ const BalancoEstoque = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                {isCounting && (
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Switch 
+                      id="show-only-counted" 
+                      checked={showOnlyCounted} 
+                      onCheckedChange={setShowOnlyCounted} 
+                    />
+                    <Label htmlFor="show-only-counted" className="text-sm whitespace-nowrap cursor-pointer">
+                      Apenas contados
+                    </Label>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
