@@ -18,6 +18,7 @@ import { useProducts, useCategories } from "@/hooks/useProductData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { formatNumber, formatDifference } from "@/lib/formatters";
 
 const Estoque = () => {
   const navigate = useNavigate();
