@@ -112,9 +112,20 @@ const BalancoEstoque = () => {
   const startCounting = () => {
     setIsCounting(true);
     const initial: Record<string, number | null> = {};
+    
+    // In partial mode, we might want to start with a blank list or just the filtered ones
+    // But for now, let's keep the product list as the base
     products.forEach((p) => { initial[p.id] = null; });
+    
     setCounts(initial);
-    toast({ title: "Balanço iniciado", description: "Insira a contagem física ou use o bip/câmera." });
+    setZeroUnscanned(balanceType === "full");
+    
+    toast({ 
+      title: balanceType === "full" ? "Balanço Geral iniciado" : "Balanço Parcial iniciado", 
+      description: balanceType === "full" 
+        ? "Todos os produtos da lista foram incluídos." 
+        : "Apenas produtos selecionados serão ajustados." 
+    });
   };
 
   const resetCounting = () => {
