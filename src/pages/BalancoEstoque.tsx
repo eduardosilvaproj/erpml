@@ -136,6 +136,7 @@ const BalancoEstoque = () => {
     setCounts({});
     setBipMode(false);
     setLastScanned(null);
+    setShowOnlyCounted(false);
   };
 
   // Toggle: also zero-out items that were NOT counted/bipped during this balance
