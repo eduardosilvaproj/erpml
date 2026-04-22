@@ -36,7 +36,7 @@ export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isAuditMode, initialized]);
 
   return (
-    <AuditContext.Provider value={{ isAuditMode, toggleAuditMode, setAuditMode }}>
+    <AuditContext.Provider value={{ isAuditMode, initialized, toggleAuditMode, setAuditMode }}>
       {children}
     </AuditContext.Provider>
   );
