@@ -214,8 +214,8 @@ const BalancoEstoque = () => {
     const trimmed = code.trim();
     if (!trimmed || !isCounting) return;
 
-    // Find product by barcode, sku, or sku_ml
-    const product = products.find(
+    // Find product by barcode, sku, or sku_ml in ALL products
+    const product = allProductsRaw.find(
       (p) => p.barcode === trimmed || p.sku === trimmed || p.sku_ml === trimmed
     );
 
