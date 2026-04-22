@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -1390,8 +1391,8 @@ const Conferencia = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">✅ OK — {results.ok.length}</Badge>
-                  Quantidade confere com o sistema
+                  <StatusBadge status="OK" /> — {results.ok.length}
+                  <span className="ml-2 font-normal text-muted-foreground text-xs">Quantidade confere com o sistema</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1424,8 +1425,8 @@ const Conferencia = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">⚠️ Divergente — {results.divergent.length}</Badge>
-                  Quantidade diferente
+                  <StatusBadge status="Divergente" /> — {results.divergent.length}
+                  <span className="ml-2 font-normal text-muted-foreground text-xs">Quantidade diferente</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1467,8 +1468,8 @@ const Conferencia = () => {
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Badge className="bg-destructive/15 text-destructive">❌ Não bipado — {results.notFound.length}</Badge>
-                  Produto no sistema mas não contado
+                  <StatusBadge status="Não bipado" /> — {results.notFound.length}
+                  <span className="ml-2 font-normal text-muted-foreground text-xs">Produto no sistema mas não contado</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
