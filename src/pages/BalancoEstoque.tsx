@@ -858,9 +858,9 @@ const BalancoEstoque = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-orange-500/20 bg-orange-500/5">
+              <Card className="border-muted bg-muted/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm text-orange-600">
+                  <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Filter className="h-4 w-4" />
                     Ignorados por Filtro
                   </CardTitle>
@@ -873,9 +873,9 @@ const BalancoEstoque = () => {
                 </CardContent>
               </Card>
 
-              <Card className="border-blue-500/20 bg-blue-500/5">
+              <Card className="border-accent/30 bg-accent/5">
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-sm text-blue-600">
+                  <CardTitle className="flex items-center gap-2 text-sm text-accent-foreground">
                     <ShieldCheck className="h-4 w-4" />
                     Itens Protegidos
                   </CardTitle>
