@@ -304,11 +304,13 @@ const BalancoEstoque = () => {
         const registered = p.stock_physical;
         const diff = counted - registered;
         const invoiceInfo = invoiceData?.byProduct?.[p.id];
+        const variationPercentage = p.stock_physical > 0 ? (diff / p.stock_physical) * 100 : (diff > 0 ? 100 : 0);
         return {
           product: p,
           counted,
           registered,
           diff,
+          variationPercentage,
           invoiceQtyEntered: invoiceInfo?.totalQty || 0,
           invoiceCount: invoiceInfo?.invoiceCount || 0,
         };
@@ -318,6 +320,7 @@ const BalancoEstoque = () => {
         counted: number;
         registered: number;
         diff: number;
+        variationPercentage: number;
         invoiceQtyEntered: number;
         invoiceCount: number;
       }>;
@@ -883,6 +886,7 @@ const BalancoEstoque = () => {
                         <TableHead className="text-center">Registrado</TableHead>
                         <TableHead className="text-center">Contado</TableHead>
                         <TableHead className="text-center">Diferença</TableHead>
+                        <TableHead className="text-center">% Var.</TableHead>
                         <TableHead className="text-center">Entrada NF</TableHead>
                         <TableHead>Status</TableHead>
                       </TableRow>
@@ -899,15 +903,18 @@ const BalancoEstoque = () => {
                               {formatDifference(d.diff)}
                             </span>
                           </TableCell>
+                          <TableCell className={`text-center text-xs font-medium ${d.variationPercentage > 0 ? 'text-amber-600' : d.variationPercentage < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
+                            {formatPercent(d.variationPercentage)}
+                          </TableCell>
                           <TableCell className="text-center text-muted-foreground">
                             {d.invoiceQtyEntered > 0 ? `${formatNumber(d.invoiceQtyEntered)} (${d.invoiceCount} NFs)` : "—"}
                           </TableCell>
 
                           <TableCell>
                             {d.diff === 0 ? (
-                              <Badge className="bg-primary/15 text-primary">OK</Badge>
+                              <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">OK</Badge>
                             ) : d.diff > 0 ? (
-                              <Badge className="bg-accent/15 text-accent-foreground">Sobra</Badge>
+                              <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">Sobra</Badge>
                             ) : (
                               <Badge variant="destructive">Falta</Badge>
                             )}
@@ -1053,6 +1060,7 @@ const BalancoEstoque = () => {
                         <TableHead className="text-right">Contado</TableHead>
                         <TableHead className="text-right">Dif.</TableHead>
                         <TableHead className="text-right">% Var.</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Ação</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -1082,18 +1090,26 @@ const BalancoEstoque = () => {
                               {formatPercent(item.variationPercentage)}
                             </TableCell>
 
-                            <TableCell>
-                              <Badge 
-                                variant={
-                                  item.status === "Contado" ? "default" :
-                                  item.status === "Zerar" ? "destructive" :
-                                  item.status === "Protegido" ? "secondary" : 
-                                  "outline"
-                                }
-                                className="text-[9px] px-1 py-0 h-4"
-                              >
-                                {item.action}
-                              </Badge>
+                             <TableCell>
+                              {item.status === "Contado" ? (
+                                item.difference === 0 ? (
+                                  <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[10px] h-5">OK</Badge>
+                                ) : item.difference > 0 ? (
+                                  <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-[10px] h-5">Sobra</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-[10px] h-5">Falta</Badge>
+                                )
+                              ) : item.status === "Zerar" ? (
+                                <Badge variant="destructive" className="text-[10px] h-5">Zerar</Badge>
+                              ) : item.status === "Protegido" ? (
+                                <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 border-blue-500/20 text-[10px] h-5">Protegido</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-muted-foreground text-[10px] h-5">Ignorado</Badge>
+                              )}
+                            </TableCell>
+
+                            <TableCell className="text-[10px] text-muted-foreground whitespace-nowrap">
+                              {item.action}
                             </TableCell>
                           </TableRow>
                         ))
