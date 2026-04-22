@@ -10,16 +10,25 @@ interface AuditContextType {
 const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
 export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuditMode, setIsAuditMode] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
-  useLayoutEffect(() => {
-    const saved = localStorage.getItem("audit_mode");
-    if (saved === "true") {
-      setIsAuditMode(true);
+  const [isAuditMode, setIsAuditMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("audit_mode") === "true";
     }
-    setInitialized(true);
+    return false;
+  });
+  const [initialized, setInitialized] = useState(true);
+
+  // We still want to handle potential changes in localStorage from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "audit_mode") {
+        setIsAuditMode(e.newValue === "true");
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
 
   const toggleAuditMode = () => {
     setIsAuditMode((prev) => !prev);
