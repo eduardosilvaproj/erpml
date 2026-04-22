@@ -278,7 +278,9 @@ const BalancoEstoque = () => {
   // Compute divergences
   const divergences = useMemo(() => {
     if (!isCounting) return [];
-    return products
+    // Use allProductsRaw so that divergences (and summary stats) reflect the entire 
+    // balance session, regardless of current UI filters applied to the table.
+    return allProductsRaw
       .map((p) => {
         const counted = counts[p.id];
         if (counted === null || counted === undefined) return null;
