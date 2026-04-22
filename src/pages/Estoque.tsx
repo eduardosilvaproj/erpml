@@ -80,20 +80,6 @@ const Estoque = () => {
     setAdjustBoxTarget("physical");
   };
 
-  const formatNumber = (num: number, decimals: number = 0) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(num);
-  };
-
-  const formatDifference = (num: number, decimals: number = 0) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-      signDisplay: 'exceptZero',
-    }).format(num);
-  };
 
   const boxTotal = (parseInt(adjustBoxUnitsPerBox) || 0) * (parseInt(adjustBoxCount) || 0);
 
