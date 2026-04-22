@@ -1357,9 +1357,18 @@ const Conferencia = () => {
                 )}
 
                 {conferenceName && (
-                  <div className="p-3 rounded-lg bg-muted/10 border border-border/20">
-                    <p className="text-xs text-muted-foreground">Conferência</p>
-                    <p className="text-sm font-medium">{conferenceName}</p>
+                  <div className="p-3 rounded-lg bg-muted/10 border border-border/20 space-y-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Conferência</p>
+                      <p className="text-sm font-medium">{conferenceName}</p>
+                    </div>
+                    {conferenceType === "partial" && (
+                      <div className="pt-2 border-t border-border/20">
+                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] py-0 h-5">
+                          📍 Parcial — {sectionName}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1422,6 +1431,30 @@ const Conferencia = () => {
       {/* ========== STEP 3: RESULTADO ========== */}
       {step === 3 && (
         <div className="space-y-6">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  {conferenceName || "Resultado da Conferência"}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                    {mode === "inventario" ? (conferenceType === "partial" ? "🟡 Inventário Parcial" : "🔵 Inventário Geral") : "📄 Nota Fiscal"}
+                  </Badge>
+                  {conferenceType === "partial" && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] py-0 h-5">
+                      📍 Seção: {sectionName}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                Finalizada em {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Summary cards */}
           <div className="grid gap-3 grid-cols-3">
             <Card>
