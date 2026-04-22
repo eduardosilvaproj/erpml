@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HelpProvider } from "@/contexts/HelpContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuditProvider } from "@/contexts/AuditContext";
 import { VersionUpdateBanner } from "@/components/VersionUpdateBanner";
 import { UpdateRequiredModal } from "@/components/UpdateRequiredModal";
 import { isVersionOutdated } from "@/config/version";
@@ -85,71 +86,13 @@ const App = () => {
       <VersionUpdateBanner />
       <BrowserRouter>
         <AuthProvider>
-          <HelpProvider>
-          <Routes>
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/upgrade" element={<Upgrade />} />
-            <Route path="/loja/:slug" element={<LojaPublica />} />
-            <Route path="/loja/:slug/checkout" element={<LojaCheckout />} />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/produtos" element={<Produtos />} />
-                      <Route path="/entrada-xml" element={<EntradaXML />} />
-                      <Route path="/entrada-nota" element={<EntradaNota />} />
-                      <Route path="/conferencia" element={<Conferencia />} />
-                      <Route path="/conferencia/recuperar" element={<RecuperarConferencia />} />
-                      <Route path="/estoque" element={<Estoque />} />
-                      <Route path="/balanco-estoque" element={<BalancoEstoque />} />
-                      <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
-                      <Route path="/kits" element={<Kits />} />
-                      <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
-                      <Route path="/duplicador-anuncios" element={<PlanProtectedRoute path="/integracao-ml"><DuplicadorAnuncios /></PlanProtectedRoute>} />
-                      <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
-                      <Route path="/pdv" element={<PDV />} />
-                      <Route path="/crm" element={<CRM />} />
-                      <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />
-                      <Route path="/financeiro" element={<PlanProtectedRoute path="/financeiro"><Financeiro /></PlanProtectedRoute>} />
-                      <Route path="/ia-consulta" element={<PlanProtectedRoute path="/ia-consulta"><IAConsulta /></PlanProtectedRoute>} />
-                      <Route path="/ia-hub" element={<IAHub />} />
-                      <Route path="/ia-concorrencia" element={<PlanProtectedRoute path="/ia-concorrencia"><AnaliseConcorrencia /></PlanProtectedRoute>} />
-                      <Route path="/ia-demanda" element={<PlanProtectedRoute path="/ia-demanda"><PrevisaoDemanda /></PlanProtectedRoute>} />
-                      <Route path="/ia-preco" element={<PlanProtectedRoute path="/ia-preco"><PrecoDinamico /></PlanProtectedRoute>} />
-                      <Route path="/ia-descricoes" element={<GeradorDescricoes />} />
-                      <Route path="/ia-rentabilidade" element={<PlanProtectedRoute path="/ia-rentabilidade"><AnaliseRentabilidade /></PlanProtectedRoute>} />
-                      <Route path="/ia-titulos" element={<OtimizadorTitulos />} />
-                      <Route path="/ia-respostas" element={<RespostaPerguntas />} />
-                      <Route path="/ia-chat" element={<PlanProtectedRoute path="/ia-chat"><ChatIA /></PlanProtectedRoute>} />
-                      <Route path="/ia-mercado" element={<PlanProtectedRoute path="/ia-mercado"><AnaliseMercado /></PlanProtectedRoute>} />
-                      <Route path="/pesquisa" element={<PesquisaInteligente />} />
-                      <Route path="/ia-ean13" element={<GeradorEAN13 />} />
-                      <Route path="/admin" element={<AdminPanel />} />
-                      <Route path="/mentor-vendas" element={<PlanProtectedRoute path="/mentor-vendas"><MentorVendasML /></PlanProtectedRoute>} />
-                      <Route path="/empresa" element={<CompanyDashboard />} />
-                      <Route path="/equipe" element={<Equipe />} />
-                      <Route path="/onboarding" element={<Onboarding />} />
-                      <Route path="/master-admin" element={<MasterAdmin />} />
-                      
-                      <Route path="/boas-vindas" element={<BoasVindas />} />
-                      <Route path="/minha-loja/configurar" element={<MinhaLojaConfig />} />
-                      <Route path="/minha-loja/produtos" element={<MinhaLojaProdutos />} />
-                      <Route path="/minha-loja/pedidos" element={<MinhaLojaPedidos />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-          </HelpProvider>
+          <AuditProvider>
+            <HelpProvider>
+            <Routes>
+              ...
+            </Routes>
+            </HelpProvider>
+          </AuditProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

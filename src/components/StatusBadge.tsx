@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
+import { useAudit } from "@/contexts/AuditContext";
 
 export type AuditStatus = 
   | 'OK' 
@@ -32,6 +33,7 @@ interface StatusBadgeProps {
 
 export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
+  const { isAuditMode } = useAudit();
 
   const getStatusConfig = (status: string | null | undefined) => {
     const s = (status?.trim() || "DESCONHECIDO").toUpperCase();
@@ -69,7 +71,7 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
   const config = getStatusConfig(status) as any;
   const variant = config.variant;
   const label = config.label;
-  const isAudit = isAuditProp ?? config.isAudit;
+  const isAudit = isAuditProp !== undefined ? isAuditProp : (isAuditMode || config.isAudit);
 
   const sizeClasses = {
     compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
