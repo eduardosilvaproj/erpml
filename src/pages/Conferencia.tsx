@@ -106,6 +106,7 @@ const Conferencia = () => {
     (restored?.scannedProducts ?? []).map((p: any) => ({ ...p, lastBipAt: new Date(p.lastBipAt) }))
   );
   const [distinctProductsCount, setDistinctProductsCount] = useState<number | null>(restored?.distinctProductsCount ?? null);
+  const [scannedSearch, setScannedSearch] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
