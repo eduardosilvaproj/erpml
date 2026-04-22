@@ -197,7 +197,7 @@ const Estoque = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl font-bold">{formatNumber(stat.value)}</p>
               </div>
             </CardContent>
           </Card>
