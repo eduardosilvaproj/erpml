@@ -15,7 +15,8 @@ export type AuditStatus =
   | 'Pendente'
   | 'Divergente'
   | 'Não bipado'
-  | 'Excedente';
+  | 'Excedente'
+  | 'Desconhecido';
 
 type BadgeSize = 'compact' | 'large' | 'default';
 
