@@ -1133,7 +1133,18 @@ const Conferencia = () => {
             {/* Scanned products list */}
             <Card className="flex-1">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Produtos bipados ({uniqueProducts})</CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="text-sm">Produtos bipados ({uniqueProducts})</CardTitle>
+                  <div className="relative w-40 sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Filtrar bipagens..."
+                      className="h-8 pl-8 text-xs"
+                      value={scannedSearch}
+                      onChange={(e) => setScannedSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-1 max-h-[50vh] overflow-y-auto">
                 {scannedProducts.length === 0 ? (
@@ -1144,6 +1155,11 @@ const Conferencia = () => {
                   </div>
                 ) : (
                   scannedProducts
+                    .filter(sp => {
+                      if (!scannedSearch.trim()) return true;
+                      const q = scannedSearch.toLowerCase();
+                      return sp.name.toLowerCase().includes(q) || sp.sku.toLowerCase().includes(q) || sp.barcode?.includes(q);
+                    })
                     .sort((a, b) => b.lastBipAt.getTime() - a.lastBipAt.getTime())
                     .map((sp) => (
                       <div
