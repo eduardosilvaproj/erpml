@@ -11,7 +11,10 @@ export type AuditStatus =
   | 'Zerado'
   | 'Baixo'
   | 'Normal'
-  | 'Pendente';
+  | 'Pendente'
+  | 'Divergente'
+  | 'Não bipado'
+  | 'Excedente';
 
 interface StatusBadgeProps {
   status: AuditStatus | string;
@@ -26,18 +29,22 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
       case 'NORMAL':
         return { variant: 'success', label: s === 'NORMAL' ? 'Normal' : 'OK' } as const;
       case 'SOBRA':
-        return { variant: 'secondary', label: 'Sobra' } as const;
+      case 'EXCEDENTE':
+        return { variant: 'secondary', label: s === 'EXCEDENTE' ? 'Excedente' : 'Sobra' } as const;
       case 'FALTA':
         return { variant: 'destructive', label: 'Falta' } as const;
       case 'ZERAR':
       case 'ZERADO':
         return { variant: 'destructive', label: s === 'ZERADO' ? 'Zerado' : 'Zerar' } as const;
+      case 'DIVERGENTE':
       case 'BAIXO':
-        return { variant: 'warning', label: 'Baixo' } as const;
+        return { variant: 'warning', label: s === 'DIVERGENTE' ? 'Divergente' : 'Baixo' } as const;
       case 'PROTEGIDO':
         return { variant: 'default', label: 'Protegido' } as const;
       case 'IGNORADO':
-        return { variant: 'outline', label: 'Ignorado' } as const;
+      case 'NÃO BIPADO':
+      case 'NÃO ENCONTRADO':
+        return { variant: 'outline', label: s === 'NÃO BIPADO' ? 'Não bipado' : s === 'NÃO ENCONTRADO' ? 'Não encontrado' : 'Ignorado' } as const;
       case 'PENDENTE':
         return { variant: 'secondary', label: 'Pendente' } as const;
       default:
