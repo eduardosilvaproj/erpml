@@ -1010,14 +1010,17 @@ const BalancoEstoque = () => {
                       <TableRow>
                         <TableHead>SKU</TableHead>
                         <TableHead>Nome</TableHead>
-                        <TableHead className="text-right">Estoque Atual</TableHead>
-                        <TableHead>Ação Prevista</TableHead>
+                        <TableHead className="text-right">Sistema</TableHead>
+                        <TableHead className="text-right">Contado</TableHead>
+                        <TableHead className="text-right">Dif.</TableHead>
+                        <TableHead className="text-right">% Var.</TableHead>
+                        <TableHead>Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {auditItemsList.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                             Nenhum item para exibir.
                           </TableCell>
                         </TableRow>
@@ -1028,10 +1031,17 @@ const BalancoEstoque = () => {
                             className={item.hasDivergence ? "bg-amber-50 dark:bg-amber-950/20" : ""}
                           >
                             <TableCell className="font-mono text-[10px]">{item.sku}</TableCell>
-                            <TableCell className="max-w-[200px] md:max-w-xs truncate text-xs" title={item.name}>
+                            <TableCell className="max-w-[150px] md:max-w-[200px] truncate text-xs" title={item.name}>
                               {item.name}
                             </TableCell>
-                            <TableCell className="text-right text-xs">{item.currentStock}</TableCell>
+                            <TableCell className="text-right text-xs font-medium">{item.currentStock}</TableCell>
+                            <TableCell className="text-right text-xs font-semibold">{item.countedStock}</TableCell>
+                            <TableCell className={`text-right text-xs font-bold ${item.difference > 0 ? 'text-emerald-600' : item.difference < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
+                              {item.difference > 0 ? `+${item.difference}` : item.difference}
+                            </TableCell>
+                            <TableCell className={`text-right text-[10px] font-medium ${item.variationPercentage > 0 ? 'text-emerald-600' : item.variationPercentage < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
+                              {item.variationPercentage === 0 && item.difference === 0 ? "0%" : `${item.variationPercentage > 0 ? '+' : ''}${item.variationPercentage.toFixed(1)}%`}
+                            </TableCell>
                             <TableCell>
                               <Badge 
                                 variant={
@@ -1040,7 +1050,7 @@ const BalancoEstoque = () => {
                                   item.status === "Protegido" ? "secondary" : 
                                   "outline"
                                 }
-                                className="text-[10px] px-1.5 py-0 h-5"
+                                className="text-[9px] px-1 py-0 h-4"
                               >
                                 {item.action}
                               </Badge>
