@@ -18,6 +18,8 @@ interface ConferenceRecoveryRow {
   nome: string | null;
   status: string;
   tipo: string;
+  type: string;
+  section_name: string | null;
   updated_at: string;
   started_at: string;
   criado_por: string | null;
@@ -42,7 +44,7 @@ const RecuperarConferencia = () => {
     try {
       const { data: confs, error } = await supabase
         .from("conferences")
-        .select("id, nome, status, tipo, updated_at, started_at, criado_por")
+        .select("id, nome, status, tipo, type, section_name, updated_at, started_at, criado_por")
         .eq("company_id", companyId)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -70,6 +72,8 @@ const RecuperarConferencia = () => {
           nome: c.nome ?? null,
           status: c.status as string,
           tipo: c.tipo as string,
+          type: c.type as string,
+          section_name: c.section_name ?? null,
           updated_at: c.updated_at as string,
           started_at: c.started_at as string,
           criado_por: (c as any).criado_por ?? null,
@@ -121,6 +125,8 @@ const RecuperarConferencia = () => {
       const session = {
         step: 2,
         mode: row.tipo === "inventario" ? "inventario" : "nf",
+        conferenceType: row.type || "full",
+        sectionName: row.section_name || "",
         conferenceName: row.nome ?? `Conferência ${row.id.slice(0, 6)}`,
         conferenceId: row.id,
         scannedProducts,
@@ -228,8 +234,13 @@ const RecuperarConferencia = () => {
                           {statusLabel[row.status] ?? row.status}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {row.tipo === "inventario" ? "Inventário" : "Nota fiscal"}
+                          {row.tipo === "inventario" ? (row.type === "partial" ? "Parcial" : "Inventário") : "Nota fiscal"}
                         </Badge>
+                        {row.type === "partial" && row.section_name && (
+                          <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-xs">
+                            📍 {row.section_name}
+                          </Badge>
+                        )}
                         {isMine && (
                           <Badge variant="secondary" className="text-xs">Minha</Badge>
                         )}
