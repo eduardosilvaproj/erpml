@@ -96,6 +96,8 @@ const Conferencia = () => {
   const [step, setStep] = useState<Step>(restored?.step ?? 1);
   const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
   const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [conferenceType, setConferenceType] = useState<"full" | "partial">(restored?.conferenceType ?? "full");
+  const [sectionName, setSectionName] = useState<string>(restored?.sectionName ?? "");
   const [conferenceId, setConferenceId] = useState<string | null>(restored?.conferenceId ?? null);
   const [sessionRestored, setSessionRestored] = useState(!!restored);
   const [savingSession, setSavingSession] = useState(false);
@@ -265,6 +267,8 @@ const Conferencia = () => {
         step,
         mode,
         conferenceName,
+        conferenceType,
+        sectionName,
         conferenceId,
         scannedProducts,
         savedAt: new Date().toISOString(),
@@ -690,7 +694,9 @@ const Conferencia = () => {
           .insert({
             company_id: companyId,
             tipo: mode === "inventario" ? "inventario" : "nota_fiscal",
-            nome: conferenceName || `Conferência ${new Date().toLocaleString("pt-BR")}`,
+            type: conferenceType,
+            section_name: conferenceType === "partial" ? sectionName : null,
+            nome: conferenceName || `${mode === "inventario" ? "Inventário" : "Conferência"} ${new Date().toLocaleString("pt-BR")}`,
             status: "em_andamento",
           } as any)
           .select()
@@ -708,6 +714,18 @@ const Conferencia = () => {
   const loadConferenceItems = useCallback(async (confId: string) => {
     setLoadingConference(true);
     try {
+      const { data: confRow } = await supabase
+        .from("conferences")
+        .select("type, section_name, nome")
+        .eq("id", confId)
+        .single();
+
+      if (confRow) {
+        setConferenceType((confRow as any).type || "full");
+        setSectionName((confRow as any).section_name || "");
+        if (confRow.nome) setConferenceName(confRow.nome);
+      }
+
       const productImagesById = new Map(allProducts.map((p) => [p.id, p.image_url ?? null] as const));
       const [mapped, totals] = await Promise.all([
         fetchConferenceItemsGrouped(confId, productImagesById),
@@ -829,7 +847,12 @@ const Conferencia = () => {
 
       await supabase
         .from("conferences")
-        .update({ updated_at: new Date().toISOString(), status: "em_andamento" } as any)
+        .update({
+          updated_at: new Date().toISOString(),
+          status: "em_andamento",
+          type: conferenceType,
+          section_name: conferenceType === "partial" ? sectionName : null
+        } as any)
         .eq("id", confId!);
 
       return confId!;
@@ -860,6 +883,8 @@ const Conferencia = () => {
     setStep(1);
     setMode(null);
     setConferenceName("");
+    setConferenceType("full");
+    setSectionName("");
     setConferenceId(null);
     setScannedProducts([]);
     setDistinctProductsCount(null);
