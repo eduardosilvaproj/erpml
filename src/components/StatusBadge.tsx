@@ -33,7 +33,7 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
 
   const getStatusConfig = (status: string | null | undefined) => {
-    const s = (status?.trim() || "PENDENTE").toUpperCase();
+    const s = (status?.trim() || "DESCONHECIDO").toUpperCase();
     
     switch (s) {
       case 'OK':
