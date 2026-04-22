@@ -723,6 +723,10 @@ const Conferencia = () => {
     }
   }, [allProducts, toast]);
 
+  useEffect(() => {
+    loadConferenceItemsRef.current = loadConferenceItems;
+  }, [loadConferenceItems]);
+
   // Recarrega itens quando a sessão veio do recovery EXPLICITAMENTE (forceReload).
   // Não exige allProducts carregado — produtos só enriquecem nome/imagem; sku/ean/nome do bip
   // já vêm do banco, então a restauração funciona mesmo sem o catálogo pronto.
@@ -1256,12 +1260,24 @@ const Conferencia = () => {
                     </Button>
                   </div>
                   <Button
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                    onClick={handleRecalculateConference}
+                    disabled={savingSession || (!conferenceId && scannedProducts.length === 0)}
+                  >
+                    {savingSession
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Recalculando...</>
+                      : <><RotateCcw className="h-4 w-4 mr-2" /> Recalcular totais e lista</>
+                    }
+                  </Button>
+                  <Button
                     variant="secondary"
                     className="w-full"
                     size="sm"
                     onClick={async () => {
-                      const ok = await saveSessionToDb();
-                      if (ok) {
+                      const confId = await saveSessionToDb();
+                      if (confId) {
                         toast({
                           title: "Conferência salva",
                           description: "Seus bips ficaram guardados. Você pode continuar de qualquer dispositivo.",
