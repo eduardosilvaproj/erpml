@@ -1161,6 +1161,7 @@ const Conferencia = () => {
                       return sp.name.toLowerCase().includes(q) || sp.sku.toLowerCase().includes(q) || sp.barcode?.includes(q);
                     })
                     .sort((a, b) => b.lastBipAt.getTime() - a.lastBipAt.getTime())
+                    .slice(0, 50)
                     .map((sp) => (
                       <div
                         key={sp.productId}
