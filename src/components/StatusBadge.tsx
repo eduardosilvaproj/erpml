@@ -31,8 +31,8 @@ interface StatusBadgeProps {
 export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
 
-  const getStatusConfig = (status: string) => {
-    const s = status.toUpperCase();
+  const getStatusConfig = (status: string | null | undefined) => {
+    const s = (status || "PENDENTE").trim().toUpperCase();
     switch (s) {
       case 'OK':
       case 'NORMAL':
@@ -57,7 +57,7 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
       case 'PENDENTE':
         return { variant: 'secondary', label: 'Pendente' } as const;
       default:
-        return { variant: 'outline', label: status } as const;
+        return { variant: 'outline', label: status || 'Pendente' } as const;
     }
   };
 
@@ -67,10 +67,15 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
     compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
     large: "min-w-[90px] text-sm h-7 px-3",
     default: "min-w-[80px] text-xs h-6 px-2.5",
-  }[contextSize];
+  }[contextSize || 'default'];
 
   return (
-    <Badge variant={variant} className={cn(sizeClasses, "justify-center font-medium transition-all", className)}>
+    <Badge 
+      variant={variant} 
+      className={cn(sizeClasses, "justify-center font-medium transition-all shrink-0", className)}
+      role="status"
+      aria-label={`Status: ${label}`}
+    >
       {label}
     </Badge>
   );
