@@ -118,14 +118,20 @@ export function ResetCompanyData({ companyId }: ResetCompanyDataProps) {
               Para confirmar, digite: <span className="font-bold text-foreground">ZERAR TUDO</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-4">
             <Input
               value={typedConfirmation}
               onChange={(e) => setTypedConfirmation(e.target.value.toUpperCase())}
               placeholder="Digite ZERAR TUDO"
               className="text-center font-bold tracking-widest"
               autoFocus
+              disabled={isResetting}
             />
+            {isResetting && (
+              <p className="text-center text-sm text-muted-foreground animate-pulse">
+                Processando exclusão em massa. Por favor, aguarde...
+              </p>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setStep(0)} disabled={isResetting}>
@@ -138,11 +144,16 @@ export function ResetCompanyData({ companyId }: ResetCompanyDataProps) {
               className="gap-2"
             >
               {isResetting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Apagando dados...
+                </>
               ) : (
-                <Trash2 className="h-4 w-4" />
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Apagar tudo permanentemente
+                </>
               )}
-              Apagar tudo permanentemente
             </Button>
           </DialogFooter>
         </DialogContent>
