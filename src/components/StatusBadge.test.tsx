@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { StatusBadge } from "./StatusBadge";
 import { AuditProvider } from "@/contexts/AuditContext";
@@ -31,13 +31,13 @@ describe("StatusBadge Integration", () => {
   it("deve renderizar com estilo de modo de auditoria quando audit_mode é 'true' no localStorage", () => {
     localStorage.setItem("audit_mode", "true");
 
-    render(
+    const { getByRole, queryByText } = render(
       <AuditProvider>
         <StatusBadge status="OK" />
       </AuditProvider>
     );
 
-    const badge = screen.getByRole("status");
+    const badge = getByRole("status");
     // O aria-label deve indicar que o modo de auditoria está ativo
     expect(badge).toHaveAttribute("aria-label", "Status: OK - Modo de Auditoria Ativo");
     
@@ -50,13 +50,13 @@ describe("StatusBadge Integration", () => {
   });
 
   it("deve renderizar normalmente quando audit_mode não está definido no localStorage", () => {
-    render(
+    const { getByRole } = render(
       <AuditProvider>
         <StatusBadge status="OK" />
       </AuditProvider>
     );
 
-    const badge = screen.getByRole("status");
+    const badge = getByRole("status");
     expect(badge).toHaveAttribute("aria-label", "Status: OK");
     expect(badge.className).not.toContain("border-dashed");
     
@@ -65,13 +65,13 @@ describe("StatusBadge Integration", () => {
   });
 
   it("deve respeitar a prop isAudit mesmo se o modo de auditoria estiver desligado", () => {
-    render(
+    const { getByRole } = render(
       <AuditProvider>
         <StatusBadge status="OK" isAudit={true} />
       </AuditProvider>
     );
 
-    const badge = screen.getByRole("status");
+    const badge = getByRole("status");
     expect(badge).toHaveAttribute("aria-label", "Status: OK - Modo de Auditoria Ativo");
     expect(badge.className).toContain("border-dashed");
   });
@@ -79,27 +79,27 @@ describe("StatusBadge Integration", () => {
   it("deve respeitar a prop isAudit=false mesmo se o modo de auditoria estiver ligado no contexto", () => {
     localStorage.setItem("audit_mode", "true");
 
-    render(
+    const { getByRole } = render(
       <AuditProvider>
         <StatusBadge status="OK" isAudit={false} />
       </AuditProvider>
     );
 
-    const badge = screen.getByRole("status");
+    const badge = getByRole("status");
     expect(badge).toHaveAttribute("aria-label", "Status: OK");
     expect(badge.className).not.toContain("border-dashed");
   });
 
   it("deve renderizar corretamente o status 'Pendente' (case insensitive)", () => {
-    render(
+    const { getByText, getByRole } = render(
       <AuditProvider>
         <StatusBadge status="pendente" />
       </AuditProvider>
     );
 
-    expect(screen.getByText("Pendente")).toBeDefined();
-    const badge = screen.getByRole("status");
-    // Verificamos se usa a variante secundária (bg-secondary)
+    expect(getByText("Pendente")).toBeDefined();
+    const badge = getByRole("status");
     expect(badge.className).toContain("bg-secondary");
   });
 });
+
