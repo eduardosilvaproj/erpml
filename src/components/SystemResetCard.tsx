@@ -179,11 +179,26 @@ export default function SystemResetCard() {
               <Loader2 className="h-4 w-4 animate-spin" /> {progress || "Processando..."}
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={reset} disabled={step === "running"}>Cancelar</Button>
-            <Button variant="destructive" onClick={execute} disabled={!password || step === "running"}>
-              {step === "running" ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando...</> : "Executar Reset"}
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="secondary" 
+                onClick={() => execute(true)} 
+                disabled={!password || step === "running"}
+              >
+                {step === "running" && isDryRun ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Eye className="h-4 w-4 mr-2" />}
+                Simular
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => execute(false)} 
+                disabled={!password || step === "running"}
+              >
+                {step === "running" && !isDryRun ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                Executar Reset
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -203,6 +218,68 @@ export default function SystemResetCard() {
           </div>
           <DialogFooter>
             <Button onClick={reset}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* STEP 5: Dry Run Results */}
+      <Dialog open={step === "dry_run_results"} onOpenChange={(o) => !o && reset()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" /> Resultado da Simulação
+            </DialogTitle>
+            <DialogDescription>
+              Abaixo estão as tabelas que seriam afetadas e o SQL exato que seria executado.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
+              <div className="flex flex-col overflow-hidden">
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <TableIcon className="h-4 w-4" /> Tabelas Afetadas
+                </h4>
+                <ScrollArea className="flex-1 border rounded-md p-2 bg-muted/20">
+                  <div className="space-y-1">
+                    {result?.tables?.map((t) => (
+                      <div key={t.name} className="flex items-center justify-between text-xs p-1 rounded hover:bg-muted/50">
+                        <span className="font-mono">{t.name}</span>
+                        <Badge variant={t.count > 0 ? "destructive" : "secondary"}>
+                          {t.count === -1 ? "Erro" : `${t.count} registros`}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <div className="flex flex-col overflow-hidden">
+                <h4 className="text-sm font-semibold flex items-center gap-2 mb-2">
+                  <Code className="h-4 w-4" /> SQL Preview (TRUNCATE/CASCADE)
+                </h4>
+                <ScrollArea className="flex-1 border rounded-md p-2 bg-slate-950 text-slate-50">
+                  <pre className="text-[10px] font-mono whitespace-pre-wrap leading-tight">
+                    {result?.sql}
+                  </pre>
+                </ScrollArea>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-blue-500/10 p-3 text-xs flex items-start gap-2 border-blue-500/20">
+              <PlayCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold text-blue-700">Esta foi apenas uma simulação.</p>
+                <p className="text-blue-600">Nenhum dado foi alterado no banco de dados. {result?.companies} empresas e {result?.users} usuários seriam mantidos.</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={reset}>Fechar</Button>
+            <Button variant="destructive" onClick={() => setStep("password")}>
+              Ir para Execução Real
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
