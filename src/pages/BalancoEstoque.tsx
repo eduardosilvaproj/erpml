@@ -361,6 +361,56 @@ const BalancoEstoque = () => {
     };
   }, [allProductsRaw, categoryFilter, search, counts, isCounting, balanceType, zeroUnscanned]);
 
+  const auditItemsList = useMemo(() => {
+    if (!isCounting) return [];
+    
+    return allProductsRaw.map(p => {
+      const counted = counts[p.id];
+      const isCounted = counted !== null && counted !== undefined;
+      
+      let inScope = true;
+      if (categoryFilter) inScope = inScope && p.category_id === categoryFilter;
+      if (search) {
+        const s = search.toLowerCase();
+        inScope = inScope && (
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+        );
+      }
+      
+      let action = "";
+      let status = "";
+      
+      if (!inScope) {
+        status = "Ignorado";
+        action = "Fora do filtro";
+      } else if (isCounted) {
+        status = "Contado";
+        action = counted === p.stock_physical ? "Manter (Sem divergência)" : `Ajustar: ${p.stock_physical} → ${counted}`;
+      } else {
+        const willBeZeroed = balanceType === "full" && zeroUnscanned;
+        if (willBeZeroed) {
+          status = "Zerar";
+          action = `Zerar: ${p.stock_physical} → 0`;
+        } else {
+          status = "Protegido";
+          action = "Protegido";
+        }
+      }
+      
+      return {
+        id: p.id,
+        sku: p.sku || "N/A",
+        name: p.name || "Sem nome",
+        currentStock: p.stock_physical,
+        action,
+        status
+      };
+    });
+  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned]);
+
+
   const exportReport = () => {
     if (divergences.length === 0) {
       toast({ title: "Nenhum dado", description: "Realize a contagem primeiro.", variant: "destructive" });
@@ -924,6 +974,61 @@ const BalancoEstoque = () => {
                       : "Em modo Balanço Geral, se a opção 'Zerar itens não bipados' estiver ativada, todos os itens do sistema não contados serão zerados. Caso contrário, apenas os contados são atualizados."
                     }
                   </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                  Detalhamento da Auditoria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border max-h-[400px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                      <TableRow>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead className="text-right">Estoque Atual</TableHead>
+                        <TableHead>Ação Prevista</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditItemsList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            Nenhum item para exibir.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        auditItemsList.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-mono text-[10px]">{item.sku}</TableCell>
+                            <TableCell className="max-w-[200px] md:max-w-xs truncate text-xs" title={item.name}>
+                              {item.name}
+                            </TableCell>
+                            <TableCell className="text-right text-xs">{item.currentStock}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  item.status === "Contado" ? "default" :
+                                  item.status === "Zerar" ? "destructive" :
+                                  item.status === "Protegido" ? "secondary" : 
+                                  "outline"
+                                }
+                                className="text-[10px] px-1.5 py-0 h-5"
+                              >
+                                {item.action}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
