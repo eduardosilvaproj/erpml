@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
   Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
-  ArrowRight, ArrowLeft, Download, RotateCcw, History, X, Save
+  ArrowRight, ArrowLeft, Download, RotateCcw, History, X, Save,
+  ShieldCheck, Search
 } from "lucide-react";
 
 const STORAGE_KEY = "conferencia-session-v1";
@@ -105,6 +106,7 @@ const Conferencia = () => {
     (restored?.scannedProducts ?? []).map((p: any) => ({ ...p, lastBipAt: new Date(p.lastBipAt) }))
   );
   const [distinctProductsCount, setDistinctProductsCount] = useState<number | null>(restored?.distinctProductsCount ?? null);
+  const [scannedSearch, setScannedSearch] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; name: string; code: string } | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
@@ -1131,7 +1133,18 @@ const Conferencia = () => {
             {/* Scanned products list */}
             <Card className="flex-1">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Produtos bipados ({uniqueProducts})</CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="text-sm">Produtos bipados ({uniqueProducts})</CardTitle>
+                  <div className="relative w-40 sm:w-64">
+                    <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Filtrar bipagens..."
+                      className="h-8 pl-8 text-xs"
+                      value={scannedSearch}
+                      onChange={(e) => setScannedSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-1 max-h-[50vh] overflow-y-auto">
                 {scannedProducts.length === 0 ? (
@@ -1142,7 +1155,13 @@ const Conferencia = () => {
                   </div>
                 ) : (
                   scannedProducts
+                    .filter(sp => {
+                      if (!scannedSearch.trim()) return true;
+                      const q = scannedSearch.toLowerCase();
+                      return sp.name.toLowerCase().includes(q) || sp.sku.toLowerCase().includes(q) || sp.barcode?.includes(q);
+                    })
                     .sort((a, b) => b.lastBipAt.getTime() - a.lastBipAt.getTime())
+                    .slice(0, 50)
                     .map((sp) => (
                       <div
                         key={sp.productId}
@@ -1214,21 +1233,44 @@ const Conferencia = () => {
           {/* Right column (40%) */}
           <div className="md:col-span-2 space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center justify-between">
-                  Resumo em tempo real
+                  Resumo da Sessão
                   {loadingConference && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <p className="text-xs text-muted-foreground">Total bipados</p>
-                    <p className="text-2xl font-bold text-foreground">{totalScanned}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <CheckCircle className="h-3 w-3 text-emerald-400" />
+                      <p className="text-[10px] font-medium text-emerald-400 uppercase tracking-wider">Contados</p>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">{scannedProducts.length}</p>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/20 border border-border/30">
-                    <p className="text-xs text-muted-foreground">Produtos diferentes</p>
-                    <p className="text-2xl font-bold text-foreground">{uniqueProducts}</p>
+                  
+                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <XCircle className="h-3 w-3 text-destructive" />
+                      <p className="text-[10px] font-medium text-destructive uppercase tracking-wider">Não Contados</p>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">{results.notFound.length}</p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <AlertTriangle className="h-3 w-3 text-amber-400" />
+                      <p className="text-[10px] font-medium text-amber-400 uppercase tracking-wider">Divergências</p>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">{results.divergent.length}</p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <ShieldCheck className="h-3 w-3 text-primary" />
+                      <p className="text-[10px] font-medium text-primary uppercase tracking-wider">Protegidos</p>
+                    </div>
+                    <p className="text-xl font-bold text-foreground">{results.ok.length}</p>
                   </div>
                 </div>
 
