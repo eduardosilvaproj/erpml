@@ -1023,13 +1023,31 @@ const BalancoEstoque = () => {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ClipboardList className="h-5 w-5 text-muted-foreground" />
                   Detalhamento da Auditoria
                 </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="decimal-places" className="text-xs text-muted-foreground">Casas decimais:</Label>
+                  <Select 
+                    value={String(decimalPlaces)} 
+                    onValueChange={(v) => setDecimalPlaces(Number(v))}
+                  >
+                    <SelectTrigger id="decimal-places" className="h-7 w-[70px] text-[10px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0</SelectItem>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
+
                 <div className="rounded-md border max-h-[400px] overflow-y-auto">
                   <Table>
                     <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
