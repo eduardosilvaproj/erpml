@@ -73,34 +73,15 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold truncate">
-                {c.nome || (c.tipo === "inventario" ? "Inventário Geral" : `Conferência ${c.id.slice(0, 6)}`)}
+                {c.nome}
               </span>
               <Badge variant={sb.variant}>{sb.label}</Badge>
               <Badge variant="outline" className="text-xs">
-                {c.tipo === "inventario" || c.type === "full" || c.type === "partial" 
+                {c.tipo === "inventario"
                   ? (c.section_name ? `Inventário (${c.section_name})` : "Inventário Geral")
                   : "Nota fiscal"}
               </Badge>
             </div>
-            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Atualizado{" "}
-              {formatDistanceToNow(new Date(c.updated_at), { addSuffix: true, locale: ptBR })}
-            </div>
-          </div>
-          <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-            {ativa && (
-              <Button size="sm" onClick={() => onContinue(c)}>
-                <Play className="h-4 w-4 mr-1" /> Continuar
-              </Button>
-            )}
-            {onView && (
-              <Button size="sm" variant="outline" onClick={() => onView(c)}>
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </div>
 
         {ativa && (
           <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
