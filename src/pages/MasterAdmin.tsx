@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword } from "@/hooks/useCompanyData";
+import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword, useDeleteCompany } from "@/hooks/useCompanyData";
 import { useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,8 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause, Copy, Sparkles } from "lucide-react";
+import { Building2, CreditCard, Loader2, Power, PowerOff, Pencil, Users, DollarSign, TrendingUp, PieChart, Settings, Eye, UserPlus, Gift, KeyRound, Pause, Copy, Sparkles, Trash2 } from "lucide-react";
 import { Tooltip as ShadTooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import PendingUsersTab from "@/components/PendingUsersTab";
 import SystemResetCard from "@/components/SystemResetCard";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ export default function MasterAdmin() {
   const adminUpdateCompany = useAdminUpdateCompany();
   const adminChangePlan = useAdminChangeCompanyPlan();
   const adminResetPassword = useAdminResetPassword();
+  const deleteCompany = useDeleteCompany();
   const setTempPassword = useSetTemporaryPassword();
   const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
@@ -143,6 +145,15 @@ export default function MasterAdmin() {
       setGestaoDialog(null);
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const handleDeleteCompany = async (id: string) => {
+    try {
+      await deleteCompany.mutateAsync(id);
+      toast.success("Empresa excluída com sucesso");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao excluir empresa. Verifique se existem dados vinculados.");
     }
   };
 
@@ -279,20 +290,47 @@ export default function MasterAdmin() {
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-right">
-                            <ShadTooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant={c.status === "active" ? "outline" : "default"}
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleToggleStatus(c.id, c.status)}
-                                  disabled={toggleStatus.isPending}
-                                >
-                                  {c.status === "active" ? <Pause className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
-                            </ShadTooltip>
+                            <div className="flex gap-1 justify-end">
+                              <ShadTooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={c.status === "active" ? "outline" : "default"}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleToggleStatus(c.id, c.status)}
+                                    disabled={toggleStatus.isPending}
+                                  >
+                                    {c.status === "active" ? <Pause className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
+                              </ShadTooltip>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir Empresa</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir a empresa <strong>{c.name}</strong>? Esta ação não pode ser desfeita e removerá todos os dados vinculados.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => handleDeleteCompany(c.id)}
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -411,6 +449,30 @@ export default function MasterAdmin() {
                               >
                                 <Sparkles className="h-3 w-3 mr-1" /> Nova senha
                               </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" title="Excluir empresa">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir Empresa</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir a empresa <strong>{c.name}</strong>? Esta ação não pode ser desfeita e removerá todos os dados vinculados.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => handleDeleteCompany(c.id)}
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </div>
                           </TableCell>
                         </TableRow>
