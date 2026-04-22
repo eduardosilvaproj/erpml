@@ -900,16 +900,17 @@ const BalancoEstoque = () => {
                         <TableRow key={d.product.id} className={d.diff !== 0 ? "bg-destructive/5" : ""}>
                           <TableCell className="font-mono text-xs">{d.product.sku}</TableCell>
                           <TableCell className="font-medium">{d.product.name}</TableCell>
-                          <TableCell className="text-center">{d.registered}</TableCell>
-                          <TableCell className="text-center font-bold">{d.counted}</TableCell>
+                          <TableCell className="text-center">{formatNumber(d.registered)}</TableCell>
+                          <TableCell className="text-center font-bold">{formatNumber(d.counted)}</TableCell>
                           <TableCell className="text-center font-bold">
                             <span className={d.diff === 0 ? "text-primary" : "text-destructive"}>
-                              {d.diff > 0 ? `+${d.diff}` : d.diff}
+                              {formatDifference(d.diff)}
                             </span>
                           </TableCell>
                           <TableCell className="text-center text-muted-foreground">
-                            {d.invoiceQtyEntered > 0 ? `${d.invoiceQtyEntered} (${d.invoiceCount} NFs)` : "—"}
+                            {d.invoiceQtyEntered > 0 ? `${formatNumber(d.invoiceQtyEntered)} (${d.invoiceCount} NFs)` : "—"}
                           </TableCell>
+
                           <TableCell>
                             {d.diff === 0 ? (
                               <Badge className="bg-primary/15 text-primary">OK</Badge>
