@@ -385,7 +385,46 @@ const Estoque = () => {
                   <Card><CardContent className="flex items-center gap-3 p-4"><Package className="h-5 w-5 text-accent" /><div><p className="text-xs text-muted-foreground">Total FULL</p><p className="text-xl font-bold">{formatNumber(totalF)}</p></div></CardContent></Card>
                   <Card><CardContent className="flex items-center gap-3 p-4"><ArrowRightLeft className={`h-5 w-5 ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Diferença</p><p className={`text-xl font-bold ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`}>{formatDifference(diff)}</p></div></CardContent></Card>
                   <Card><CardContent className="flex items-center gap-3 p-4"><ShieldAlert className={`h-5 w-5 ${divergentCount > 0 ? "text-amber-600" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Com Divergência</p><p className="text-xl font-bold">{formatNumber(divergentCount)}</p></div></CardContent></Card>
-...
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 py-2">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Filtrar nesta validação..."
+                      className="pl-10 h-9"
+                      value={validationSearch}
+                      onChange={(e) => setValidationSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch id="divergent-only" checked={onlyDivergent} onCheckedChange={setOnlyDivergent} />
+                    <Label htmlFor="divergent-only" className="text-xs">Apenas Divergentes</Label>
+                  </div>
+                </div>
+
+                {validationFiltered.length > 0 ? (
+                  <div className="rounded-md border border-muted-foreground/10 overflow-hidden">
+                    <Table>
+                      <TableHeader className="bg-muted/50">
+                        <TableRow>
+                          <TableHead className="h-9">Produto</TableHead>
+                          <TableHead className="h-9 text-center">Físico</TableHead>
+                          <TableHead className="h-9 text-center">FULL</TableHead>
+                          <TableHead className="h-9 text-center">Dif.</TableHead>
+                          <TableHead className="h-9">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {validationFiltered.map((p) => {
+                          const d = p.stock_physical - p.stock_full;
+                          const hasDivergence = d !== 0;
+                          return (
+                            <TableRow key={p.id}>
+                              <TableCell className="py-2">
+                                <p className="font-medium text-xs truncate max-w-[200px]">{p.name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{p.sku}</p>
+                              </TableCell>
                               <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
                               <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                               <TableCell className="text-center font-bold">
