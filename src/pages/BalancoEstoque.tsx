@@ -619,6 +619,7 @@ const BalancoEstoque = () => {
         <TabsList>
           <TabsTrigger value="counting">Contagem</TabsTrigger>
           <TabsTrigger value="report">Relatório de Divergências</TabsTrigger>
+          {isCounting && <TabsTrigger value="audit">Auditoria</TabsTrigger>}
           <TabsTrigger value="invoices">Notas Fiscais Referência</TabsTrigger>
         </TabsList>
 
