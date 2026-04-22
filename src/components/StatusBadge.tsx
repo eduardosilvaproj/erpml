@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { createContext, useContext } from "react";
 
 export type AuditStatus = 
   | 'OK' 
@@ -16,12 +17,20 @@ export type AuditStatus =
   | 'Não bipado'
   | 'Excedente';
 
+type BadgeSize = 'compact' | 'large' | 'default';
+
+const StatusBadgeContext = createContext<BadgeSize>('default');
+
+export const StatusBadgeProvider = StatusBadgeContext.Provider;
+
 interface StatusBadgeProps {
   status: AuditStatus | string;
   className?: string;
 }
 
 export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
+  const contextSize = useContext(StatusBadgeContext);
+
   const getStatusConfig = (status: string) => {
     const s = status.toUpperCase();
     switch (s) {
@@ -54,8 +63,14 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
 
   const { variant, label } = getStatusConfig(status);
 
+  const sizeClasses = {
+    compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
+    large: "min-w-[90px] text-sm h-7 px-3",
+    default: "min-w-[80px] text-xs h-6 px-2.5",
+  }[contextSize];
+
   return (
-    <Badge variant={variant} className={cn("min-w-[80px] justify-center font-medium", className)}>
+    <Badge variant={variant} className={cn(sizeClasses, "justify-center font-medium transition-all", className)}>
       {label}
     </Badge>
   );
