@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
+import { formatNumber as sharedFormatNumber, formatDifference as sharedFormatDifference, formatPercent as sharedFormatPercent } from "@/lib/formatters";
 
 const BalancoEstoque = () => {
   const { toast } = useToast();
@@ -45,27 +46,15 @@ const BalancoEstoque = () => {
   const [decimalPlaces, setDecimalPlaces] = useState(0);
 
   const formatNumber = useCallback((num: number, decimals: number = decimalPlaces) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(num);
+    return sharedFormatNumber(num, decimals);
   }, [decimalPlaces]);
 
   const formatDifference = useCallback((num: number, decimals: number = decimalPlaces) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-      signDisplay: 'exceptZero',
-    }).format(num);
+    return sharedFormatDifference(num, decimals);
   }, [decimalPlaces]);
 
   const formatPercent = useCallback((num: number, decimals: number = 1) => {
-    if (num === 0) return "0%";
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-      signDisplay: 'always',
-    }).format(num) + '%';
+    return sharedFormatPercent(num, decimals);
   }, []);
 
 

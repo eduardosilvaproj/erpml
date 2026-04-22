@@ -18,6 +18,7 @@ import { useProducts, useCategories } from "@/hooks/useProductData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { formatNumber, formatDifference } from "@/lib/formatters";
 
 const Estoque = () => {
   const navigate = useNavigate();
@@ -79,20 +80,6 @@ const Estoque = () => {
     setAdjustBoxTarget("physical");
   };
 
-  const formatNumber = (num: number, decimals: number = 0) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }).format(num);
-  };
-
-  const formatDifference = (num: number, decimals: number = 0) => {
-    return new Intl.NumberFormat('pt-BR', {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-      signDisplay: 'exceptZero',
-    }).format(num);
-  };
 
   const boxTotal = (parseInt(adjustBoxUnitsPerBox) || 0) * (parseInt(adjustBoxCount) || 0);
 
@@ -210,7 +197,7 @@ const Estoque = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-2xl font-bold">{formatNumber(stat.value)}</p>
               </div>
             </CardContent>
           </Card>
@@ -306,10 +293,10 @@ const Estoque = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center font-bold text-primary">{p.stock_physical}</TableCell>
-                        <TableCell className="text-center font-bold text-accent">{p.stock_full}</TableCell>
+                        <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
+                        <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                         <TableCell className="text-center">
-                          <span className="font-bold">{total}</span>
+                          <span className="font-bold">{formatNumber(total)}</span>
                           {hasBox && total > 0 && (
                             <p className="text-[10px] text-muted-foreground mt-0.5">
                               ≈ {boxApprox} caixas de {p.box_quantity}
@@ -394,36 +381,38 @@ const Estoque = () => {
             return (
               <>
                 <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-                  <Card><CardContent className="flex items-center gap-3 p-4"><Warehouse className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Total Físico</p><p className="text-xl font-bold">{totalPhys}</p></div></CardContent></Card>
-                  <Card><CardContent className="flex items-center gap-3 p-4"><Package className="h-5 w-5 text-accent" /><div><p className="text-xs text-muted-foreground">Total FULL</p><p className="text-xl font-bold">{totalF}</p></div></CardContent></Card>
+                  <Card><CardContent className="flex items-center gap-3 p-4"><Warehouse className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Total Físico</p><p className="text-xl font-bold">{formatNumber(totalPhys)}</p></div></CardContent></Card>
+                  <Card><CardContent className="flex items-center gap-3 p-4"><Package className="h-5 w-5 text-accent" /><div><p className="text-xs text-muted-foreground">Total FULL</p><p className="text-xl font-bold">{formatNumber(totalF)}</p></div></CardContent></Card>
                   <Card><CardContent className="flex items-center gap-3 p-4"><ArrowRightLeft className={`h-5 w-5 ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Diferença</p><p className={`text-xl font-bold ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`}>{formatDifference(diff)}</p></div></CardContent></Card>
-                  <Card><CardContent className="flex items-center gap-3 p-4"><ShieldAlert className={`h-5 w-5 ${divergentCount > 0 ? "text-amber-600" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Com Divergência</p><p className="text-xl font-bold">{divergentCount}</p></div></CardContent></Card>
+                  <Card><CardContent className="flex items-center gap-3 p-4"><ShieldAlert className={`h-5 w-5 ${divergentCount > 0 ? "text-amber-600" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Com Divergência</p><p className="text-xl font-bold">{formatNumber(divergentCount)}</p></div></CardContent></Card>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 py-2">
                   <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="Buscar produto..." className="pl-10" value={validationSearch} onChange={(e) => setValidationSearch(e.target.value)} />
+                    <Input
+                      placeholder="Filtrar nesta validação..."
+                      className="pl-10 h-9"
+                      value={validationSearch}
+                      onChange={(e) => setValidationSearch(e.target.value)}
+                    />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Switch id="only-divergent" checked={onlyDivergent} onCheckedChange={setOnlyDivergent} />
-                    <Label htmlFor="only-divergent" className="text-sm cursor-pointer">Apenas divergentes</Label>
+                    <Switch id="divergent-only" checked={onlyDivergent} onCheckedChange={setOnlyDivergent} />
+                    <Label htmlFor="divergent-only" className="text-xs">Apenas Divergentes</Label>
                   </div>
                 </div>
 
-                {isLoading ? (
-                  <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
-                ) : validationFiltered.length > 0 ? (
-                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                {validationFiltered.length > 0 ? (
+                  <div className="rounded-md border border-muted-foreground/10 overflow-hidden">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="bg-muted/50">
                         <TableRow>
-                          <TableHead>SKU</TableHead>
-                          <TableHead>Produto</TableHead>
-                          <TableHead className="text-center">Físico (un)</TableHead>
-                          <TableHead className="text-center">FULL (un)</TableHead>
-                          <TableHead className="text-center">Diferença</TableHead>
-                          <TableHead>Status</TableHead>
+                          <TableHead className="h-9">Produto</TableHead>
+                          <TableHead className="h-9 text-center">Físico</TableHead>
+                          <TableHead className="h-9 text-center">FULL</TableHead>
+                          <TableHead className="h-9 text-center">Dif.</TableHead>
+                          <TableHead className="h-9">Status</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -431,11 +420,13 @@ const Estoque = () => {
                           const d = p.stock_physical - p.stock_full;
                           const hasDivergence = d !== 0;
                           return (
-                            <TableRow key={p.id} className={hasDivergence ? "bg-destructive/5" : ""}>
-                              <TableCell className="font-mono text-xs">{p.sku}</TableCell>
-                              <TableCell className="font-medium">{p.name}</TableCell>
-                              <TableCell className="text-center font-bold text-primary">{p.stock_physical}</TableCell>
-                              <TableCell className="text-center font-bold text-accent">{p.stock_full}</TableCell>
+                            <TableRow key={p.id}>
+                              <TableCell className="py-2">
+                                <p className="font-medium text-xs truncate max-w-[200px]">{p.name}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono">{p.sku}</p>
+                              </TableCell>
+                              <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
+                              <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                               <TableCell className="text-center font-bold">
                                 <span className={hasDivergence ? "text-destructive" : "text-emerald-600"}>{formatDifference(d)}</span>
                               </TableCell>
