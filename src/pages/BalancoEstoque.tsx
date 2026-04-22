@@ -396,17 +396,21 @@ const BalancoEstoque = () => {
                           Produtos com contagem registrada terão o estoque atualizado.
                           Por padrão, itens <strong>não bipados</strong> mantêm o estoque atual.
                         </p>
-                        <div className="flex items-start gap-2 p-3 rounded-md border bg-muted/40">
+                        <div className={`flex items-start gap-2 p-3 rounded-md border ${balanceType === "partial" ? "bg-muted/20 opacity-70" : "bg-muted/40"}`}>
                           <Switch
                             id="zero-unscanned"
                             checked={zeroUnscanned}
                             onCheckedChange={setZeroUnscanned}
+                            disabled={balanceType === "partial"}
                             className="mt-0.5"
                           />
-                          <Label htmlFor="zero-unscanned" className="cursor-pointer leading-tight">
+                          <Label htmlFor="zero-unscanned" className={`cursor-pointer leading-tight ${balanceType === "partial" ? "cursor-not-allowed" : ""}`}>
                             <span className="font-medium text-foreground">Zerar itens não bipados</span>
                             <span className="block text-xs text-muted-foreground mt-0.5">
-                              Considerar todos os produtos não contados como estoque zero.
+                              {balanceType === "partial" 
+                                ? "Opção desabilitada em Balanço Parcial para evitar erros." 
+                                : "Considerar todos os produtos não contados como estoque zero."
+                              }
                             </span>
                           </Label>
                         </div>
