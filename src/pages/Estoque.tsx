@@ -18,6 +18,7 @@ import { useProducts, useCategories } from "@/hooks/useProductData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { StatusBadge } from "@/components/StatusBadge";
 import { formatNumber, formatDifference } from "@/lib/formatters";
 
 const Estoque = () => {
@@ -306,11 +307,11 @@ const Estoque = () => {
                         <TableCell className="text-center text-muted-foreground">{p.min_stock}</TableCell>
                         <TableCell>
                           {isZero ? (
-                            <Badge variant="destructive">Zerado</Badge>
+                            <StatusBadge status="Zerado" />
                           ) : isLow ? (
-                            <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">Baixo</Badge>
+                            <StatusBadge status="Baixo" />
                           ) : (
-                            <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">Normal</Badge>
+                            <StatusBadge status="Normal" />
                           )}
                         </TableCell>
                         <TableCell className="text-center text-xs text-muted-foreground">
