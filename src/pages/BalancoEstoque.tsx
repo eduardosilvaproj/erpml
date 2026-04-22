@@ -705,7 +705,7 @@ const BalancoEstoque = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Sobras</p>
-              <p className="text-2xl font-bold text-primary">+{totalSurplus}</p>
+              <p className="text-2xl font-bold text-primary">{formatDifference(totalSurplus)}</p>
             </div>
           </CardContent>
         </Card>
@@ -716,7 +716,7 @@ const BalancoEstoque = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Faltas</p>
-              <p className="text-2xl font-bold text-destructive">-{totalDeficit}</p>
+              <p className="text-2xl font-bold text-destructive">{formatDifference(-totalDeficit)}</p>
             </div>
           </CardContent>
         </Card>
