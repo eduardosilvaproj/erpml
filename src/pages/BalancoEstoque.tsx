@@ -315,6 +315,52 @@ const BalancoEstoque = () => {
 
   const displayedDivergences = onlyDivergent ? divergentItems : divergences;
 
+  const auditStats = useMemo(() => {
+    if (!isCounting) return null;
+    
+    const totalInSystem = allProductsRaw.length;
+    // scopeProducts are items that match search/category filters
+    const scopeProducts = allProductsRaw.filter(p => {
+      let matches = true;
+      if (categoryFilter) matches = matches && p.category_id === categoryFilter;
+      if (search) {
+        const s = search.toLowerCase();
+        matches = matches && (
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+        );
+      }
+      return matches;
+    });
+    
+    const itemsInScopeCount = scopeProducts.length;
+    const countedIds = Object.keys(counts).filter(id => counts[id] !== null);
+    const countedCount = countedIds.length;
+    
+    // Items in system but NOT in current filter/scope
+    const ignoredByFilterCount = totalInSystem - itemsInScopeCount;
+    
+    // Items that will NOT be updated. 
+    // In Partial Balance, everything outside the 'counts' is protected.
+    // In Full Balance, if zeroUnscanned=false, everything outside 'counts' is protected.
+    // If zeroUnscanned=true, nothing is protected (either counted or zeroed).
+    let protectedCount = 0;
+    if (balanceType === "partial") {
+      protectedCount = totalInSystem - countedCount;
+    } else {
+      protectedCount = zeroUnscanned ? 0 : totalInSystem - countedCount;
+    }
+    
+    return {
+      totalInSystem,
+      itemsInScopeCount,
+      countedCount,
+      ignoredByFilterCount,
+      protectedCount
+    };
+  }, [allProductsRaw, categoryFilter, search, counts, isCounting, balanceType, zeroUnscanned]);
+
   const exportReport = () => {
     if (divergences.length === 0) {
       toast({ title: "Nenhum dado", description: "Realize a contagem primeiro.", variant: "destructive" });
