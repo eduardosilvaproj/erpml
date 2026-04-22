@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { fetchConferenceItemsRaw } from "@/lib/conference-recovery";
+import { normalizeConferences } from "@/lib/conference-utils";
 
 export interface ConferenceItem {
   id: string;
@@ -60,8 +61,9 @@ export function useConferences(filters?: { status?: string; dateFrom?: string; d
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as unknown as Conference[];
+      return normalizeConferences(data) as Conference[];
     },
+
   });
 }
 

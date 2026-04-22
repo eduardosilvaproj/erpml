@@ -73,11 +73,11 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold truncate">
-                {c.nome || (c.tipo === "inventario" ? "Inventário Geral" : `Conferência ${c.id.slice(0, 6)}`)}
+                {c.nome}
               </span>
               <Badge variant={sb.variant}>{sb.label}</Badge>
               <Badge variant="outline" className="text-xs">
-                {c.tipo === "inventario" || c.type === "full" || c.type === "partial" 
+                {c.tipo === "inventario"
                   ? (c.section_name ? `Inventário (${c.section_name})` : "Inventário Geral")
                   : "Nota fiscal"}
               </Badge>
