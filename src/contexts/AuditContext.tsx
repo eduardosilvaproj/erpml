@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface AuditContextType {
   isAuditMode: boolean;
+  initialized: boolean;
   toggleAuditMode: () => void;
   setAuditMode: (enabled: boolean) => void;
 }
