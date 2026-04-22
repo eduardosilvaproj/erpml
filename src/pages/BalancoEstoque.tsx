@@ -361,6 +361,56 @@ const BalancoEstoque = () => {
     };
   }, [allProductsRaw, categoryFilter, search, counts, isCounting, balanceType, zeroUnscanned]);
 
+  const auditItemsList = useMemo(() => {
+    if (!isCounting) return [];
+    
+    return allProductsRaw.map(p => {
+      const counted = counts[p.id];
+      const isCounted = counted !== null && counted !== undefined;
+      
+      let inScope = true;
+      if (categoryFilter) inScope = inScope && p.category_id === categoryFilter;
+      if (search) {
+        const s = search.toLowerCase();
+        inScope = inScope && (
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+        );
+      }
+      
+      let action = "";
+      let status = "";
+      
+      if (!inScope) {
+        status = "Ignorado";
+        action = "Fora do filtro";
+      } else if (isCounted) {
+        status = "Contado";
+        action = counted === p.stock_physical ? "Manter (Sem divergência)" : `Ajustar: ${p.stock_physical} → ${counted}`;
+      } else {
+        const willBeZeroed = balanceType === "full" && zeroUnscanned;
+        if (willBeZeroed) {
+          status = "Zerar";
+          action = `Zerar: ${p.stock_physical} → 0`;
+        } else {
+          status = "Protegido";
+          action = "Protegido";
+        }
+      }
+      
+      return {
+        id: p.id,
+        sku: p.sku || "N/A",
+        name: p.name || "Sem nome",
+        currentStock: p.stock_physical,
+        action,
+        status
+      };
+    });
+  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned]);
+
+
   const exportReport = () => {
     if (divergences.length === 0) {
       toast({ title: "Nenhum dado", description: "Realize a contagem primeiro.", variant: "destructive" });
