@@ -716,14 +716,14 @@ const Conferencia = () => {
     try {
       const { data: confRow } = await supabase
         .from("conferences")
-        .select("type, section_name, nome")
+        .select("type, section_name, nome, tipo")
         .eq("id", confId)
         .single();
 
       if (confRow) {
         setConferenceType((confRow as any).type || "full");
         setSectionName((confRow as any).section_name || "");
-        if (confRow.nome) setConferenceName(confRow.nome);
+        setConferenceName(confRow.nome || (confRow.tipo === "inventario" ? "Inventário Geral" : `Conferência ${confId.slice(0, 6)}`));
       }
 
       const productImagesById = new Map(allProducts.map((p) => [p.id, p.image_url ?? null] as const));
@@ -1039,7 +1039,7 @@ const Conferencia = () => {
         <div className="space-y-6">
           <ConferenceHistoryPanel
               onContinue={async (c) => {
-                setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
+                setConferenceName(c.nome || (c.tipo === "inventario" ? "Inventário Geral" : `Conferência ${c.id.slice(0, 6)}`));
                 setMode(c.tipo === "inventario" ? "inventario" : "nf");
                 setConferenceType((c as any).type || "full");
                 setSectionName((c as any).section_name || "");

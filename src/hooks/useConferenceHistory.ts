@@ -18,7 +18,9 @@ export type ConferenceStatus =
 export interface ConferenceRow {
   id: string;
   company_id: string | null;
-  tipo: ConferenceTipo;
+  tipo: ConferenceTipo; // Legado
+  type?: "full" | "partial" | string; // Novo
+  section_name?: string | null; // Novo
   nome: string | null;
   status: ConferenceStatus;
   invoice_id: string | null;
