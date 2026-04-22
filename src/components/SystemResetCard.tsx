@@ -266,11 +266,11 @@ export default function SystemResetCard() {
               </div>
             </div>
 
-            <div className="rounded-lg border bg-blue-500/10 p-3 text-xs flex items-start gap-2 border-blue-500/20">
-              <PlayCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+            <div className="rounded-lg border bg-accent/10 p-3 text-xs flex items-start gap-2 border-accent/20">
+              <PlayCircle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold text-blue-700">Esta foi apenas uma simulação.</p>
-                <p className="text-blue-600">Nenhum dado foi alterado no banco de dados. {result?.companies} empresas e {result?.users} usuários seriam mantidos.</p>
+                <p className="font-semibold text-accent-foreground">Esta foi apenas uma simulação.</p>
+                <p className="text-muted-foreground">Nenhum dado foi alterado no banco de dados. {result?.companies} empresas e {result?.users} usuários seriam mantidos.</p>
               </div>
             </div>
           </div>
