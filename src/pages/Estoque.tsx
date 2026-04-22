@@ -293,10 +293,10 @@ const Estoque = () => {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center font-bold text-primary">{p.stock_physical}</TableCell>
-                        <TableCell className="text-center font-bold text-accent">{p.stock_full}</TableCell>
+                        <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
+                        <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                         <TableCell className="text-center">
-                          <span className="font-bold">{total}</span>
+                          <span className="font-bold">{formatNumber(total)}</span>
                           {hasBox && total > 0 && (
                             <p className="text-[10px] text-muted-foreground mt-0.5">
                               ≈ {boxApprox} caixas de {p.box_quantity}
