@@ -810,10 +810,11 @@ const BalancoEstoque = () => {
                               <TableCell className="text-center font-bold">
                                 {diff != null ? (
                                   <span className={diff === 0 ? "text-primary" : "text-destructive"}>
-                                    {diff > 0 ? `+${diff}` : diff}
+                                    {formatDifference(diff)}
                                   </span>
                                 ) : "—"}
                               </TableCell>
+
                             )}
                             {isCounting && (
                               <TableCell>
