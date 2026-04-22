@@ -66,7 +66,10 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
     }
   };
 
-  const { variant, label, isAudit } = getStatusConfig(status) as any;
+  const config = getStatusConfig(status) as any;
+  const variant = config.variant;
+  const label = config.label;
+  const isAudit = isAuditProp ?? config.isAudit;
 
   const sizeClasses = {
     compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
@@ -79,14 +82,19 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
       variant={variant} 
       className={cn(
         sizeClasses, 
-        isAudit && "border-dashed border-warning/50 bg-warning/10 text-warning transition-colors",
+        isAudit && "border-dashed border-amber-500/60 bg-amber-500/20 text-amber-500 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.15)]",
         "justify-center font-medium transition-all shrink-0", 
         className
       )}
       role="status"
-      aria-label={`Status: ${label}${isAudit ? ' (Necessita Auditoria)' : ''}`}
+      aria-label={`Status: ${label}${isAudit ? ' - Modo de Auditoria Ativo' : ''}`}
     >
-      {isAudit && <span className="mr-1.5 w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />}
+      {isAudit && (
+        <span 
+          className="mr-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" 
+          aria-hidden="true"
+        />
+      )}
       {label}
     </Badge>
   );
