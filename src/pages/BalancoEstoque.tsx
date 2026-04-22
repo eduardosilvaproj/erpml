@@ -406,31 +406,42 @@ const BalancoEstoque = () => {
         );
       }
       
-      let action = "";
       let status = "";
-      const hasDivergence = isCounted && counted !== p.stock_physical;
-      
-      if (!inScope) {
-        status = "Ignorado";
-        action = "Fora do filtro";
-      } else if (isCounted) {
-        status = "Contado";
-        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)} (${formatDifference(difference)})`;
-      } else {
-        const willBeZeroed = balanceType === "full" && zeroUnscanned;
-        if (willBeZeroed) {
-          status = "Zerar";
-          action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)} (${formatDifference(difference)})`;
-        } else {
-
-          status = "Protegido";
-          action = "Protegido";
-        }
+      let inScope = true;
+      if (categoryFilter) inScope = inScope && p.category_id === categoryFilter;
+      if (search) {
+        const s = search.toLowerCase();
+        inScope = inScope && (
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+        );
       }
 
-      const countedStock = isCounted ? (counts[p.id] || 0) : (status === "Zerar" ? 0 : p.stock_physical);
+      if (!inScope) {
+        status = "Ignorado";
+      } else if (isCounted) {
+        status = "Contado";
+      } else {
+        const willBeZeroed = balanceType === "full" && zeroUnscanned;
+        status = willBeZeroed ? "Zerar" : "Protegido";
+      }
+
+      const countedStock = isCounted ? (counted as number) : (status === "Zerar" ? 0 : p.stock_physical);
       const difference = countedStock - p.stock_physical;
       const variationPercentage = p.stock_physical > 0 ? (difference / p.stock_physical) * 100 : (difference > 0 ? 100 : 0);
+      const hasDivergence = isCounted && counted !== p.stock_physical;
+
+      let action = "";
+      if (status === "Ignorado") {
+        action = "Fora do filtro";
+      } else if (status === "Contado") {
+        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)} (${formatDifference(difference)})`;
+      } else if (status === "Zerar") {
+        action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)} (${formatDifference(difference)})`;
+      } else {
+        action = "Protegido";
+      }
       
       return {
         id: p.id,
