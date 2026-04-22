@@ -290,20 +290,47 @@ export default function MasterAdmin() {
                           <TableCell>{statusBadge(c.status)}</TableCell>
                           <TableCell>{format(new Date(c.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                           <TableCell className="text-right">
-                            <ShadTooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant={c.status === "active" ? "outline" : "default"}
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => handleToggleStatus(c.id, c.status)}
-                                  disabled={toggleStatus.isPending}
-                                >
-                                  {c.status === "active" ? <Pause className="h-4 w-4" /> : <Power className="h-4 w-4" />}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
-                            </ShadTooltip>
+                            <div className="flex gap-1 justify-end">
+                              <ShadTooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant={c.status === "active" ? "outline" : "default"}
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => handleToggleStatus(c.id, c.status)}
+                                    disabled={toggleStatus.isPending}
+                                  >
+                                    {c.status === "active" ? <Pause className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>{c.status === "active" ? "Suspender empresa" : "Ativar empresa"}</TooltipContent>
+                              </ShadTooltip>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Excluir Empresa</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir a empresa <strong>{c.name}</strong>? Esta ação não pode ser desfeita e removerá todos os dados vinculados.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      onClick={() => handleDeleteCompany(c.id)}
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
