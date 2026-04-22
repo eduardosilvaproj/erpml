@@ -32,7 +32,8 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
 
   const getStatusConfig = (status: string | null | undefined) => {
-    const s = (status || "PENDENTE").trim().toUpperCase();
+    const s = (status?.trim() || "PENDENTE").toUpperCase();
+    
     switch (s) {
       case 'OK':
       case 'NORMAL':
@@ -57,7 +58,7 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
       case 'PENDENTE':
         return { variant: 'secondary', label: 'Pendente' } as const;
       default:
-        return { variant: 'outline', label: status || 'Pendente' } as const;
+        return { variant: 'outline', label: status?.trim() || 'Pendente' } as const;
     }
   };
 
