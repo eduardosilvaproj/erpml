@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { createContext, useContext } from "react";
+import { useAudit } from "@/contexts/AuditContext";
 
 export type AuditStatus = 
   | 'OK' 
