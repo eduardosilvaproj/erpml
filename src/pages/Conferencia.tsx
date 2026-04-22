@@ -272,17 +272,29 @@ const Conferencia = () => {
 
   // Auto-persist each scan to the DB (debounced) so nothing is lost on browser crash.
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveSessionRef = useRef<() => Promise<boolean>>();
+  const saveSessionRef = useRef<() => Promise<string | null>>();
+  const hydratingFromServerRef = useRef(false);
   useEffect(() => {
     if (step !== 2) return;
     if (!companyId) return;
     if (scannedProducts.length === 0 && !conferenceId) return;
+    if (hydratingFromServerRef.current) {
+      hydratingFromServerRef.current = false;
+      return;
+    }
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
-      saveSessionRef.current?.().catch(() => {});
+      saveSessionRef.current?.()
+        .then(async (confId) => {
+          if (confId) {
+            hydratingFromServerRef.current = true;
+            await loadConferenceItems(confId);
+          }
+        })
+        .catch(() => {});
     }, 800);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [scannedProducts, step, companyId, conferenceId]);
+  }, [scannedProducts, step, companyId, conferenceId, loadConferenceItems]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
@@ -659,6 +671,7 @@ const Conferencia = () => {
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
   const uniqueProducts = new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
+  const displayedUniqueProducts = distinctProductsCount ?? uniqueProducts;
 
   const startConference = async () => {
     if (!mode) {
@@ -729,7 +742,7 @@ const Conferencia = () => {
   const saveSessionToDb = useCallback(async () => {
     if (!companyId) {
       toast({ title: "Empresa não identificada", variant: "destructive" });
-      return false;
+      return null;
     }
     setSavingSession(true);
     try {
@@ -811,14 +824,26 @@ const Conferencia = () => {
         .update({ updated_at: new Date().toISOString(), status: "em_andamento" } as any)
         .eq("id", confId!);
 
-      return true;
+      return confId!;
     } catch (err: any) {
       toast({ title: "Erro ao salvar conferência", description: err.message, variant: "destructive" });
-      return false;
+      return null;
     } finally {
       setSavingSession(false);
     }
   }, [companyId, conferenceId, conferenceName, mode, scannedProducts, toast]);
+
+  const handleRecalculateConference = useCallback(async () => {
+    const confId = await saveSessionToDb();
+    if (!confId) return;
+
+    hydratingFromServerRef.current = true;
+    await loadConferenceItems(confId);
+    toast({
+      title: "Conferência recalculada",
+      description: "Totais e lista agrupada foram atualizados.",
+    });
+  }, [loadConferenceItems, saveSessionToDb, toast]);
 
   // Keep ref pointing at latest saveSessionToDb for the auto-save effect.
   useEffect(() => { saveSessionRef.current = saveSessionToDb; }, [saveSessionToDb]);
