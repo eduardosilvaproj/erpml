@@ -105,8 +105,12 @@ export function useConferenceDetail(conferenceId: string | null) {
 
       const allItems = await fetchConferenceItemsRaw<ConferenceItemRow>(conferenceId!, "*");
 
-      return { conference: conf as unknown as ConferenceRow, items: allItems };
+      return { 
+        conference: normalizeConference(conf), 
+        items: allItems 
+      };
     },
+
   });
 }
 
