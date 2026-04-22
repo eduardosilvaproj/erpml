@@ -905,13 +905,7 @@ const BalancoEstoque = () => {
                           </TableCell>
 
                           <TableCell>
-                            {d.diff === 0 ? (
-                              <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30">OK</Badge>
-                            ) : d.diff > 0 ? (
-                              <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">Sobra</Badge>
-                            ) : (
-                              <Badge variant="destructive">Falta</Badge>
-                            )}
+                            <StatusBadge status={d.diff === 0 ? "OK" : d.diff > 0 ? "Sobra" : "Falta"} />
                           </TableCell>
                         </TableRow>
                       ))}
@@ -1085,21 +1079,14 @@ const BalancoEstoque = () => {
                             </TableCell>
 
                              <TableCell>
-                              {item.status === "Contado" ? (
-                                item.difference === 0 ? (
-                                  <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 text-[10px] h-5">OK</Badge>
-                                ) : item.difference > 0 ? (
-                                  <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 text-[10px] h-5">Sobra</Badge>
-                                ) : (
-                                  <Badge variant="destructive" className="text-[10px] h-5">Falta</Badge>
-                                )
-                              ) : item.status === "Zerar" ? (
-                                <Badge variant="destructive" className="text-[10px] h-5">Zerar</Badge>
-                              ) : item.status === "Protegido" ? (
-                                <Badge variant="secondary" className="bg-blue-500/10 text-blue-700 border-blue-500/20 text-[10px] h-5">Protegido</Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-muted-foreground text-[10px] h-5">Ignorado</Badge>
-                              )}
+                              <StatusBadge 
+                                status={
+                                  item.status === "Contado" 
+                                    ? (item.difference === 0 ? "OK" : item.difference > 0 ? "Sobra" : "Falta")
+                                    : item.status
+                                } 
+                                className="text-[10px] h-5"
+                              />
                             </TableCell>
 
                             <TableCell className="text-[10px] text-muted-foreground whitespace-nowrap">
