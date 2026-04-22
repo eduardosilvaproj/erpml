@@ -575,6 +575,19 @@ const BalancoEstoque = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                {isCounting && (
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Switch 
+                      id="show-only-counted" 
+                      checked={showOnlyCounted} 
+                      onCheckedChange={setShowOnlyCounted} 
+                    />
+                    <Label htmlFor="show-only-counted" className="text-sm whitespace-nowrap cursor-pointer">
+                      Apenas contados
+                    </Label>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
