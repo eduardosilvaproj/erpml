@@ -399,12 +399,19 @@ const BalancoEstoque = () => {
           action = "Protegido";
         }
       }
+
+      const countedStock = isCounted ? (counts[p.id] || 0) : (status === "Zerar" ? 0 : p.stock_physical);
+      const difference = countedStock - p.stock_physical;
+      const variationPercentage = p.stock_physical > 0 ? (difference / p.stock_physical) * 100 : (difference > 0 ? 100 : 0);
       
       return {
         id: p.id,
         sku: p.sku || "N/A",
         name: p.name || "Sem nome",
         currentStock: p.stock_physical,
+        countedStock,
+        difference,
+        variationPercentage,
         action,
         status,
         hasDivergence,
