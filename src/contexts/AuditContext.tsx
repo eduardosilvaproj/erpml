@@ -13,7 +13,7 @@ export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isAuditMode, setIsAuditMode] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const saved = localStorage.getItem("audit_mode");
     if (saved === "true") {
       setIsAuditMode(true);
