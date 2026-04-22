@@ -71,7 +71,7 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
   const config = getStatusConfig(status) as any;
   const variant = config.variant;
   const label = config.label;
-  const isAudit = isAuditProp ?? config.isAudit;
+  const isAudit = isAuditProp !== undefined ? isAuditProp : (isAuditMode || config.isAudit);
 
   const sizeClasses = {
     compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
