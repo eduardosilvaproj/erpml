@@ -57,12 +57,15 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
         return { variant: 'outline', label: s === 'NÃO BIPADO' ? 'Não bipado' : s === 'NÃO ENCONTRADO' ? 'Não encontrado' : 'Ignorado' } as const;
       case 'PENDENTE':
         return { variant: 'secondary', label: 'Pendente' } as const;
+      case 'DESCONHECIDO':
+      case 'UNKNOWN':
+        return { variant: 'secondary', label: 'Pendente', isAudit: true } as const;
       default:
         return { variant: 'outline', label: status?.trim() || 'Pendente' } as const;
     }
   };
 
-  const { variant, label } = getStatusConfig(status);
+  const { variant, label, isAudit } = getStatusConfig(status) as any;
 
   const sizeClasses = {
     compact: "min-w-0 text-[10px] h-5 px-1.5 font-bold uppercase",
