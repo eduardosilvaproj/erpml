@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     }
 
     // Verify password
-    const { password, confirmation } = await req.json();
+    const { password, confirmation, dryRun } = await req.json();
     if (confirmation !== "CONFIRMAR") {
       return new Response(JSON.stringify({ error: "Confirmação inválida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
