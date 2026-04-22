@@ -422,9 +422,11 @@ export type Database = {
           invoice_id: string | null
           nome: string | null
           notes: string | null
+          section_name: string | null
           started_at: string
           status: string
           tipo: string
+          type: string | null
           updated_at: string
         }
         Insert: {
@@ -437,9 +439,11 @@ export type Database = {
           invoice_id?: string | null
           nome?: string | null
           notes?: string | null
+          section_name?: string | null
           started_at?: string
           status?: string
           tipo?: string
+          type?: string | null
           updated_at?: string
         }
         Update: {
@@ -452,9 +456,11 @@ export type Database = {
           invoice_id?: string | null
           nome?: string | null
           notes?: string | null
+          section_name?: string | null
           started_at?: string
           status?: string
           tipo?: string
+          type?: string | null
           updated_at?: string
         }
         Relationships: [

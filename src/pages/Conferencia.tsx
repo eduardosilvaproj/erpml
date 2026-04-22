@@ -96,6 +96,8 @@ const Conferencia = () => {
   const [step, setStep] = useState<Step>(restored?.step ?? 1);
   const [mode, setMode] = useState<ConferenceMode | null>(restored?.mode ?? null);
   const [conferenceName, setConferenceName] = useState<string>(restored?.conferenceName ?? "");
+  const [conferenceType, setConferenceType] = useState<"full" | "partial">(restored?.conferenceType ?? "full");
+  const [sectionName, setSectionName] = useState<string>(restored?.sectionName ?? "");
   const [conferenceId, setConferenceId] = useState<string | null>(restored?.conferenceId ?? null);
   const [sessionRestored, setSessionRestored] = useState(!!restored);
   const [savingSession, setSavingSession] = useState(false);
@@ -265,6 +267,8 @@ const Conferencia = () => {
         step,
         mode,
         conferenceName,
+        conferenceType,
+        sectionName,
         conferenceId,
         scannedProducts,
         savedAt: new Date().toISOString(),
@@ -690,7 +694,9 @@ const Conferencia = () => {
           .insert({
             company_id: companyId,
             tipo: mode === "inventario" ? "inventario" : "nota_fiscal",
-            nome: conferenceName || `Conferência ${new Date().toLocaleString("pt-BR")}`,
+            type: conferenceType,
+            section_name: conferenceType === "partial" ? sectionName : null,
+            nome: conferenceName || `${mode === "inventario" ? "Inventário" : "Conferência"} ${new Date().toLocaleString("pt-BR")}`,
             status: "em_andamento",
           } as any)
           .select()
@@ -708,6 +714,18 @@ const Conferencia = () => {
   const loadConferenceItems = useCallback(async (confId: string) => {
     setLoadingConference(true);
     try {
+      const { data: confRow } = await supabase
+        .from("conferences")
+        .select("type, section_name, nome")
+        .eq("id", confId)
+        .single();
+
+      if (confRow) {
+        setConferenceType((confRow as any).type || "full");
+        setSectionName((confRow as any).section_name || "");
+        if (confRow.nome) setConferenceName(confRow.nome);
+      }
+
       const productImagesById = new Map(allProducts.map((p) => [p.id, p.image_url ?? null] as const));
       const [mapped, totals] = await Promise.all([
         fetchConferenceItemsGrouped(confId, productImagesById),
@@ -829,7 +847,12 @@ const Conferencia = () => {
 
       await supabase
         .from("conferences")
-        .update({ updated_at: new Date().toISOString(), status: "em_andamento" } as any)
+        .update({
+          updated_at: new Date().toISOString(),
+          status: "em_andamento",
+          type: conferenceType,
+          section_name: conferenceType === "partial" ? sectionName : null
+        } as any)
         .eq("id", confId!);
 
       return confId!;
@@ -860,6 +883,8 @@ const Conferencia = () => {
     setStep(1);
     setMode(null);
     setConferenceName("");
+    setConferenceType("full");
+    setSectionName("");
     setConferenceId(null);
     setScannedProducts([]);
     setDistinctProductsCount(null);
@@ -1016,6 +1041,8 @@ const Conferencia = () => {
               onContinue={async (c) => {
                 setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
                 setMode(c.tipo === "inventario" ? "inventario" : "nf");
+                setConferenceType((c as any).type || "full");
+                setSectionName((c as any).section_name || "");
                 setConferenceId(c.id);
                 setScannedProducts([]);
                 await loadConferenceItems(c.id);
@@ -1044,9 +1071,12 @@ const Conferencia = () => {
               </div>
             </button>
             <button
-              onClick={() => setMode("inventario")}
+              onClick={() => {
+                setMode("inventario");
+                if (conferenceType !== "partial") setConferenceType("full");
+              }}
               className={`p-6 rounded-xl border-2 text-left transition-all ${
-                mode === "inventario"
+                mode === "inventario" && conferenceType === "full"
                   ? "border-primary bg-primary/5"
                   : "border-border/40 hover:border-primary/30 bg-card/60"
               }`}
@@ -1061,17 +1091,60 @@ const Conferencia = () => {
                 </div>
               </div>
             </button>
+            <button
+              onClick={() => {
+                setMode("inventario");
+                setConferenceType("partial");
+              }}
+              className={`p-6 rounded-xl border-2 text-left transition-all ${
+                mode === "inventario" && conferenceType === "partial"
+                  ? "border-amber-500 bg-amber-500/5"
+                  : "border-border/40 hover:border-amber-500/30 bg-card/60"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-xl bg-amber-500/10 p-3">
+                  <Package className="h-8 w-8 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-foreground">Inventário Parcial</p>
+                  <p className="text-xs text-muted-foreground">Confere uma seção específica</p>
+                </div>
+              </div>
+            </button>
           </div>
 
           <Card>
             <CardContent className="p-5 space-y-4">
-              <label className="text-xs font-medium text-muted-foreground block">Nome da conferência</label>
-              <Input
-                value={conferenceName}
-                onChange={(e) => setConferenceName(e.target.value)}
-                placeholder="Ex: Inventário Abril 2026"
-              />
-              <Button className="w-full" onClick={startConference} disabled={!mode}>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground block">Nome da conferência</label>
+                <Input
+                  value={conferenceName}
+                  onChange={(e) => setConferenceName(e.target.value)}
+                  placeholder="Ex: Inventário Abril 2026"
+                />
+              </div>
+
+              {mode === "inventario" && conferenceType === "partial" && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <label className="text-xs font-medium text-amber-500 block flex items-center gap-1">
+                    <History className="h-3 w-3" /> Identificação da seção
+                  </label>
+                  <Input
+                    value={sectionName}
+                    onChange={(e) => setSectionName(e.target.value)}
+                    placeholder="Ex: Corredor 1, Prateleira A, Depósito 2"
+                    className="border-amber-500/30 focus-visible:ring-amber-500/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Use para organizar bipagens por local físico.</p>
+                </div>
+              )}
+
+              <Button 
+                className={`w-full ${mode === "inventario" && conferenceType === "partial" ? "bg-amber-500 hover:bg-amber-600" : ""}`} 
+                onClick={startConference} 
+                disabled={!mode || (conferenceType === "partial" && !sectionName.trim())}
+              >
                 Iniciar conferência <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </CardContent>
@@ -1284,9 +1357,18 @@ const Conferencia = () => {
                 )}
 
                 {conferenceName && (
-                  <div className="p-3 rounded-lg bg-muted/10 border border-border/20">
-                    <p className="text-xs text-muted-foreground">Conferência</p>
-                    <p className="text-sm font-medium">{conferenceName}</p>
+                  <div className="p-3 rounded-lg bg-muted/10 border border-border/20 space-y-2">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Conferência</p>
+                      <p className="text-sm font-medium">{conferenceName}</p>
+                    </div>
+                    {conferenceType === "partial" && (
+                      <div className="pt-2 border-t border-border/20">
+                        <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] py-0 h-5">
+                          📍 Parcial — {sectionName}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1349,6 +1431,30 @@ const Conferencia = () => {
       {/* ========== STEP 3: RESULTADO ========== */}
       {step === 3 && (
         <div className="space-y-6">
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  {conferenceName || "Resultado da Conferência"}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide">
+                    {mode === "inventario" ? (conferenceType === "partial" ? "🟡 Inventário Parcial" : "🔵 Inventário Geral") : "📄 Nota Fiscal"}
+                  </Badge>
+                  {conferenceType === "partial" && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] py-0 h-5">
+                      📍 Seção: {sectionName}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <div className="text-right text-xs text-muted-foreground">
+                Finalizada em {new Date().toLocaleDateString("pt-BR")} às {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Summary cards */}
           <div className="grid gap-3 grid-cols-3">
             <Card>
