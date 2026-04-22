@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchConferenceItemsRaw } from "@/lib/conference-recovery";
+import { normalizeConference, normalizeConferences } from "@/lib/conference-utils";
 
 export type ConferenceTipo = "inventario" | "nota_fiscal";
 export type ConferenceStatus =
