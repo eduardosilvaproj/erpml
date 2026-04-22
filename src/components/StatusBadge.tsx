@@ -20,17 +20,18 @@ interface StatusBadgeProps {
 
 export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   const getStatusConfig = (status: string) => {
-    switch (status.toUpperCase()) {
+    const s = status.toUpperCase();
+    switch (s) {
       case 'OK':
       case 'NORMAL':
-        return { variant: 'success', label: status === 'NORMAL' ? 'Normal' : 'OK' } as const;
+        return { variant: 'success', label: s === 'NORMAL' ? 'Normal' : 'OK' } as const;
       case 'SOBRA':
         return { variant: 'secondary', label: 'Sobra' } as const;
       case 'FALTA':
         return { variant: 'destructive', label: 'Falta' } as const;
       case 'ZERAR':
       case 'ZERADO':
-        return { variant: 'destructive', label: status === 'ZERADO' ? 'Zerado' : 'Zerar' } as const;
+        return { variant: 'destructive', label: s === 'ZERADO' ? 'Zerado' : 'Zerar' } as const;
       case 'BAIXO':
         return { variant: 'warning', label: 'Baixo' } as const;
       case 'PROTEGIDO':
