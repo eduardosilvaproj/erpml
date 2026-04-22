@@ -148,6 +148,15 @@ export default function MasterAdmin() {
     }
   };
 
+  const handleDeleteCompany = async (id: string) => {
+    try {
+      await deleteCompany.mutateAsync(id);
+      toast.success("Empresa excluída com sucesso");
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao excluir empresa. Verifique se existem dados vinculados.");
+    }
+  };
+
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
       active: { label: "Ativa", variant: "default" },
