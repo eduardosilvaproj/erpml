@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { fetchConferenceItemsRaw } from "@/lib/conference-recovery";
+import { normalizeConferences } from "@/lib/conference-utils";
 
 export interface ConferenceItem {
   id: string;
