@@ -61,8 +61,9 @@ export function useConferences(filters?: { status?: string; dateFrom?: string; d
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as unknown as Conference[];
+      return normalizeConferences(data) as Conference[];
     },
+
   });
 }
 
