@@ -396,6 +396,8 @@ export default function CompanyDashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {isOwner && <ResetCompanyData companyId={company.id} />}
 
       {/* Invite member dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
