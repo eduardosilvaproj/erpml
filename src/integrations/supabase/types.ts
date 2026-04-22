@@ -2265,6 +2265,7 @@ export type Database = {
       }
       marcar_ordem_enviada: { Args: { _ordem_id: string }; Returns: undefined }
       marcar_ordem_separada: { Args: { _ordem_id: string }; Returns: undefined }
+      reset_company_data: { Args: { p_company_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
