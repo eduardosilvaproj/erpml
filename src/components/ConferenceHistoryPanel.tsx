@@ -82,6 +82,25 @@ export function ConferenceHistoryPanel({ onContinue, onView }: Props) {
                   : "Nota fiscal"}
               </Badge>
             </div>
+            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Atualizado{" "}
+              {formatDistanceToNow(new Date(c.updated_at), { addSuffix: true, locale: ptBR })}
+            </div>
+          </div>
+          <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+            {ativa && (
+              <Button size="sm" onClick={() => onContinue(c)}>
+                <Play className="h-4 w-4 mr-1" /> Continuar
+              </Button>
+            )}
+            {onView && (
+              <Button size="sm" variant="outline" onClick={() => onView(c)}>
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
 
         {ativa && (
           <div className="flex gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
