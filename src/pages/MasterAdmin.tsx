@@ -42,6 +42,7 @@ export default function MasterAdmin() {
   const adminUpdateCompany = useAdminUpdateCompany();
   const adminChangePlan = useAdminChangeCompanyPlan();
   const adminResetPassword = useAdminResetPassword();
+  const deleteCompany = useDeleteCompany();
   const setTempPassword = useSetTemporaryPassword();
   const [tempPasswordInfo, setTempPasswordInfo] = useState<{ email: string; password: string } | null>(null);
 
