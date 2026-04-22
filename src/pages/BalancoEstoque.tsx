@@ -331,12 +331,23 @@ const BalancoEstoque = () => {
           </h1>
           <p className="text-muted-foreground">Contagem física do inventário com comparação de notas fiscais</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {!isCounting ? (
-            <Button onClick={startCounting} disabled={isLoading || products.length === 0}>
-              <PackageCheck className="h-4 w-4 mr-2" />
-              Iniciar Balanço
-            </Button>
+            <div className="flex gap-2">
+              <Select value={balanceType} onValueChange={(v: "full" | "partial") => setBalanceType(v)}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Tipo de Balanço" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Balanço Geral</SelectItem>
+                  <SelectItem value="partial">Balanço Parcial</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={startCounting} disabled={isLoading || products.length === 0}>
+                <PackageCheck className="h-4 w-4 mr-2" />
+                Iniciar
+              </Button>
+            </div>
           ) : (
             <>
               <Button variant="outline" onClick={resetCounting}>
