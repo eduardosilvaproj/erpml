@@ -146,31 +146,39 @@ const BalancoEstoque = () => {
   // - explicitly counted as 0
   // - (if zeroUnscanned) not counted at all AND currently have stock > 0
   const itemsToZero = useMemo(() => {
-    return products.filter((p) => {
+    // Use allProductsRaw when zeroing to ensure we catch everything regardless of filters
+    const baseList = zeroUnscanned ? allProductsRaw : products;
+    return baseList.filter((p) => {
       const c = counts[p.id];
       const explicitZero = c === 0;
       const unscannedWithStock =
         zeroUnscanned && (c === null || c === undefined) && p.stock_physical > 0;
       return explicitZero || unscannedWithStock;
     });
-  }, [products, counts, zeroUnscanned]);
+  }, [allProductsRaw, products, counts, zeroUnscanned]);
 
   // Apply adjustments: update stock_physical for counted items.
   // If zeroUnscanned is enabled, also zero out items that were not bipped.
   const applyAdjustments = async () => {
-    const updates = products
+    // Important: Use allProductsRaw here to ensure items counted under different 
+    // filters are still processed, and zeroing respects the full catalog if enabled.
+    const updates = allProductsRaw
       .map((p) => {
         const counted = counts[p.id];
         const hasCount = counted !== null && counted !== undefined && !isNaN(counted as number);
+        
         if (hasCount) {
           return (counted as number) !== p.stock_physical ? { p, newQty: counted as number } : null;
         }
-        if (zeroUnscanned && p.stock_physical > 0) {
+        
+        // Lock: only zero out automatically if it's a full balance AND the option is enabled.
+        // In partial balance, we NEVER zero out automatically.
+        if (zeroUnscanned && balanceType === "full" && p.stock_physical > 0) {
           return { p, newQty: 0 };
         }
         return null;
       })
-      .filter(Boolean) as Array<{ p: typeof products[0]; newQty: number }>;
+      .filter(Boolean) as Array<{ p: any; newQty: number }>;
 
     if (updates.length === 0) {
       toast({ title: "Nada a ajustar", description: "Nenhum item contado difere do estoque atual." });
