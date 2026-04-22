@@ -156,11 +156,12 @@ export function ResetCompanyData({ companyId }: ResetCompanyDataProps) {
               <CheckCircle2 className="h-10 w-10 text-emerald-500" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Dados apagados</h2>
+              <h2 className="text-2xl font-bold text-foreground">✅ Dados apagados.</h2>
               <p className="text-muted-foreground">
-                Seu sistema está zerado e pronto para um novo começo.
+                Seu sistema está zerado.
               </p>
             </div>
+
             <Button className="mt-4 w-full" onClick={handleFinalSuccess}>
               Ir para o Dashboard
             </Button>
