@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HelpProvider } from "@/contexts/HelpContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AuditProvider } from "@/contexts/AuditContext";
 import { VersionUpdateBanner } from "@/components/VersionUpdateBanner";
 import { UpdateRequiredModal } from "@/components/UpdateRequiredModal";
 import { isVersionOutdated } from "@/config/version";
