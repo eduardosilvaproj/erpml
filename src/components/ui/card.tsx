@@ -1,9 +1,11 @@
 import * as React from "react";
-
 import { cn } from "@/lib/utils";
+import { StatusBadgeProvider } from "@/components/StatusBadge";
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("rounded-2xl border border-border bg-card text-card-foreground shadow-premium-lg transition-all duration-200", className)} {...props} />
+  <StatusBadgeProvider value="large">
+    <div ref={ref} className={cn("rounded-2xl border border-border bg-card text-card-foreground shadow-premium-lg transition-all duration-200", className)} {...props} />
+  </StatusBadgeProvider>
 ));
 Card.displayName = "Card";
 
