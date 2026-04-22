@@ -1078,14 +1078,15 @@ const BalancoEstoque = () => {
                             <TableCell className="max-w-[150px] md:max-w-[200px] truncate text-xs" title={item.name}>
                               {item.name}
                             </TableCell>
-                            <TableCell className="text-right text-xs font-medium">{item.currentStock}</TableCell>
-                            <TableCell className="text-right text-xs font-semibold">{item.countedStock}</TableCell>
+                            <TableCell className="text-right text-xs font-medium">{formatNumber(item.currentStock)}</TableCell>
+                            <TableCell className="text-right text-xs font-semibold">{formatNumber(item.countedStock)}</TableCell>
                             <TableCell className={`text-right text-xs font-bold ${item.difference > 0 ? 'text-emerald-600' : item.difference < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
-                              {item.difference > 0 ? `+${item.difference}` : item.difference}
+                              {formatDifference(item.difference)}
                             </TableCell>
                             <TableCell className={`text-right text-[10px] font-medium ${item.variationPercentage > 0 ? 'text-emerald-600' : item.variationPercentage < 0 ? 'text-rose-600' : 'text-muted-foreground'}`}>
-                              {item.variationPercentage === 0 && item.difference === 0 ? "0%" : `${item.variationPercentage > 0 ? '+' : ''}${item.variationPercentage.toFixed(1)}%`}
+                              {formatPercent(item.variationPercentage)}
                             </TableCell>
+
                             <TableCell>
                               <Badge 
                                 variant={
