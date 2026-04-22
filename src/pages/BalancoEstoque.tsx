@@ -146,31 +146,39 @@ const BalancoEstoque = () => {
   // - explicitly counted as 0
   // - (if zeroUnscanned) not counted at all AND currently have stock > 0
   const itemsToZero = useMemo(() => {
-    return products.filter((p) => {
+    // Use allProductsRaw when zeroing to ensure we catch everything regardless of filters
+    const baseList = zeroUnscanned ? allProductsRaw : products;
+    return baseList.filter((p) => {
       const c = counts[p.id];
       const explicitZero = c === 0;
       const unscannedWithStock =
         zeroUnscanned && (c === null || c === undefined) && p.stock_physical > 0;
       return explicitZero || unscannedWithStock;
     });
-  }, [products, counts, zeroUnscanned]);
+  }, [allProductsRaw, products, counts, zeroUnscanned]);
 
   // Apply adjustments: update stock_physical for counted items.
   // If zeroUnscanned is enabled, also zero out items that were not bipped.
   const applyAdjustments = async () => {
-    const updates = products
+    // Important: Use allProductsRaw here to ensure items counted under different 
+    // filters are still processed, and zeroing respects the full catalog if enabled.
+    const updates = allProductsRaw
       .map((p) => {
         const counted = counts[p.id];
         const hasCount = counted !== null && counted !== undefined && !isNaN(counted as number);
+        
         if (hasCount) {
           return (counted as number) !== p.stock_physical ? { p, newQty: counted as number } : null;
         }
-        if (zeroUnscanned && p.stock_physical > 0) {
+        
+        // Lock: only zero out automatically if it's a full balance AND the option is enabled.
+        // In partial balance, we NEVER zero out automatically.
+        if (zeroUnscanned && balanceType === "full" && p.stock_physical > 0) {
           return { p, newQty: 0 };
         }
         return null;
       })
-      .filter(Boolean) as Array<{ p: typeof products[0]; newQty: number }>;
+      .filter(Boolean) as Array<{ p: any; newQty: number }>;
 
     if (updates.length === 0) {
       toast({ title: "Nada a ajustar", description: "Nenhum item contado difere do estoque atual." });
@@ -206,8 +214,8 @@ const BalancoEstoque = () => {
     const trimmed = code.trim();
     if (!trimmed || !isCounting) return;
 
-    // Find product by barcode, sku, or sku_ml
-    const product = products.find(
+    // Find product by barcode, sku, or sku_ml in ALL products
+    const product = allProductsRaw.find(
       (p) => p.barcode === trimmed || p.sku === trimmed || p.sku_ml === trimmed
     );
 
@@ -270,7 +278,9 @@ const BalancoEstoque = () => {
   // Compute divergences
   const divergences = useMemo(() => {
     if (!isCounting) return [];
-    return products
+    // Use allProductsRaw so that divergences (and summary stats) reflect the entire 
+    // balance session, regardless of current UI filters applied to the table.
+    return allProductsRaw
       .map((p) => {
         const counted = counts[p.id];
         if (counted === null || counted === undefined) return null;
@@ -388,17 +398,21 @@ const BalancoEstoque = () => {
                           Produtos com contagem registrada terão o estoque atualizado.
                           Por padrão, itens <strong>não bipados</strong> mantêm o estoque atual.
                         </p>
-                        <div className="flex items-start gap-2 p-3 rounded-md border bg-muted/40">
+                        <div className={`flex items-start gap-2 p-3 rounded-md border ${balanceType === "partial" ? "bg-muted/20 opacity-70" : "bg-muted/40"}`}>
                           <Switch
                             id="zero-unscanned"
                             checked={zeroUnscanned}
                             onCheckedChange={setZeroUnscanned}
+                            disabled={balanceType === "partial"}
                             className="mt-0.5"
                           />
-                          <Label htmlFor="zero-unscanned" className="cursor-pointer leading-tight">
+                          <Label htmlFor="zero-unscanned" className={`cursor-pointer leading-tight ${balanceType === "partial" ? "cursor-not-allowed" : ""}`}>
                             <span className="font-medium text-foreground">Zerar itens não bipados</span>
                             <span className="block text-xs text-muted-foreground mt-0.5">
-                              Considerar todos os produtos não contados como estoque zero.
+                              {balanceType === "partial" 
+                                ? "Opção desabilitada em Balanço Parcial para evitar erros." 
+                                : "Considerar todos os produtos não contados como estoque zero."
+                              }
                             </span>
                           </Label>
                         </div>
