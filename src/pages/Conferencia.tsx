@@ -273,6 +273,7 @@ const Conferencia = () => {
   // Auto-persist each scan to the DB (debounced) so nothing is lost on browser crash.
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveSessionRef = useRef<() => Promise<string | null>>();
+  const loadConferenceItemsRef = useRef<(confId: string) => Promise<void>>();
   const hydratingFromServerRef = useRef(false);
   useEffect(() => {
     if (step !== 2) return;
@@ -288,13 +289,13 @@ const Conferencia = () => {
         .then(async (confId) => {
           if (confId) {
             hydratingFromServerRef.current = true;
-            await loadConferenceItems(confId);
+            await loadConferenceItemsRef.current?.(confId);
           }
         })
         .catch(() => {});
     }, 800);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
-  }, [scannedProducts, step, companyId, conferenceId, loadConferenceItems]);
+  }, [scannedProducts, step, companyId, conferenceId]);
 
   useEffect(() => {
     if (step === 2 && scanInputRef.current) {
