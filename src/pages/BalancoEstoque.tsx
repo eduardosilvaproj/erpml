@@ -800,7 +800,9 @@ const BalancoEstoque = () => {
                                 <Input
                                   type="number"
                                   min={0}
-                                  className="w-20 mx-auto text-center"
+                                  step="any"
+                                  className="w-24 mx-auto text-center"
+
                                   value={counted ?? ""}
                                   onChange={(e) => updateCount(p.id, e.target.value)}
                                   placeholder="0"
