@@ -59,8 +59,11 @@ const BalancoEstoque = () => {
           p.barcode?.toLowerCase().includes(s)
       );
     }
+    if (showOnlyCounted && isCounting) {
+      list = list.filter((p) => counts[p.id] !== null && counts[p.id] !== undefined);
+    }
     return list;
-  }, [allProductsRaw, categoryFilter, search]);
+  }, [allProductsRaw, categoryFilter, search, showOnlyCounted, counts, isCounting]);
 
   // Fetch invoices from the last N months for comparison
   const sinceDate = useMemo(() => {
