@@ -880,8 +880,61 @@ const BalancoEstoque = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
-        </TabsContent>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                  Detalhamento da Auditoria
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border max-h-[400px] overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
+                      <TableRow>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Nome</TableHead>
+                        <TableHead className="text-right">Estoque Atual</TableHead>
+                        <TableHead>Ação Prevista</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditItemsList.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                            Nenhum item para exibir.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        auditItemsList.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                            <TableCell className="max-w-[200px] md:max-w-xs truncate text-xs" title={item.name}>
+                              {item.name}
+                            </TableCell>
+                            <TableCell className="text-right text-xs">{item.currentStock}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  item.status === "Contado" ? "default" :
+                                  item.status === "Zerar" ? "destructive" :
+                                  item.status === "Protegido" ? "secondary" : 
+                                  "outline"
+                                }
+                                className="text-[10px] px-1.5 py-0 h-5"
+                              >
+                                {item.action}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
         {/* Tab: Auditoria */}
         {isCounting && (
