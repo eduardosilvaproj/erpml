@@ -364,7 +364,7 @@ const BalancoEstoque = () => {
   const auditItemsList = useMemo(() => {
     if (!isCounting) return [];
     
-    return allProductsRaw.map(p => {
+    const list = allProductsRaw.map(p => {
       const counted = counts[p.id];
       const isCounted = counted !== null && counted !== undefined;
       
@@ -381,13 +381,14 @@ const BalancoEstoque = () => {
       
       let action = "";
       let status = "";
+      const hasDivergence = isCounted && counted !== p.stock_physical;
       
       if (!inScope) {
         status = "Ignorado";
         action = "Fora do filtro";
       } else if (isCounted) {
         status = "Contado";
-        action = counted === p.stock_physical ? "Manter (Sem divergência)" : `Ajustar: ${p.stock_physical} → ${counted}`;
+        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${p.stock_physical} → ${counted}`;
       } else {
         const willBeZeroed = balanceType === "full" && zeroUnscanned;
         if (willBeZeroed) {
@@ -405,8 +406,18 @@ const BalancoEstoque = () => {
         name: p.name || "Sem nome",
         currentStock: p.stock_physical,
         action,
-        status
+        status,
+        hasDivergence,
+        isCounted
       };
+    });
+
+    return list.sort((a, b) => {
+      if (a.hasDivergence && !b.hasDivergence) return -1;
+      if (!a.hasDivergence && b.hasDivergence) return 1;
+      if (a.isCounted && !b.isCounted) return -1;
+      if (!a.isCounted && b.isCounted) return 1;
+      return 0;
     });
   }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned]);
 
@@ -1005,7 +1016,10 @@ const BalancoEstoque = () => {
                         </TableRow>
                       ) : (
                         auditItemsList.map((item) => (
-                          <TableRow key={item.id}>
+                          <TableRow 
+                            key={item.id} 
+                            className={item.hasDivergence ? "bg-amber-50 dark:bg-amber-950/20" : ""}
+                          >
                             <TableCell className="font-mono text-[10px]">{item.sku}</TableCell>
                             <TableCell className="max-w-[200px] md:max-w-xs truncate text-xs" title={item.name}>
                               {item.name}
