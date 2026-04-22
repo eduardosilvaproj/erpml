@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ClipboardList, Search, Loader2, AlertTriangle, CheckCircle2,
-  FileText, Download, Plus, Minus, RotateCcw, PackageCheck, ScanBarcode, Camera, Volume2
+  FileText, Download, Plus, Minus, RotateCcw, PackageCheck, ScanBarcode, Camera, Volume2,
+  ShieldCheck, EyeOff, Filter, Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -314,6 +315,52 @@ const BalancoEstoque = () => {
 
   const displayedDivergences = onlyDivergent ? divergentItems : divergences;
 
+  const auditStats = useMemo(() => {
+    if (!isCounting) return null;
+    
+    const totalInSystem = allProductsRaw.length;
+    // scopeProducts are items that match search/category filters
+    const scopeProducts = allProductsRaw.filter(p => {
+      let matches = true;
+      if (categoryFilter) matches = matches && p.category_id === categoryFilter;
+      if (search) {
+        const s = search.toLowerCase();
+        matches = matches && (
+          p.name?.toLowerCase().includes(s) ||
+          p.sku?.toLowerCase().includes(s) ||
+          p.barcode?.toLowerCase().includes(s)
+        );
+      }
+      return matches;
+    });
+    
+    const itemsInScopeCount = scopeProducts.length;
+    const countedIds = Object.keys(counts).filter(id => counts[id] !== null);
+    const countedCount = countedIds.length;
+    
+    // Items in system but NOT in current filter/scope
+    const ignoredByFilterCount = totalInSystem - itemsInScopeCount;
+    
+    // Items that will NOT be updated. 
+    // In Partial Balance, everything outside the 'counts' is protected.
+    // In Full Balance, if zeroUnscanned=false, everything outside 'counts' is protected.
+    // If zeroUnscanned=true, nothing is protected (either counted or zeroed).
+    let protectedCount = 0;
+    if (balanceType === "partial") {
+      protectedCount = totalInSystem - countedCount;
+    } else {
+      protectedCount = zeroUnscanned ? 0 : totalInSystem - countedCount;
+    }
+    
+    return {
+      totalInSystem,
+      itemsInScopeCount,
+      countedCount,
+      ignoredByFilterCount,
+      protectedCount
+    };
+  }, [allProductsRaw, categoryFilter, search, counts, isCounting, balanceType, zeroUnscanned]);
+
   const exportReport = () => {
     if (divergences.length === 0) {
       toast({ title: "Nenhum dado", description: "Realize a contagem primeiro.", variant: "destructive" });
@@ -572,6 +619,7 @@ const BalancoEstoque = () => {
         <TabsList>
           <TabsTrigger value="counting">Contagem</TabsTrigger>
           <TabsTrigger value="report">Relatório de Divergências</TabsTrigger>
+          {isCounting && <TabsTrigger value="audit">Auditoria</TabsTrigger>}
           <TabsTrigger value="invoices">Notas Fiscais Referência</TabsTrigger>
         </TabsList>
 
@@ -784,6 +832,103 @@ const BalancoEstoque = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Tab: Auditoria */}
+        {isCounting && (
+          <TabsContent value="audit" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Itens Contados
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-baseline justify-between">
+                    <p className="text-2xl font-bold">{auditStats?.countedCount}</p>
+                    <p className="text-xs text-muted-foreground">de {auditStats?.itemsInScopeCount} no escopo</p>
+                  </div>
+                  <div className="mt-3 h-2 w-full rounded-full bg-primary/10">
+                    <div 
+                      className="h-full rounded-full bg-primary transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (auditStats?.countedCount || 0) / (auditStats?.itemsInScopeCount || 1) * 100)}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-muted bg-muted/20">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Filter className="h-4 w-4" />
+                    Ignorados por Filtro
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{auditStats?.ignoredByFilterCount}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Produtos ocultos pelos filtros atuais (Categoria/Busca).
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-accent/30 bg-accent/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-sm text-accent-foreground">
+                    <ShieldCheck className="h-4 w-4" />
+                    Itens Protegidos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{auditStats?.protectedCount}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Itens que <strong>NÃO</strong> terão o estoque alterado.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Info className="h-5 w-5 text-muted-foreground" />
+                  Resumo da Operação
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 p-3 rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-sm">Escopo do Balanço ({balanceType === "full" ? "Geral" : "Parcial"})</h4>
+                    <ul className="text-xs space-y-1 text-muted-foreground list-disc list-inside">
+                      <li>Total no sistema: {auditStats?.totalInSystem}</li>
+                      <li>Itens visíveis (escopo): {auditStats?.itemsInScopeCount}</li>
+                      <li>Itens fora do escopo: {auditStats?.ignoredByFilterCount}</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2 p-3 rounded-md bg-muted/30">
+                    <h4 className="font-semibold text-sm">Previsão de Atualização</h4>
+                    <ul className="text-xs space-y-1 text-muted-foreground list-disc list-inside">
+                      <li>Total a atualizar: {auditStats?.countedCount}</li>
+                      <li>Total a zerar: {zeroUnscanned && balanceType === "full" ? (auditStats?.itemsInScopeCount || 0) - (auditStats?.countedCount || 0) : 0}</li>
+                      <li>Total protegidos: {auditStats?.protectedCount}</li>
+                    </ul>
+                  </div>
+                </div>
+                
+                <div className="flex items-start gap-2 p-3 rounded-md border bg-primary/5 text-xs text-primary/80">
+                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                  <p>
+                    {balanceType === "partial" 
+                      ? "Em modo Balanço Parcial, apenas produtos que você contar explicitamente serão atualizados. Itens filtrados ou não bipados permanecem com seu estoque atual inalterado."
+                      : "Em modo Balanço Geral, se a opção 'Zerar itens não bipados' estiver ativada, todos os itens do sistema não contados serão zerados. Caso contrário, apenas os contados são atualizados."
+                    }
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* Tab: Notas Fiscais */}
         <TabsContent value="invoices" className="space-y-4">
