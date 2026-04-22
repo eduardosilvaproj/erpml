@@ -31,21 +31,30 @@ export default function SystemResetCard() {
     setPassword("");
     setProgress("");
     setResult(null);
+    setIsDryRun(false);
   };
 
-  const execute = async () => {
+  const execute = async (dryRun: boolean = false) => {
+    setIsDryRun(dryRun);
     setStep("running");
-    setProgress("Validando credenciais...");
+    setProgress(dryRun ? "Simulando reset..." : "Validando credenciais...");
     try {
       const { data, error } = await supabase.functions.invoke("system-reset", {
-        body: { password, confirmation: confirmText },
+        body: { password, confirmation: confirmText, dryRun },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      setResult({ companies: data.companies || 0, users: data.users || 0 });
-      setStep("success");
+      
+      setResult({ 
+        companies: data.companies || 0, 
+        users: data.users || 0,
+        sql: data.sql,
+        tables: data.tables
+      });
+      
+      setStep(dryRun ? "dry_run_results" : "success");
     } catch (e: any) {
-      toast.error(e.message || "Falha ao executar reset");
+      toast.error(e.message || `Falha ao ${dryRun ? "simular" : "executar"} reset`);
       setStep("password");
     }
   };
