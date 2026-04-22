@@ -91,7 +91,7 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
     >
       {isAudit && (
         <span 
-          className="mr-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" 
+          className="mr-1.5 w-1.5 h-1.5 rounded-full bg-warning animate-pulse" 
           aria-hidden="true"
         />
       )}
