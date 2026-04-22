@@ -716,7 +716,7 @@ const Conferencia = () => {
     try {
       const { data: confRow } = await supabase
         .from("conferences")
-        .select("type, section_name, nome")
+        .select("type, section_name, nome, tipo")
         .eq("id", confId)
         .single();
 
