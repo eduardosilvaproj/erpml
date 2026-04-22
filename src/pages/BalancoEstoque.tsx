@@ -331,8 +331,18 @@ const BalancoEstoque = () => {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <ClipboardList className="h-6 w-6 text-primary" />
             Balanço de Estoque
+            {isCounting && (
+              <Badge variant={balanceType === "full" ? "default" : "outline"} className="ml-2">
+                {balanceType === "full" ? "Geral" : "Parcial"}
+              </Badge>
+            )}
           </h1>
-          <p className="text-muted-foreground">Contagem física do inventário com comparação de notas fiscais</p>
+          <p className="text-muted-foreground">
+            {isCounting 
+              ? `Contagem em andamento (${balanceType === "full" ? "Geral" : "Parcial"})`
+              : "Contagem física do inventário com comparação de notas fiscais"
+            }
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {!isCounting ? (
