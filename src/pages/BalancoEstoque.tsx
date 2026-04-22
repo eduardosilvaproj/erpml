@@ -232,9 +232,10 @@ const BalancoEstoque = () => {
   };
 
   const updateCount = (productId: string, value: string) => {
-    const num = value === "" ? null : parseInt(value, 10);
+    const num = value === "" ? null : parseFloat(value.replace(',', '.'));
     setCounts((prev) => ({ ...prev, [productId]: isNaN(num as number) ? null : num }));
   };
+
 
   // Handle barcode scan (from bip or camera) — increment count by 1
   const handleBarcodeScan = useCallback((code: string) => {
