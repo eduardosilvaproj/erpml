@@ -74,18 +74,24 @@ Deno.serve(async (req) => {
     ];
 
     const counts: Record<string, number> = {};
+    const sqlList: string[] = [];
+
     for (const table of tables) {
       try {
         const { count: before } = await admin.from(table).select("*", { count: "exact", head: true });
-        const { error } = await admin.from(table).delete().not("id", "is", null);
-        if (error) {
-          counts[table] = -1;
-          console.error(`Failed wiping ${table}:`, error.message);
-        } else {
-          counts[table] = before || 0;
+        counts[table] = before || 0;
+        
+        sqlList.push(`TRUNCATE TABLE public.${table} CASCADE;`);
+
+        if (!dryRun) {
+          const { error } = await admin.from(table).delete().not("id", "is", null);
+          if (error) {
+            counts[table] = -1;
+            console.error(`Failed wiping ${table}:`, error.message);
+          }
         }
       } catch (e) {
-        console.error(`Exception wiping ${table}:`, e);
+        console.error(`Exception processing ${table}:`, e);
         counts[table] = -1;
       }
     }
@@ -94,18 +100,27 @@ Deno.serve(async (req) => {
     const { count: companiesCount } = await admin.from("companies").select("*", { count: "exact", head: true });
     const { count: usersCount } = await admin.from("profiles").select("*", { count: "exact", head: true });
 
-    // Log
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-    await admin.from("system_logs").insert({
-      action: "SYSTEM_RESET",
-      user_id: user.id,
-      user_email: user.email,
-      ip_address: ip,
-      details: { tables: counts, companies_kept: companiesCount, users_kept: usersCount },
-    });
+    if (!dryRun) {
+      // Log only on actual execution
+      const ip = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+      await admin.from("system_logs").insert({
+        action: "SYSTEM_RESET",
+        user_id: user.id,
+        user_email: user.email,
+        ip_address: ip,
+        details: { tables: counts, companies_kept: companiesCount, users_kept: usersCount },
+      });
+    }
 
     return new Response(
-      JSON.stringify({ success: true, counts, companies: companiesCount, users: usersCount }),
+      JSON.stringify({ 
+        success: true, 
+        dryRun, 
+        sql: sqlList.join("\n"), 
+        tables: tables.map(t => ({ name: t, count: counts[t] })), 
+        companies: companiesCount, 
+        users: usersCount 
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e: any) {
