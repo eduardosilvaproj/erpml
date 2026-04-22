@@ -1039,7 +1039,7 @@ const Conferencia = () => {
         <div className="space-y-6">
           <ConferenceHistoryPanel
               onContinue={async (c) => {
-                setConferenceName(c.nome ?? `Conferência ${c.id.slice(0, 6)}`);
+                setConferenceName(c.nome || (c.tipo === "inventario" ? "Inventário Geral" : `Conferência ${c.id.slice(0, 6)}`));
                 setMode(c.tipo === "inventario" ? "inventario" : "nf");
                 setConferenceType((c as any).type || "full");
                 setSectionName((c as any).section_name || "");
