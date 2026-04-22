@@ -82,7 +82,7 @@ export const StatusBadge = ({ status, className, isAudit: isAuditProp }: StatusB
       variant={variant} 
       className={cn(
         sizeClasses, 
-        isAudit && "border-dashed border-amber-500/60 bg-amber-500/20 text-amber-500 transition-colors shadow-[0_0_10px_rgba(245,158,11,0.15)]",
+        isAudit && "border-dashed border-warning/60 bg-warning/20 text-warning transition-colors shadow-[0_0_10px_rgba(245,158,11,0.15)]",
         "justify-center font-medium transition-all shrink-0", 
         className
       )}
