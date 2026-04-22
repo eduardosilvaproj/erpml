@@ -814,19 +814,13 @@ const BalancoEstoque = () => {
                             {isCounting && (
                               <TableCell>
                                 {diff == null ? (
-                                  <Badge variant="secondary">Pendente</Badge>
+                                  <StatusBadge status="Pendente" />
                                 ) : diff === 0 ? (
-                                  <Badge className="bg-primary/15 text-primary gap-1">
-                                    <CheckCircle2 className="h-3 w-3" /> OK
-                                  </Badge>
+                                  <StatusBadge status="OK" />
                                 ) : diff > 0 ? (
-                                  <Badge className="bg-accent/15 text-accent-foreground gap-1">
-                                    <Plus className="h-3 w-3" /> Sobra
-                                  </Badge>
+                                  <StatusBadge status="Sobra" />
                                 ) : (
-                                  <Badge variant="destructive" className="gap-1">
-                                    <Minus className="h-3 w-3" /> Falta
-                                  </Badge>
+                                  <StatusBadge status="Falta" />
                                 )}
                               </TableCell>
                             )}
