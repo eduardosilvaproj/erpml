@@ -791,7 +791,7 @@ const BalancoEstoque = () => {
                           >
                             <TableCell className="font-mono text-xs">{p.sku}</TableCell>
                             <TableCell className="font-medium">{p.name}</TableCell>
-                            <TableCell className="text-center font-bold">{p.stock_physical}</TableCell>
+                            <TableCell className="text-center font-bold">{formatNumber(p.stock_physical)}</TableCell>
                             <TableCell className="text-center text-muted-foreground">
                               {invoiceInfo ? invoiceInfo.totalQty : "—"}
                             </TableCell>
