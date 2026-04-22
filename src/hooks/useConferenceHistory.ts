@@ -84,8 +84,9 @@ export function useConferenceHistory(filters?: {
 
       const { data, error } = await q;
       if (error) throw error;
-      return data as unknown as ConferenceRow[];
+      return normalizeConferences(data);
     },
+
   });
 }
 
