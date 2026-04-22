@@ -723,7 +723,7 @@ const Conferencia = () => {
       if (confRow) {
         setConferenceType((confRow as any).type || "full");
         setSectionName((confRow as any).section_name || "");
-        if (confRow.nome) setConferenceName(confRow.nome);
+        setConferenceName(confRow.nome || (confRow.tipo === "inventario" ? "Inventário Geral" : `Conferência ${confId.slice(0, 6)}`));
       }
 
       const productImagesById = new Map(allProducts.map((p) => [p.id, p.image_url ?? null] as const));
