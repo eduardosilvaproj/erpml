@@ -272,14 +272,27 @@ const Conferencia = () => {
 
   // Auto-persist each scan to the DB (debounced) so nothing is lost on browser crash.
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveSessionRef = useRef<() => Promise<boolean>>();
+  const saveSessionRef = useRef<() => Promise<string | null>>();
+  const loadConferenceItemsRef = useRef<(confId: string) => Promise<void>>();
+  const hydratingFromServerRef = useRef(false);
   useEffect(() => {
     if (step !== 2) return;
     if (!companyId) return;
     if (scannedProducts.length === 0 && !conferenceId) return;
+    if (hydratingFromServerRef.current) {
+      hydratingFromServerRef.current = false;
+      return;
+    }
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     autoSaveTimerRef.current = setTimeout(() => {
-      saveSessionRef.current?.().catch(() => {});
+      saveSessionRef.current?.()
+        .then(async (confId) => {
+          if (confId) {
+            hydratingFromServerRef.current = true;
+            await loadConferenceItemsRef.current?.(confId);
+          }
+        })
+        .catch(() => {});
     }, 800);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
   }, [scannedProducts, step, companyId, conferenceId]);
@@ -659,6 +672,7 @@ const Conferencia = () => {
 
   const totalScanned = scannedProducts.reduce((s, p) => s + p.scannedQty, 0);
   const uniqueProducts = new Set(scannedProducts.map((p) => p.productId).filter(Boolean)).size;
+  const displayedUniqueProducts = distinctProductsCount ?? uniqueProducts;
 
   const startConference = async () => {
     if (!mode) {
@@ -709,6 +723,10 @@ const Conferencia = () => {
     }
   }, [allProducts, toast]);
 
+  useEffect(() => {
+    loadConferenceItemsRef.current = loadConferenceItems;
+  }, [loadConferenceItems]);
+
   // Recarrega itens quando a sessão veio do recovery EXPLICITAMENTE (forceReload).
   // Não exige allProducts carregado — produtos só enriquecem nome/imagem; sku/ean/nome do bip
   // já vêm do banco, então a restauração funciona mesmo sem o catálogo pronto.
@@ -729,7 +747,7 @@ const Conferencia = () => {
   const saveSessionToDb = useCallback(async () => {
     if (!companyId) {
       toast({ title: "Empresa não identificada", variant: "destructive" });
-      return false;
+      return null;
     }
     setSavingSession(true);
     try {
@@ -811,14 +829,26 @@ const Conferencia = () => {
         .update({ updated_at: new Date().toISOString(), status: "em_andamento" } as any)
         .eq("id", confId!);
 
-      return true;
+      return confId!;
     } catch (err: any) {
       toast({ title: "Erro ao salvar conferência", description: err.message, variant: "destructive" });
-      return false;
+      return null;
     } finally {
       setSavingSession(false);
     }
   }, [companyId, conferenceId, conferenceName, mode, scannedProducts, toast]);
+
+  const handleRecalculateConference = useCallback(async () => {
+    const confId = await saveSessionToDb();
+    if (!confId) return;
+
+    hydratingFromServerRef.current = true;
+    await loadConferenceItems(confId);
+    toast({
+      title: "Conferência recalculada",
+      description: "Totais e lista agrupada foram atualizados.",
+    });
+  }, [loadConferenceItems, saveSessionToDb, toast]);
 
   // Keep ref pointing at latest saveSessionToDb for the auto-save effect.
   useEffect(() => { saveSessionRef.current = saveSessionToDb; }, [saveSessionToDb]);
@@ -1230,12 +1260,24 @@ const Conferencia = () => {
                     </Button>
                   </div>
                   <Button
+                    variant="outline"
+                    className="w-full"
+                    size="sm"
+                    onClick={handleRecalculateConference}
+                    disabled={savingSession || (!conferenceId && scannedProducts.length === 0)}
+                  >
+                    {savingSession
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Recalculando...</>
+                      : <><RotateCcw className="h-4 w-4 mr-2" /> Recalcular totais e lista</>
+                    }
+                  </Button>
+                  <Button
                     variant="secondary"
                     className="w-full"
                     size="sm"
                     onClick={async () => {
-                      const ok = await saveSessionToDb();
-                      if (ok) {
+                      const confId = await saveSessionToDb();
+                      if (confId) {
                         toast({
                           title: "Conferência salva",
                           description: "Seus bips ficaram guardados. Você pode continuar de qualquer dispositivo.",
