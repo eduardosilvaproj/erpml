@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAudit } from "@/contexts/AuditContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
