@@ -31,6 +31,8 @@ const BalancoEstoque = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
+  const [showOnlyCounted, setShowOnlyCounted] = useState(false);
+  const [balanceType, setBalanceType] = useState<"full" | "partial">("full");
   const [counts, setCounts] = useState<Record<string, number | null>>({});
   const [isCounting, setIsCounting] = useState(false);
   const [monthsBack, setMonthsBack] = useState("3");
