@@ -234,7 +234,9 @@ const RecuperarConferencia = () => {
                           {statusLabel[row.status] ?? row.status}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {row.tipo === "inventario" ? (row.type === "partial" ? "Parcial" : "Inventário") : "Nota fiscal"}
+                          {row.tipo === "inventario" || row.type === "full" || row.type === "partial"
+                            ? (row.section_name ? `Inventário (${row.section_name})` : "Inventário Geral")
+                            : "Nota fiscal"}
                         </Badge>
                         {row.type === "partial" && row.section_name && (
                           <Badge variant="secondary" className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-xs">
