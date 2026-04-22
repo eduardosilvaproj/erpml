@@ -68,19 +68,15 @@ const RecuperarConferencia = () => {
           distinct = 0;
         }
 
+        const normalized = normalizeConference(c);
         enriched.push({
-          id: c.id,
-          nome: c.nome ?? null,
-          status: c.status as string,
-          tipo: c.tipo as string,
-          type: c.type as string,
-          section_name: c.section_name ?? null,
-          updated_at: c.updated_at as string,
-          started_at: c.started_at as string,
-          criado_por: (c as any).criado_por ?? null,
+          ...normalized,
+          tipo: normalized.tipo as string,
+          type: normalized.type as string,
           total_rows: Number(totalRows ?? 0),
           distinct_products: distinct,
-        });
+          criado_por: (c as any).criado_por ?? null,
+        } as ConferenceRecoveryRow);
       }
 
       setRows(enriched);
@@ -229,13 +225,13 @@ const RecuperarConferencia = () => {
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold truncate">
-                          {row.nome || (row.tipo === "inventario" ? "Inventário Geral" : `Conferência ${row.id.slice(0, 6)}`)}
+                          {row.nome}
                         </span>
                         <Badge variant={ativa ? "default" : "outline"}>
                           {statusLabel[row.status] ?? row.status}
                         </Badge>
                         <Badge variant="outline" className="text-xs">
-                          {row.tipo === "inventario" || row.type === "full" || row.type === "partial"
+                          {row.tipo === "inventario"
                             ? (row.section_name ? `Inventário (${row.section_name})` : "Inventário Geral")
                             : "Nota fiscal"}
                         </Badge>
