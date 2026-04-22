@@ -4,18 +4,26 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertTriangle, Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Trash2, Loader2, CheckCircle2, PlayCircle, Eye, Table as TableIcon, Code } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
-type Step = "idle" | "warn" | "confirm" | "password" | "running" | "success";
+type Step = "idle" | "warn" | "confirm" | "password" | "running" | "success" | "dry_run_results";
 
 export default function SystemResetCard() {
   const [step, setStep] = useState<Step>("idle");
   const [confirmText, setConfirmText] = useState("");
   const [password, setPassword] = useState("");
   const [progress, setProgress] = useState("");
-  const [result, setResult] = useState<{ companies: number; users: number } | null>(null);
+  const [isDryRun, setIsDryRun] = useState(false);
+  const [result, setResult] = useState<{ 
+    companies: number; 
+    users: number; 
+    sql?: string; 
+    tables?: { name: string; count: number }[] 
+  } | null>(null);
 
   const reset = () => {
     setStep("idle");
