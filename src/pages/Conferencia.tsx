@@ -293,7 +293,7 @@ const Conferencia = () => {
           }
         })
         .catch(() => {});
-    }, 800);
+    }, 300);
     return () => { if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current); };
   }, [scannedProducts, step, companyId, conferenceId]);
 
@@ -1215,7 +1215,10 @@ const Conferencia = () => {
           <div className="md:col-span-2 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Resumo em tempo real</CardTitle>
+                <CardTitle className="text-sm flex items-center justify-between">
+                  Resumo em tempo real
+                  {loadingConference && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -1259,18 +1262,7 @@ const Conferencia = () => {
                       Finalizar bipagem <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    size="sm"
-                    onClick={handleRecalculateConference}
-                    disabled={savingSession || (!conferenceId && scannedProducts.length === 0)}
-                  >
-                    {savingSession
-                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Recalculando...</>
-                      : <><RotateCcw className="h-4 w-4 mr-2" /> Recalcular totais e lista</>
-                    }
-                  </Button>
+                  {/* Removido botão manual: recalculação agora é automática a cada bipagem */}
                   <Button
                     variant="secondary"
                     className="w-full"
