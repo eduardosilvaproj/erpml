@@ -154,6 +154,7 @@ function SidebarContent({
   pendingCount: number;
   compact: boolean;
 }) {
+  const { isAuditMode, toggleAuditMode } = useAudit();
   return (
     <>
       {/* Logo */}
