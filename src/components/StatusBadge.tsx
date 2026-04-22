@@ -78,14 +78,14 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
       variant={variant} 
       className={cn(
         sizeClasses, 
-        isAudit && "border-dashed border-amber-400/50 bg-amber-500/10 text-amber-700 dark:text-amber-400",
+        isAudit && "border-dashed border-warning/50 bg-warning/10 text-warning transition-colors",
         "justify-center font-medium transition-all shrink-0", 
         className
       )}
       role="status"
       aria-label={`Status: ${label}${isAudit ? ' (Necessita Auditoria)' : ''}`}
     >
-      {isAudit && <span className="mr-1.5 w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+      {isAudit && <span className="mr-1.5 w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />}
       {label}
     </Badge>
   );
