@@ -33,7 +33,7 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   const contextSize = useContext(StatusBadgeContext);
 
   const getStatusConfig = (status: string | null | undefined) => {
-    const s = (status?.trim() || "PENDENTE").toUpperCase();
+    const s = (status?.trim() || "DESCONHECIDO").toUpperCase();
     
     switch (s) {
       case 'OK':
@@ -60,9 +60,8 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
         return { variant: 'secondary', label: 'Pendente' } as const;
       case 'DESCONHECIDO':
       case 'UNKNOWN':
-        return { variant: 'secondary', label: 'Pendente', isAudit: true } as const;
       default:
-        return { variant: 'outline', label: status?.trim() || 'Pendente' } as const;
+        return { variant: 'secondary', label: 'Pendente', isAudit: true } as const;
     }
   };
 
