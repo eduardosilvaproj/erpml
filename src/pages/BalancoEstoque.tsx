@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ClipboardList, Search, Loader2, AlertTriangle, CheckCircle2,
-  FileText, Download, Plus, Minus, RotateCcw, PackageCheck, ScanBarcode, Camera, Volume2
+  FileText, Download, Plus, Minus, RotateCcw, PackageCheck, ScanBarcode, Camera, Volume2,
+  ShieldCheck, EyeOff, Filter, Info
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
