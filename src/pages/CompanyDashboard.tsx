@@ -19,6 +19,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import { ResetCompanyData } from "@/components/ResetCompanyData";
+
 
 function CompanyLogoUpload({ companyId, logoUrl, isOwner }: { companyId: string; logoUrl: string | null; isOwner: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
