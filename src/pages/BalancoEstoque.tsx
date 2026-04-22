@@ -405,19 +405,8 @@ const BalancoEstoque = () => {
           p.barcode?.toLowerCase().includes(s)
         );
       }
-      
-      let status = "";
-      let inScope = true;
-      if (categoryFilter) inScope = inScope && p.category_id === categoryFilter;
-      if (search) {
-        const s = search.toLowerCase();
-        inScope = inScope && (
-          p.name?.toLowerCase().includes(s) ||
-          p.sku?.toLowerCase().includes(s) ||
-          p.barcode?.toLowerCase().includes(s)
-        );
-      }
 
+      let status = "";
       if (!inScope) {
         status = "Ignorado";
       } else if (isCounted) {
@@ -465,7 +454,7 @@ const BalancoEstoque = () => {
       if (!a.isCounted && b.isCounted) return 1;
       return 0;
     });
-  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned]);
+  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned, formatNumber, formatDifference]);
 
 
   const exportReport = () => {
