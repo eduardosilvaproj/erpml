@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/conference-recovery";
+import { normalizeConference } from "@/lib/conference-utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
