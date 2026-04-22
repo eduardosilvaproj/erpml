@@ -42,6 +42,32 @@ const BalancoEstoque = () => {
   const bipInputRef = useRef<HTMLInputElement>(null);
   const bipBufferRef = useRef("");
   const bipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [decimalPlaces, setDecimalPlaces] = useState(0);
+
+  const formatNumber = useCallback((num: number, decimals: number = decimalPlaces) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(num);
+  }, [decimalPlaces]);
+
+  const formatDifference = useCallback((num: number, decimals: number = decimalPlaces) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+      signDisplay: 'exceptZero',
+    }).format(num);
+  }, [decimalPlaces]);
+
+  const formatPercent = useCallback((num: number, decimals: number = 1) => {
+    if (num === 0) return "0%";
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+      signDisplay: 'always',
+    }).format(num) + '%';
+  }, []);
+
 
   // Carrega TODOS os produtos (paginado) para evitar o teto de 1000 do Supabase.
   // Os filtros de busca/categoria são aplicados em memória abaixo.
