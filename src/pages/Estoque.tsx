@@ -79,6 +79,21 @@ const Estoque = () => {
     setAdjustBoxTarget("physical");
   };
 
+  const formatNumber = (num: number, decimals: number = 0) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(num);
+  };
+
+  const formatDifference = (num: number, decimals: number = 0) => {
+    return new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+      signDisplay: 'exceptZero',
+    }).format(num);
+  };
+
   const boxTotal = (parseInt(adjustBoxUnitsPerBox) || 0) * (parseInt(adjustBoxCount) || 0);
 
   const handleAdjustSave = async () => {
@@ -381,7 +396,7 @@ const Estoque = () => {
                 <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
                   <Card><CardContent className="flex items-center gap-3 p-4"><Warehouse className="h-5 w-5 text-primary" /><div><p className="text-xs text-muted-foreground">Total Físico</p><p className="text-xl font-bold">{totalPhys}</p></div></CardContent></Card>
                   <Card><CardContent className="flex items-center gap-3 p-4"><Package className="h-5 w-5 text-accent" /><div><p className="text-xs text-muted-foreground">Total FULL</p><p className="text-xl font-bold">{totalF}</p></div></CardContent></Card>
-                  <Card><CardContent className="flex items-center gap-3 p-4"><ArrowRightLeft className={`h-5 w-5 ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Diferença</p><p className={`text-xl font-bold ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`}>{diff > 0 ? `+${diff}` : diff}</p></div></CardContent></Card>
+                  <Card><CardContent className="flex items-center gap-3 p-4"><ArrowRightLeft className={`h-5 w-5 ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Diferença</p><p className={`text-xl font-bold ${diff !== 0 ? "text-destructive" : "text-emerald-600"}`}>{formatDifference(diff)}</p></div></CardContent></Card>
                   <Card><CardContent className="flex items-center gap-3 p-4"><ShieldAlert className={`h-5 w-5 ${divergentCount > 0 ? "text-amber-600" : "text-emerald-600"}`} /><div><p className="text-xs text-muted-foreground">Com Divergência</p><p className="text-xl font-bold">{divergentCount}</p></div></CardContent></Card>
                 </div>
 
@@ -422,7 +437,7 @@ const Estoque = () => {
                               <TableCell className="text-center font-bold text-primary">{p.stock_physical}</TableCell>
                               <TableCell className="text-center font-bold text-accent">{p.stock_full}</TableCell>
                               <TableCell className="text-center font-bold">
-                                <span className={hasDivergence ? "text-destructive" : "text-emerald-600"}>{d > 0 ? `+${d}` : d}</span>
+                                <span className={hasDivergence ? "text-destructive" : "text-emerald-600"}>{formatDifference(d)}</span>
                               </TableCell>
                               <TableCell>
                                 {hasDivergence ? (

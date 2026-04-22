@@ -405,32 +405,32 @@ const BalancoEstoque = () => {
           p.barcode?.toLowerCase().includes(s)
         );
       }
-      
-      let action = "";
+
       let status = "";
-      const hasDivergence = isCounted && counted !== p.stock_physical;
-      
       if (!inScope) {
         status = "Ignorado";
-        action = "Fora do filtro";
       } else if (isCounted) {
         status = "Contado";
-        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)}`;
       } else {
         const willBeZeroed = balanceType === "full" && zeroUnscanned;
-        if (willBeZeroed) {
-          status = "Zerar";
-          action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)}`;
-        } else {
-
-          status = "Protegido";
-          action = "Protegido";
-        }
+        status = willBeZeroed ? "Zerar" : "Protegido";
       }
 
-      const countedStock = isCounted ? (counts[p.id] || 0) : (status === "Zerar" ? 0 : p.stock_physical);
+      const countedStock = isCounted ? (counted as number) : (status === "Zerar" ? 0 : p.stock_physical);
       const difference = countedStock - p.stock_physical;
       const variationPercentage = p.stock_physical > 0 ? (difference / p.stock_physical) * 100 : (difference > 0 ? 100 : 0);
+      const hasDivergence = isCounted && counted !== p.stock_physical;
+
+      let action = "";
+      if (status === "Ignorado") {
+        action = "Fora do filtro";
+      } else if (status === "Contado") {
+        action = !hasDivergence ? "Manter (Sem divergência)" : `Ajustar: ${formatNumber(p.stock_physical)} → ${formatNumber(counted as number)} (${formatDifference(difference)})`;
+      } else if (status === "Zerar") {
+        action = `Zerar: ${formatNumber(p.stock_physical)} → ${formatNumber(0)} (${formatDifference(difference)})`;
+      } else {
+        action = "Protegido";
+      }
       
       return {
         id: p.id,
@@ -454,7 +454,7 @@ const BalancoEstoque = () => {
       if (!a.isCounted && b.isCounted) return 1;
       return 0;
     });
-  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned]);
+  }, [allProductsRaw, counts, categoryFilter, search, isCounting, balanceType, zeroUnscanned, formatNumber, formatDifference]);
 
 
   const exportReport = () => {
@@ -694,7 +694,7 @@ const BalancoEstoque = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Sobras</p>
-              <p className="text-2xl font-bold text-primary">+{totalSurplus}</p>
+              <p className="text-2xl font-bold text-primary">{formatDifference(totalSurplus)}</p>
             </div>
           </CardContent>
         </Card>
@@ -705,7 +705,7 @@ const BalancoEstoque = () => {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Total Faltas</p>
-              <p className="text-2xl font-bold text-destructive">-{totalDeficit}</p>
+              <p className="text-2xl font-bold text-destructive">{formatDifference(-totalDeficit)}</p>
             </div>
           </CardContent>
         </Card>
