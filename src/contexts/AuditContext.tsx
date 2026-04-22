@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 interface AuditContextType {
   isAuditMode: boolean;
-  initialized: boolean;
   toggleAuditMode: () => void;
   setAuditMode: (enabled: boolean) => void;
 }
@@ -11,24 +10,9 @@ const AuditContext = createContext<AuditContextType | undefined>(undefined);
 
 export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuditMode, setIsAuditMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("audit_mode") === "true";
-    }
-    return false;
+    const saved = localStorage.getItem("audit_mode");
+    return saved === "true";
   });
-  const [initialized, setInitialized] = useState(true);
-
-  // We still want to handle potential changes in localStorage from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "audit_mode") {
-        setIsAuditMode(e.newValue === "true");
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
-
 
   const toggleAuditMode = () => {
     setIsAuditMode((prev) => !prev);
@@ -39,13 +23,11 @@ export const AuditProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   useEffect(() => {
-    if (initialized) {
-      localStorage.setItem("audit_mode", String(isAuditMode));
-    }
-  }, [isAuditMode, initialized]);
+    localStorage.setItem("audit_mode", String(isAuditMode));
+  }, [isAuditMode]);
 
   return (
-    <AuditContext.Provider value={{ isAuditMode, initialized, toggleAuditMode, setAuditMode }}>
+    <AuditContext.Provider value={{ isAuditMode, toggleAuditMode, setAuditMode }}>
       {children}
     </AuditContext.Provider>
   );

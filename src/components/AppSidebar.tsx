@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAudit } from "@/contexts/AuditContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -154,7 +153,6 @@ function SidebarContent({
   pendingCount: number;
   compact: boolean;
 }) {
-  const { isAuditMode, toggleAuditMode } = useAudit();
   return (
     <>
       {/* Logo */}
@@ -306,24 +304,7 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-border/30 p-2 lg:p-3 shrink-0 space-y-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={toggleAuditMode}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
-                isAuditMode 
-                  ? "bg-warning/20 text-warning border border-warning/30" 
-                  : "bg-slate-700/30 text-muted-foreground hover:bg-slate-700/50"
-              }`}
-            >
-              <ShieldCheck className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${isAuditMode ? "text-warning" : "text-muted-foreground"}`} strokeWidth={1.75} />
-              <span className="truncate">{isAuditMode ? "Auditoria Ativa" : "Modo Auditoria"}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Alternar modo de auditoria global</TooltipContent>
-        </Tooltip>
-
+      <div className="border-t border-border/30 p-2 lg:p-3 shrink-0">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
