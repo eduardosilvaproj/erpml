@@ -320,6 +320,7 @@ const BalancoEstoque = () => {
         counted: number;
         registered: number;
         diff: number;
+        variationPercentage: number;
         invoiceQtyEntered: number;
         invoiceCount: number;
       }>;
