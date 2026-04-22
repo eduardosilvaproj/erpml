@@ -74,9 +74,14 @@ export default function SystemResetCard() {
           </div>
         </CardHeader>
         <CardContent>
-          <Button variant="destructive" onClick={() => setStep("warn")}>
-            <Trash2 className="h-4 w-4 mr-2" /> Executar Reset Geral
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="destructive" onClick={() => setStep("warn")}>
+              <Trash2 className="h-4 w-4 mr-2" /> Executar Reset Geral
+            </Button>
+            <Button variant="outline" onClick={() => { setIsDryRun(true); setStep("confirm"); }}>
+              <Eye className="h-4 w-4 mr-2" /> Simular Reset (Dry-run)
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
