@@ -288,13 +288,7 @@ const Separacao = () => {
           <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCcw className="h-4 w-4" /> Reiniciar
           </Button>
-          {orderInfo && (
-            <OrderRecordingSystem 
-              pedidoId={orderInfo.id} 
-              orderNumber={orderInfo.frete_ml || orderInfo.number} 
-              freteMl={orderInfo.frete_ml}
-            />
-          )}
+          {/* Removido Gravar Carregamento daqui */}
         </div>
       </div>
 
