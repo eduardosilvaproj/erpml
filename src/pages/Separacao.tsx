@@ -478,24 +478,11 @@ const Separacao = () => {
                   </div>
                   <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
                   {/* DEV ONLY - REMOVER ANTES DO DEPLOY */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <button
-                      onClick={handleSkipSeparacao}
-                      style={{
-                        background: '#ff6b00',
-                        color: 'white',
-                        border: '2px dashed #ff9900',
-                        borderRadius: '8px',
-                        padding: '8px 16px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        margin: '8px 0',
-                        width: '100%'
-                      }}
-                    >
-                      ⚡ [DEV] Pular bipagem — marcar todos como completos
-                    </button>
-                  )}
+                  <button onClick={handleSkipSeparacao}
+                    style={{background:'#ff6b00', color:'white', border:'2px dashed #ff9900',
+                    borderRadius:'8px', padding:'8px 16px', fontSize:'12px', cursor:'pointer', margin:'8px 0', width: '100%'}}>
+                    ⚡ [DEV] Pular bipagem — marcar todos como completos
+                  </button>
                   {/* FIM DEV ONLY */}
                 </div>
               </div>
