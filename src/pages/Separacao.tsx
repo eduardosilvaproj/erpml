@@ -65,9 +65,15 @@ const Separacao = () => {
           .from("profiles")
           .select("full_name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
+        
         if (data?.full_name) {
-          setUserName(data.full_name.split(' ')[0]); // Get first name
+          setUserFullName(data.full_name);
+          setUserName(data.full_name.split(' ')[0]);
+        } else {
+          const nameFromEmail = user.email?.split('@')[0] || "Administrador";
+          setUserFullName(nameFromEmail);
+          setUserName(nameFromEmail);
         }
       }
     };
@@ -176,7 +182,7 @@ const Separacao = () => {
     doc.setFontSize(12);
     doc.text(`Pedido: Frete #${orderInfo.frete_ml || orderInfo.number}`, 14, 30);
     doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 37);
-    doc.text(`Responsável: ${userName}`, 14, 44);
+    doc.text(`Responsável: ${userFullName}`, 14, 44);
 
     const tableData = items.map((item, index) => [
       index + 1,
@@ -351,7 +357,7 @@ const Separacao = () => {
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <User className="h-5 w-5 text-emerald-500" />
-                    <span>Responsável: <strong>{userName}</strong></span>
+                    <span>Responsável: <strong>{userFullName}</strong></span>
                   </div>
                   <div className="flex items-center gap-3 text-gray-700">
                     <Clock className="h-5 w-5 text-emerald-500" />
