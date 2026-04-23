@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,10 +48,24 @@ export const OrdensFullTab = () => {
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
   const updateStatus = useUpdateOrdemStatus();
+  const { data: fullOrders, isLoading: isLoadingFull } = useQuery({
+    queryKey: ["full-orders", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("full_orders")
+        .select("*")
+        .eq("company_id", companyId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
 
   // PDF Upload state
@@ -190,6 +205,16 @@ export const OrdensFullTab = () => {
         })),
         enviarParaSeparacao: true
       });
+
+      // Registrar na tabela full_orders para rastreamento
+      if (companyId && parsedData.shippingNumber) {
+        await supabase.from("full_orders").insert({
+          company_id: companyId,
+          pdf_frete_id: parsedData.shippingNumber,
+          status: "separacao"
+        });
+      }
+
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
       setParsedData(null);
@@ -544,6 +569,9 @@ export const OrdensFullTab = () => {
           </CardTitle>
           {canManageOrders && (
             <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setSummaryOpen(true)} className="gap-2">
+                <ClipboardList className="h-4 w-4" /> Ver resumo
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setIaOpen(true)}
                 className="border-purple-500/40 bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20">
                 <Sparkles className="h-4 w-4 mr-1 text-purple-400" /> Sugestão IA
@@ -758,6 +786,96 @@ export const OrdensFullTab = () => {
         ordemId={viewOrdemId}
         onClose={() => setViewOrdemId(null)}
       />
+
+      {/* Resumo Full Orders */}
+      <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Resumo de Pedidos Full</DialogTitle>
+            <DialogDescription>
+              Status atual e progresso das ordens integradas com o Mercado Livre Full.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingFull ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (fullOrders || []).length === 0 ? (
+            <div className="text-center p-12 bg-muted/20 rounded-lg border-2 border-dashed">
+              <Package className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground font-medium">Nenhum registro de pedido full encontrado.</p>
+              <p className="text-xs text-muted-foreground mt-1">Carregue um PDF para iniciar o rastreamento.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>PDF Frete ID</TableHead>
+                  <TableHead>Status Atual</TableHead>
+                  <TableHead>Progresso (Bipagem)</TableHead>
+                  <TableHead>Data Criação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fullOrders?.map((fo) => {
+                  const matchingOrder = ordens?.find(o => o.descricao?.includes(fo.pdf_frete_id));
+                  const progress = matchingOrder ? (matchingOrder.total_itens_separados / (matchingOrder.total_itens || 1)) * 100 : 0;
+                  
+                  return (
+                    <TableRow key={fo.id}>
+                      <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
+                          fo.status === 'completo' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
+                          'bg-amber-500/10 text-amber-600 border-amber-200'
+                        }>
+                          {fo.status || 'separacao'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {matchingOrder ? (
+                          <div className="space-y-1 w-[150px]">
+                            <div className="flex justify-between text-[10px] font-medium">
+                              <span>{matchingOrder.total_itens_separados} / {matchingOrder.total_itens} un.</span>
+                              <span>{Math.round(progress)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-500" 
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Ordem não vinculada</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(fo.created_at).toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          if (matchingOrder) setViewOrdemId(matchingOrder.id);
+                          else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
+                        }}>
+                          Ver Detalhes
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSummaryOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
