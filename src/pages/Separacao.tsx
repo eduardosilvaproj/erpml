@@ -336,7 +336,7 @@ const Separacao = () => {
               <div className="p-8 text-center space-y-6">
                 <div className="space-y-2">
                   <h2 className="text-4xl font-black text-emerald-900 tracking-tight">✅ Separação Concluída!</h2>
-                  <p className="text-emerald-700 text-xl font-medium">Pedido ML #{orderInfo?.number}</p>
+                  <p className="text-emerald-700 text-xl font-medium">Pedido ML #{orderInfo?.frete_ml || orderInfo?.number}</p>
                 </div>
 
                 <div className="max-w-md mx-auto bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 font-mono text-left space-y-3 relative">
@@ -362,28 +362,29 @@ const Separacao = () => {
                     <span>{format(endTime || new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
                   </div>
                 </div>
-                
-                <div className="text-left max-w-md mx-auto space-y-4 py-4">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
-                    PRÓXIMOS PASSOS:
-                  </h3>
-                  <ul className="space-y-3">
-                    <li className="flex gap-3 items-start">
-                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">1</span>
-                      <p className="text-sm text-gray-600">Acesse o <strong>Mercado Livre</strong> para gerar a Nota Fiscal</p>
-                    </li>
-                    <li className="flex gap-3 items-start">
-                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">2</span>
-                      <p className="text-sm text-gray-600">Aguarde o <strong>caminhão</strong> para carregamento</p>
-                    </li>
-                    <li className="flex gap-3 items-start">
-                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">3</span>
-                      <p className="text-sm text-gray-600">Grave o carregamento quando o caminhão chegar</p>
-                    </li>
-                  </ul>
-                </div>
 
+                {/* CAMPO: DATA PREVISTA DE CARREGAMENTO */}
+                <div className="max-w-md mx-auto bg-blue-50/50 border border-blue-100 rounded-xl p-6 text-left space-y-4">
+                  <h3 className="font-bold text-blue-900 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" /> 📅 Previsão de carregamento:
+                  </h3>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Input 
+                      type="date" 
+                      value={previsaoData}
+                      onChange={(e) => setPrevisaoData(e.target.value)}
+                      className="bg-white border-blue-200"
+                    />
+                    <Input 
+                      type="time" 
+                      value={previsaoHora}
+                      onChange={(e) => setPrevisaoHora(e.target.value)}
+                      className="bg-white border-blue-200"
+                    />
+                  </div>
+                  <p className="text-[10px] text-blue-600 italic">Opcional: Informe quando o carregamento está previsto.</p>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto pt-4">
                   <Button 
                     variant="outline" 
@@ -393,22 +394,15 @@ const Separacao = () => {
                   >
                     <Printer className="h-5 w-5" /> Imprimir Relatório PDF
                   </Button>
-                  
-                  {orderInfo && (
-                    <OrderRecordingSystem 
-                      pedidoId={orderInfo.id} 
-                      orderNumber={orderInfo.number} 
-                      trigger={
-                        <Button 
-                          variant="outline" 
-                          size="lg" 
-                          className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
-                        >
-                          <Video className="h-5 w-5 text-red-500" /> Gravar Carregamento
-                        </Button>
-                      }
-                    />
-                  )}
+
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
+                    onClick={() => navigate("/movimentacao-full")}
+                  >
+                    <ArrowLeft className="h-5 w-5" /> Voltar para Ordens
+                  </Button>
 
                   <Button 
                     size="lg" 
@@ -416,9 +410,10 @@ const Separacao = () => {
                     onClick={handleFinalizarSeparacao}
                     disabled={isFinishing}
                   >
-                    {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-6 w-6" />}
-                    MARCAR COMO ENVIADO
+                    {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Box className="h-6 w-6" />}
+                    💾 Salvar e Aguardar Carregamento
                   </Button>
+                </div>
 
                   <Button 
                     variant="ghost" 
