@@ -76,6 +76,7 @@ export const OrdensFullTab = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
+  const [detailsOrdemId, setDetailsOrdemId] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
 
