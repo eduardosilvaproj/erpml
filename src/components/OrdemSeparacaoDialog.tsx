@@ -43,6 +43,9 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [selCam, setSelCam] = useState<string>("");
   const [scan, setScan] = useState("");
   const [lastScan, setLastScan] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [editingPrevisao, setEditingPrevisao] = useState(false);
+  const [novaPrevisaoData, setNovaPrevisaoData] = useState("");
+  const [novaPrevisaoHora, setNovaPrevisaoHora] = useState("");
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
@@ -53,10 +56,14 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   useEffect(() => {
     if (!ordemId) {
       setAskRecord(false); setPickCamera(false); setSelCam(""); setScan(""); setLastScan(null);
+      setEditingPrevisao(false);
       if (recorder.status !== "idle") recorder.reset();
+    } else if (ordem?.previsao_carregamento) {
+      const d = new Date(ordem.previsao_carregamento);
+      setNovaPrevisaoData(format(d, "yyyy-MM-dd"));
+      setNovaPrevisaoHora(format(d, "HH:mm"));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ordemId]);
+  }, [ordemId, ordem?.previsao_carregamento]);
 
   const progress = useMemo(() => {
     const total = itens.reduce((s, i) => s + i.qtd_solicitada, 0);
@@ -167,6 +174,32 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     }
   };
 
+  const handleSavePrevisao = async () => {
+    if (!ordem?.frete_ml) return;
+    try {
+      const novaData = new Date(`${novaPrevisaoData}T${novaPrevisaoHora}:00`).toISOString();
+      
+      // Atualizar em ambas as tabelas para garantir sincronia
+      const { error: e1 } = await supabase
+        .from('full_orders')
+        .update({ previsao_carregamento: novaData })
+        .eq('frete_ml', ordem.frete_ml);
+      
+      const { error: e2 } = await supabase
+        .from('ordens_full')
+        .update({ previsao_carregamento: novaData })
+        .eq('id', ordem.id);
+
+      if (e1 || e2) throw e1 || e2;
+
+      toast({ title: '✅ Previsão atualizada' });
+      setEditingPrevisao(false);
+      refetch();
+    } catch (e: any) {
+      toast({ title: "Erro ao salvar previsão", description: e.message, variant: "destructive" });
+    }
+  };
+
   const ajustarQtd = async (item: OrdemItem, delta: number) => {
     const newQtd = Math.max(0, item.qtd_separada + delta);
     await updateItem.mutateAsync({
@@ -188,9 +221,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             <div className="flex items-center justify-between max-w-2xl mx-auto">
               {[
                 { label: 'PDF', icon: Box, active: true },
-                { label: 'Separando', icon: ScanBarcode, active: (ordem?.status === 'separando' || ordem?.status === 'em_separacao' || isSeparada || ordem?.status === 'concluida') },
-                { label: 'Aguardando', icon: Truck, active: (ordem?.status === 'aguardando_carregamento' || ordem?.status === 'concluida' || isSeparada) },
-                { label: 'Carregando', icon: Video, active: (ordem?.status === 'carregando' || ordem?.status === 'concluida') },
+                { label: 'Separado', icon: CheckCircle2, active: (ordem?.status === 'separada' || ordem?.status === 'aguardando_carregamento' || ordem?.status === 'carregando' || ordem?.status === 'enviado' || ordem?.status === 'concluida') },
+                { label: 'Carregamento', icon: Truck, active: (ordem?.status === 'carregando' || ordem?.status === 'enviado' || ordem?.status === 'concluida') },
                 { label: 'Enviado', icon: CheckCircle2, active: (ordem?.status === 'enviado' || ordem?.status === 'concluida') }
               ].map((step, idx, arr) => (
                 <div key={step.label} className="flex items-center flex-1 last:flex-none">
@@ -231,13 +263,52 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                   )}
                 </div>
               </DialogTitle>
-              <DialogDescription className="text-base">
-                {ordem?.descricao || "Sem descrição"}
-                {ordem?.previsao_carregamento && (
-                  <span className="block mt-1 font-bold text-blue-600 flex items-center gap-1">
-                    <Calendar className="h-4 w-4" /> Previsão: {format(new Date(ordem.previsao_carregamento), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                  </span>
-                )}
+              <DialogDescription className="text-base space-y-4">
+                <div className="flex flex-col gap-4 py-4 border-y border-dashed mt-4">
+                  <p className="font-bold text-lg">{ordem?.descricao || "Sem descrição"}</p>
+                  
+                  <div className="bg-blue-50/50 p-4 rounded-lg border border-blue-100">
+                    <div className="flex items-center gap-2 text-blue-800 font-bold mb-3">
+                      <Calendar className="h-5 w-5" />
+                      <span>📅 Previsão de coleta:</span>
+                    </div>
+                    
+                    {editingPrevisao ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input 
+                          type="date" 
+                          className="w-40 bg-white" 
+                          value={novaPrevisaoData} 
+                          onChange={(e) => setNovaPrevisaoData(e.target.value)}
+                        />
+                        <Input 
+                          type="time" 
+                          className="w-28 bg-white" 
+                          value={novaPrevisaoHora} 
+                          onChange={(e) => setNovaPrevisaoHora(e.target.value)}
+                        />
+                        <Button size="sm" onClick={handleSavePrevisao} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
+                        <Button size="sm" variant="ghost" onClick={() => setEditingPrevisao(false)}>Cancelar</Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
+                          {ordem?.previsao_carregamento 
+                            ? format(new Date(ordem.previsao_carregamento), "dd/MM/yyyy")
+                            : "--/--/----"}
+                        </span>
+                        <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
+                          {ordem?.previsao_carregamento 
+                            ? format(new Date(ordem.previsao_carregamento), "HH:mm")
+                            : "--:--"}
+                        </span>
+                        <Button variant="outline" size="sm" onClick={() => setEditingPrevisao(true)} className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50">
+                          ✏️ Editar
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </DialogDescription>
             </DialogHeader>
 
@@ -320,6 +391,20 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
               {/* Visualização (concluída/cancelada) */}
               {isView && <ItensTable itens={itens} readonly />}
+
+              {/* Gravações Salvas Section */}
+              {ordem && (isSeparada || ordem.status === 'concluida' || ordem.status === 'enviado') && (
+                <div className="mt-8 pt-8 border-t">
+                  <h3 className="text-lg font-black mb-4 flex items-center gap-2">
+                    <Truck className="h-5 w-5" /> 🚛 CARREGAMENTO
+                  </h3>
+                  
+                  <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-center">
+                    <p className="text-sm text-muted-foreground mb-4">Gravações salvas:</p>
+                    <p className="text-xs text-muted-foreground italic">(nenhuma ainda)</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           </div>
