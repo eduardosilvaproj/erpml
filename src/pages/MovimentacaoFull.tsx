@@ -48,7 +48,7 @@ interface BoxConfig {
 
 const MovimentacaoFull = () => {
   const { toast } = useToast();
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const [items, setItems] = useState<TransferItem[]>([]);
   const [usedKits, setUsedKits] = useState<string[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
@@ -750,33 +750,83 @@ const MovimentacaoFull = () => {
         <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
       </div>
 
-      <Tabs defaultValue="envio" className="space-y-6">
+      <Tabs defaultValue="ordens" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
           <TabsTrigger value="ordens">📋 Ordens</TabsTrigger>
+          <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
           <TabsTrigger value="gravacoes">📹 Gravações</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="envio" className="space-y-6 mt-0">
+        <TabsContent value="ordens" className="mt-0">
+          <OrdensFullTab />
+        </TabsContent>
 
-      {/* Banner: Ordem ativa (vinda do clique em "Executar") */}
-      {ordemAtiva && (() => {
-        const total = ordemAtiva.produtos.length;
-        const completos = ordemAtiva.produtos.filter((p) => (qtdBipada[p.product_id] ?? 0) >= p.qtd_solicitada && p.qtd_solicitada > 0).length;
-        const allDone = total > 0 && completos === total;
-        const pct = total > 0 ? Math.round((completos / total) * 100) : 0;
-        return (
-          <Card className={allDone ? "border-emerald-500/50 bg-emerald-500/10" : "border-blue-500/40 bg-blue-500/10"}>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between gap-3 flex-wrap">
+        <TabsContent value="envio" className="space-y-6 mt-0">
+          {/* Banner: Ordem ativa (vinda do clique em "Executar") */}
+          {ordemAtiva && (() => {
+            const total = ordemAtiva.produtos.length;
+            const completos = ordemAtiva.produtos.filter((p) => (qtdBipada[p.product_id] ?? 0) >= p.qtd_solicitada && p.qtd_solicitada > 0).length;
+            const allDone = total > 0 && completos === total;
+            const pct = total > 0 ? Math.round((completos / total) * 100) : 0;
+            return (
+              <Card className={allDone ? "border-emerald-500/50 bg-emerald-500/10" : "border-blue-500/40 bg-blue-500/10"}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <ClipboardList className={`h-5 w-5 shrink-0 ${allDone ? "text-emerald-400" : "text-blue-400"}`} />
+                      <div className="min-w-0">
+                        <p className={`text-sm font-semibold ${allDone ? "text-emerald-300" : "text-blue-300"}`}>
+                          {allDone ? "✅ Todos os itens separados!" : `📋 Separando Ordem ${ordemAtiva.numero}`}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {ordemAtiva.descricao || "Sem descrição"} — {completos} de {total} produtos completos
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        if (!window.confirm("Cancelar separação? O progresso será perdido.")) return;
+                        try {
+                          await updateStatusOrdem.mutateAsync({ id: ordemAtiva.id, status: "aguardando" });
+                        } catch {}
+                        localStorage.removeItem("ordem_ativa");
+                        setOrdemAtiva(null);
+                        setItems([]);
+                        setQtdBipada({});
+                        setLoadedOrdemIds([]);
+                        toast({ title: "Separação cancelada." });
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1" /> Cancelar separação
+                    </Button>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${allDone ? "bg-emerald-500" : "bg-blue-500"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Banner: envio_pendente legado */}
+          {!ordemAtiva && loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
+            <Card className="border-blue-500/40 bg-blue-500/10">
+              <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
                 <div className="flex items-center gap-3 min-w-0">
-                  <ClipboardList className={`h-5 w-5 shrink-0 ${allDone ? "text-emerald-400" : "text-blue-400"}`} />
+                  <ClipboardList className="h-5 w-5 text-blue-400 shrink-0" />
                   <div className="min-w-0">
-                    <p className={`text-sm font-semibold ${allDone ? "text-emerald-300" : "text-blue-300"}`}>
-                      {allDone ? "✅ Todos os itens separados!" : `📋 Separando Ordem ${ordemAtiva.numero}`}
+                    <p className="text-sm font-semibold text-blue-300">
+                      📋 Ordem{loadedOrdemIds.length > 1 ? "s" : ""}{" "}
+                      {Array.from(new Set(envioPendente.map((ep: any) => ep.ordem?.numero).filter(Boolean))).join(", ")} carregada
+                      {loadedOrdemIds.length > 1 ? "s" : ""}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {ordemAtiva.descricao || "Sem descrição"} — {completos} de {total} produtos completos
+                    <p className="text-xs text-muted-foreground">
+                      {envioPendente.length} produto(s) prontos para envio — confira a lista abaixo e gere a ordem de envio FULL.
                     </p>
                   </div>
                 </div>
@@ -784,548 +834,190 @@ const MovimentacaoFull = () => {
                   variant="outline"
                   size="sm"
                   onClick={async () => {
-                    if (!window.confirm("Cancelar separação? O progresso será perdido.")) return;
-                    try {
-                      await updateStatusOrdem.mutateAsync({ id: ordemAtiva.id, status: "aguardando" });
-                    } catch {}
-                    localStorage.removeItem("ordem_ativa");
-                    setOrdemAtiva(null);
+                    for (const oid of loadedOrdemIds) {
+                      try { await limparPendente.mutateAsync(oid); } catch {}
+                    }
                     setItems([]);
-                    setQtdBipada({});
                     setLoadedOrdemIds([]);
-                    toast({ title: "Separação cancelada." });
+                    toast({ title: "Lista limpa." });
                   }}
                 >
-                  <X className="h-4 w-4 mr-1" /> Cancelar separação
+                  <X className="h-4 w-4 mr-1" /> Limpar
                 </Button>
-              </div>
-              <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className={`h-full transition-all ${allDone ? "bg-emerald-500" : "bg-blue-500"}`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
-
-      {/* Banner: envio_pendente legado */}
-      {!ordemAtiva && loadedOrdemIds.length > 0 && envioPendente && envioPendente.length > 0 && (
-        <Card className="border-blue-500/40 bg-blue-500/10">
-          <CardContent className="flex items-center justify-between gap-3 p-4 flex-wrap">
-            <div className="flex items-center gap-3 min-w-0">
-              <ClipboardList className="h-5 w-5 text-blue-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-blue-300">
-                  📋 Ordem{loadedOrdemIds.length > 1 ? "s" : ""}{" "}
-                  {Array.from(new Set(envioPendente.map((ep: any) => ep.ordem?.numero).filter(Boolean))).join(", ")} carregada
-                  {loadedOrdemIds.length > 1 ? "s" : ""}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {envioPendente.length} produto(s) prontos para envio — confira a lista abaixo e gere a ordem de envio FULL.
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                for (const oid of loadedOrdemIds) {
-                  try { await limparPendente.mutateAsync(oid); } catch {}
-                }
-                setItems([]);
-                setLoadedOrdemIds([]);
-                toast({ title: "Lista limpa." });
-              }}
-            >
-              <X className="h-4 w-4 mr-1" /> Limpar
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-
-      {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
-        {[
-          { label: "Separando", value: statCounts.separando, icon: Package },
-          { label: "Enviado", value: statCounts.enviado, icon: Truck },
-          { label: "Recebido FULL", value: statCounts.recebido, icon: CheckCircle },
-          { label: "Conferido FULL", value: statCounts.conferido, icon: Check },
-        ].map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <stat.icon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
-                <p className="text-2xl font-bold">{stat.value}</p>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Scan section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ScanBarcode className="h-5 w-5" />
-            Bipar Produtos para Envio
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">📦 Estoque Físico → 🏭 Depósito FULL ML</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Direction indicator */}
-          <div className="flex items-center justify-center gap-4">
-            <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2">
-              <Package className="h-5 w-5 text-primary" />
-              <span className="font-medium">Físico</span>
-            </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground" />
-            <div className="flex items-center gap-2 rounded-lg bg-accent/10 px-4 py-2">
-              <Truck className="h-5 w-5 text-accent" />
-              <span className="font-medium">FULL</span>
-            </div>
-          </div>
-
-          {/* Scan input */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <ScanBarcode className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                ref={scanInputRef}
-                value={scanBuffer}
-                onChange={(e) => setScanBuffer(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Bipe código de barras, SKU do produto ou SKU do kit..."
-                className="pl-11 text-lg h-14 font-mono"
-                autoFocus
-                autoComplete="off"
-              />
-            </div>
-            <Button size="lg" className="h-14" onClick={() => handleScan(scanBuffer)} disabled={!scanBuffer.trim()}>
-              Bipar
-            </Button>
-            <BarcodeScanner onScan={(code) => handleScan(code)} />
-          </div>
-
-          {/* Box mode toggle */}
-          <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
-            <Switch id="box-mode-full" checked={boxModeEnabled} onCheckedChange={setBoxModeEnabled} />
-            <Label htmlFor="box-mode-full" className="text-sm cursor-pointer flex items-center gap-2">
-              <PackageOpen className="h-4 w-4" />
-              Enviar produtos em caixa fechada
-            </Label>
-            {boxModeEnabled && (
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-xs ml-auto">
-                Modo caixa ativo
-              </Badge>
-            )}
-          </div>
-
-          {/* Quick kit buttons */}
-          {activeKits.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                <Boxes className="h-3.5 w-3.5" /> Adicionar Kit Rápido:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {activeKits.map((kit) => (
-                  <Button key={kit.id} variant="outline" size="sm" className="text-xs" onClick={() => handleAddKit(kit)}>
-                    <Boxes className="h-3 w-3 mr-1" />
-                    {kit.name}
-                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1 h-4">
-                      {kit.kit_items?.length || 0} itens
-                    </Badge>
-                  </Button>
-                ))}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Last scan feedback */}
-          {lastScan && (
-            <div className={`rounded-lg p-3 flex items-center gap-3 ${
-              lastScan.success ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-destructive/5 border border-destructive/20"
-            }`}>
-              {lastScan.success ? (
-                <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg"><Package className="h-5 w-5 text-blue-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Produtos</p>
+                  <p className="text-xl font-bold">{items.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg"><Boxes className="h-5 w-5 text-emerald-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Total Unidades</p>
+                  <p className="text-xl font-bold">{totalQty}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg"><Truck className="h-5 w-5 text-amber-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Total Caixas</p>
+                  <p className="text-xl font-bold">{totalBoxes}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg"><Video className="h-5 w-5 text-purple-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Status REC</p>
+                  <p className="text-xl font-bold">{isRecording ? "Gravando" : "Ocioso"}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <ScanBarcode className="h-5 w-5 text-primary" /> Bipar Produtos para Envio
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="box-mode" className="text-sm cursor-pointer">Modo Caixas</Label>
+                <Switch id="box-mode" checked={boxModeEnabled} onCheckedChange={setBoxModeEnabled} />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <BarcodeScannerInput
+                    ref={scanInputRef}
+                    value={scanBuffer}
+                    onChange={setScanBuffer}
+                    onScan={handleScan}
+                    placeholder="Bipe o EAN ou SKU do produto..."
+                    autoFocus
+                  />
+                </div>
+                {lastScan && (
+                  <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${
+                    lastScan.success ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-destructive/10 border-destructive/30 text-destructive"
+                  }`}>
+                    {lastScan.success ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                    <span className="text-sm font-medium">{lastScan.message}</span>
+                  </div>
+                )}
+              </div>
+
+              {items.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/30">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <ScanBarcode className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-sm font-medium">Nenhum item bipado</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Comece a bipar os produtos para preparar o envio FULL.</p>
+                </div>
               ) : (
-                <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-              )}
-              <p className="text-sm font-medium">{lastScan.message}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Two-column layout: Products + Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Left column — Products for shipping (60%) */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Produtos para envio
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {items.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Bipe produtos para adicionar à ordem de envio</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="overflow-x-auto">
+                <div className="border rounded-lg overflow-hidden">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-muted/50">
                       <TableRow>
-                        <TableHead>Produto</TableHead>
+                        <TableHead>Produto / SKU</TableHead>
                         <TableHead className="text-center">Qtd</TableHead>
-                        {boxModeEnabled && <TableHead className="text-center">Caixa 📦</TableHead>}
-                        <TableHead className="w-[50px]"></TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item) => {
-                        const bc = boxConfigs[item.productId];
-                        return (
-                          <>
-                            <TableRow key={item.productId}>
-                              <TableCell>
-                                <div className="flex items-center gap-3">
-                                  <div className="h-9 w-9 rounded-lg bg-muted/50 flex items-center justify-center shrink-0">
-                                    <Package className="h-4 w-4 text-muted-foreground" />
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="font-medium text-sm truncate">{item.productName}</p>
-                                    <p className="text-xs text-muted-foreground font-mono">{item.productSku}</p>
-                                    {bc && (
-                                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 text-[10px] mt-1">
-                                        📦 {bc.boxCount}cx × {bc.unitsPerBox}un = {bc.boxCount * bc.unitsPerBox} un
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}>
-                                    <Minus className="h-3 w-3" />
-                                  </Button>
-                                  <span className="font-bold w-8 text-center">{item.quantity}</span>
-                                  <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)} disabled={item.quantity >= item.stockPhysical}>
-                                    <Plus className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                              {boxModeEnabled && (
-                                <TableCell className="text-center">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-xs h-7"
-                                    onClick={() => {
-                                      if (expandedBoxProduct === item.productId) {
-                                        setExpandedBoxProduct(null);
-                                      } else {
-                                        setExpandedBoxProduct(item.productId);
-                                        setBoxForm({
-                                          gtinCx: bc?.gtinCx || "",
-                                          unitsPerBox: bc ? String(bc.unitsPerBox) : "",
-                                          boxCount: bc ? String(bc.boxCount) : "1",
-                                        });
-                                      }
-                                    }}
-                                  >
-                                    📦 {bc ? "Editar" : "Configurar"}
-                                  </Button>
-                                </TableCell>
-                              )}
-                              <TableCell>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem(item.productId)}>
-                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                            {/* Box config panel */}
-                            {boxModeEnabled && expandedBoxProduct === item.productId && (
-                              <TableRow key={`box-${item.productId}`}>
-                                <TableCell colSpan={4} className="p-0">
-                                  <div className="bg-muted/30 border-t border-border/50 p-4 space-y-3">
-                                    <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                                      <PackageOpen className="h-3.5 w-3.5" />
-                                      Configurar envio em caixa — {item.productName}
-                                    </p>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                      <div>
-                                        <Label className="text-xs">GTIN CX</Label>
-                                        <BarcodeScannerInput
-                                          value={boxForm.gtinCx}
-                                          onChange={(v) => setBoxForm({ ...boxForm, gtinCx: v })}
-                                          placeholder="Código da caixa"
-                                          showCameraButton
-                                          inputClassName="h-9 text-sm"
-                                        />
-                                        <p className="text-[10px] text-muted-foreground mt-0.5">Preenche automático se cadastrado</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-xs">Unidades por caixa</Label>
-                                        <Input
-                                          type="number"
-                                          min={1}
-                                          value={boxForm.unitsPerBox}
-                                          onChange={(e) => setBoxForm({ ...boxForm, unitsPerBox: e.target.value })}
-                                          placeholder="Ex: 12"
-                                          className="h-9 text-sm"
-                                        />
-                                        <p className="text-[10px] text-muted-foreground mt-0.5">Varia por envio</p>
-                                      </div>
-                                      <div>
-                                        <Label className="text-xs">Qtd de caixas a enviar</Label>
-                                        <Input
-                                          type="number"
-                                          min={1}
-                                          value={boxForm.boxCount}
-                                          onChange={(e) => setBoxForm({ ...boxForm, boxCount: e.target.value })}
-                                          placeholder="Ex: 3"
-                                          className="h-9 text-sm"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <p className="text-sm font-semibold">
-                                        Total unitário:{" "}
-                                        <span className="text-primary">
-                                          {(parseInt(boxForm.unitsPerBox) || 0) * (parseInt(boxForm.boxCount) || 0)} unidades
-                                        </span>
-                                      </p>
-                                      <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" onClick={() => setExpandedBoxProduct(null)}>Cancelar</Button>
-                                        <Button size="sm" onClick={() => handleApplyBoxConfig(item.productId)}>
-                                          <Check className="h-3.5 w-3.5 mr-1" /> Aplicar
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </>
-                        );
-                      })}
+                      {items.map((item) => (
+                        <TableRow key={item.productId}>
+                          <TableCell>
+                            <div className="font-medium text-sm">{item.productName}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{item.productSku}</div>
+                            {item.barcode && <div className="text-[10px] text-muted-foreground">EAN: {item.barcode}</div>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}><Minus className="h-3 w-3" /></Button>
+                              <span className="font-bold text-lg w-8">{item.quantity}</span>
+                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)}><Plus className="h-3 w-3" /></Button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeItem(item.productId)}><Trash2 className="h-4 w-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
-
-                {usedKits.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap pt-1">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Boxes className="h-3.5 w-3.5" /> Kits:
-                    </span>
-                    {usedKits.map((name) => (
-                      <Badge key={name} variant="outline" className="text-xs bg-primary/5 border-primary/20 text-primary">
-                        {name}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <div className="border-t border-border/50 pt-3">
-                  <p className="text-sm text-muted-foreground">
-                    {items.length} produto(s) • {totalQty} unidade(s)
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Right column — Summary (40%) */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Resumo do envio</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total de produtos</span>
-                <span className="font-semibold">{items.length}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Total unitário</span>
-                <span className="font-semibold text-primary">{totalQty} unidades</span>
-              </div>
-              {boxModeEnabled && totalBoxes > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total de caixas</span>
-                  <span className="font-semibold">{totalBoxes}</span>
-                </div>
               )}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Peso estimado</span>
-                <span className="font-semibold text-muted-foreground">— kg</span>
-              </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="space-y-2 pt-2">
-              <Button
-                variant="outline"
-                className="w-full border-red-500/40 text-red-500 hover:bg-red-500/10"
-                onClick={() => { setRecordingMode("separacao"); openCameraPicker(); }}
-                disabled={isRecording}
-              >
-                <Video className="mr-2 h-4 w-4" />
-                {isRecording ? "Gravando..." : "📹 Iniciar gravação"}
-              </Button>
-              <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={handleCreateOrder}
-                disabled={items.length === 0 || createOrder.isPending}
-              >
-                {createOrder.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Truck className="mr-2 h-4 w-4" />
-                )}
-                Gerar ordem de envio
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full text-xs"
-                onClick={async () => {
-                  if (!companyId) {
-                    toast({ title: "Empresa não identificada", variant: "destructive" });
-                    return;
-                  }
-                  const list = await recorder.listCameras();
-                  if (list.length === 0) {
-                    toast({ title: "Nenhuma câmera detectada", variant: "destructive" });
-                    return;
-                  }
-                  toast({ title: "🧪 Teste iniciado — gravando 5s..." });
-                  await recorder.start(list[0].deviceId);
-                  await new Promise((r) => setTimeout(r, 5000));
-                  const blob = await recorder.stop();
-                  console.log("[TEST] blob size:", blob?.size);
-                  if (!blob || blob.size === 0) {
-                    toast({ title: "❌ Blob vazio", description: `Chunks insuficientes`, variant: "destructive" });
-                    recorder.reset();
-                    return;
-                  }
-                  try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) throw new Error("Sem usuário");
-                    const res = await recorder.uploadStandalone({ blob, companyId, userId: user.id, duracaoSegundos: 5 });
-                    console.log("[TEST] uploaded:", res);
-                    toast({
-                      title: "✅ Teste OK",
-                      description: `Blob: ${blob.size} bytes • Path: ${res.path}`,
-                    });
-                  } catch (e: any) {
-                    console.error("[TEST] upload error:", e);
-                    toast({ title: "❌ Falha no upload", description: e.message, variant: "destructive" });
-                  } finally {
-                    recorder.reset();
-                  }
-                }}
-              >
-                🧪 Testar gravação (5s)
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => { setItems([]); setUsedKits([]); setBoxConfigs({}); setLastScan(null); }}
-                disabled={items.length === 0}
-              >
-                Limpar lista
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Transfer history */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            📋 Últimos envios FULL
-          </CardTitle>
-          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-            Ver histórico completo <ChevronRight className="h-3 w-3 ml-1" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {!orders || orders.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhum envio registrado</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Nº da ordem</TableHead>
-                    <TableHead className="text-center">Qtd produtos</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[160px]">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => {
-                    const nextStep = statusFlow[order.status];
-                    return (
-                      <TableRow key={order.id}>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">{order.order_number}</TableCell>
-                        <TableCell className="text-center font-medium">{order.total_items}</TableCell>
-                        <TableCell>{statusBadge(order.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {nextStep && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateStatus.mutate({ id: order.id, status: nextStep.next })}
-                                disabled={updateStatus.isPending}
-                              >
-                                <ChevronRight className="mr-1 h-3 w-3" />
-                                {nextStep.label}
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title="Gravar despacho"
-                              disabled={isRecording}
-                              onClick={() => {
-                                setRecordingMode("despacho");
-                                setDespachoOrderId({ id: order.id, number: order.order_number });
-                                setShowAskRecord(true);
-                              }}
-                            >
-                              <Video className="h-3 w-3 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+          {items.length > 0 && (
+            <div className="flex justify-end gap-3">
+               <Button variant="outline" onClick={() => { if(confirm("Limpar lista?")) setItems([]); setBoxConfigs({}); }}>Limpar Lista</Button>
+               <Button size="lg" className="px-10 gap-2" onClick={handleCreateOrder} disabled={createOrder.isPending}>
+                 {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                 Gerar Ordem de Envio FULL
+               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-        </TabsContent>
 
-        <TabsContent value="ordens" className="mt-0">
-          <OrdensFullTab />
+          {/* Lista de Ordens Recentes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" /> Histórico Recente de Envios
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orders && orders.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead>Nº Ordem</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.slice(0, 10).map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell>{statusBadge(order.status)}</TableCell>
+                          <TableCell className="text-right">
+                             <Button size="sm" variant="ghost" onClick={() => {
+                               setRecordingMode("despacho");
+                               setDespachoOrderId({ id: order.id, number: order.order_number });
+                               setShowAskRecord(true);
+                             }}>
+                               <Video className="h-4 w-4 text-red-500 mr-1" /> Gravar Despacho
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-center py-6 text-muted-foreground">Nenhum envio realizado recentemente.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="gravacoes" className="mt-0">

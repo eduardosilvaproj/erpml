@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,10 @@ import {
   ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
+import * as pdfjsLib from "pdfjs-dist";
+
+// Set worker src for pdfjs
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface NovoItem {
   product_id: string;
@@ -48,6 +52,128 @@ export const OrdensFullTab = () => {
   const [iaOpen, setIaOpen] = useState(false);
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+
+  // PDF Upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedData, setParsedData] = useState<{
+    shippingNumber: string;
+    items: { ean: string; quantity: number; product?: any }[];
+  } | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast({ title: "Arquivo inválido", description: "Selecione um arquivo PDF do Mercado Livre.", variant: "destructive" });
+      return;
+    }
+
+    setIsParsing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        fullText += pageText + " ";
+      }
+
+      console.log("Extracted PDF text:", fullText);
+
+      // Extract Shipping Number (Frete # or Envio #)
+      const shippingMatch = fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
+      const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
+
+      // Extract items (EAN and Quantity)
+      // This is a heuristic approach, ML PDFs vary. 
+      // Often EAN is a 13-digit number and quantity is nearby.
+      const items: { ean: string; quantity: number }[] = [];
+      
+      // Match EAN (13 digits) and look for a quantity after it
+      // Format usually: EAN [Description] Qtd
+      const eanRegex = /(\d{13})/g;
+      let match;
+      while ((match = eanRegex.exec(fullText)) !== null) {
+        const ean = match[1];
+        // Look ahead for quantity (usually a number after some text)
+        const textAfter = fullText.substring(match.index + 13, match.index + 100);
+        const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
+        if (qtyMatch) {
+          items.push({ ean, quantity: parseInt(qtyMatch[1]) });
+        }
+      }
+
+      // Deduplicate by EAN (sometimes it appears multiple times)
+      const uniqueItems = items.reduce((acc, curr) => {
+        const existing = acc.find(i => i.ean === curr.ean);
+        if (existing) {
+          existing.quantity = Math.max(existing.quantity, curr.quantity);
+        } else {
+          acc.push(curr);
+        }
+        return acc;
+      }, [] as typeof items);
+
+      if (uniqueItems.length === 0) {
+        throw new Error("Não foi possível encontrar produtos no PDF. Verifique se o arquivo é um pedido do Mercado Livre FULL.");
+      }
+
+      // Link items with products in database
+      const eans = uniqueItems.map(i => i.ean);
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, sku, barcode, image_url, stock_physical")
+        .in("barcode", eans);
+
+      const itemsWithProducts = uniqueItems.map(item => ({
+        ...item,
+        product: products?.find(p => p.barcode === item.ean)
+      }));
+
+      setParsedData({ shippingNumber, items: itemsWithProducts });
+      setPreviewOpen(true);
+      toast({ title: "PDF lido com sucesso!", description: `${uniqueItems.length} produtos encontrados.` });
+    } catch (err: any) {
+      console.error("PDF Parsing error:", err);
+      toast({ title: "Erro ao ler PDF", description: err.message, variant: "destructive" });
+    } finally {
+      setIsParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const confirmParsedOrder = async () => {
+    if (!parsedData) return;
+
+    const validItems = parsedData.items.filter(i => i.product);
+    if (validItems.length === 0) {
+      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await createOrdem.mutateAsync({
+        descricao: `Pedido ML #${parsedData.shippingNumber}`,
+        prazo: null,
+        atribuido_para: null,
+        itens: validItems.map(i => ({
+          product_id: i.product.id,
+          qtd_solicitada: i.quantity
+        })),
+        enviarParaSeparacao: true
+      });
+      toast({ title: "Ordem criada e enviada para separação!" });
+      setPreviewOpen(false);
+      setParsedData(null);
+    } catch (err: any) {
+      toast({ title: "Erro ao criar ordem", description: err.message, variant: "destructive" });
+    }
+  };
 
   // Carrega a ordem em localStorage e navega para /movimentacao-full
   const handleStartSeparation = async (ordem: OrdemFull) => {
@@ -192,7 +318,134 @@ export const OrdensFullTab = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ETAPA 1 — Carregar Pedido ML */}
+      <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="p-4 bg-primary/10 rounded-full">
+              <Upload className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold">📄 Carregar PDF do Mercado Livre</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                ETAPA 1 — Arraste o PDF do pedido ou clique no botão abaixo para selecionar. 
+                O sistema identificará os produtos e quantidades automaticamente.
+              </p>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="application/pdf"
+              className="hidden"
+            />
+            <Button 
+              size="lg" 
+              className="px-8 gap-2 h-12 text-base font-semibold shadow-lg shadow-primary/20"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isParsing}
+            >
+              {isParsing ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Lendo PDF...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-5 w-5" />
+                  Selecionar PDF Mercado Livre
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview Dialog do PDF */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Preview da Ordem — Pedido #{parsedData?.shippingNumber}
+            </DialogTitle>
+            <DialogDescription>
+              Confira os produtos identificados no PDF antes de confirmar a criação da ordem.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>EAN</TableHead>
+                  <TableHead>Produto no Sistema</TableHead>
+                  <TableHead className="text-center">Qtd PDF</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parsedData?.items.map((item, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-mono text-xs">{item.ean}</TableCell>
+                    <TableCell>
+                      {item.product ? (
+                        <div className="flex items-center gap-2">
+                          {item.product.image_url ? (
+                            <img src={item.product.image_url} alt="" className="h-8 w-8 rounded object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted" />
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium line-clamp-1">{item.product.name}</span>
+                            <span className="text-[10px] text-muted-foreground">SKU: {item.product.sku}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-sm">EAN não encontrado no estoque</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center font-bold text-lg">{item.quantity}</TableCell>
+                    <TableCell className="text-center">
+                      {item.product ? (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Vínculo OK</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Não vinculado</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {parsedData?.items.some(i => !i.product) && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Alguns produtos do PDF não foram encontrados no seu estoque pelo EAN. 
+                  Eles serão ignorados se você confirmar. Cadastre-os com o EAN correto para vinculação automática.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Cancelar</Button>
+            <Button 
+              className="gap-2" 
+              onClick={confirmParsedOrder}
+              disabled={createOrdem.isPending || !parsedData?.items.some(i => i.product)}
+            >
+              {createOrdem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Confirmar e Gerar Ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard icon={ClipboardList} label="Ordens abertas" value={summary.abertas} color="text-primary" />
