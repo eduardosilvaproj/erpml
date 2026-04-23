@@ -109,6 +109,7 @@ const App = () => {
                       <Route path="/entrada-nota" element={<EntradaNota />} />
                       <Route path="/conferencia" element={<Conferencia />} />
                       <Route path="/conferencia/recuperar" element={<RecuperarConferencia />} />
+                      <Route path="/separacao" element={<Separacao />} />
                       <Route path="/estoque" element={<Estoque />} />
                       <Route path="/balanco-estoque" element={<BalancoEstoque />} />
                       <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
