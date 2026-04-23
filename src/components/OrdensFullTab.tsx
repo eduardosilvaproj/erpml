@@ -198,10 +198,15 @@ export const OrdensFullTab = () => {
         .select("id, name, sku, barcode, ean, image_url, stock_physical")
         .or(`ean.in.(${eans.join(",")}),barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
 
-      const itemsWithProducts = uniqueItems.map(item => ({
-        ...item,
-        product: products?.find(p => p.ean === item.ean || p.barcode === item.ean || (item.sku && p.sku === item.sku))
-      }));
+      const itemsWithProducts = uniqueItems.map(item => {
+        const product = products?.find(p => p.ean === item.ean || p.barcode === item.ean || (item.sku && p.sku === item.sku));
+        const isValid = item.ean.length >= 8 && item.ean.length <= 14;
+        return {
+          ...item,
+          product,
+          error: !isValid ? "EAN Inválido" : undefined
+        };
+      });
 
       setParsedData({ shippingNumber, items: itemsWithProducts });
       setPreviewOpen(true);
@@ -520,7 +525,12 @@ export const OrdensFullTab = () => {
                     </TableCell>
                     <TableCell className="text-center font-bold text-base">{item.quantity}</TableCell>
                     <TableCell>
-                      {item.product ? (
+                      {item.error ? (
+                        <div className="flex items-center gap-1 text-destructive font-bold whitespace-nowrap text-xs">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>🔴 {item.error}</span>
+                        </div>
+                      ) : item.product ? (
                         <div className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap text-xs">
                           <CheckCircle2 className="h-3 w-3" />
                           <span>✅ Vinculado</span>
