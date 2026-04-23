@@ -64,7 +64,10 @@ export const OrdensFullTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("full_orders")
-        .select("*")
+        .select(`
+          *,
+          responsavel:profiles!full_orders_separado_por_fkey(full_name)
+        `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
