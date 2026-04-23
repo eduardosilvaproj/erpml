@@ -57,29 +57,18 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || (isSeparada && !isLoadingPhase);
 
   useEffect(() => {
-    async function fetchResponsavel() {
-      if (ordem?.separado_por) {
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
-        if (isUUID) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, name' as any)
-            .eq('id', ordem.separado_por)
-            .maybeSingle();
-          if (profile) {
-            setResponsavelNome((profile as any).full_name || (profile as any).name || 'Administrador');
-          } else {
-            setResponsavelNome(ordem.separado_por);
-          }
-        } else {
-          setResponsavelNome(ordem.separado_por);
-        }
+    if (ordem) {
+      if (ordem.separado_por_profile?.full_name) {
+        setResponsavelNome(ordem.separado_por_profile.full_name);
+      } else if (ordem.atribuido?.full_name) {
+        setResponsavelNome(ordem.atribuido.full_name);
+      } else if (ordem.separado_por) {
+        setResponsavelNome("Usuário " + ordem.separado_por.slice(0, 8));
       } else {
         setResponsavelNome("Administrador");
       }
     }
-    fetchResponsavel();
-  }, [ordem?.separado_por]);
+  }, [ordem]);
 
 
   useEffect(() => {
