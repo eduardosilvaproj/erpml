@@ -123,23 +123,48 @@ export function OrderRecordingSystem({
             </DialogHeader>
             
             <div className="space-y-6 py-4">
-              <RecordingSection 
-                title="Separação" 
-                type="separacao" 
-                recordings={recordings?.filter(r => r.tipo === "separacao") || []}
-                onDelete={deleteRecording}
-                onStartRecording={() => handleStartRecording("separacao")}
-                isRecording={isRecording}
-              />
-              
-              <RecordingSection 
-                title="Carregamento" 
-                type="carregamento" 
-                recordings={recordings?.filter(r => r.tipo === "carregamento") || []}
-                onDelete={deleteRecording}
-                onStartRecording={() => handleStartRecording("carregamento")}
-                isRecording={isRecording}
-              />
+              {selectedVideo ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedVideo(null)} className="gap-2">
+                      <X className="h-4 w-4" /> Voltar para lista
+                    </Button>
+                    <span className="text-xs text-muted-foreground">Reproduzindo gravação</span>
+                  </div>
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden border">
+                    <video 
+                      src={selectedVideo} 
+                      controls 
+                      autoPlay 
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <RecordingSection 
+                    title="Separação" 
+                    type="separacao" 
+                    recordings={recordings?.filter(r => r.tipo === "separacao") || []}
+                    onDelete={deleteRecording}
+                    onStartRecording={() => handleStartRecording("separacao")}
+                    isRecording={isRecording}
+                    viewOnly={viewOnly}
+                    onPlay={(url) => setSelectedVideo(url)}
+                  />
+                  
+                  <RecordingSection 
+                    title="Carregamento" 
+                    type="carregamento" 
+                    recordings={recordings?.filter(r => r.tipo === "carregamento") || []}
+                    onDelete={deleteRecording}
+                    onStartRecording={() => handleStartRecording("carregamento")}
+                    isRecording={isRecording}
+                    viewOnly={viewOnly}
+                    onPlay={(url) => setSelectedVideo(url)}
+                  />
+                </>
+              )}
             </div>
           </DialogContent>
         </Dialog>
