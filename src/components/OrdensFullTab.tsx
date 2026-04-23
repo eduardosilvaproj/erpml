@@ -11,8 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
+import { ProductFormDialog } from "@/components/ProductFormDialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -75,9 +78,12 @@ export const OrdensFullTab = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<{
     shippingNumber: string;
-    items: { ean: string; quantity: number; product?: any }[];
+    items: { ean: string; quantity: number; pdfName?: string; product?: any; error?: string }[];
   } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
+  const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,7 +115,7 @@ export const OrdensFullTab = () => {
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // Extract items (EAN and Quantity)
-      const items: { ean: string; sku?: string; quantity: number }[] = [];
+      const items: { ean: string; sku?: string; quantity: number; pdfName?: string }[] = [];
       
       // Look for "Código universal: XXXXXXXXXXXXX" or "EAN: XXXXXXXXXXXXX"
       const eanPattern = /(?:Código\s+universal|EAN):\s*(\d{8,14})/gi;
@@ -118,20 +124,36 @@ export const OrdensFullTab = () => {
         const ean = eanMatch[1];
         
         // Search for SKU and Quantity near this EAN (look backward and forward)
-        const windowStart = Math.max(0, eanMatch.index - 300);
+        const windowStart = Math.max(0, eanMatch.index - 500);
         const searchWindow = fullText.substring(windowStart, eanMatch.index + 300);
         
         // SKU pattern: "SKU: XXXXX", "Referência: XXXXX"
         const skuMatch = searchWindow.match(/(?:SKU|Referência):\s*(\S+)/i);
         const sku = skuMatch ? skuMatch[1] : undefined;
         
+        // Product Name extraction: text before EAN/SKU but after the previous block
+        // Heuristic: take 100 characters before the EAN and try to find a meaningful title
+        const textBeforeEan = fullText.substring(Math.max(0, eanMatch.index - 150), eanMatch.index);
+        // Remove known labels and whitespace
+        let pdfName = textBeforeEan
+          .replace(/(?:Código\s+universal|EAN|SKU|Referência|Quantidade|Quantidades|Qtd|Unidades|Frete|#|nº|ML|Envio|Transferência):.*$/gi, "")
+          .replace(/\d{8,14}/g, "") // remove other EANs
+          .trim();
+        
+        // If it's too long or has too many newlines, take the last part
+        if (pdfName.includes("\n")) {
+          const lines = pdfName.split("\n");
+          pdfName = lines[lines.length - 1].trim();
+        }
+        if (pdfName.length > 100) pdfName = pdfName.substring(pdfName.length - 100);
+
         // Quantity pattern: "Quantidade: X", "Quantidades: X", "Qtd: X", "X un"
         const qtyMatch = searchWindow.match(/(?:Quantidade|Quantidades|Qtd|Unidades):\s*(\d+)/i) ||
                          searchWindow.match(/(\d+)\s*(?:un|unidades|pc|peças)/i);
         
         const quantity = qtyMatch ? parseInt(qtyMatch[1]) : 1;
         
-        items.push({ ean, sku, quantity });
+        items.push({ ean, sku, quantity, pdfName: pdfName || "Produto não identificado" });
       }
 
       // If no EANs found with specific prefix, fallback to generic 13-digit search
@@ -143,7 +165,7 @@ export const OrdensFullTab = () => {
           const textAfter = fullText.substring(match.index + 13, match.index + 100);
           const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
           if (qtyMatch) {
-            items.push({ ean, quantity: parseInt(qtyMatch[1]) });
+            items.push({ ean, quantity: parseInt(qtyMatch[1]), pdfName: "Produto EAN " + ean });
           }
         }
       }
@@ -153,6 +175,10 @@ export const OrdensFullTab = () => {
         const existing = acc.find(i => i.ean === curr.ean);
         if (existing) {
           existing.quantity = Math.max(existing.quantity, curr.quantity);
+          // Keep the longest name as it's likely the most descriptive
+          if (curr.pdfName && curr.pdfName.length > (existing.pdfName?.length || 0)) {
+            existing.pdfName = curr.pdfName;
+          }
         } else {
           acc.push(curr);
         }
@@ -369,6 +395,15 @@ export const OrdensFullTab = () => {
     toast({ title: "Ordem excluída" });
   };
 
+  const handleManualLink = (idx: number, product: any) => {
+    if (!parsedData) return;
+    const newItems = [...parsedData.items];
+    newItems[idx] = { ...newItems[idx], product };
+    setParsedData({ ...parsedData, items: newItems });
+    setEditingItemIdx(null);
+    toast({ title: "Produto vinculado manualmente!" });
+  };
+
   return (
     <div className="space-y-6">
       {/* ETAPA 1 — Carregar Pedido ML */}
@@ -435,41 +470,65 @@ export const OrdensFullTab = () => {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent border-b-2">
-                  <TableHead className="font-bold text-foreground">PRODUTO</TableHead>
                   <TableHead className="font-bold text-foreground">EAN</TableHead>
+                  <TableHead className="font-bold text-foreground">Nome no PDF (ML)</TableHead>
+                  <TableHead className="font-bold text-foreground">Nome no Sistema</TableHead>
                   <TableHead className="font-bold text-foreground text-center">QTD</TableHead>
-                  <TableHead className="font-bold text-foreground">VINCULADO</TableHead>
+                  <TableHead className="font-bold text-foreground">STATUS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {parsedData?.items.map((item, idx) => (
-                  <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {item.product?.image_url ? (
-                          <img src={item.product.image_url} alt="" className="h-10 w-10 rounded-md object-cover border shadow-sm" />
-                        ) : (
-                          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground/50" />
-                          </div>
-                        )}
-                        <span className="font-medium text-sm line-clamp-2 max-w-[200px]">
-                          {item.product?.name || "Produto não identificado no PDF"}
-                        </span>
-                      </div>
-                    </TableCell>
+                  <TableRow 
+                    key={idx} 
+                    className={`transition-colors cursor-pointer group ${
+                      !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-muted/50"
+                    }`}
+                    onClick={() => !item.product && setEditingItemIdx(idx)}
+                  >
                     <TableCell className="font-mono text-xs text-muted-foreground">{item.ean}</TableCell>
+                    <TableCell className="max-w-[180px]">
+                      <span className="text-sm font-medium line-clamp-2" title={item.pdfName}>
+                        {item.pdfName}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {item.product ? (
+                        <div className="flex items-center gap-2">
+                          {item.product.image_url && (
+                            <img src={item.product.image_url} alt="" className="h-6 w-6 rounded object-cover border" />
+                          )}
+                          <span className="text-sm font-semibold">{item.product.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          <span className="text-muted-foreground/50">—</span>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="h-7 text-[10px] w-fit px-2 gap-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
+                              setProductFormOpen(true);
+                            }}
+                          >
+                            <Plus className="h-3 w-3" /> Cadastrar produto
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="text-center font-bold text-base">{item.quantity}</TableCell>
                     <TableCell>
                       {item.product ? (
-                        <div className="flex items-center gap-2 text-emerald-600 font-medium whitespace-nowrap">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span>SKU {item.product.sku}</span>
+                        <div className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap text-xs">
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>✅ Vinculado</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-amber-500 font-medium whitespace-nowrap">
-                          <AlertCircle className="h-4 w-4" />
-                          <span>Não encontrado</span>
+                        <div className="flex items-center gap-1 text-amber-500 font-bold whitespace-nowrap text-xs">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>⚠️ Não encontrado</span>
                         </div>
                       )}
                     </TableCell>
@@ -478,48 +537,94 @@ export const OrdensFullTab = () => {
               </TableBody>
             </Table>
 
-            {parsedData?.items.some(i => !i.product) && (
-              <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Produtos sem vínculo</p>
-                  <p className="text-xs text-amber-700 dark:text-amber-400/80 leading-relaxed">
-                    Alguns produtos do PDF não foram encontrados no seu estoque pelo EAN. 
-                    Eles serão ignorados se você confirmar. Cadastre-os com o EAN correto para vinculação automática.
-                  </p>
+            {editingItemIdx !== null && (
+              <div className="mt-4 p-4 border rounded-lg bg-background shadow-lg animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <SearchIcon className="h-4 w-4" /> Vincular manualmente: {parsedData?.items[editingItemIdx].pdfName}
+                  </h4>
+                  <Button variant="ghost" size="sm" onClick={() => setEditingItemIdx(null)}><X className="h-4 w-4" /></Button>
+                </div>
+                <div className="space-y-4">
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Pesquisar por nome ou SKU..." 
+                      className="pl-10"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto">
+                    {searchResults?.products.map((p: any) => (
+                      <button
+                        key={p.id}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-muted border border-transparent hover:border-border transition-colors text-left"
+                        onClick={() => handleManualLink(editingItemIdx, p)}
+                      >
+                        <div className="flex items-center gap-3">
+                          {p.image_url && <img src={p.image_url} className="h-8 w-8 rounded object-cover" />}
+                          <div>
+                            <p className="text-xs font-bold line-clamp-1">{p.name}</p>
+                            <p className="text-[10px] text-muted-foreground">SKU: {p.sku} | EAN: {p.ean}</p>
+                          </div>
+                        </div>
+                        <Check className="h-4 w-4 text-emerald-500" />
+                      </button>
+                    ))}
+                    {productSearch && searchResults?.products.length === 0 && (
+                      <p className="text-center py-4 text-xs text-muted-foreground">Nenhum produto encontrado.</p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          <DialogFooter className="p-6 border-t bg-muted/30 gap-3 sm:gap-0">
-            <Button 
-              variant="outline" 
-              className="gap-2 h-11"
-              onClick={() => setPreviewOpen(false)}
-            >
-              <div className="flex items-center gap-2">
-                <span>✏️</span>
-                <span>Corrigir vínculos</span>
-              </div>
-            </Button>
-            <Button 
-              className="gap-2 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 shadow-lg shadow-emerald-500/20" 
-              onClick={confirmParsedOrder}
-              disabled={createOrdem.isPending || !parsedData?.items.some(i => i.product)}
-            >
-              {createOrdem.isPending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>✅</span>
-                  <span>Confirmar e criar lista de separação</span>
-                </div>
-              )}
-            </Button>
+          <DialogFooter className="p-6 border-t bg-muted/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold uppercase tracking-wider">
+              <span className="text-emerald-600 bg-emerald-500/10 px-2 py-1 rounded flex items-center gap-1">
+                ✅ {parsedData?.items.filter(i => i.product).length} vinculados automaticamente
+              </span>
+              <span className="text-amber-600 bg-amber-500/10 px-2 py-1 rounded flex items-center gap-1">
+                ⚠️ {parsedData?.items.filter(i => !i.product).length} não encontrados
+              </span>
+              <span className="text-muted-foreground bg-muted px-2 py-1 rounded flex items-center gap-1">
+                📦 {parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades total
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                className="gap-2 h-11 flex-1 sm:flex-none border-amber-200 hover:bg-amber-50 text-amber-700"
+                onClick={() => setPreviewOpen(false)}
+              >
+                Corrigir vínculos
+              </Button>
+              <Button 
+                className="gap-2 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-8 shadow-lg shadow-emerald-500/20 flex-1 sm:flex-none" 
+                onClick={confirmParsedOrder}
+                disabled={createOrdem.isPending || !parsedData?.items.some(i => i.product)}
+              >
+                {createOrdem.isPending ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    Confirmar e iniciar separação →
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ProductFormDialog 
+        open={productFormOpen}
+        onOpenChange={setProductFormOpen}
+        product={selectedProductData ? { ean: selectedProductData.ean, name: selectedProductData.name } as any : null}
+      />
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard icon={ClipboardList} label="Ordens abertas" value={summary.abertas} color="text-primary" />
