@@ -948,10 +948,38 @@ export const OrdensFullTab = () => {
       />
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard icon={ClipboardList} label="Ordens abertas" value={summary.abertas} color="text-primary" />
-        <SummaryCard icon={Clock} label="Aguardando" value={summary.aguardando} color="text-yellow-500" />
-        <SummaryCard icon={Package} label="Em separação" value={summary.em_separacao} color="text-blue-500" />
-        <SummaryCard icon={CheckCircle2} label="Concluídas hoje" value={summary.concluidas_hoje} color="text-emerald-500" />
+        <SummaryCard 
+          icon={ClipboardList} 
+          label="Ordens abertas" 
+          value={summary.abertas} 
+          color="text-primary" 
+          onClick={() => setFiltroStatus(filtroStatus === 'abertas' ? 'todos' : 'abertas')}
+          isSelected={filtroStatus === 'abertas'}
+        />
+        <SummaryCard 
+          icon={Clock} 
+          label="Aguardando" 
+          value={summary.aguardando} 
+          color="text-yellow-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'aguardando' ? 'todos' : 'aguardando')}
+          isSelected={filtroStatus === 'aguardando'}
+        />
+        <SummaryCard 
+          icon={Package} 
+          label="Em separação" 
+          value={summary.em_separacao} 
+          color="text-blue-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'em_separacao' ? 'todos' : 'em_separacao')}
+          isSelected={filtroStatus === 'em_separacao'}
+        />
+        <SummaryCard 
+          icon={CheckCircle2} 
+          label="Concluídas hoje" 
+          value={summary.concluidas_hoje} 
+          color="text-emerald-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'concluidas_hoje' ? 'todos' : 'concluidas_hoje')}
+          isSelected={filtroStatus === 'concluidas_hoje'}
+        />
       </div>
 
       {/* Painel funcionário (ordens atribuídas) */}
