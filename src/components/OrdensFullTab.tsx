@@ -1580,8 +1580,6 @@ export const OrdensFullTab = () => {
               </div>
             </DialogDescription>
           </DialogHeader>
-            </DialogDescription>
-          </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="flex flex-col gap-3">
               <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:border-primary">
