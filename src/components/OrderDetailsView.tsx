@@ -11,7 +11,8 @@ import {
   Truck, 
   Box, 
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Video
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,8 +35,36 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
   const { toast } = useToast();
   const { data, isLoading, refetch } = useOrdemFull(ordemId);
   const marcarEnviada = useMarcarOrdemEnviada();
+  const [responsavelNome, setResponsavelNome] = useState<string | null>(null);
   
   const ordem = data?.ordem;
+
+  useEffect(() => {
+    async function fetchResponsavel() {
+      if (ordem?.separado_por) {
+        // Se for um UUID, busca o nome
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
+        if (isUUID) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, name' as any)
+            .eq('id', ordem.separado_por)
+            .maybeSingle();
+          
+          if (profile) {
+            setResponsavelNome((profile as any).full_name || (profile as any).name || 'Administrador');
+          } else {
+            setResponsavelNome(ordem.separado_por);
+          }
+        } else {
+          setResponsavelNome(ordem.separado_por);
+        }
+      } else {
+        setResponsavelNome("Administrador");
+      }
+    }
+    fetchResponsavel();
+  }, [ordem?.separado_por]);
 
   const handleMarcarEnviado = async () => {
     if (!ordem) return;
@@ -47,6 +76,7 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
       toast({ title: "Erro ao marcar como enviado", description: err.message, variant: "destructive" });
     }
   };
+
 
   if (!ordemId) return null;
 
