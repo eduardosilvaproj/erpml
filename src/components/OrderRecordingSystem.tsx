@@ -15,6 +15,8 @@ interface OrderRecordingSystemProps {
 }
 
 export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSystemProps) {
+  const [activeType, setActiveType] = useState<RecordingType>("separacao");
+  
   const { 
     isRecording, 
     duration, 
@@ -24,7 +26,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
     isUploading 
   } = useOrderRecording({
     pedidoId,
-    tipo: "separacao"
+    tipo: activeType
   });
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
@@ -36,11 +38,16 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleToggleRecording = () => {
+  const handleStartRecording = (type: RecordingType) => {
+    setActiveType(type);
+    startRecording();
+  };
+
+  const handleToggleTopRecording = () => {
     if (isRecording) {
       stopRecording();
     } else {
-      startRecording();
+      handleStartRecording("separacao");
     }
   };
 
@@ -51,7 +58,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
           variant={isRecording ? "destructive" : "outline"} 
           size="sm" 
           className={`gap-2 ${isRecording ? "animate-pulse" : ""}`}
-          onClick={handleToggleRecording}
+          onClick={handleToggleTopRecording}
           disabled={isUploading}
         >
           {isRecording ? (
@@ -84,7 +91,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
                 type="separacao" 
                 recordings={recordings?.filter(r => r.tipo === "separacao") || []}
                 onDelete={deleteRecording}
-                onStartRecording={() => startRecording()}
+                onStartRecording={() => handleStartRecording("separacao")}
                 isRecording={isRecording}
               />
               
@@ -93,7 +100,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
                 type="carregamento" 
                 recordings={recordings?.filter(r => r.tipo === "carregamento") || []}
                 onDelete={deleteRecording}
-                onStartRecording={() => startRecording()} // Simplified: currently use the same hook
+                onStartRecording={() => handleStartRecording("carregamento")}
                 isRecording={isRecording}
               />
             </div>
