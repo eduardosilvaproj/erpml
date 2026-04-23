@@ -23,7 +23,8 @@ interface OrderRecordingSystemProps {
 }
 
 export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger }: OrderRecordingSystemProps) {
-  const [activeType, setActiveType] = useState<RecordingType>("separacao");
+  const [activeType, setActiveType] = useState<RecordingType>("carregamento");
+
   
   const { 
     isRecording, 
