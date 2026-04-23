@@ -1307,6 +1307,13 @@ export type Database = {
             referencedRelation: "companies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ordens_full_separado_por_profiles_fkey"
+            columns: ["separado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ordens_full_itens: {
