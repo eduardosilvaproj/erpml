@@ -858,12 +858,33 @@ export const OrdensFullTab = () => {
                         {new Date(fo.created_at).toLocaleString("pt-BR")}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="ghost" onClick={() => {
-                          if (matchingOrder) setViewOrdemId(matchingOrder.id);
-                          else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
-                        }}>
-                          Ver Detalhes
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          {matchingOrder && progress === 100 && fo.status !== 'enviado' && (
+                            <Button 
+                              size="sm" 
+                              variant="default" 
+                              className="bg-emerald-600 hover:bg-emerald-700 h-8 gap-1 shadow-sm"
+                              onClick={async () => {
+                                try {
+                                  await marcarEnviada.mutateAsync(matchingOrder.id);
+                                  toast({ title: "Ordem marcada como enviada!" });
+                                } catch (err: any) {
+                                  toast({ title: "Erro ao atualizar", description: err.message, variant: "destructive" });
+                                }
+                              }}
+                              disabled={marcarEnviada.isPending}
+                            >
+                              {marcarEnviada.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                              Marcar Enviado
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-8" onClick={() => {
+                            if (matchingOrder) setViewOrdemId(matchingOrder.id);
+                            else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
+                          }}>
+                            Ver Detalhes
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
