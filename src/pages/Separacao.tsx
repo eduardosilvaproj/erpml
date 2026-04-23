@@ -314,8 +314,6 @@ const Separacao = () => {
       )}
     </div>
   );
-    </div>
-  );
 };
 
 export default Separacao;
