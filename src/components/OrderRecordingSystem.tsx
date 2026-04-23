@@ -20,10 +20,12 @@ interface OrderRecordingSystemProps {
   orderNumber?: string;
   freteMl?: string | null;
   trigger?: React.ReactNode;
+  defaultType?: RecordingType;
 }
 
-export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger }: OrderRecordingSystemProps) {
-  const [activeType, setActiveType] = useState<RecordingType>("carregamento");
+export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, defaultType = "carregamento" }: OrderRecordingSystemProps) {
+  const [activeType, setActiveType] = useState<RecordingType>(defaultType);
+
 
   
   const { 
