@@ -44,7 +44,8 @@ const Separacao = () => {
   const updateFullOrder = useUpdateFullOrder();
   
   const { user } = useAuth();
-  const [userName, setUserName] = useState<string>("Anderson"); 
+  const [userName, setUserName] = useState<string>("Administrador"); 
+  const [userFullName, setUserFullName] = useState<string>("Administrador"); 
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
