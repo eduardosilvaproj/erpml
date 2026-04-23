@@ -28,6 +28,7 @@ import {
   useDeleteFullOrder, ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
+import { OrderDetailsView } from "@/components/OrderDetailsView";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { format } from "date-fns";
