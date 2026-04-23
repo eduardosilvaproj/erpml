@@ -64,7 +64,10 @@ export const OrdensFullTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("full_orders")
-        .select("*")
+        .select(`
+          *,
+          responsavel:profiles!full_orders_separado_por_fkey(full_name)
+        `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -92,6 +95,10 @@ export const OrdensFullTab = () => {
   const [kitFormOpen, setKitFormOpen] = useState(false);
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<OrdemFull | null>(null);
+  const [deleteOption, setDeleteOption] = useState<"cancel" | "delete">("cancel");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
@@ -452,19 +459,49 @@ export const OrdensFullTab = () => {
   };
 
   const handleCancel = async (o: OrdemFull) => {
-    if (!confirm(`Cancelar a ordem ${o.numero}?`)) return;
-    await updateStatus.mutateAsync({ id: o.id, status: "cancelada" });
-    toast({ title: "Ordem cancelada" });
+    setOrderToDelete(o);
+    setDeleteOption("cancel");
+    setDeleteDialogOpen(true);
   };
 
   const handleDelete = async (o: OrdemFull) => {
-    if (o.status !== "rascunho" && o.status !== "cancelada") {
-      toast({ title: "Apenas rascunhos ou ordens canceladas podem ser excluídos", variant: "destructive" });
-      return;
+    setOrderToDelete(o);
+    setDeleteOption("delete");
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!orderToDelete) return;
+    setIsDeleting(true);
+    try {
+      if (deleteOption === "cancel") {
+        await updateStatus.mutateAsync({ id: orderToDelete.id, status: "cancelada" });
+        toast({ title: "Ordem cancelada com sucesso" });
+      } else {
+        // Excluir permanentemente
+        const { error: errorItens } = await supabase
+          .from("ordens_full_itens")
+          .delete()
+          .eq("ordem_id", orderToDelete.id);
+        
+        if (errorItens) throw errorItens;
+
+        const { error: errorOrdem } = await supabase
+          .from("ordens_full")
+          .delete()
+          .eq("id", orderToDelete.id);
+
+        if (errorOrdem) throw errorOrdem;
+
+        toast({ title: "Ordem excluída permanentemente" });
+      }
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    } catch (err: any) {
+      toast({ title: "Erro na operação", description: err.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
     }
-    if (!confirm(`Excluir a ordem ${o.numero}?`)) return;
-    await deleteOrdem.mutateAsync(o.id);
-    toast({ title: "Ordem excluída" });
   };
 
   const handleManualLink = (idx: number, product: any) => {
@@ -838,6 +875,7 @@ export const OrdensFullTab = () => {
                     <TableHead className="text-center">Produtos</TableHead>
                     <TableHead className="text-center">Itens</TableHead>
                     <TableHead>Responsável</TableHead>
+                    <TableHead>Previsão Coleta</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -856,20 +894,21 @@ export const OrdensFullTab = () => {
                           </div>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          <div className="flex flex-col">
-                            <span>{o.descricao || "-"}</span>
-                            {o.previsao_carregamento && (
-                              <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> Previsão: {format(new Date(o.previsao_carregamento), "dd/MM HH:mm")}
-                              </span>
-                            )}
-                          </div>
+                          <span>{o.descricao || "-"}</span>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
-                          {o.atribuido_para ? (responsavel?.profile?.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
+                          {o.atribuido ? (o.atribuido.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {o.previsao_carregamento ? (
+                            <div className="flex flex-col">
+                              <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
+                              <span className="text-[10px] text-muted-foreground">{format(new Date(o.previsao_carregamento), "HH:mm")}</span>
+                            </div>
+                          ) : "—"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`${sb.cls} gap-1`}>
@@ -877,14 +916,14 @@ export const OrdensFullTab = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                          <div className="flex justify-end items-center gap-1">
                             {podeExecutar && (
                               <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
                             
-                            {(o.status === 'aguardando_carregamento' || o.status === 'separada') ? (
+                            {(o.status === 'aguardando_carregamento' || o.status === 'separada' || o.status === 'carregando') ? (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="outline" size="sm" className="gap-2">
@@ -904,6 +943,11 @@ export const OrdensFullTab = () => {
                                   <DropdownMenuItem onClick={() => window.print()}>
                                     <Printer className="h-4 w-4 mr-2" /> Imprimir relatório
                                   </DropdownMenuItem>
+                                  {canManageOrders && (
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleCancel(o)}>
+                                      <Trash2 className="h-4 w-4 mr-2" /> Excluir/Cancelar
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             ) : (
@@ -912,14 +956,9 @@ export const OrdensFullTab = () => {
                               </Button>
                             )}
 
-                            {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado" && (
-                              <Button size="icon" variant="ghost" title="Cancelar" onClick={() => handleCancel(o)}>
-                                <X className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            )}
-                            {canManageOrders && (o.status === "rascunho" || o.status === "cancelada") && (
-                              <Button size="icon" variant="ghost" title="Excluir" onClick={() => handleDelete(o)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            {canManageOrders && (o.status !== 'aguardando_carregamento' && o.status !== 'separada' && o.status !== 'carregando') && (
+                              <Button size="icon" variant="ghost" title="Excluir/Cancelar" className="text-destructive" onClick={() => handleCancel(o)}>
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
@@ -1104,6 +1143,7 @@ export const OrdensFullTab = () => {
                   <TableHead>PDF Frete ID</TableHead>
                   <TableHead>Status Atual</TableHead>
                   <TableHead>Progresso (Bipagem)</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Data Criação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -1160,6 +1200,9 @@ export const OrdensFullTab = () => {
                         ) : (
                           <span className="text-xs text-muted-foreground italic">Ordem não vinculada</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {(fo as any).responsavel?.full_name || "—"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {format(new Date(fo.created_at), "dd/MM/yyyy HH:mm")}
@@ -1221,6 +1264,61 @@ export const OrdensFullTab = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSummaryOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" /> ⚠️ Cancelar/Excluir esta ordem?
+            </DialogTitle>
+            <DialogDescription className="py-2">
+              <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
+                Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:border-primary">
+                <input 
+                  type="radio" 
+                  name="deleteOption" 
+                  checked={deleteOption === "cancel"} 
+                  onChange={() => setDeleteOption("cancel")}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm">Cancelar ordem</span>
+                  <span className="text-xs text-muted-foreground">Mantém no histórico como 'Cancelada'</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:bg-destructive/5 has-[:checked]:border-destructive">
+                <input 
+                  type="radio" 
+                  name="deleteOption" 
+                  checked={deleteOption === "delete"} 
+                  onChange={() => setDeleteOption("delete")}
+                  className="w-4 h-4 text-destructive focus:ring-destructive"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm text-destructive">Excluir permanentemente</span>
+                  <span className="text-xs text-muted-foreground">Remove todos os dados da base de dados</span>
+                </div>
+              </label>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>Voltar</Button>
+            <Button 
+              variant={deleteOption === "delete" ? "destructive" : "default"} 
+              onClick={confirmDeleteAction}
+              disabled={isDeleting}
+              className="px-8"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

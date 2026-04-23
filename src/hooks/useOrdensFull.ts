@@ -15,6 +15,9 @@ export interface OrdemFull {
   company_id: string;
   criado_por: string;
   atribuido_para: string | null;
+  atribuido?: {
+    full_name: string | null;
+  } | null;
   gravacao_id: string | null;
   iniciada_em: string | null;
   concluida_em: string | null;
@@ -55,7 +58,10 @@ export const useOrdensFull = () => {
     queryFn: async (): Promise<OrdemFull[]> => {
       const { data, error } = await supabase
         .from("ordens_full")
-        .select("*")
+        .select(`
+          *,
+          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name)
+        `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
       if (error) throw error;

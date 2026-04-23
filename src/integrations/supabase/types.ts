@@ -1294,6 +1294,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "ordens_full_atribuido_para_fkey"
+            columns: ["atribuido_para"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ordens_full_company_id_fkey"
             columns: ["company_id"]
             isOneToOne: false
