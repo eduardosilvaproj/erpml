@@ -217,13 +217,30 @@ export const OrdensFullTab = () => {
         .select("id, name, sku, barcode, ean, image_url, stock_physical, product_alternative_gtins(gtin)")
         .or(orConditions.join(","));
 
+      const { data: kits } = await supabase
+        .from("product_kits")
+        .select("id, name, sku, ean")
+        .or(`ean.in.(${eans.join(",")}),sku.in.(${eans.join(",")})`);
+
       const itemsWithProducts = uniqueItems.map(item => {
-        const product = products?.find(p => 
+        let product = products?.find(p => 
           p.ean === item.ean || 
           p.barcode === item.ean || 
           (item.sku && p.sku === item.sku) ||
           (p as any).product_alternative_gtins?.some((ag: any) => ag.gtin === item.ean)
         );
+
+        if (!product) {
+          const kit = kits?.find(k => k.ean === item.ean || k.sku === item.ean);
+          if (kit) {
+            product = {
+              ...kit,
+              image_url: null, // Kits don't have images in current schema
+              stock_physical: 0, // Kit stock is calculated from components
+              isKit: true
+            } as any;
+          }
+        }
         
         const isValid = item.ean.length >= 8 && item.ean.length <= 14;
         let error = !isValid ? "EAN Inválido" : undefined;
