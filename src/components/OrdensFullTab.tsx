@@ -545,6 +545,9 @@ export const OrdensFullTab = () => {
           </CardTitle>
           {canManageOrders && (
             <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={() => setSummaryOpen(true)} className="gap-2">
+                <ClipboardList className="h-4 w-4" /> Ver resumo
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setIaOpen(true)}
                 className="border-purple-500/40 bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20">
                 <Sparkles className="h-4 w-4 mr-1 text-purple-400" /> Sugestão IA
