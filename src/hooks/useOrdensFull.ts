@@ -18,6 +18,9 @@ export interface OrdemFull {
   atribuido?: {
     full_name: string | null;
   } | null;
+  separado_por_profile?: {
+    full_name: string | null;
+  } | null;
   gravacao_id: string | null;
   iniciada_em: string | null;
   concluida_em: string | null;
@@ -60,7 +63,8 @@ export const useOrdensFull = () => {
         .from("ordens_full")
         .select(`
           *,
-          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name)
+          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name),
+          separado_por_profile:profiles!ordens_full_separado_por_profiles_fkey(full_name)
         `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
@@ -77,7 +81,11 @@ export const useOrdemFull = (ordemId: string | null) => {
     queryFn: async () => {
       const { data: ordem, error } = await supabase
         .from("ordens_full")
-        .select("*")
+        .select(`
+          *,
+          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name),
+          separado_por_profile:profiles!ordens_full_separado_por_profiles_fkey(full_name)
+        `)
         .eq("id", ordemId!)
         .maybeSingle();
       if (error) throw error;
