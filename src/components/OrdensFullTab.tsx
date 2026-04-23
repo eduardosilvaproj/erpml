@@ -364,57 +364,61 @@ export const OrdensFullTab = () => {
 
       {/* Preview Dialog do PDF */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Preview da Ordem — Pedido #{parsedData?.shippingNumber}
-            </DialogTitle>
-            <DialogDescription>
-              Confira os produtos identificados no PDF antes de confirmar a criação da ordem.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          <div className="p-6 border-b bg-muted/30">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Preview da Ordem</DialogTitle>
+              <div className="mt-2 space-y-1">
+                <p className="text-xl font-semibold text-primary">
+                  Frete #{parsedData?.shippingNumber}
+                </p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {parsedData?.items.length} produtos · {parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades
+                </p>
+              </div>
+            </DialogHeader>
+          </div>
 
-          <div className="space-y-4 py-4">
+          <div className="flex-1 overflow-y-auto p-6">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>EAN</TableHead>
-                  <TableHead>Produto no Sistema</TableHead>
-                  <TableHead className="text-center">Qtd PDF</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
+                <TableRow className="hover:bg-transparent border-b-2">
+                  <TableHead className="font-bold text-foreground">PRODUTO</TableHead>
+                  <TableHead className="font-bold text-foreground">EAN</TableHead>
+                  <TableHead className="font-bold text-foreground text-center">QTD</TableHead>
+                  <TableHead className="font-bold text-foreground">VINCULADO</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {parsedData?.items.map((item, idx) => (
-                  <TableRow key={idx}>
-                    <TableCell className="font-mono text-xs">{item.ean}</TableCell>
+                  <TableRow key={idx} className="hover:bg-muted/50 transition-colors">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {item.product?.image_url ? (
+                          <img src={item.product.image_url} alt="" className="h-10 w-10 rounded-md object-cover border shadow-sm" />
+                        ) : (
+                          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                            <Package className="h-5 w-5 text-muted-foreground/50" />
+                          </div>
+                        )}
+                        <span className="font-medium text-sm line-clamp-2 max-w-[200px]">
+                          {item.product?.name || "Produto não identificado no PDF"}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{item.ean}</TableCell>
+                    <TableCell className="text-center font-bold text-base">{item.quantity}</TableCell>
                     <TableCell>
                       {item.product ? (
-                        <div className="flex items-center gap-2">
-                          {item.product.image_url ? (
-                            <img src={item.product.image_url} alt="" className="h-8 w-8 rounded object-cover" />
-                          ) : (
-                            <div className="h-8 w-8 rounded bg-muted" />
-                          )}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium line-clamp-1">{item.product.name}</span>
-                            <span className="text-[10px] text-muted-foreground">SKU: {item.product.sku}</span>
-                          </div>
+                        <div className="flex items-center gap-2 text-emerald-600 font-medium whitespace-nowrap">
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>SKU {item.product.sku}</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 text-destructive">
+                        <div className="flex items-center gap-2 text-amber-500 font-medium whitespace-nowrap">
                           <AlertCircle className="h-4 w-4" />
-                          <span className="text-sm">EAN não encontrado no estoque</span>
+                          <span>Não encontrado</span>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-center font-bold text-lg">{item.quantity}</TableCell>
-                    <TableCell className="text-center">
-                      {item.product ? (
-                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Vínculo OK</Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Não vinculado</Badge>
                       )}
                     </TableCell>
                   </TableRow>
@@ -423,25 +427,43 @@ export const OrdensFullTab = () => {
             </Table>
 
             {parsedData?.items.some(i => !i.product) && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 flex items-start gap-3">
+              <div className="mt-6 bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700 dark:text-amber-400">
-                  Alguns produtos do PDF não foram encontrados no seu estoque pelo EAN. 
-                  Eles serão ignorados se você confirmar. Cadastre-os com o EAN correto para vinculação automática.
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Produtos sem vínculo</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400/80 leading-relaxed">
+                    Alguns produtos do PDF não foram encontrados no seu estoque pelo EAN. 
+                    Eles serão ignorados se você confirmar. Cadastre-os com o EAN correto para vinculação automática.
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Cancelar</Button>
+          <DialogFooter className="p-6 border-t bg-muted/30 gap-3 sm:gap-0">
             <Button 
-              className="gap-2" 
+              variant="outline" 
+              className="gap-2 h-11"
+              onClick={() => setPreviewOpen(false)}
+            >
+              <div className="flex items-center gap-2">
+                <span>✏️</span>
+                <span>Corrigir vínculos</span>
+              </div>
+            </Button>
+            <Button 
+              className="gap-2 h-11 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 shadow-lg shadow-emerald-500/20" 
               onClick={confirmParsedOrder}
               disabled={createOrdem.isPending || !parsedData?.items.some(i => i.product)}
             >
-              {createOrdem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Confirmar e Gerar Ordem
+              {createOrdem.isPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>✅</span>
+                  <span>Confirmar e criar lista de separação</span>
+                </div>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
