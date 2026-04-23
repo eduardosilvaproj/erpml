@@ -158,6 +158,23 @@ const Conferencia = () => {
     console.log("[Conferencia] por gtin_cx:", byGtin, e3);
     if (byGtin) return byGtin;
 
+    // Try Alternative GTINs table
+    const { data: byAltGtin } = await supabase
+      .from("product_alternative_gtins")
+      .select("product_id")
+      .eq("company_id", companyId!)
+      .eq("gtin", trimmed)
+      .maybeSingle();
+
+    if (byAltGtin) {
+      const { data: altProduct } = await supabase
+        .from("products")
+        .select("*")
+        .eq("id", byAltGtin.product_id)
+        .maybeSingle();
+      if (altProduct) return altProduct;
+    }
+
     return null;
   }, [companyId]);
 
