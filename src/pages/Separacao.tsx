@@ -42,12 +42,43 @@ const Separacao = () => {
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
   
+  const { user } = useAuth();
+  const [userName, setUserName] = useState<string>("Anderson"); // Default/Placeholder as in request
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; description: string | null } | null>(null);
   const [items, setItems] = useState<SeparacaoItem[]>([]);
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isMarkingAsShipped, setIsMarkingAsShipped] = useState(false);
+
+  // Fetch user profile name
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (data?.full_name) {
+          setUserName(data.full_name.split(' ')[0]); // Get first name
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  const duration = useMemo(() => {
+    if (!startTime || !endTime) return "00:00:00";
+    const diff = endTime.getTime() - startTime.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  }, [startTime, endTime]);
 
   // Load order from localStorage
   useEffect(() => {
