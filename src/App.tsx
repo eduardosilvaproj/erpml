@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
 import EntradaXML from "./pages/EntradaXML";
 import Conferencia from "./pages/Conferencia";
+import Separacao from "./pages/Separacao";
 import RecuperarConferencia from "./pages/RecuperarConferencia";
 import Estoque from "./pages/Estoque";
 import MovimentacaoFull from "./pages/MovimentacaoFull";
