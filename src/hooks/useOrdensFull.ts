@@ -108,6 +108,8 @@ export const useCreateOrdemFull = () => {
         .from("ordens_full")
         .insert({
           descricao: params.descricao,
+          frete_ml: params.frete_ml,
+          numero: params.frete_ml ? params.frete_ml : undefined, // If frete_ml is provided, use it as the number
           prazo: params.prazo,
           atribuido_para: params.atribuido_para,
           status: params.enviarParaSeparacao ? "aguardando" : "rascunho",
