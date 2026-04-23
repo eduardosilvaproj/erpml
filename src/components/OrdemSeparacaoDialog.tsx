@@ -31,6 +31,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateItem = useUpdateItemQuantity();
   const updateStatus = useUpdateOrdemStatus();
   const marcarSeparada = useMarcarOrdemSeparada();
+  const marcarEnviada = useMarcarOrdemEnviada();
   const recorder = useFullRecorder();
 
   const [askRecord, setAskRecord] = useState(false);
