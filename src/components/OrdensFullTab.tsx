@@ -1201,6 +1201,9 @@ export const OrdensFullTab = () => {
                           <span className="text-xs text-muted-foreground italic">Ordem não vinculada</span>
                         )}
                       </TableCell>
+                      <TableCell className="text-xs">
+                        {(fo as any).responsavel?.full_name || "—"}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {format(new Date(fo.created_at), "dd/MM/yyyy HH:mm")}
                       </TableCell>
