@@ -10,16 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
@@ -470,18 +460,25 @@ export const OrdensFullTab = () => {
         .from('full_orders')
         .select('id, status')
         .eq('frete_ml', parsedData.shippingNumber)
+        .order('created_at', { ascending: false }) // Pegar a mais recente
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
 
       if (existing) {
-        setDuplicateCheck({
-          isOpen: true,
-          existingId: existing.id,
-          existingStatus: existing.status,
-          freteNumero: parsedData.shippingNumber
-        });
-        return;
+        const confirma = window.confirm(
+          `Frete #${parsedData.shippingNumber} já existe com status "${existing.status}".\nDeseja abrir a ordem existente?`
+        );
+        if (confirma) {
+          const existingOrder = ordens?.find(o => o.frete_ml === parsedData.shippingNumber || o.numero === parsedData.shippingNumber);
+          if (existingOrder) {
+            handleViewOrder(existingOrder);
+          } else {
+            toast({ title: "Ordem não encontrada na lista", variant: "destructive" });
+          }
+        }
+        return; // Não criar nova
       }
 
       await executeCreateOrdem();
@@ -1570,42 +1567,7 @@ export const OrdensFullTab = () => {
             <DialogDescription className="py-2">
               <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
                 Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
-      <AlertDialog open={duplicateCheck.isOpen} onOpenChange={(open) => setDuplicateCheck(prev => ({ ...prev, isOpen: open }))}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Frete Duplicado</AlertDialogTitle>
-            <AlertDialogDescription>
-              O frete #{duplicateCheck.freteNumero} já existe com o status "{duplicateCheck.existingStatus}". O que deseja fazer?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                const existingOrder = ordens?.find(o => o.frete_ml === duplicateCheck.freteNumero || o.numero === duplicateCheck.freteNumero);
-                if (existingOrder) {
-                  handleViewOrder(existingOrder);
-                } else {
-                  toast({ title: "Ordem não encontrada na lista atual", variant: "destructive" });
-                }
-                setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
-              }}
-            >
-              Abrir ordem existente
-            </Button>
-            <AlertDialogAction 
-              onClick={() => {
-                const novoNumero = `${duplicateCheck.freteNumero}-${Date.now()}`;
-                executeCreateOrdem(novoNumero);
-              }}
-            >
-              Criar nova ordem mesmo assim
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              </div>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
