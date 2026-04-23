@@ -159,6 +159,8 @@ export const OrdensFullTab = () => {
     try {
       await createOrdem.mutateAsync({
         descricao: `Pedido ML #${parsedData.shippingNumber}`,
+        prazo: null,
+        atribuido_para: null,
         itens: validItems.map(i => ({
           product_id: i.product.id,
           qtd_solicitada: i.quantity
