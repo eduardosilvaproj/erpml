@@ -446,9 +446,12 @@ const Conferencia = () => {
       const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
       return variants.has(sku) || variants.has(skuMl);
     };
+    const matchAltGtin = (p: any) => {
+      return p.product_alternative_gtins?.some((ag: any) => variants.has(ag.gtin.trim().toUpperCase()));
+    };
 
-    // STEP 1 — EAN unitário
-    let porEan = allProducts.find(matchEan) || simProducts.find(matchEan);
+    // STEP 1 — EAN unitário ou GTIN alternativo
+    let porEan = allProducts.find(matchEan) || allProducts.find(matchAltGtin) || simProducts.find(matchEan) || simProducts.find(matchAltGtin);
     // STEP 2 — GTIN CX (caixa vinculada)
     let porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
     // STEP 3 — SKU
