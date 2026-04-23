@@ -21,6 +21,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const durationRef = useRef(0);
+  const streamRef = useRef<MediaStream | null>(null);
   const tipoRef = useRef(tipo);
 
   // Sync tipoRef with the latest tipo prop
