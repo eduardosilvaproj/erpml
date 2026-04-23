@@ -1465,7 +1465,14 @@ const Conferencia = () => {
                       Finalizar bipagem <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
-                  {/* Removido botão manual: recalculação agora é automática a cada bipagem */}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button variant="outline" size="sm" className="h-9 gap-1.5 text-[11px]" onClick={handleExportCSV}>
+                      <Download className="h-3.5 w-3.5" /> CSV (Audit)
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9 gap-1.5 text-[11px] border-primary/40 text-primary hover:bg-primary/5" onClick={handleExportPDF}>
+                      <FileDown className="h-3.5 w-3.5" /> PDF (Audit)
+                    </Button>
+                  </div>
                   <Button
                     variant="secondary"
                     className="w-full"
