@@ -1143,6 +1143,7 @@ export const OrdensFullTab = () => {
                   <TableHead>PDF Frete ID</TableHead>
                   <TableHead>Status Atual</TableHead>
                   <TableHead>Progresso (Bipagem)</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Data Criação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
