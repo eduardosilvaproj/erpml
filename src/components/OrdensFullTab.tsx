@@ -210,7 +210,7 @@ export const OrdensFullTab = () => {
       }
 
       toast({ title: `📋 Ordem ${ordem.numero} carregada para separação` });
-      navigate("/movimentacao-full");
+      navigate("/separacao");
     } catch (e: any) {
       toast({ title: "Erro ao iniciar separação", description: e.message, variant: "destructive" });
     } finally {
