@@ -171,7 +171,11 @@ export interface MatchResult {
 
 export function matchProducts(
   xmlProducts: NFeProduct[],
-  dbProducts: { id: string; name: string; barcode: string | null; ean?: string | null; sku: string; gtin_cx?: string | null; box_quantity?: number | null }[]
+  dbProducts: { 
+    id: string; name: string; barcode: string | null; ean?: string | null; sku: string; 
+    gtin_cx?: string | null; box_quantity?: number | null;
+    product_alternative_gtins?: { gtin: string }[];
+  }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
     const normalizedXmlBarcode = normalizeBarcode(xp.ean);
