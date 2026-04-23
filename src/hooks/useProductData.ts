@@ -31,6 +31,7 @@ export type Product = {
   box_quantity: number | null;
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
+  product_alternative_gtins?: { gtin: string }[];
 };
 
 export type ProductFormData = {
@@ -71,7 +72,7 @@ export function useProducts(filters?: {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))", { count: "exact" });
+        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)", { count: "exact" });
 
       if (companyId) {
         query = query.eq("company_id", companyId);
@@ -128,7 +129,7 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
       while (true) {
         let q = supabase
           .from("products")
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)")
           .eq("company_id", companyId!)
           .order("name", { ascending: true })
           .range(page * PAGE, (page + 1) * PAGE - 1);

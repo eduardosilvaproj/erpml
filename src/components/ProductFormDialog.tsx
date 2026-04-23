@@ -150,7 +150,15 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     let query = supabase.from("products").select("id").eq("ean", ean).limit(1);
     if (excludeId) query = query.neq("id", excludeId);
     const { data } = await query;
-    return (data && data.length > 0) || false;
+    if (data && data.length > 0) return true;
+
+    // Also check alternative GTINs
+    const { data: altGtin } = await supabase
+      .from("product_alternative_gtins")
+      .select("id")
+      .eq("gtin", ean)
+      .limit(1);
+    return (altGtin && altGtin.length > 0) || false;
   };
 
   const uploadImageToStorage = async (sku: string): Promise<string | null> => {

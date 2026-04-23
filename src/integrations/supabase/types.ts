@@ -1419,6 +1419,45 @@ export type Database = {
         }
         Relationships: []
       }
+      product_alternative_gtins: {
+        Row: {
+          company_id: string
+          created_at: string
+          gtin: string
+          id: string
+          product_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          gtin: string
+          id?: string
+          product_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          gtin?: string
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_alternative_gtins_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_alternative_gtins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_kits: {
         Row: {
           active: boolean
