@@ -282,6 +282,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
               </Button>
             )}
+            {isSeparada && (
+              <Button onClick={marcarComoEnviado} disabled={marcarEnviada.isPending} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                {marcarEnviada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Marcar como enviado
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
