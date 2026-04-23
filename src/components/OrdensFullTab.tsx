@@ -1180,7 +1180,7 @@ export const OrdensFullTab = () => {
                             </Button>
                           )}
                           <Button size="sm" variant="ghost" className="h-8" onClick={() => {
-                            if (matchingOrder) setViewOrdemId(matchingOrder.id);
+                            if (matchingOrder) handleViewOrder(matchingOrder);
                             else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
                           }}>
                             Ver Detalhes
