@@ -1,5 +1,5 @@
-import { useMemo, useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
@@ -29,10 +29,13 @@ import {
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import { OrderDetailsView } from "@/components/OrderDetailsView";
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { type RecordingType } from "@/hooks/useOrderRecording";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
 
 // Set worker src for pdfjs locally from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
