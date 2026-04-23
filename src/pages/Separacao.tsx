@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
-  ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare
+  ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
+  Clock, Calendar, User, Video, ExternalLink
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +20,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface SeparacaoItem {
   productId: string;
@@ -36,12 +42,43 @@ const Separacao = () => {
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
   
+  const { user } = useAuth();
+  const [userName, setUserName] = useState<string>("Anderson"); // Default/Placeholder as in request
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; description: string | null } | null>(null);
   const [items, setItems] = useState<SeparacaoItem[]>([]);
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isMarkingAsShipped, setIsMarkingAsShipped] = useState(false);
+
+  // Fetch user profile name
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (data?.full_name) {
+          setUserName(data.full_name.split(' ')[0]); // Get first name
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
+
+  const duration = useMemo(() => {
+    if (!startTime || !endTime) return "00:00:00";
+    const diff = endTime.getTime() - startTime.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  }, [startTime, endTime]);
 
   // Load order from localStorage
   useEffect(() => {
@@ -85,6 +122,8 @@ const Separacao = () => {
     if (!code.trim()) return;
     const trimmed = code.trim().toUpperCase();
     
+    if (!startTime) setStartTime(new Date());
+
     setItems(prev => {
       const itemIndex = prev.findIndex(i => 
         i.barcode === trimmed || 
@@ -121,7 +160,49 @@ const Separacao = () => {
     });
 
     setScanValue("");
-  }, []);
+  }, [startTime]);
+
+  const generatePDF = useCallback(() => {
+    if (!orderInfo) return;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text("RELATÓRIO DE SEPARAÇÃO", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.text(`Pedido: ${orderInfo.number}`, 14, 30);
+    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 37);
+    doc.text(`Responsável: ${userName}`, 14, 44);
+
+    const tableData = items.map((item, index) => [
+      index + 1,
+      item.barcode || item.sku,
+      item.name,
+      item.neededQty,
+      item.scannedQty,
+      item.status === "completo" ? "✅ OK" : "❌ PENDENTE"
+    ]);
+
+    autoTable(doc, {
+      startY: 55,
+      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'STATUS']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [45, 45, 45] },
+      styles: { fontSize: 9 }
+    });
+
+    doc.setFontSize(12);
+    doc.text(`TOTAL: ${totalProducts} produtos · ${totalUnitsScanned} unidades`, 14, (doc as any).lastAutoTable.finalY + 10);
+    
+    doc.save(`relatorio-separacao-${orderInfo.number}.pdf`);
+  }, [orderInfo, items, totalProducts, totalUnitsScanned, userName]);
+
+  useEffect(() => {
+    if (items.length > 0 && items.every(i => i.status === "completo") && !endTime) {
+      setEndTime(new Date());
+    }
+  }, [items, endTime]);
 
   const getStatusBadge = (item: SeparacaoItem) => {
     if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white">✅ Completo</Badge>;
@@ -133,7 +214,8 @@ const Separacao = () => {
 
   const handleSkipSeparacao = async () => {
     // DEV ONLY - REMOVER ANTES DO DEPLOY
-    
+    if (!startTime) setStartTime(new Date());
+
     // 1. Marcar todos os itens com quantidade completa
     const completed: SeparacaoItem[] = items.map(item => ({
       ...item,
@@ -141,12 +223,6 @@ const Separacao = () => {
       status: 'completo'
     }));
     setItems(completed);
-    
-    // 2. Aguardar render
-    await new Promise(r => setTimeout(r, 300));
-    
-    // 3. Avançar para finalização
-    handleFinalizarSeparacao();
     
     // FIM DEV ONLY
   };
@@ -191,68 +267,146 @@ const Separacao = () => {
       </div>
 
       {isComplete ? (
-        <Card className="border-2 border-emerald-500 bg-emerald-50/30 shadow-xl animate-in zoom-in-95 duration-500">
-          <CardContent className="p-8 text-center space-y-6">
-            <div className="flex justify-center">
-              <div className="h-20 w-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-inner">
-                <CheckCircle2 className="h-12 w-12" />
+        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
+          {/* FLUXO VISUAL DOS STATUS */}
+          <div className="flex items-center justify-center py-4 px-2 max-w-3xl mx-auto">
+            <div className="flex items-center w-full">
+              <div className="flex flex-col items-center flex-1 relative">
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 border-2 border-emerald-500 z-10">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] mt-1 font-bold text-emerald-600 uppercase">PDF Carregado</span>
+                <div className="absolute top-5 left-[60%] w-[80%] h-0.5 bg-emerald-500"></div>
+              </div>
+              
+              <div className="flex flex-col items-center flex-1 relative">
+                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white border-4 border-emerald-100 shadow-lg z-10 scale-110">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <span className="text-[11px] mt-1 font-black text-emerald-700 uppercase">Separado</span>
+                <div className="absolute top-5 left-[65%] w-[70%] h-0.5 bg-gray-200"></div>
+              </div>
+              
+              <div className="flex flex-col items-center flex-1 relative">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-gray-200 z-10">
+                  <Box className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] mt-1 font-medium text-gray-400 uppercase">Carregamento</span>
+                <div className="absolute top-5 left-[60%] w-[80%] h-0.5 bg-gray-200"></div>
+              </div>
+              
+              <div className="flex flex-col items-center flex-1">
+                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-gray-200 z-10">
+                  <Package className="h-5 w-5" />
+                </div>
+                <span className="text-[10px] mt-1 font-medium text-gray-400 uppercase">Enviado</span>
               </div>
             </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold text-emerald-900">✅ Separação completa!</h2>
-              <p className="text-emerald-700 text-lg">
-                Agora acesse o Mercado Livre para gerar a Nota Fiscal.
-              </p>
-            </div>
+          </div>
 
-            <div className="flex flex-wrap justify-center gap-4 pt-4">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="lg" className="gap-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-semibold shadow-sm">
-                    <FileText className="h-5 w-5" /> Ver resumo
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>Resumo da Separação</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Produto</TableHead>
-                          <TableHead className="text-center">Quantidade</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {items.map((item) => (
-                          <TableRow key={item.productId}>
-                            <TableCell className="font-medium">{item.name}</TableCell>
-                            <TableCell className="text-center">{item.scannedQty} / {item.neededQty}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+          <Card className="border-none shadow-2xl overflow-hidden bg-white">
+            <div className="bg-emerald-600 h-2 w-full"></div>
+            <CardContent className="p-0">
+              <div className="p-8 text-center space-y-6">
+                <div className="space-y-2">
+                  <h2 className="text-4xl font-black text-emerald-900 tracking-tight">✅ Separação Concluída!</h2>
+                  <p className="text-emerald-700 text-xl font-medium">Pedido ML #{orderInfo?.number}</p>
+                </div>
+
+                <div className="max-w-md mx-auto bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 font-mono text-left space-y-3 relative">
+                  <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] text-gray-400 font-sans uppercase tracking-widest">Resumo do Processo</div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Package className="h-5 w-5 text-emerald-500" />
+                    <span className="font-bold">{totalProducts} produtos separados</span>
                   </div>
-                </DialogContent>
-              </Dialog>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Box className="h-5 w-5 text-emerald-500" />
+                    <span>{totalUnitsScanned} unidades totais</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <User className="h-5 w-5 text-emerald-500" />
+                    <span>Responsável: <strong>{userName}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Clock className="h-5 w-5 text-emerald-500" />
+                    <span>Duração: <strong>{duration}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-3 text-gray-700">
+                    <Calendar className="h-5 w-5 text-emerald-500" />
+                    <span>{format(endTime || new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+                  </div>
+                </div>
+                
+                <div className="text-left max-w-md mx-auto space-y-4 py-4">
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500"></div>
+                    PRÓXIMOS PASSOS:
+                  </h3>
+                  <ul className="space-y-3">
+                    <li className="flex gap-3 items-start">
+                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">1</span>
+                      <p className="text-sm text-gray-600">Acesse o <strong>Mercado Livre</strong> para gerar a Nota Fiscal</p>
+                    </li>
+                    <li className="flex gap-3 items-start">
+                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">2</span>
+                      <p className="text-sm text-gray-600">Aguarde o <strong>caminhão</strong> para carregamento</p>
+                    </li>
+                    <li className="flex gap-3 items-start">
+                      <span className="flex-none w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">3</span>
+                      <p className="text-sm text-gray-600">Grave o carregamento quando o caminhão chegar</p>
+                    </li>
+                  </ul>
+                </div>
 
-              <Button variant="outline" size="lg" className="gap-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-semibold shadow-sm" onClick={() => window.print()}>
-                <Printer className="h-5 w-5" /> Imprimir lista
-              </Button>
-              <Button 
-                size="lg" 
-                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg font-bold px-8"
-                onClick={handleFinalizarSeparacao}
-                disabled={isFinishing}
-              >
-                {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-5 w-5" />}
-                Marcar como enviado
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto pt-4">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
+                    onClick={generatePDF}
+                  >
+                    <Printer className="h-5 w-5" /> Imprimir Relatório PDF
+                  </Button>
+                  
+                  {orderInfo && (
+                    <OrderRecordingSystem 
+                      pedidoId={orderInfo.id} 
+                      orderNumber={orderInfo.number} 
+                      trigger={
+                        <Button 
+                          variant="outline" 
+                          size="lg" 
+                          className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
+                        >
+                          <Video className="h-5 w-5 text-red-500" /> Gravar Carregamento
+                        </Button>
+                      }
+                    />
+                  )}
+
+                  <Button 
+                    size="lg" 
+                    className="gap-3 bg-emerald-600 hover:bg-emerald-700 h-14 font-black text-white shadow-lg md:col-span-2"
+                    onClick={handleFinalizarSeparacao}
+                    disabled={isFinishing}
+                  >
+                    {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-6 w-6" />}
+                    MARCAR COMO ENVIADO
+                  </Button>
+
+                  <Button 
+                    variant="ghost" 
+                    size="lg" 
+                    className="gap-2 text-gray-500 md:col-span-2"
+                    onClick={() => navigate("/movimentacao-full")}
+                  >
+                    <ArrowLeft className="h-4 w-4" /> Voltar para Ordens
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       ) : (
         <>
           <Card className="border-2 border-primary/20 shadow-lg">
