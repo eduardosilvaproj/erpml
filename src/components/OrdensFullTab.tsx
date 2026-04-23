@@ -49,7 +49,96 @@ interface NovoItem {
   qtd: number;
 }
 
+const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) => {
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempDate, setTempDate] = useState(o.previsao_carregamento ? format(new Date(o.previsao_carregamento), "yyyy-MM-dd") : "");
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("ordens_full")
+        .update({ previsao_carregamento: tempDate || null })
+        .eq("id", o.id);
+      if (error) throw error;
+      
+      if (o.frete_ml) {
+         await supabase
+          .from("full_orders")
+          .update({ previsao_carregamento: tempDate || null })
+          .eq("frete_ml", o.frete_ml);
+      }
+      
+      toast({ title: "✅ Previsão atualizada" });
+      setIsEditing(false);
+      onUpdate();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar previsão", description: err.message, variant: "destructive" });
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <Input 
+        type="date" 
+        className="h-8 w-32" 
+        autoFocus 
+        value={tempDate} 
+        onChange={e => setTempDate(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={e => e.key === 'Enter' && handleSave()}
+      />
+    );
+  }
+
+  return (
+    <div 
+      className="cursor-pointer group flex items-center gap-1"
+      onClick={() => setIsEditing(true)}
+    >
+      {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
+        <>
+          <span className="font-bold whitespace-nowrap">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity">✏️</span>
+        </>
+      ) : (
+        <span className="text-blue-600 text-[10px] hover:underline font-medium">+ Definir data</span>
+      )}
+    </div>
+  );
+};
+
+const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: RecordingType, recordings: any[], onUpdate: () => void }) => {
+  const hasRecording = recordings?.some((r: any) => r.pedido_id === o.id && r.tipo === type);
+  const isEnabled = type === 'separacao' || ['aguardando_carregamento', 'carregando', 'enviado', 'concluida', 'separada'].includes(o.status);
+
+  if (!isEnabled) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  return (
+     <OrderRecordingSystem 
+        pedidoId={o.id}
+        defaultType={type}
+        freteMl={o.frete_ml}
+        orderNumber={o.numero}
+        trigger={
+          hasRecording ? (
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-bold gap-1">
+              <Play className="h-3 w-3" /> Ver
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 font-bold gap-1">
+              <Video className="h-3 w-3" /> Gravar
+            </Button>
+          )
+        }
+     />
+  );
+};
+
 export const OrdensFullTab = () => {
+
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
