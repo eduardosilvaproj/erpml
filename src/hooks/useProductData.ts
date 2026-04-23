@@ -72,7 +72,7 @@ export function useProducts(filters?: {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))", { count: "exact" });
+        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)", { count: "exact" });
 
       if (companyId) {
         query = query.eq("company_id", companyId);
