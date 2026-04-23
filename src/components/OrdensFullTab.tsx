@@ -47,6 +47,19 @@ export const OrdensFullTab = () => {
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
   const updateStatus = useUpdateOrdemStatus();
+  const { data: fullOrders, isLoading: isLoadingFull } = useQuery({
+    queryKey: ["full-orders", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("full_orders")
+        .select("*")
+        .eq("company_id", companyId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId
+  });
 
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
