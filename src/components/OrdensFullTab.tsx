@@ -126,38 +126,22 @@ export const OrdensFullTab = () => {
                           fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
-      // Implementação sugerida: processar linha por linha para capturar nomes corretamente
-      const lines = fullText.split('\n').map(l => l.trim()).filter(l => l);
+      // Nova lógica de parser para Mercado Livre PDF
       const extractedProducts: { ean: string; nomePDF: string }[] = [];
-      
-      for (let i = 0; i < lines.length; i++) {
-        // Detectar linha com EAN (13 dígitos começando com 789)
-        // Removemos espaços para lidar com o problema mencionado pelo usuário
-        const cleanLine = lines[i].replace(/\s+/g, '');
-        const eanMatch = cleanLine.match(/^(789\d{10})$/);
-        
-        if (eanMatch) {
-          const ean = eanMatch[1];
-          const nameLines = [];
-          let j = i + 1;
-          
-          // Pular linha do SKU se existir
-          if (lines[j] && (lines[j].startsWith('SKU:') || lines[j].includes('SKU:'))) {
-            j++;
-          }
-          
-          // Coletar nome até encontrar 'SUPERMERCADO' ou o próximo 'Código ML' ou outro EAN
-          while (j < lines.length && 
-                 lines[j] !== 'SUPERMERCADO' && 
-                 !lines[j].startsWith('Código ML:') &&
-                 !lines[j].replace(/\s+/g, '').match(/^789\d{10}$/)) {
-            nameLines.push(lines[j]);
-            j++;
-          }
-          
-          const nomePDF = nameLines.join(' ').trim();
-          extractedProducts.push({ ean, nomePDF });
-        }
+      const eanRegex = /Código universal:[\s\n]*(789\d{10})/g;
+      const eanMatches = [...fullText.matchAll(eanRegex)];
+
+      for (const match of eanMatches) {
+        const ean = match[1];
+        const posAfterEan = (match.index || 0) + match[0].length;
+        // Pegar texto após o EAN até SUPERMERCADO ou próximo Código ML
+        const afterEan = fullText.slice(posAfterEan, posAfterEan + 300);
+        // Pular SKU e pegar nome
+        const nameMatch = afterEan.match(/SKU:\s*\S+\s*\n([\s\S]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/);
+        const nomePDF = nameMatch 
+          ? nameMatch[1].replace(/\n/g, ' ').trim()
+          : '';
+        extractedProducts.push({ ean, nomePDF });
       }
 
       // Extrair quantidades separadamente usando o padrão específico
@@ -171,7 +155,7 @@ export const OrdensFullTab = () => {
         console.warn(`Aviso: O número de produtos (${extractedProducts.length}) não coincide com o número de quantidades (${allQtys.length}).`);
       }
 
-      // ZIP posicional conforme solicitado
+      // ZIP posicional conforme solicitado pelo usuário
       const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = extractedProducts.map((p, index) => ({
         ean: p.ean,
         sku: "", 
