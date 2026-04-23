@@ -305,13 +305,13 @@ export const ordemStatusBadge = (s: OrdemStatus) => {
   const map: Record<OrdemStatus, { label: string; cls: string }> = {
     pdf_carregado: { label: "PDF Carregado", cls: "bg-blue-100 text-blue-700" },
     separando: { label: "Separando", cls: "bg-amber-100 text-amber-700" },
-    aguardando_carregamento: { label: "Aguardando Carregamento", cls: "bg-purple-100 text-purple-700" },
+    aguardando_carregamento: { label: "🚛 Aguardando coleta", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 font-bold" },
     carregando: { label: "Carregando", cls: "bg-blue-500 text-white animate-pulse" },
     enviado: { label: "Enviado", cls: "bg-emerald-100 text-emerald-700" },
     rascunho: { label: "Rascunho", cls: "bg-muted text-muted-foreground" },
     aguardando: { label: "Aguardando", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" },
     em_separacao: { label: "Em separação", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-400 animate-pulse" },
-    separada: { label: "Separada", cls: "bg-purple-500/15 text-purple-600 dark:text-purple-400" },
+    separada: { label: "🚛 Aguardando coleta", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 font-bold" },
     concluida: { label: "Concluída", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
     cancelada: { label: "Cancelada", cls: "bg-destructive/15 text-destructive" },
   };
