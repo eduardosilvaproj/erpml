@@ -205,6 +205,16 @@ export const OrdensFullTab = () => {
         })),
         enviarParaSeparacao: true
       });
+
+      // Registrar na tabela full_orders para rastreamento
+      if (companyId && parsedData.shippingNumber) {
+        await supabase.from("full_orders").insert({
+          company_id: companyId,
+          pdf_frete_id: parsedData.shippingNumber,
+          status: "separacao"
+        });
+      }
+
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
       setParsedData(null);
