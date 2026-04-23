@@ -1820,17 +1820,23 @@ const Conferencia = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <AlertTriangle className="h-5 w-5 text-amber-400" />
-              Código não reconhecido
+              Produto não encontrado
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-2">
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
+              <p className="text-[13px] text-amber-200/90 leading-relaxed">
+                Este código não foi encontrado no <strong>EAN principal</strong> nem nos <strong>GTINs alternativos</strong>.
+                Sugerimos cadastrá-lo como um GTIN alternativo em um produto existente ou criar um novo cadastro.
+              </p>
+            </div>
+
             <div className="rounded-lg bg-muted/30 border border-border/40 p-3">
               <p className="text-xs text-muted-foreground mb-1">Código bipado</p>
               <p className="font-mono text-base font-semibold text-foreground break-all">
                 {unregisteredModal.code}
               </p>
             </div>
-            <p className="text-sm text-muted-foreground">O que é este código?</p>
             <button
               type="button"
               onClick={() => {
