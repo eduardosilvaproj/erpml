@@ -30,6 +30,8 @@ import {
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Set worker src for pdfjs locally from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
