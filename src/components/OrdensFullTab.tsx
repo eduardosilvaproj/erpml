@@ -146,14 +146,16 @@ export const OrdensFullTab = () => {
 
       // Link items with products in database
       const eans = uniqueItems.map(i => i.ean);
+      const skus = uniqueItems.filter(i => i.sku).map(i => i.sku as string);
+      
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, barcode, image_url, stock_physical")
-        .in("barcode", eans);
+        .or(`barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
 
       const itemsWithProducts = uniqueItems.map(item => ({
         ...item,
-        product: products?.find(p => p.barcode === item.ean)
+        product: products?.find(p => p.barcode === item.ean || (item.sku && p.sku === item.sku))
       }));
 
       setParsedData({ shippingNumber, items: itemsWithProducts });
