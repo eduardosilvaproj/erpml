@@ -79,6 +79,19 @@ export const OrdensFullTab = () => {
     enabled: !!companyId
   });
 
+  const { data: allRecordings, refetch: refetchRecordings } = useQuery({
+    queryKey: ["all-recordings", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_recordings")
+        .select("pedido_id, tipo");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId
+  });
+
+
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
