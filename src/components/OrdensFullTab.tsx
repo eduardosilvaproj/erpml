@@ -215,6 +215,17 @@ export const OrdensFullTab = () => {
   const [orderToDelete, setOrderToDelete] = useState<OrdemFull | null>(null);
   const [deleteOption, setDeleteOption] = useState<"cancel" | "delete">("cancel");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    isOpen: boolean;
+    existingId: string;
+    existingStatus: string;
+    freteNumero: string;
+  }>({
+    isOpen: false,
+    existingId: "",
+    existingStatus: "",
+    freteNumero: "",
+  });
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
