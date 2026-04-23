@@ -22,9 +22,18 @@ interface OrderRecordingSystemProps {
   trigger?: React.ReactNode;
   defaultType?: RecordingType;
   onFinished?: (url: string) => void;
+  viewOnly?: boolean;
 }
 
-export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, defaultType = "carregamento", onFinished }: OrderRecordingSystemProps) {
+export function OrderRecordingSystem({ 
+  pedidoId, 
+  orderNumber, 
+  freteMl, 
+  trigger, 
+  defaultType = "carregamento", 
+  onFinished,
+  viewOnly = false
+}: OrderRecordingSystemProps) {
 
   const [activeType, setActiveType] = useState<RecordingType>(defaultType);
 
@@ -47,6 +56,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, 
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -113,23 +123,48 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, 
             </DialogHeader>
             
             <div className="space-y-6 py-4">
-              <RecordingSection 
-                title="Separação" 
-                type="separacao" 
-                recordings={recordings?.filter(r => r.tipo === "separacao") || []}
-                onDelete={deleteRecording}
-                onStartRecording={() => handleStartRecording("separacao")}
-                isRecording={isRecording}
-              />
-              
-              <RecordingSection 
-                title="Carregamento" 
-                type="carregamento" 
-                recordings={recordings?.filter(r => r.tipo === "carregamento") || []}
-                onDelete={deleteRecording}
-                onStartRecording={() => handleStartRecording("carregamento")}
-                isRecording={isRecording}
-              />
+              {selectedVideo ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedVideo(null)} className="gap-2">
+                      <X className="h-4 w-4" /> Voltar para lista
+                    </Button>
+                    <span className="text-xs text-muted-foreground">Reproduzindo gravação</span>
+                  </div>
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden border">
+                    <video 
+                      src={selectedVideo} 
+                      controls 
+                      autoPlay 
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <RecordingSection 
+                    title="Separação" 
+                    type="separacao" 
+                    recordings={recordings?.filter(r => r.tipo === "separacao") || []}
+                    onDelete={deleteRecording}
+                    onStartRecording={() => handleStartRecording("separacao")}
+                    isRecording={isRecording}
+                    viewOnly={viewOnly}
+                    onPlay={(url) => setSelectedVideo(url)}
+                  />
+                  
+                  <RecordingSection 
+                    title="Carregamento" 
+                    type="carregamento" 
+                    recordings={recordings?.filter(r => r.tipo === "carregamento") || []}
+                    onDelete={deleteRecording}
+                    onStartRecording={() => handleStartRecording("carregamento")}
+                    isRecording={isRecording}
+                    viewOnly={viewOnly}
+                    onPlay={(url) => setSelectedVideo(url)}
+                  />
+                </>
+              )}
             </div>
           </DialogContent>
         </Dialog>
@@ -198,9 +233,19 @@ interface RecordingSectionProps {
   onDelete: (rec: OrderRecording) => void;
   onStartRecording: () => void;
   isRecording: boolean;
+  viewOnly?: boolean;
+  onPlay: (url: string) => void;
 }
 
-function RecordingSection({ title, recordings, onDelete, onStartRecording, isRecording }: RecordingSectionProps) {
+function RecordingSection({ 
+  title, 
+  recordings, 
+  onDelete, 
+  onStartRecording, 
+  isRecording, 
+  viewOnly,
+  onPlay
+}: RecordingSectionProps) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-2">
@@ -210,14 +255,16 @@ function RecordingSection({ title, recordings, onDelete, onStartRecording, isRec
       <div className="border rounded-lg p-4 space-y-4">
         {recordings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-4 bg-muted/20 rounded-md border border-dashed">
-            <Button 
-              variant="outline" 
-              className="gap-2" 
-              onClick={onStartRecording}
-              disabled={isRecording}
-            >
-              <Play className="h-4 w-4" /> Iniciar gravação de {title.toLowerCase()}
-            </Button>
+            {!viewOnly && (
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={onStartRecording}
+                disabled={isRecording}
+              >
+                <Play className="h-4 w-4" /> Iniciar gravação de {title.toLowerCase()}
+              </Button>
+            )}
             <p className="text-xs text-muted-foreground mt-2">Nenhuma gravação salva</p>
           </div>
         ) : (
@@ -238,25 +285,29 @@ function RecordingSection({ title, recordings, onDelete, onStartRecording, isRec
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => window.open(rec.video_url, "_blank")}>
+                  <Button variant="ghost" size="icon" onClick={() => onPlay(rec.video_url)}>
                     <Play className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(rec)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!viewOnly && (
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(rec)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
             
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full gap-2" 
-              onClick={onStartRecording}
-              disabled={isRecording}
-            >
-              <Play className="h-4 w-4" /> Nova gravação de {title.toLowerCase()}
-            </Button>
+            {!viewOnly && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2" 
+                onClick={onStartRecording}
+                disabled={isRecording}
+              >
+                <Play className="h-4 w-4" /> Nova gravação de {title.toLowerCase()}
+              </Button>
+            )}
           </div>
         )}
       </div>

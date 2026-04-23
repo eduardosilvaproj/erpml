@@ -110,9 +110,8 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
 
 const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: RecordingType, recordings: any[], onUpdate: () => void }) => {
   const hasRecording = recordings?.some((r: any) => r.pedido_id === o.id && r.tipo === type);
-  const isEnabled = type === 'separacao' || ['aguardando_carregamento', 'carregando', 'enviado', 'concluida', 'separada'].includes(o.status);
 
-  if (!isEnabled) {
+  if (!hasRecording) {
     return <span className="text-muted-foreground">—</span>;
   }
 
@@ -123,16 +122,11 @@ const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: Record
         freteMl={o.frete_ml}
         orderNumber={o.numero}
         onFinished={() => onUpdate()}
+        viewOnly={true}
         trigger={
-          hasRecording ? (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-bold gap-1">
-              <Play className="h-3 w-3" /> Ver
-            </Button>
-          ) : (
-            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 font-bold gap-1">
-              <Video className="h-3 w-3" /> Gravar
-            </Button>
-          )
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-bold gap-1">
+            <Play className="h-3 w-3" /> Ver
+          </Button>
         }
      />
   );
