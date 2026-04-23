@@ -17,9 +17,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
-import { useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
+import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+// import { OrderRecordingSystem } from "@/components/OrderRecordingSystem"; // Removido daqui conforme pedido
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
