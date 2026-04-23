@@ -244,7 +244,7 @@ const Separacao = () => {
               <Button 
                 size="lg" 
                 className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg font-bold px-8"
-                onClick={handleFinish}
+                onClick={handleFinalizarSeparacao}
                 disabled={isFinishing}
               >
                 {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckSquare className="h-5 w-5" />}
@@ -295,6 +295,26 @@ const Separacao = () => {
                     <span className="font-medium"><span className="font-bold text-lg">{productsComplete}/{totalProducts}</span> produtos completos</span>
                   </div>
                   <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
+                  {/* DEV ONLY - REMOVER ANTES DO DEPLOY */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <button
+                      onClick={handleSkipSeparacao}
+                      style={{
+                        background: '#ff6b00',
+                        color: 'white',
+                        border: '2px dashed #ff9900',
+                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        margin: '8px 0',
+                        width: '100%'
+                      }}
+                    >
+                      ⚡ [DEV] Pular bipagem — marcar todos como completos
+                    </button>
+                  )}
+                  {/* FIM DEV ONLY */}
                 </div>
               </div>
             </CardContent>
@@ -358,7 +378,7 @@ const Separacao = () => {
               size="lg" 
               className="px-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
               disabled={!isComplete}
-              onClick={handleFinish}
+              onClick={handleFinalizarSeparacao}
             >
               Concluir Separação
             </Button>
