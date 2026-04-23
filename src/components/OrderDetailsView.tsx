@@ -77,6 +77,68 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
     }
   };
 
+  const handleImprimirRelatorio = async () => {
+    if (!ordem || !data?.itens) return;
+
+    const itens = data.itens;
+    
+    const html = `
+      <html><head>
+      <style>
+        body { font-family: Arial; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 12px; }
+        th { background: #f0f0f0; }
+        .header { margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h2 { margin: 0; color: #333; }
+        .meta { font-size: 14px; color: #666; margin-top: 5px; }
+      </style>
+      </head><body>
+        <div class="header">
+          <h2>Relatório de Separação — Frete #${ordem.frete_ml || ordem.numero}</h2>
+          <p class="meta">
+            Data: ${ordem.separado_em ? format(new Date(ordem.separado_em), "dd/MM/yyyy HH:mm") : 'N/A'} | 
+            Responsável: ${responsavelNome || 'Administrador'} | 
+            ${ordem.total_produtos} produtos · ${ordem.total_itens} unidades
+          </p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>EAN</th>
+              <th>SKU</th>
+              <th>Nome no Sistema</th>
+              <th>Qtd</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itens.map((item, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${item.product?.barcode || '-'}</td>
+                <td>${item.product?.sku || '-'}</td>
+                <td>${item.product?.name || 'Produto não encontrado'}</td>
+                <td>${item.qtd_solicitada}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body></html>
+    `;
+    
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        win.print();
+        win.close();
+      }, 250);
+    }
+  };
+
 
   if (!ordemId) return null;
 
@@ -167,9 +229,7 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
 
                         </div>
 
-                        <Button variant="outline" className="w-full sm:w-auto gap-2 border-dashed h-12" onClick={() => window.print()}>
-                          <Printer className="h-5 w-5" /> Imprimir Relatório
-                        </Button>
+                        <div className="flex-1" />
                       </div>
                     </div>
                   </div>
@@ -191,15 +251,20 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
               </div>
             </div>
 
-            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 p-6 border-t bg-gray-50/50">
-              <Button variant="outline" onClick={onClose} className="gap-2">
-                <ArrowLeft className="h-4 w-4" /> Fechar
-              </Button>
+            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-3 p-6 border-t bg-gray-50/50">
+              <div className="flex gap-3 w-full sm:w-auto">
+                <Button variant="outline" onClick={handleImprimirRelatorio} className="gap-2 h-11">
+                  <Printer className="h-5 w-5" /> Imprimir Relatório
+                </Button>
+                <Button variant="outline" onClick={onClose} className="gap-2 h-11">
+                  <ArrowLeft className="h-4 w-4" /> Fechar
+                </Button>
+              </div>
 
               <Button 
                 onClick={handleMarcarEnviado} 
                 disabled={marcarEnviada.isPending} 
-                className="gap-2 h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight shadow-lg shadow-emerald-500/20"
+                className="w-full sm:w-auto gap-2 h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-tight shadow-lg shadow-emerald-500/20"
               >
                 {marcarEnviada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 <CheckCircle2 className="h-5 w-5" /> Marcar como Enviado
@@ -251,19 +316,17 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [data, setData] = useState("");
-  const [hora, setHora] = useState("");
 
   useEffect(() => {
     if (value) {
       const d = new Date(value);
       setData(format(d, "yyyy-MM-dd"));
-      setHora(format(d, "HH:mm"));
     }
   }, [value]);
 
   const handleSave = async () => {
     try {
-      const novaData = new Date(`${data}T${hora}:00`).toISOString();
+      const novaData = data;
       
       const { error: e1 } = await supabase
         .from('ordens_full')
@@ -302,12 +365,6 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
             value={data} 
             onChange={(e) => setData(e.target.value)}
           />
-          <Input 
-            type="time" 
-            className="w-28 bg-white" 
-            value={hora} 
-            onChange={(e) => setHora(e.target.value)}
-          />
           <Button size="sm" onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
         </div>
@@ -315,9 +372,6 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
         <div className="flex items-center gap-3">
           <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
             {value ? format(new Date(value), "dd/MM/yyyy") : "--/--/----"}
-          </span>
-          <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
-            {value ? format(new Date(value), "HH:mm") : "--:--"}
           </span>
           <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50">
             ✏️ Editar
