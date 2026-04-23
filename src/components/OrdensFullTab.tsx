@@ -146,6 +146,10 @@ export const OrdensFullTab = () => {
       console.log("Total EANs encontrados:", allEans.length);
       console.log("Total Quantidades encontradas:", allQtys.length);
 
+      if (allEans.length !== allQtys.length && allQtys.length > 0) {
+        console.warn(`Aviso: O número de EANs (${allEans.length}) não coincide com o número de quantidades (${allQtys.length}).`);
+      }
+
       // 3. Zip posicional: eans[0] -> qtys[0], eans[1] -> qtys[1]
       // Nunca usar números do SKU como quantidade
       const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = allEans.map((ean, index) => ({
@@ -155,7 +159,7 @@ export const OrdensFullTab = () => {
         quantity: allQtys[index] || 0
       }));
 
-      // Validação rápida baseada no feedback do usuário para o frete específico
+      // Validação rápida baseada no feedback do usuário
       const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
       console.log(`Resumo: ${items.length} produtos, ${totalUnits} unidades.`);
 
