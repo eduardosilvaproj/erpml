@@ -581,6 +581,7 @@ export const OrdensFullTab = () => {
                             <DropdownMenuContent align="start">
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
+                                setEditingItemIdx(idx);
                                 setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
                                 setProductFormOpen(true);
                               }}>
@@ -588,6 +589,7 @@ export const OrdensFullTab = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={(e) => {
                                 e.stopPropagation();
+                                setEditingItemIdx(idx);
                                 setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
                                 setKitFormOpen(true);
                               }}>
