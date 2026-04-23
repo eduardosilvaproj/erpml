@@ -193,18 +193,45 @@ export const OrdensFullTab = () => {
       const eans = uniqueItems.map(i => i.ean);
       const skus = uniqueItems.filter(i => i.sku).map(i => i.sku as string);
       
+      // First, find product IDs from alternative GTINs
+      const { data: altGtins } = await supabase
+        .from("product_alternative_gtins")
+        .select("product_id, gtin")
+        .in("gtin", eans);
+      
+      const altProductIds = altGtins?.map(ag => ag.product_id) || [];
+      
+      let orConditions = [
+        `ean.in.(${eans.join(",")})`,
+        `barcode.in.(${eans.join(",")})`
+      ];
+      if (skus.length > 0) orConditions.push(`sku.in.(${skus.join(",")})`);
+      if (altProductIds.length > 0) orConditions.push(`id.in.(${altProductIds.join(",")})`);
+      
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, ean, image_url, stock_physical")
-        .or(`ean.in.(${eans.join(",")}),barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
+        .select("id, name, sku, barcode, ean, image_url, stock_physical, product_alternative_gtins(gtin)")
+        .or(orConditions.join(","));
 
       const itemsWithProducts = uniqueItems.map(item => {
-        const product = products?.find(p => p.ean === item.ean || p.barcode === item.ean || (item.sku && p.sku === item.sku));
+        const product = products?.find(p => 
+          p.ean === item.ean || 
+          p.barcode === item.ean || 
+          (item.sku && p.sku === item.sku) ||
+          (p as any).product_alternative_gtins?.some((ag: any) => ag.gtin === item.ean)
+        );
+        
         const isValid = item.ean.length >= 8 && item.ean.length <= 14;
+        let error = !isValid ? "EAN Inválido" : undefined;
+        
+        if (isValid && !product) {
+          error = "Código não encontrado no EAN principal nem nos GTINs alternativos. Sugerimos cadastrar como GTIN alternativo.";
+        }
+
         return {
           ...item,
           product,
-          error: !isValid ? "EAN Inválido" : undefined
+          error
         };
       });
 
@@ -526,9 +553,9 @@ export const OrdensFullTab = () => {
                     <TableCell className="text-center font-bold text-base">{item.quantity}</TableCell>
                     <TableCell>
                       {item.error ? (
-                        <div className="flex items-center gap-1 text-destructive font-bold whitespace-nowrap text-xs">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>🔴 {item.error}</span>
+                        <div className="flex items-start gap-1 text-destructive font-bold text-xs max-w-[150px]">
+                          <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="leading-tight">{item.error}</span>
                         </div>
                       ) : item.product ? (
                         <div className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap text-xs">
