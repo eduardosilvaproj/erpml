@@ -93,6 +93,17 @@ export const OrdensFullTab = () => {
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
 
+  const handleViewOrder = (order: any) => {
+    // Status que devem abrir a nova visualização de detalhes
+    const detailsStatuses = ['separada', 'aguardando_carregamento', 'concluida', 'enviado', 'carregando'];
+    
+    if (detailsStatuses.includes(order.status)) {
+      setDetailsOrdemId(order.id);
+    } else {
+      setViewOrdemId(order.id);
+    }
+  };
+
   const isKit = (name?: string) => {
     if (!name) return false;
     const keywords = ['Kit', 'Combo', 'Pack', 'Conjunto'];
