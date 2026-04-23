@@ -5,17 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play } from "lucide-react";
+import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play, Printer, Box, Clock, Calendar, ArrowRight, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import {
   useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada, useMarcarOrdemEnviada,
-  itemStatusBadge, ordemStatusBadge, type OrdemItem,
+  itemStatusBadge, ordemStatusBadge, type OrdemItem, useUpdateFullOrder
 } from "@/hooks/useOrdensFull";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { useNavigate } from "react-router-dom";
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Props {
   ordemId: string | null;
