@@ -145,7 +145,7 @@ export const OrdensFullTab = () => {
   const companyId = useCompanyId();
   const { data: company } = useMyCompany();
   const { data: members } = useCompanyMembers(companyId || undefined);
-  const { data: ordens, isLoading } = useOrdensFull();
+  const { data: ordens, isLoading, refetch: refetchOrdens } = useOrdensFull();
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
   const deleteFullOrder = useDeleteFullOrder();
