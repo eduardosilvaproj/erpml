@@ -208,9 +208,19 @@ interface RecordingSectionProps {
   onDelete: (rec: OrderRecording) => void;
   onStartRecording: () => void;
   isRecording: boolean;
+  viewOnly?: boolean;
+  onPlay: (url: string) => void;
 }
 
-function RecordingSection({ title, recordings, onDelete, onStartRecording, isRecording }: RecordingSectionProps) {
+function RecordingSection({ 
+  title, 
+  recordings, 
+  onDelete, 
+  onStartRecording, 
+  isRecording, 
+  viewOnly,
+  onPlay
+}: RecordingSectionProps) {
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-2">
