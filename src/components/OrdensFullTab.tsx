@@ -143,19 +143,30 @@ export const OrdensFullTab = () => {
         allQtys.push(parseInt(qMatch[1]));
       }
 
+      // 3. Extrair os nomes reais usando o padrão Código ML -> SUPERMERCADO
+      const productPattern = /Código ML:\s*\w+\s+Código universal:\s*\n?(\d{13})\s+SKU:\s*\S+\s*\n([\s\S]+?)(?=\nSUPERMERCADO)/g;
+      const namesByEan: Record<string, string> = {};
+      let pMatch;
+      while ((pMatch = productPattern.exec(fullText)) !== null) {
+        const ean = pMatch[1];
+        const nome = pMatch[2].replace(/\n/g, ' ').trim();
+        namesByEan[ean] = nome;
+      }
+
       console.log("Total EANs encontrados:", allEans.length);
       console.log("Total Quantidades encontradas:", allQtys.length);
+      console.log("Nomes extraídos:", Object.keys(namesByEan).length);
 
       if (allEans.length !== allQtys.length && allQtys.length > 0) {
         console.warn(`Aviso: O número de EANs (${allEans.length}) não coincide com o número de quantidades (${allQtys.length}).`);
       }
 
-      // 3. Zip posicional: eans[0] -> qtys[0], eans[1] -> qtys[1]
+      // 4. Zip posicional: eans[0] -> qtys[0], eans[1] -> qtys[1]
       // Nunca usar números do SKU como quantidade
       const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = allEans.map((ean, index) => ({
         ean,
         sku: "", 
-        pdfName: `Produto ${ean}`,
+        pdfName: namesByEan[ean] || "—",
         quantity: allQtys[index] || 0
       }));
 
