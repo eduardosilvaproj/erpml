@@ -12,7 +12,7 @@ export interface OrderRecording {
   responsavel_id: string;
   criado_em: string;
   profiles?: {
-    display_name: string | null;
+    full_name: string | null;
   };
 }
 
@@ -28,7 +28,7 @@ export const useOrderRecordings = (pedidoId: string) => {
         .select(`
           *,
           profiles:responsavel_id (
-            display_name
+            full_name
           )
         `)
         .eq("pedido_id", pedidoId)
