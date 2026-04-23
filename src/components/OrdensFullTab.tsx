@@ -102,8 +102,20 @@ export const OrdensFullTab = () => {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(" ");
-        fullText += pageText + " ";
+        
+        // Melhora a extração de texto para preservar quebras de linha aproximadas
+        let lastY = -1;
+        let pageText = "";
+        const items = textContent.items as any[];
+        
+        for (const item of items) {
+          if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 2) {
+            pageText += "\n";
+          }
+          pageText += item.str + " ";
+          lastY = item.transform[5];
+        }
+        fullText += pageText + "\n";
       }
 
       console.log("Extracted PDF text:", fullText);
@@ -114,49 +126,38 @@ export const OrdensFullTab = () => {
                           fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
-      // Extract items (EAN and Quantity)
-      const items: { ean: string; sku?: string; quantity: number; pdfName?: string }[] = [];
+      // 1. Extrair produtos em ordem
+      const productPattern = /Código ML:\s*\w+\s+Código universal:\s*\n?(\d{8,14})\s+SKU:\s*\S+\s+([\w\s\-\.\,\'çãáéíóúâêîôûàèìòùÀ-ÿ]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/gs;
+      const productsFound: { ean: string; pdfName: string }[] = [];
+      let productMatch;
       
-      // Look for "Código universal: XXXXXXXXXXXXX" or "EAN: XXXXXXXXXXXXX"
-      const eanPattern = /(?:Código\s+universal|EAN):\s*(\d{8,14})/gi;
-      let eanMatch;
-      while ((eanMatch = eanPattern.exec(fullText)) !== null) {
-        const ean = eanMatch[1];
-        
-        // Search for SKU and Quantity near this EAN (look backward and forward)
-        const windowStart = Math.max(0, eanMatch.index - 500);
-        const searchWindow = fullText.substring(windowStart, eanMatch.index + 300);
-        
-        // SKU pattern: "SKU: XXXXX", "Referência: XXXXX"
-        const skuMatch = searchWindow.match(/(?:SKU|Referência):\s*(\S+)/i);
-        const sku = skuMatch ? skuMatch[1] : undefined;
-        
-        // Product Name extraction: text before EAN/SKU but after the previous block
-        // Heuristic: take 100 characters before the EAN and try to find a meaningful title
-        const textBeforeEan = fullText.substring(Math.max(0, eanMatch.index - 150), eanMatch.index);
-        // Remove known labels and whitespace
-        let pdfName = textBeforeEan
-          .replace(/(?:Código\s+universal|EAN|SKU|Referência|Quantidade|Quantidades|Qtd|Unidades|Frete|#|nº|ML|Envio|Transferência):.*$/gi, "")
-          .replace(/\d{8,14}/g, "") // remove other EANs
-          .trim();
-        
-        // If it's too long or has too many newlines, take the last part
-        if (pdfName.includes("\n")) {
-          const lines = pdfName.split("\n");
-          pdfName = lines[lines.length - 1].trim();
-        }
-        if (pdfName.length > 100) pdfName = pdfName.substring(pdfName.length - 100);
-
-        // Quantity pattern: "Quantidade: X", "Quantidades: X", "Qtd: X", "X un"
-        const qtyMatch = searchWindow.match(/(?:Quantidade|Quantidades|Qtd|Unidades):\s*(\d+)/i) ||
-                         searchWindow.match(/(\d+)\s*(?:un|unidades|pc|peças)/i);
-        
-        const quantity = qtyMatch ? parseInt(qtyMatch[1]) : 1;
-        
-        items.push({ ean, sku, quantity, pdfName: pdfName || "Produto não identificado" });
+      while ((productMatch = productPattern.exec(fullText)) !== null) {
+        productsFound.push({
+          ean: productMatch[1],
+          pdfName: productMatch[2].trim()
+        });
       }
 
-      // If no EANs found with specific prefix, fallback to generic 13-digit search
+      // 2. Extrair quantidades em ordem
+      const qtyPattern = /(\d+)\s*•\s*A data de validade/g;
+      const quantities: number[] = [];
+      let qtyMatch;
+      
+      while ((qtyMatch = qtyPattern.exec(fullText)) !== null) {
+        quantities.push(parseInt(qtyMatch[1]));
+      }
+
+      console.log("Found products:", productsFound.length);
+      console.log("Found quantities:", quantities.length);
+
+      // 3. ZIP: Associar produtos e quantidades por índice
+      const items: { ean: string; quantity: number; pdfName: string }[] = productsFound.map((prod, index) => ({
+        ean: prod.ean,
+        pdfName: prod.pdfName,
+        quantity: quantities[index] || 1 // Fallback para 1 se não houver quantidade correspondente
+      }));
+
+      // Fallback para o modo antigo se nada for encontrado (para outros tipos de PDF se necessário)
       if (items.length === 0) {
         const genericEanRegex = /(\d{13})/g;
         let match;
