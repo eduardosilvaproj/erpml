@@ -86,29 +86,50 @@ export const OrdensFullTab = () => {
       console.log("Extracted PDF text:", fullText);
 
       // Extract Shipping Number (Frete # or Envio #)
-      const shippingMatch = fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
+      const shippingMatch = fullText.match(/Frete\s*#\s*(\d+)/i) || 
+                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // Extract items (EAN and Quantity)
-      // This is a heuristic approach, ML PDFs vary. 
-      // Often EAN is a 13-digit number and quantity is nearby.
-      const items: { ean: string; quantity: number }[] = [];
+      const items: { ean: string; sku?: string; quantity: number }[] = [];
       
-      // Match EAN (13 digits) and look for a quantity after it
-      // Format usually: EAN [Description] Qtd
-      const eanRegex = /(\d{13})/g;
-      let match;
-      while ((match = eanRegex.exec(fullText)) !== null) {
-        const ean = match[1];
-        // Look ahead for quantity (usually a number after some text)
-        const textAfter = fullText.substring(match.index + 13, match.index + 100);
-        const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
-        if (qtyMatch) {
-          items.push({ ean, quantity: parseInt(qtyMatch[1]) });
+      // Look for "Código universal: XXXXXXXXXXXXX"
+      const eanPattern = /Código\s+universal:\s*(\d{13})/gi;
+      let eanMatch;
+      while ((eanMatch = eanPattern.exec(fullText)) !== null) {
+        const ean = eanMatch[1];
+        
+        // Search for SKU and Quantity near this EAN
+        const searchWindow = fullText.substring(eanMatch.index, eanMatch.index + 200);
+        
+        // SKU pattern
+        const skuMatch = searchWindow.match(/SKU:\s*(\S+)/i);
+        const sku = skuMatch ? skuMatch[1] : undefined;
+        
+        // Quantity pattern: often a number followed by "un", "unidade" or just a number in a column
+        const qtyMatch = searchWindow.match(/(\d+)\s*(?:un|unidades|pc|peças)/i) || 
+                         searchWindow.match(/Quantidade:\s*(\d+)/i);
+        
+        const quantity = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+        
+        items.push({ ean, sku, quantity });
+      }
+
+      // If no EANs found with specific prefix, fallback to generic 13-digit search
+      if (items.length === 0) {
+        const genericEanRegex = /(\d{13})/g;
+        let match;
+        while ((match = genericEanRegex.exec(fullText)) !== null) {
+          const ean = match[1];
+          const textAfter = fullText.substring(match.index + 13, match.index + 100);
+          const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
+          if (qtyMatch) {
+            items.push({ ean, quantity: parseInt(qtyMatch[1]) });
+          }
         }
       }
 
-      // Deduplicate by EAN (sometimes it appears multiple times)
+      // Deduplicate by EAN and SKU
       const uniqueItems = items.reduce((acc, curr) => {
         const existing = acc.find(i => i.ean === curr.ean);
         if (existing) {
@@ -125,14 +146,16 @@ export const OrdensFullTab = () => {
 
       // Link items with products in database
       const eans = uniqueItems.map(i => i.ean);
+      const skus = uniqueItems.filter(i => i.sku).map(i => i.sku as string);
+      
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, barcode, image_url, stock_physical")
-        .in("barcode", eans);
+        .or(`barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
 
       const itemsWithProducts = uniqueItems.map(item => ({
         ...item,
-        product: products?.find(p => p.barcode === item.ean)
+        product: products?.find(p => p.barcode === item.ean || (item.sku && p.sku === item.sku))
       }));
 
       setParsedData({ shippingNumber, items: itemsWithProducts });
