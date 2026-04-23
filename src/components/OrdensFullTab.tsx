@@ -53,6 +53,126 @@ export const OrdensFullTab = () => {
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
 
+  // PDF Upload state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parsedData, setParsedData] = useState<{
+    shippingNumber: string;
+    items: { ean: string; quantity: number; product?: any }[];
+  } | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast({ title: "Arquivo inválido", description: "Selecione um arquivo PDF do Mercado Livre.", variant: "destructive" });
+      return;
+    }
+
+    setIsParsing(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+        fullText += pageText + " ";
+      }
+
+      console.log("Extracted PDF text:", fullText);
+
+      // Extract Shipping Number (Frete # or Envio #)
+      const shippingMatch = fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
+      const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
+
+      // Extract items (EAN and Quantity)
+      // This is a heuristic approach, ML PDFs vary. 
+      // Often EAN is a 13-digit number and quantity is nearby.
+      const items: { ean: string; quantity: number }[] = [];
+      
+      // Match EAN (13 digits) and look for a quantity after it
+      // Format usually: EAN [Description] Qtd
+      const eanRegex = /(\d{13})/g;
+      let match;
+      while ((match = eanRegex.exec(fullText)) !== null) {
+        const ean = match[1];
+        // Look ahead for quantity (usually a number after some text)
+        const textAfter = fullText.substring(match.index + 13, match.index + 100);
+        const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
+        if (qtyMatch) {
+          items.push({ ean, quantity: parseInt(qtyMatch[1]) });
+        }
+      }
+
+      // Deduplicate by EAN (sometimes it appears multiple times)
+      const uniqueItems = items.reduce((acc, curr) => {
+        const existing = acc.find(i => i.ean === curr.ean);
+        if (existing) {
+          existing.quantity = Math.max(existing.quantity, curr.quantity);
+        } else {
+          acc.push(curr);
+        }
+        return acc;
+      }, [] as typeof items);
+
+      if (uniqueItems.length === 0) {
+        throw new Error("Não foi possível encontrar produtos no PDF. Verifique se o arquivo é um pedido do Mercado Livre FULL.");
+      }
+
+      // Link items with products in database
+      const eans = uniqueItems.map(i => i.ean);
+      const { data: products } = await supabase
+        .from("products")
+        .select("id, name, sku, barcode, image_url, stock_physical")
+        .in("barcode", eans);
+
+      const itemsWithProducts = uniqueItems.map(item => ({
+        ...item,
+        product: products?.find(p => p.barcode === item.ean)
+      }));
+
+      setParsedData({ shippingNumber, items: itemsWithProducts });
+      setPreviewOpen(true);
+      toast({ title: "PDF lido com sucesso!", description: `${uniqueItems.length} produtos encontrados.` });
+    } catch (err: any) {
+      console.error("PDF Parsing error:", err);
+      toast({ title: "Erro ao ler PDF", description: err.message, variant: "destructive" });
+    } finally {
+      setIsParsing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const confirmParsedOrder = async () => {
+    if (!parsedData) return;
+
+    const validItems = parsedData.items.filter(i => i.product);
+    if (validItems.length === 0) {
+      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      await createOrdem.mutateAsync({
+        descricao: `Pedido ML #${parsedData.shippingNumber}`,
+        itens: validItems.map(i => ({
+          product_id: i.product.id,
+          qtd_solicitada: i.quantity
+        })),
+        enviarParaSeparacao: true
+      });
+      toast({ title: "Ordem criada e enviada para separação!" });
+      setPreviewOpen(false);
+      setParsedData(null);
+    } catch (err: any) {
+      toast({ title: "Erro ao criar ordem", description: err.message, variant: "destructive" });
+    }
+  };
+
   // Carrega a ordem em localStorage e navega para /movimentacao-full
   const handleStartSeparation = async (ordem: OrdemFull) => {
     try {
