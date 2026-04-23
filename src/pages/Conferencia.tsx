@@ -1990,9 +1990,17 @@ const Conferencia = () => {
             <div className="flex items-start justify-between gap-2">
               <DialogTitle className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
                 <Package className="h-4 w-4 text-blue-400 shrink-0" />
-                <span className="truncate">📦 Caixa detectada</span>
+                <span className="truncate">📦 Vincular código à caixa</span>
               </DialogTitle>
             </div>
+            
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-2 mb-1">
+              <p className="text-[10px] text-amber-200/90 leading-tight">
+                Código não encontrado no <strong>EAN principal</strong> nem nos <strong>GTINs alternativos</strong>. 
+                Vincule-o a um produto como GTIN alternativo ou caixa.
+              </p>
+            </div>
+
             <p className="text-[11px] text-muted-foreground font-mono truncate">
               Código: <span className="font-bold text-foreground">{gtinModal.code}</span>
             </p>
