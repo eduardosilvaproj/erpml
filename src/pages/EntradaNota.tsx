@@ -228,7 +228,7 @@ const EntradaNota = () => {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, barcode, sku, gtin_cx, box_quantity")
+      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity")
       .eq("company_id", companyId)
       .order("name");
 
