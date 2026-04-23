@@ -836,15 +836,33 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">#{o.frete_ml || o.numero}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{o.descricao || "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <div className="flex flex-col">
+                            <span>#{o.frete_ml || o.numero}</span>
+                            {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          <div className="flex flex-col">
+                            <span>{o.descricao || "-"}</span>
+                            {o.previsao_carregamento && (
+                              <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Previsão: {format(new Date(o.previsao_carregamento), "dd/MM HH:mm")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
                           {o.atribuido_para ? (responsavel?.profile?.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
                         </TableCell>
-                        <TableCell><Badge variant="outline" className={sb.cls}>{sb.label}</Badge></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`${sb.cls} gap-1`}>
+                            {o.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : sb.label}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {podeExecutar && (
