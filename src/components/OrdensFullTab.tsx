@@ -318,7 +318,134 @@ export const OrdensFullTab = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* ETAPA 1 — Carregar Pedido ML */}
+      <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="p-4 bg-primary/10 rounded-full">
+              <Upload className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold">📄 Carregar PDF do Mercado Livre</h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                ETAPA 1 — Arraste o PDF do pedido ou clique no botão abaixo para selecionar. 
+                O sistema identificará os produtos e quantidades automaticamente.
+              </p>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="application/pdf"
+              className="hidden"
+            />
+            <Button 
+              size="lg" 
+              className="px-8 gap-2 h-12 text-base font-semibold shadow-lg shadow-primary/20"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isParsing}
+            >
+              {isParsing ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Lendo PDF...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-5 w-5" />
+                  Selecionar PDF Mercado Livre
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview Dialog do PDF */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              Preview da Ordem — Pedido #{parsedData?.shippingNumber}
+            </DialogTitle>
+            <DialogDescription>
+              Confira os produtos identificados no PDF antes de confirmar a criação da ordem.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>EAN</TableHead>
+                  <TableHead>Produto no Sistema</TableHead>
+                  <TableHead className="text-center">Qtd PDF</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parsedData?.items.map((item, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell className="font-mono text-xs">{item.ean}</TableCell>
+                    <TableCell>
+                      {item.product ? (
+                        <div className="flex items-center gap-2">
+                          {item.product.image_url ? (
+                            <img src={item.product.image_url} alt="" className="h-8 w-8 rounded object-cover" />
+                          ) : (
+                            <div className="h-8 w-8 rounded bg-muted" />
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium line-clamp-1">{item.product.name}</span>
+                            <span className="text-[10px] text-muted-foreground">SKU: {item.product.sku}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-sm">EAN não encontrado no estoque</span>
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center font-bold text-lg">{item.quantity}</TableCell>
+                    <TableCell className="text-center">
+                      {item.product ? (
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">Vínculo OK</Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">Não vinculado</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {parsedData?.items.some(i => !i.product) && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-400">
+                  Alguns produtos do PDF não foram encontrados no seu estoque pelo EAN. 
+                  Eles serão ignorados se você confirmar. Cadastre-os com o EAN correto para vinculação automática.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setPreviewOpen(false)}>Cancelar</Button>
+            <Button 
+              className="gap-2" 
+              onClick={confirmParsedOrder}
+              disabled={createOrdem.isPending || !parsedData?.items.some(i => i.product)}
+            >
+              {createOrdem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              Confirmar e Gerar Ordem
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard icon={ClipboardList} label="Ordens abertas" value={summary.abertas} color="text-primary" />
