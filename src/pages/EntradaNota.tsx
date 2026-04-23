@@ -228,7 +228,7 @@ const EntradaNota = () => {
 
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, barcode, sku, gtin_cx, box_quantity")
+      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity")
       .eq("company_id", companyId)
       .order("name");
 
@@ -675,13 +675,23 @@ const EntradaNota = () => {
 
     // Double-check: maybe product exists with same EAN/SKU in this company (race-safe)
     if (ean) {
-      const { data: byEan } = await supabase
-        .from("products")
-        .select("id")
-        .eq("company_id", companyId)
-        .eq("barcode", ean)
-        .maybeSingle();
-      if (byEan?.id) return byEan.id;
+    // 1. Try EAN (Master Key)
+    const { data: byEan } = await supabase
+      .from("products")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("ean", ean)
+      .maybeSingle();
+    if (byEan?.id) return byEan.id;
+
+    // 2. Try Barcode (Legacy)
+    const { data: byBarcode } = await supabase
+      .from("products")
+      .select("id")
+      .eq("company_id", companyId)
+      .eq("barcode", ean)
+      .maybeSingle();
+    if (byBarcode?.id) return byBarcode.id;
     }
     const { data: bySku } = await supabase
       .from("products")

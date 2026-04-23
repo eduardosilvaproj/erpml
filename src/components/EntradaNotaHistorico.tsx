@@ -65,8 +65,14 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
 
     if (!productId && ean) {
       const { data: byEan } = await supabase
-        .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
-      if (byEan?.id) productId = byEan.id;
+        .from("products").select("id").eq("company_id", companyId).eq("ean", ean).maybeSingle();
+      if (byEan?.id) {
+        productId = byEan.id;
+      } else {
+        const { data: byBarcode } = await supabase
+          .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
+        if (byBarcode?.id) productId = byBarcode.id;
+      }
     }
     if (!productId) {
       const { data: bySku } = await supabase
@@ -358,8 +364,14 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
 
         if (!productId && ean) {
           const { data: byEan } = await supabase
-            .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
-          if (byEan?.id) productId = byEan.id;
+            .from("products").select("id").eq("company_id", companyId).eq("ean", ean).maybeSingle();
+          if (byEan?.id) {
+            productId = byEan.id;
+          } else {
+            const { data: byBarcode } = await supabase
+              .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
+            if (byBarcode?.id) productId = byBarcode.id;
+          }
         }
         if (!productId) {
           const { data: bySku } = await supabase

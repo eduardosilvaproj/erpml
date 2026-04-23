@@ -161,6 +161,7 @@ export interface MatchResult {
   matchedProductId: string | null;
   matchedProductName: string | null;
   matchedProductBarcode: string | null;
+  matchedProductEan: string | null;
   matchedProductSku: string | null;
   matchedProductGtinCx: string | null;
   matchedProductBoxQty: number | null;
@@ -170,21 +171,25 @@ export interface MatchResult {
 
 export function matchProducts(
   xmlProducts: NFeProduct[],
-  dbProducts: { id: string; name: string; barcode: string | null; sku: string; gtin_cx?: string | null; box_quantity?: number | null }[]
+  dbProducts: { id: string; name: string; barcode: string | null; ean?: string | null; sku: string; gtin_cx?: string | null; box_quantity?: number | null }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
     const normalizedXmlBarcode = normalizeBarcode(xp.ean);
     const normalizedXmlCode = normalizeIdentifier(xp.code);
 
-    // 1. Exact match by barcode/EAN
+    // 1. Exact match by EAN (primary)
     if (normalizedXmlBarcode) {
-      const exactMatch = dbProducts.find((dp) => normalizeBarcode(dp.barcode) === normalizedXmlBarcode);
+      const exactMatch = dbProducts.find((dp) => 
+        normalizeBarcode(dp.ean) === normalizedXmlBarcode || 
+        normalizeBarcode(dp.barcode) === normalizedXmlBarcode
+      );
       if (exactMatch) {
         return {
           xmlProduct: xp,
           matchedProductId: exactMatch.id,
           matchedProductName: exactMatch.name,
           matchedProductBarcode: exactMatch.barcode,
+          matchedProductEan: exactMatch.ean ?? null,
           matchedProductSku: exactMatch.sku,
           matchedProductGtinCx: exactMatch.gtin_cx ?? null,
           matchedProductBoxQty: exactMatch.box_quantity ?? null,
@@ -204,6 +209,7 @@ export function matchProducts(
         matchedProductId: skuMatch.id,
         matchedProductName: skuMatch.name,
         matchedProductBarcode: skuMatch.barcode,
+        matchedProductEan: skuMatch.ean ?? null,
         matchedProductSku: skuMatch.sku,
         matchedProductGtinCx: skuMatch.gtin_cx ?? null,
         matchedProductBoxQty: skuMatch.box_quantity ?? null,
@@ -233,6 +239,7 @@ export function matchProducts(
         matchedProductId: bestMatch.id,
         matchedProductName: bestMatch.name,
         matchedProductBarcode: bestMatch.barcode,
+        matchedProductEan: bestMatch.ean ?? null,
         matchedProductSku: bestMatch.sku,
         matchedProductGtinCx: bestMatch.gtin_cx ?? null,
         matchedProductBoxQty: bestMatch.box_quantity ?? null,
@@ -247,6 +254,7 @@ export function matchProducts(
       matchedProductId: null,
       matchedProductName: null,
       matchedProductBarcode: null,
+      matchedProductEan: null,
       matchedProductSku: null,
       matchedProductGtinCx: null,
       matchedProductBoxQty: null,

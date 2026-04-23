@@ -235,7 +235,7 @@ const MovimentacaoFull = () => {
       if (boxModeEnabled) {
         const { data: boxProducts } = await supabase
           .from("products")
-          .select("id, name, sku, barcode, stock_physical, gtin_cx, box_quantity")
+          .select("id, name, sku, barcode, ean, stock_physical, gtin_cx, box_quantity")
           .eq("gtin_cx", trimmed);
 
         if (boxProducts && boxProducts.length > 0) {
@@ -310,8 +310,8 @@ const MovimentacaoFull = () => {
       // 2. Regular product scan
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, stock_physical, gtin_cx, box_quantity")
-        .or(`barcode.eq.${trimmed},sku.eq.${trimmed}`);
+        .select("id, name, sku, barcode, ean, stock_physical, gtin_cx, box_quantity")
+        .or(`ean.eq.${trimmed},barcode.eq.${trimmed},sku.eq.${trimmed}`);
 
       const product = products?.[0];
       if (!product) {
