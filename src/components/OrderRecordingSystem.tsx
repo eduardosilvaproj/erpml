@@ -40,8 +40,10 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, 
   } = useOrderRecording({
     pedidoId,
     tipo: activeType,
-    freteMl
+    freteMl,
+    onFinished
   });
+
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
