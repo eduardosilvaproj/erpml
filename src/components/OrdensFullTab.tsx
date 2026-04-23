@@ -907,7 +907,7 @@ export const OrdensFullTab = () => {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             ) : (
-                              <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
+                              <Button size="icon" variant="ghost" title="Ver" onClick={() => handleViewOrder(o)}>
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                             )}
