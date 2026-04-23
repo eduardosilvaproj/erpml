@@ -456,19 +456,49 @@ export const OrdensFullTab = () => {
   };
 
   const handleCancel = async (o: OrdemFull) => {
-    if (!confirm(`Cancelar a ordem ${o.numero}?`)) return;
-    await updateStatus.mutateAsync({ id: o.id, status: "cancelada" });
-    toast({ title: "Ordem cancelada" });
+    setOrderToDelete(o);
+    setDeleteOption("cancel");
+    setDeleteDialogOpen(true);
   };
 
   const handleDelete = async (o: OrdemFull) => {
-    if (o.status !== "rascunho" && o.status !== "cancelada") {
-      toast({ title: "Apenas rascunhos ou ordens canceladas podem ser excluídos", variant: "destructive" });
-      return;
+    setOrderToDelete(o);
+    setDeleteOption("delete");
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteAction = async () => {
+    if (!orderToDelete) return;
+    setIsDeleting(true);
+    try {
+      if (deleteOption === "cancel") {
+        await updateStatus.mutateAsync({ id: orderToDelete.id, status: "cancelada" });
+        toast({ title: "Ordem cancelada com sucesso" });
+      } else {
+        // Excluir permanentemente
+        const { error: errorItens } = await supabase
+          .from("ordens_full_itens")
+          .delete()
+          .eq("ordem_id", orderToDelete.id);
+        
+        if (errorItens) throw errorItens;
+
+        const { error: errorOrdem } = await supabase
+          .from("ordens_full")
+          .delete()
+          .eq("id", orderToDelete.id);
+
+        if (errorOrdem) throw errorOrdem;
+
+        toast({ title: "Ordem excluída permanentemente" });
+      }
+      setDeleteDialogOpen(false);
+      setOrderToDelete(null);
+    } catch (err: any) {
+      toast({ title: "Erro na operação", description: err.message, variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
     }
-    if (!confirm(`Excluir a ordem ${o.numero}?`)) return;
-    await deleteOrdem.mutateAsync(o.id);
-    toast({ title: "Ordem excluída" });
   };
 
   const handleManualLink = (idx: number, product: any) => {
