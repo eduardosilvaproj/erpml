@@ -52,7 +52,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
   const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento";
-  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || isSeparada;
+  const isLoadingPhase = ordem?.status === 'aguardando_carregamento' || ordem?.status === 'carregando';
+  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || (isSeparada && !isLoadingPhase);
 
   useEffect(() => {
     if (!ordemId) {
