@@ -535,7 +535,7 @@ export const OrdensFullTab = () => {
                   <TableRow 
                     key={idx} 
                     className={`transition-colors cursor-pointer group ${
-                      !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-muted/50"
+                      !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "bg-emerald-500/5 hover:bg-emerald-500/10"
                     }`}
                     onClick={() => {
                       if (!item.product) {
