@@ -47,6 +47,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [editingPrevisao, setEditingPrevisao] = useState(false);
   const [novaPrevisaoData, setNovaPrevisaoData] = useState("");
   const [novaPrevisaoHora, setNovaPrevisaoHora] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState<string | null>(null);
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
@@ -54,6 +55,32 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento" || ordem?.status === "carregando";
   const isLoadingPhase = ordem?.status === 'aguardando_carregamento' || ordem?.status === 'carregando';
   const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || (isSeparada && !isLoadingPhase);
+
+  useEffect(() => {
+    async function fetchResponsavel() {
+      if (ordem?.separado_por) {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
+        if (isUUID) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, name' as any)
+            .eq('id', ordem.separado_por)
+            .maybeSingle();
+          if (profile) {
+            setResponsavelNome((profile as any).full_name || (profile as any).name || 'Administrador');
+          } else {
+            setResponsavelNome(ordem.separado_por);
+          }
+        } else {
+          setResponsavelNome(ordem.separado_por);
+        }
+      } else {
+        setResponsavelNome("Administrador");
+      }
+    }
+    fetchResponsavel();
+  }, [ordem?.separado_por]);
+
 
   useEffect(() => {
     if (!ordemId) {
