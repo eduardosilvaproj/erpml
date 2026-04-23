@@ -103,7 +103,8 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
     setIsUploading(true);
     const timestamp = new Date().getTime();
     const fileName = `${uploadTipo}_${timestamp}.webm`;
-    const filePath = `${pedidoId}/${fileName}`;
+    const folder = freteMl || pedidoId;
+    const filePath = `${folder}/${fileName}`;
 
     try {
       // 1. Upload to Storage
