@@ -473,20 +473,27 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="barcode" render={({ field }) => (
+                  <FormField control={form.control} name="ean" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código de Barras</FormLabel>
+                      <FormLabel>Código EAN (Chave Mestre)</FormLabel>
                       <div className="flex gap-2 items-center">
                         <FormControl>
                           <BarcodeScannerInput
                             value={field.value || ""}
-                            onChange={(v) => field.onChange(v)}
-                            onScan={(code) => { field.onChange(code); toast({ title: "✓ Código lido!", description: code }); }}
+                            onChange={(v) => {
+                              field.onChange(v);
+                              form.setValue("barcode", v); // Mantém sincronizado por enquanto
+                            }}
+                            onScan={(code) => { 
+                              field.onChange(code); 
+                              form.setValue("barcode", code);
+                              toast({ title: "✓ EAN lido!", description: code }); 
+                            }}
                             placeholder="7891234567890"
                             showCameraButton
                           />
                         </FormControl>
-                        <Button type="button" variant="outline" size="icon" title="Gerar EAN-13" onClick={() => { const ean = generateEAN13(); form.setValue("barcode", ean); toast({ title: "EAN-13 gerado!", description: ean }); }}>
+                        <Button type="button" variant="outline" size="icon" title="Gerar EAN-13" onClick={() => { const ean = generateEAN13(); field.onChange(ean); form.setValue("barcode", ean); toast({ title: "EAN-13 gerado!", description: ean }); }}>
                           <Wand2 className="h-4 w-4" />
                         </Button>
                       </div>
