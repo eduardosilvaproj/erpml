@@ -414,22 +414,6 @@ const Separacao = () => {
                     💾 Salvar e Aguardar Carregamento
                   </Button>
                 </div>
-
-                  <Button 
-                    variant="ghost" 
-                    size="lg" 
-                    className="gap-2 text-gray-500 md:col-span-2"
-                    onClick={() => navigate("/movimentacao-full")}
-                  >
-                    <ArrowLeft className="h-4 w-4" /> Voltar para Ordens
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="space-y-6">
               </div>
             </CardContent>
           </Card>
