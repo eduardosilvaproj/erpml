@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from "react";
-import { Video, VideoOff, History, Play, Trash2, X, Maximize2, Minimize2 } from "lucide-react";
+import { Video, VideoOff, History, Play, Trash2, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { useOrderRecording, RecordingType } from "@/hooks/useOrderRecording";
 import { useOrderRecordings, OrderRecording } from "@/hooks/useOrderRecordings";
 import { format } from "date-fns";
@@ -40,7 +46,8 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
 
   const handleStartRecording = (type: RecordingType) => {
     setActiveType(type);
-    startRecording();
+    // Pass type directly to avoid race condition with state
+    startRecording(type);
   };
 
   const handleToggleTopRecording = () => {
@@ -54,25 +61,45 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button 
-          variant={isRecording ? "destructive" : "outline"} 
-          size="sm" 
-          className={`gap-2 ${isRecording ? "animate-pulse" : ""}`}
-          onClick={handleToggleTopRecording}
-          disabled={isUploading}
-        >
-          {isRecording ? (
-            <>
-              <VideoOff className="h-4 w-4" /> 
-              <span>Parar Gravação</span>
-              <span className="ml-1 font-mono text-xs tabular-nums">● {formatDuration(duration)}</span>
-            </>
-          ) : (
-            <>
-              <Video className="h-4 w-4" /> Iniciar Gravação
-            </>
+        <div className="flex items-center -space-x-px">
+          <Button 
+            variant={isRecording ? "destructive" : "outline"} 
+            size="sm" 
+            className={`gap-2 rounded-r-none ${isRecording ? "animate-pulse" : ""}`}
+            onClick={handleToggleTopRecording}
+            disabled={isUploading}
+          >
+            {isRecording ? (
+              <>
+                <VideoOff className="h-4 w-4" /> 
+                <span>Parar Gravação</span>
+                <span className="ml-1 font-mono text-xs tabular-nums">● {formatDuration(duration)}</span>
+              </>
+            ) : (
+              <>
+                <Video className="h-4 w-4" /> Iniciar {activeType === 'separacao' ? 'Separação' : 'Carregamento'}
+              </>
+            )}
+          </Button>
+          
+          {!isRecording && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="px-2 rounded-l-none border-l-0" disabled={isUploading}>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleStartRecording("separacao")}>
+                  <Video className="mr-2 h-4 w-4" /> Gravar Separação
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStartRecording("carregamento")}>
+                  <Video className="mr-2 h-4 w-4" /> Gravar Carregamento
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
-        </Button>
+        </div>
 
         <Dialog>
           <DialogTrigger asChild>

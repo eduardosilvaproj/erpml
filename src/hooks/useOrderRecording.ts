@@ -21,8 +21,18 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const durationRef = useRef(0);
+  const tipoRef = useRef(tipo);
 
-  const startRecording = async () => {
+  // Sync tipoRef with the latest tipo prop
+  useEffect(() => {
+    tipoRef.current = tipo;
+  }, [tipo]);
+
+  const startRecording = async (overrideTipo?: RecordingType) => {
+    if (overrideTipo) {
+      tipoRef.current = overrideTipo;
+    }
+    
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
         video: { facingMode: "environment" }, 
@@ -45,7 +55,8 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
 
       mediaRecorder.onstop = async () => {
         const videoBlob = new Blob(chunksRef.current, { type: "video/webm" });
-        await uploadVideo(videoBlob, durationRef.current);
+        // Use the current value of the ref to avoid closure issues
+        await uploadVideo(videoBlob, durationRef.current, tipoRef.current);
         
         // Stop all tracks
         mediaStream.getTracks().forEach(track => track.stop());
@@ -86,10 +97,10 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
     }
   };
 
-  const uploadVideo = async (blob: Blob, finalDuration: number) => {
+  const uploadVideo = async (blob: Blob, finalDuration: number, uploadTipo: RecordingType) => {
     setIsUploading(true);
     const timestamp = new Date().getTime();
-    const fileName = `${tipo}_${timestamp}.webm`;
+    const fileName = `${uploadTipo}_${timestamp}.webm`;
     const filePath = `${pedidoId}/${fileName}`;
 
     try {
@@ -109,7 +120,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
         .from("order_recordings")
         .insert({
           pedido_id: pedidoId,
-          tipo,
+          tipo: uploadTipo,
           video_url: publicUrl,
           duracao_segundos: finalDuration
         });
@@ -118,7 +129,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
 
       toast({
         title: "Gravação salva!",
-        description: "O vídeo foi vinculado ao pedido com sucesso.",
+        description: `O vídeo de ${uploadTipo === 'separacao' ? 'separação' : 'carregamento'} foi vinculado ao pedido com sucesso.`,
       });
 
       if (onFinished) onFinished(publicUrl);
