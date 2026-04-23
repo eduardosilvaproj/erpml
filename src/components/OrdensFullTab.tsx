@@ -334,6 +334,7 @@ export const OrdensFullTab = () => {
       localStorage.setItem("ordem_ativa", JSON.stringify({
         id: ordem.id,
         numero: ordem.numero,
+        frete_ml: ordem.frete_ml,
         descricao: ordem.descricao,
         produtos,
       }));
