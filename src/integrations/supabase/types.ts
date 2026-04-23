@@ -1221,6 +1221,7 @@ export type Database = {
           created_at: string
           criado_por: string
           descricao: string | null
+          frete_ml: string | null
           gravacao_id: string | null
           id: string
           iniciada_em: string | null
@@ -1240,6 +1241,7 @@ export type Database = {
           created_at?: string
           criado_por: string
           descricao?: string | null
+          frete_ml?: string | null
           gravacao_id?: string | null
           id?: string
           iniciada_em?: string | null
@@ -1259,6 +1261,7 @@ export type Database = {
           created_at?: string
           criado_por?: string
           descricao?: string | null
+          frete_ml?: string | null
           gravacao_id?: string | null
           id?: string
           iniciada_em?: string | null
