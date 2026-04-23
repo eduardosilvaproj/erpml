@@ -59,7 +59,10 @@ export const useOrdensFull = () => {
     queryFn: async (): Promise<OrdemFull[]> => {
       const { data, error } = await supabase
         .from("ordens_full")
-        .select("*")
+        .select(`
+          *,
+          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name, name)
+        `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
