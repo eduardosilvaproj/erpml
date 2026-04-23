@@ -47,6 +47,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [editingPrevisao, setEditingPrevisao] = useState(false);
   const [novaPrevisaoData, setNovaPrevisaoData] = useState("");
   const [novaPrevisaoHora, setNovaPrevisaoHora] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState<string | null>(null);
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
@@ -54,6 +55,32 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento" || ordem?.status === "carregando";
   const isLoadingPhase = ordem?.status === 'aguardando_carregamento' || ordem?.status === 'carregando';
   const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || (isSeparada && !isLoadingPhase);
+
+  useEffect(() => {
+    async function fetchResponsavel() {
+      if (ordem?.separado_por) {
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
+        if (isUUID) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, name' as any)
+            .eq('id', ordem.separado_por)
+            .maybeSingle();
+          if (profile) {
+            setResponsavelNome((profile as any).full_name || (profile as any).name || 'Administrador');
+          } else {
+            setResponsavelNome(ordem.separado_por);
+          }
+        } else {
+          setResponsavelNome(ordem.separado_por);
+        }
+      } else {
+        setResponsavelNome("Administrador");
+      }
+    }
+    fetchResponsavel();
+  }, [ordem?.separado_por]);
+
 
   useEffect(() => {
     if (!ordemId) {
@@ -428,7 +455,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                               <div>
                                 <p className="text-sm text-muted-foreground leading-none mb-1">Responsável</p>
                                 <p className="text-base font-bold text-gray-900">
-                                  {ordem.separado_por || "Administrador"}
+                                  {responsavelNome || "Administrador"}
                                 </p>
                               </div>
                             </div>
@@ -466,12 +493,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                             trigger={
                               <Button 
                                 size="lg"
-                                className="h-24 w-full sm:w-80 rounded-2xl gap-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-xl shadow-xl shadow-orange-500/30 group transition-all hover:scale-[1.02]"
+                                className="h-24 w-full sm:w-80 rounded-2xl gap-4 bg-orange-600 hover:bg-orange-700 text-white font-black text-xl shadow-xl shadow-orange-600/30 group transition-all hover:scale-[1.02]"
                               >
                                 <div className="bg-white/20 p-3 rounded-full group-hover:bg-white/30 transition-colors">
                                   <Video className="h-8 w-8" />
                                 </div>
-                                Iniciar Gravação
+                                🎥 Gravar Carregamento
                               </Button>
                             }
                           />

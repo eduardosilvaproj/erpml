@@ -4,6 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Forçar cor visível nos inputs de data/hora */
+input[type="date"], input[type="time"] {
+  color: #ffffff !important;
+  background: #1e2a3a !important;
+  border: 1px solid #3a4a5a !important;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1); /* torna o ícone branco */
+}
+
+
 /* Premium Dark ERP — High Contrast Depth System */
 
 @layer base {
