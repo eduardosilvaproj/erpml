@@ -1049,7 +1049,7 @@ export const OrdensFullTab = () => {
                   
                   return (
                     <TableRow key={fo.id}>
-                      <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
+                      <TableCell className="font-mono font-bold text-primary">#{fo.frete_ml || fo.pdf_frete_id || "—"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
                           fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
