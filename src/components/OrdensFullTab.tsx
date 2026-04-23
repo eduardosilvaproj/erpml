@@ -833,7 +833,7 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">{o.numero}</TableCell>
+                        <TableCell className="font-mono text-xs">#{o.frete_ml || o.numero}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{o.descricao || "-"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
