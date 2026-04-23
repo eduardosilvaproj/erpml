@@ -20,6 +20,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
+  const durationRef = useRef(0);
 
   const startRecording = async () => {
     try {
@@ -44,7 +45,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
 
       mediaRecorder.onstop = async () => {
         const videoBlob = new Blob(chunksRef.current, { type: "video/webm" });
-        await uploadVideo(videoBlob);
+        await uploadVideo(videoBlob, durationRef.current);
         
         // Stop all tracks
         mediaStream.getTracks().forEach(track => track.stop());
@@ -54,9 +55,14 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
       mediaRecorder.start();
       setIsRecording(true);
       setDuration(0);
+      durationRef.current = 0;
       
       timerRef.current = window.setInterval(() => {
-        setDuration(prev => prev + 1);
+        setDuration(prev => {
+          const next = prev + 1;
+          durationRef.current = next;
+          return next;
+        });
       }, 1000);
 
     } catch (err) {
@@ -80,7 +86,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
     }
   };
 
-  const uploadVideo = async (blob: Blob) => {
+  const uploadVideo = async (blob: Blob, finalDuration: number) => {
     setIsUploading(true);
     const timestamp = new Date().getTime();
     const fileName = `${tipo}_${timestamp}.webm`;
@@ -105,7 +111,7 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
           pedido_id: pedidoId,
           tipo,
           video_url: publicUrl,
-          duracao_segundos: duration
+          duracao_segundos: finalDuration
         });
 
       if (dbError) throw dbError;
