@@ -553,26 +553,48 @@ export const OrdensFullTab = () => {
                     <TableCell>
                       {item.product ? (
                         <div className="flex items-center gap-2">
-                          {item.product.image_url && (
+                          {item.product.image_url ? (
                             <img src={item.product.image_url} alt="" className="h-6 w-6 rounded object-cover border" />
+                          ) : (
+                            <div className="h-6 w-6 rounded border flex items-center justify-center bg-muted">
+                              {(item.product as any).isKit ? <Gift className="h-3 w-3 text-primary" /> : <Package className="h-3 w-3 text-muted-foreground" />}
+                            </div>
                           )}
                           <span className="text-sm font-semibold">{item.product.name}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-2">
                           <span className="text-muted-foreground/50">—</span>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-7 text-[10px] w-fit px-2 gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
-                              setProductFormOpen(true);
-                            }}
-                          >
-                            <Plus className="h-3 w-3" /> Cadastrar produto
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className={`h-7 text-[10px] w-fit px-2 gap-1 ${isKit(item.pdfName) ? "border-primary bg-primary/5 text-primary font-bold shadow-sm" : ""}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {isKit(item.pdfName) ? <Gift className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                                {isKit(item.pdfName) ? "🎁 Cadastrar Kit" : "➕ Cadastrar"}
+                                <ChevronDown className="h-3 w-3 ml-0.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
+                                setProductFormOpen(true);
+                              }}>
+                                <Package className="h-4 w-4 mr-2" /> Cadastrar como Produto
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
+                                setKitFormOpen(true);
+                              }}>
+                                <Gift className="h-4 w-4 mr-2" /> Cadastrar como Kit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </TableCell>
