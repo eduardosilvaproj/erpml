@@ -184,6 +184,11 @@ export const OrdensFullTab = () => {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
 
+  // Filtros e Ordenação
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+  const [ordenacao, setOrdenacao] = useState('recente');
+
   // PDF Upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isParsing, setIsParsing] = useState(false);
