@@ -18,9 +18,10 @@ import { ptBR } from "date-fns/locale";
 interface OrderRecordingSystemProps {
   pedidoId: string;
   orderNumber?: string;
+  trigger?: React.ReactNode;
 }
 
-export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSystemProps) {
+export function OrderRecordingSystem({ pedidoId, orderNumber, trigger }: OrderRecordingSystemProps) {
   const [activeType, setActiveType] = useState<RecordingType>("separacao");
   
   const { 
