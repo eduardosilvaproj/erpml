@@ -1105,7 +1105,7 @@ export const OrdensFullTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(ordens || []).map((o) => {
+                  {ordensFiltradas.map((o) => {
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && (o.status === "aguardando" || o.status === "em_separacao");
                     const sb = ordemStatusBadge(o.status);
