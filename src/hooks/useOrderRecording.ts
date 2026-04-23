@@ -7,6 +7,7 @@ export type RecordingType = "separacao" | "carregamento";
 interface UseOrderRecordingProps {
   pedidoId: string;
   tipo: RecordingType;
+  freteMl?: string | null;
   onFinished?: (url: string) => void;
 }
 
