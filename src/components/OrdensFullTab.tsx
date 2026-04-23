@@ -682,6 +682,7 @@ export const OrdensFullTab = () => {
         toast({ title: "Ordem cancelada com sucesso" });
       } else {
         // Excluir permanentemente
+        // 1. Itens da ordem
         const { error: errorItens } = await supabase
           .from("ordens_full_itens")
           .delete()
@@ -689,6 +690,21 @@ export const OrdensFullTab = () => {
         
         if (errorItens) throw errorItens;
 
+        // 2. Gravações vinculadas
+        await supabase
+          .from("order_recordings")
+          .delete()
+          .eq("pedido_id", orderToDelete.id);
+
+        // 3. Registro na tabela full_orders (se houver frete_ml)
+        if (orderToDelete.frete_ml) {
+          await supabase
+            .from("full_orders")
+            .delete()
+            .eq("frete_ml", orderToDelete.frete_ml);
+        }
+
+        // 4. A própria ordem
         const { error: errorOrdem } = await supabase
           .from("ordens_full")
           .delete()
@@ -696,7 +712,9 @@ export const OrdensFullTab = () => {
 
         if (errorOrdem) throw errorOrdem;
 
-        toast({ title: "Ordem excluída permanentemente" });
+        toast({ title: "Ordem e registros vinculados excluídos com sucesso" });
+        refetchOrdens();
+        refetchRecordings();
       }
       setDeleteDialogOpen(false);
       setOrderToDelete(null);
