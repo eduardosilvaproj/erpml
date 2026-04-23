@@ -135,11 +135,14 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, trigger }: OrderRe
                 isRecording={isRecording}
               />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 
-      {/* Floating Preview Window */}
+  return (
+    <>
+      {systemUI}
       {isRecording && stream && (
         <div className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${isPreviewMinimized ? 'w-16 h-16' : 'w-64 aspect-video'}`}>
           <Card className="overflow-hidden border-2 border-primary shadow-2xl relative">
