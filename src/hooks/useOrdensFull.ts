@@ -8,6 +8,7 @@ export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 export interface OrdemFull {
   id: string;
   numero: string;
+  frete_ml: string | null;
   descricao: string | null;
   status: OrdemStatus;
   prazo: string | null;
