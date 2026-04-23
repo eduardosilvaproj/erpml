@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   ScanBarcode, CheckCircle, AlertTriangle, Package, Loader2,
   Play, XCircle, Minus, Check, Clock, FileText, ClipboardList,
   ArrowRight, ArrowLeft, Download, RotateCcw, History, X, Save,
-  ShieldCheck, Search
+  ShieldCheck, Search, FileDown
 } from "lucide-react";
 
 const STORAGE_KEY = "conferencia-session-v1";
@@ -664,7 +666,7 @@ const Conferencia = () => {
   const results = useMemo(() => {
     const ok: ScannedProduct[] = [];
     const divergent: ScannedProduct[] = [];
-    const notFound: { id: string; name: string; sku: string; systemQty: number }[] = [];
+    const notFound: { id: string; name: string; sku: string; systemQty: number; barcode: string | null }[] = [];
 
     for (const sp of scannedProducts) {
       if (sp.scannedQty === sp.systemQty) {
@@ -676,12 +678,63 @@ const Conferencia = () => {
 
     for (const p of allProducts) {
       if (p.stock_physical > 0 && !scannedProducts.find((sp) => sp.productId === p.id)) {
-        notFound.push({ id: p.id, name: p.name, sku: p.sku, systemQty: p.stock_physical });
+        notFound.push({ 
+          id: p.id, 
+          name: p.name, 
+          sku: p.sku, 
+          systemQty: p.stock_physical,
+          barcode: p.ean || p.barcode || p.sku
+        });
       }
     }
 
     return { ok, divergent, notFound };
   }, [scannedProducts, allProducts]);
+
+  const handleExportCSV = () => {
+    const headers = ["EAN", "Nome no PDF", "Nome no Sistema", "Qtd", "Status"];
+    const rows = [
+      ...results.ok.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "OK"].join(",")),
+      ...results.divergent.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "Divergente"].join(",")),
+      ...results.notFound.map(p => [p.barcode, p.name, p.name, 0, "Não encontrado"].join(",")),
+    ];
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria_${conferenceName || "conferencia"}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV exportado com sucesso!" });
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const tableData = [
+      ...results.ok.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "OK"]),
+      ...results.divergent.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "Divergente"]),
+      ...results.notFound.map(p => [p.barcode, p.name, p.name, 0, "Não encontrado"]),
+    ];
+
+    doc.setFontSize(18);
+    doc.text(`Relatório de Auditoria - ${conferenceName || "Conferência"}`, 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 14, 30);
+    if (sectionName) doc.text(`Seção: ${sectionName}`, 14, 37);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [["EAN", "Nome no PDF", "Nome no Sistema", "Qtd", "Status"]],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] }, // Cor Indigo-600 aproximada
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+
+    doc.save(`auditoria_${conferenceName || "conferencia"}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast({ title: "PDF exportado com sucesso!" });
+  };
 
   const handleAdjustStock = async () => {
     setAdjusting(true);
@@ -1412,7 +1465,14 @@ const Conferencia = () => {
                       Finalizar bipagem <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
                   </div>
-                  {/* Removido botão manual: recalculação agora é automática a cada bipagem */}
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button variant="outline" size="sm" className="h-9 gap-1.5 text-[11px]" onClick={handleExportCSV}>
+                      <Download className="h-3.5 w-3.5" /> CSV (Audit)
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9 gap-1.5 text-[11px] border-primary/40 text-primary hover:bg-primary/5" onClick={handleExportPDF}>
+                      <FileDown className="h-3.5 w-3.5" /> PDF (Audit)
+                    </Button>
+                  </div>
                   <Button
                     variant="secondary"
                     className="w-full"
@@ -1645,22 +1705,11 @@ const Conferencia = () => {
                 {adjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Ajustar estoque automaticamente
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => {
-                const headers = ["Produto", "SKU", "Qtd Sistema", "Qtd Contada", "Diferença", "Status"];
-                const rows = [
-                  ...results.ok.map(p => [p.name, p.sku, p.systemQty, p.scannedQty, 0, "OK"].join(",")),
-                  ...results.divergent.map(p => [p.name, p.sku, p.systemQty, p.scannedQty, p.scannedQty - p.systemQty, "Divergente"].join(",")),
-                  ...results.notFound.map(p => [p.name, p.sku, p.systemQty, 0, -p.systemQty, "Não encontrado"].join(",")),
-                ];
-                const csv = [headers.join(","), ...rows].join("\n");
-                const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a"); a.href = url;
-                a.download = `conferencia_${conferenceName || "resultado"}_${new Date().toISOString().slice(0, 10)}.csv`;
-                a.click(); URL.revokeObjectURL(url);
-                toast({ title: "Relatório exportado!" });
-              }}>
-                <Download className="h-4 w-4" /> Exportar relatório
+              <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
+                <Download className="h-4 w-4" /> Exportar CSV
+              </Button>
+              <Button variant="outline" className="gap-2 border-primary/50 text-primary hover:bg-primary/5" onClick={handleExportPDF}>
+                <FileDown className="h-4 w-4" /> Exportar PDF (Audit)
               </Button>
               <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
                 <ArrowLeft className="h-4 w-4" /> Voltar à bipagem
