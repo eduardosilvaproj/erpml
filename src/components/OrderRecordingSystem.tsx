@@ -116,14 +116,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
               </Button>
             </div>
             
-            {!isPreviewMinimized && (
-              <video 
-                autoPlay 
-                muted 
-                playsInline
-                ref={(video) => { if (video) video.srcObject = stream; }}
-                className="w-full h-full object-cover bg-black"
-              />
+              <VideoPreview stream={stream} />
             )}
             
             {isPreviewMinimized && (
@@ -134,12 +127,32 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
             
             <div className="absolute bottom-1 left-2 flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
-              <span className="text-[10px] font-bold text-white drop-shadow-md">{formatDuration(duration)}</span>
+              <span className="text-[10px] font-bold text-primary-foreground drop-shadow-md">{formatDuration(duration)}</span>
             </div>
           </Card>
         </div>
       )}
     </>
+  );
+}
+
+function VideoPreview({ stream }: { stream: MediaStream }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  return (
+    <video 
+      ref={videoRef}
+      autoPlay 
+      muted 
+      playsInline
+      className="w-full h-full object-cover bg-black"
+    />
   );
 }
 
