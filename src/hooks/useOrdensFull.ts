@@ -246,6 +246,17 @@ export const useLimparEnvioPendente = () => {
   });
 };
 
+export const useDeleteOrdem = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ordens_full").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["ordens-full"] }),
+  });
+};
+
 export const useDeleteFullOrder = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
