@@ -666,7 +666,7 @@ const Conferencia = () => {
   const results = useMemo(() => {
     const ok: ScannedProduct[] = [];
     const divergent: ScannedProduct[] = [];
-    const notFound: { id: string; name: string; sku: string; systemQty: number }[] = [];
+    const notFound: { id: string; name: string; sku: string; systemQty: number; barcode: string | null }[] = [];
 
     for (const sp of scannedProducts) {
       if (sp.scannedQty === sp.systemQty) {
@@ -678,12 +678,63 @@ const Conferencia = () => {
 
     for (const p of allProducts) {
       if (p.stock_physical > 0 && !scannedProducts.find((sp) => sp.productId === p.id)) {
-        notFound.push({ id: p.id, name: p.name, sku: p.sku, systemQty: p.stock_physical });
+        notFound.push({ 
+          id: p.id, 
+          name: p.name, 
+          sku: p.sku, 
+          systemQty: p.stock_physical,
+          barcode: p.ean || p.barcode || p.sku
+        });
       }
     }
 
     return { ok, divergent, notFound };
   }, [scannedProducts, allProducts]);
+
+  const handleExportCSV = () => {
+    const headers = ["EAN", "Nome no PDF", "Nome no Sistema", "Qtd", "Status"];
+    const rows = [
+      ...results.ok.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "OK"].join(",")),
+      ...results.divergent.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "Divergente"].join(",")),
+      ...results.notFound.map(p => [p.barcode, p.name, p.name, 0, "Não encontrado"].join(",")),
+    ];
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria_${conferenceName || "conferencia"}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "CSV exportado com sucesso!" });
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const tableData = [
+      ...results.ok.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "OK"]),
+      ...results.divergent.map(p => [(p.barcode || p.sku), p.name, p.name, p.scannedQty, "Divergente"]),
+      ...results.notFound.map(p => [p.barcode, p.name, p.name, 0, "Não encontrado"]),
+    ];
+
+    doc.setFontSize(18);
+    doc.text(`Relatório de Auditoria - ${conferenceName || "Conferência"}`, 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Data: ${new Date().toLocaleDateString("pt-BR")}`, 14, 30);
+    if (sectionName) doc.text(`Seção: ${sectionName}`, 14, 37);
+
+    autoTable(doc, {
+      startY: 45,
+      head: [["EAN", "Nome no PDF", "Nome no Sistema", "Qtd", "Status"]],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [79, 70, 229] }, // Cor Indigo-600 aproximada
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+    });
+
+    doc.save(`auditoria_${conferenceName || "conferencia"}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast({ title: "PDF exportado com sucesso!" });
+  };
 
   const handleAdjustStock = async () => {
     setAdjusting(true);
