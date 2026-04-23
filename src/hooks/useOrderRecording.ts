@@ -148,10 +148,12 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (stream) stream.getTracks().forEach(track => track.stop());
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [stream]);
+  }, []);
 
   return {
     isRecording,
