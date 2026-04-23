@@ -380,7 +380,17 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           } else {
             const { data: byBarcode } = await supabase
               .from("products").select("id").eq("company_id", companyId).eq("barcode", ean).maybeSingle();
-            if (byBarcode?.id) productId = byBarcode.id;
+            if (byBarcode?.id) {
+              productId = byBarcode.id;
+            } else {
+              const { data: byAltGtin } = await supabase
+                .from("product_alternative_gtins")
+                .select("product_id")
+                .eq("company_id", companyId)
+                .eq("gtin", ean)
+                .maybeSingle();
+              if (byAltGtin?.product_id) productId = byAltGtin.product_id;
+            }
           }
         }
         if (!productId) {
