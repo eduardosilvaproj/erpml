@@ -126,36 +126,27 @@ export const OrdensFullTab = () => {
                           fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
-      // Nova lógica de parser para Mercado Livre PDF
+      // Nova lógica de parser completa para Mercado Livre PDF
       const extractedProducts: { ean: string; nomePDF: string }[] = [];
-      const eanRegex = /Código universal:[\s\n]*(789\d{10})/g;
-      const eanMatches = [...fullText.matchAll(eanRegex)];
-
-      for (const match of eanMatches) {
-        const ean = match[1];
-        const posAfterEan = (match.index || 0) + match[0].length;
-        // Pegar texto após o EAN até SUPERMERCADO ou próximo Código ML
-        const afterEan = fullText.slice(posAfterEan, posAfterEan + 300);
-        // Pular SKU e pegar nome
-        const nameMatch = afterEan.match(/SKU:\s*\S+\s*\n([\s\S]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/);
-        const nomePDF = nameMatch 
-          ? nameMatch[1].replace(/\n/g, ' ').trim()
-          : '';
+      const blockRegex = /Código ML:\s*\w+\s+Código universal:[\s\n]*(7\d{12})\s+SKU:\s*\S+\s*\n((?:(?!SUPERMERCADO|Código ML:).+\n?)+)SUPERMERCADO/g;
+      
+      let blockMatch;
+      while ((blockMatch = blockRegex.exec(fullText)) !== null) {
+        const ean = blockMatch[1];
+        const nomePDF = blockMatch[2]
+          .split('\n')
+          .map(l => l.trim())
+          .filter(l => l && l !== 'Código universal' && !l.match(/^\d+$/))
+          .join(' ')
+          .trim();
         extractedProducts.push({ ean, nomePDF });
       }
 
-      // Extrair quantidades separadamente usando o padrão específico
+      // Extrair quantidades separadamente
       const allQtys = [...fullText.matchAll(/(\d+)\s*•\s*A data de validade/g)]
         .map(m => parseInt(m[1]));
 
-      console.log("Total produtos detectados via EAN:", extractedProducts.length);
-      console.log("Total Quantidades encontradas:", allQtys.length);
-
-      if (extractedProducts.length !== allQtys.length && allQtys.length > 0) {
-        console.warn(`Aviso: O número de produtos (${extractedProducts.length}) não coincide com o número de quantidades (${allQtys.length}).`);
-      }
-
-      // ZIP posicional conforme solicitado pelo usuário
+      // ZIP posicional — Concatena produtos extraídos com quantidades
       const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = extractedProducts.map((p, index) => ({
         ean: p.ean,
         sku: "", 
@@ -163,9 +154,9 @@ export const OrdensFullTab = () => {
         quantity: allQtys[index] || 0
       }));
 
-      // Validação rápida baseada no feedback do usuário
+      // Validação obrigatória
       const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
-      console.log(`Resumo: ${items.length} produtos, ${totalUnits} unidades.`);
+      console.log(`Parsed: ${items.length} produtos, ${totalUnits} unidades`);
 
       // Deduplicate by EAN and SKU
       const uniqueItems = items.reduce((acc, curr) => {
