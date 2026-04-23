@@ -251,7 +251,7 @@ const Separacao = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            📦 Separação — {orderInfo?.description || `Ordem #${orderInfo?.number}`}
+            📦 Separação — {orderInfo?.frete_ml ? `Frete #${orderInfo.frete_ml}` : (orderInfo?.description || `Ordem #${orderInfo?.number}`)}
           </h1>
         </div>
         <div className="flex items-center gap-2">
