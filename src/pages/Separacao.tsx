@@ -171,7 +171,7 @@ const Separacao = () => {
     doc.text("RELATÓRIO DE SEPARAÇÃO", 14, 20);
     
     doc.setFontSize(12);
-    doc.text(`Pedido: ${orderInfo.number}`, 14, 30);
+    doc.text(`Pedido: Frete #${orderInfo.frete_ml || orderInfo.number}`, 14, 30);
     doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 37);
     doc.text(`Responsável: ${userName}`, 14, 44);
 
