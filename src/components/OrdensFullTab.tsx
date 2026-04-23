@@ -127,14 +127,15 @@ export const OrdensFullTab = () => {
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // 1. Extrair produtos em ordem
-      const productPattern = /Código ML:\s*\w+\s+Código universal:\s*\n?(\d{8,14})\s+SKU:\s*\S+\s+([\w\s\-\.\,\'çãáéíóúâêîôûàèìòùÀ-ÿ]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/gs;
-      const productsFound: { ean: string; pdfName: string }[] = [];
+      const productPattern = /Código ML:\s*\w+\s+Código universal:\s*\n?(\d{8,14})\s+SKU:\s*(\S+)\s+([\w\s\-\.\,\'çãáéíóúâêîôûàèìòùÀ-ÿ]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/gs;
+      const productsFound: { ean: string; sku: string; pdfName: string }[] = [];
       let productMatch;
       
       while ((productMatch = productPattern.exec(fullText)) !== null) {
         productsFound.push({
           ean: productMatch[1],
-          pdfName: productMatch[2].trim()
+          sku: productMatch[2],
+          pdfName: productMatch[3].trim()
         });
       }
 
@@ -151,13 +152,14 @@ export const OrdensFullTab = () => {
       console.log("Found quantities:", quantities.length);
 
       // 3. ZIP: Associar produtos e quantidades por índice
-      const items: { ean: string; quantity: number; pdfName: string }[] = productsFound.map((prod, index) => ({
+      const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = productsFound.map((prod, index) => ({
         ean: prod.ean,
+        sku: prod.sku,
         pdfName: prod.pdfName,
         quantity: quantities[index] || 1 // Fallback para 1 se não houver quantidade correspondente
       }));
 
-      // Fallback para o modo antigo se nada for encontrado (para outros tipos de PDF se necessário)
+      // Se nada for encontrado com o padrão específico, tenta o modo genérico
       if (items.length === 0) {
         const genericEanRegex = /(\d{13})/g;
         let match;
@@ -166,7 +168,7 @@ export const OrdensFullTab = () => {
           const textAfter = fullText.substring(match.index + 13, match.index + 100);
           const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
           if (qtyMatch) {
-            items.push({ ean, quantity: parseInt(qtyMatch[1]), pdfName: "Produto EAN " + ean });
+            items.push({ ean, sku: "", quantity: parseInt(qtyMatch[1]), pdfName: "Produto EAN " + ean });
           }
         }
       }
@@ -175,13 +177,12 @@ export const OrdensFullTab = () => {
       const uniqueItems = items.reduce((acc, curr) => {
         const existing = acc.find(i => i.ean === curr.ean);
         if (existing) {
-          existing.quantity = Math.max(existing.quantity, curr.quantity);
-          // Keep the longest name as it's likely the most descriptive
+          existing.quantity += curr.quantity; // Soma as quantidades se houver duplicatas
           if (curr.pdfName && curr.pdfName.length > (existing.pdfName?.length || 0)) {
             existing.pdfName = curr.pdfName;
           }
         } else {
-          acc.push(curr);
+          acc.push({ ...curr });
         }
         return acc;
       }, [] as typeof items);
