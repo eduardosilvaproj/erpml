@@ -28,6 +28,7 @@ import {
   useDeleteFullOrder, ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
+import { OrderDetailsView } from "@/components/OrderDetailsView";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { format } from "date-fns";
@@ -75,6 +76,7 @@ export const OrdensFullTab = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
   const [viewOrdemId, setViewOrdemId] = useState<string | null>(null);
+  const [detailsOrdemId, setDetailsOrdemId] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
 
@@ -90,6 +92,17 @@ export const OrdensFullTab = () => {
   const [kitFormOpen, setKitFormOpen] = useState(false);
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+
+  const handleViewOrder = (order: any) => {
+    // Status que devem abrir a nova visualização de detalhes
+    const detailsStatuses = ['separada', 'aguardando_carregamento', 'concluida', 'enviado', 'carregando'];
+    
+    if (detailsStatuses.includes(order.status)) {
+      setDetailsOrdemId(order.id);
+    } else {
+      setViewOrdemId(order.id);
+    }
+  };
 
   const isKit = (name?: string) => {
     if (!name) return false;
@@ -879,13 +892,13 @@ export const OrdensFullTab = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Eye className="h-4 w-4 mr-2" /> Ver detalhes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Calendar className="h-4 w-4 mr-2" /> Editar previsão de coleta
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Truck className="h-4 w-4 mr-2" /> Iniciar carregamento
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => window.print()}>
@@ -894,7 +907,7 @@ export const OrdensFullTab = () => {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             ) : (
-                              <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
+                              <Button size="icon" variant="ghost" title="Ver" onClick={() => handleViewOrder(o)}>
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                             )}
@@ -1052,10 +1065,16 @@ export const OrdensFullTab = () => {
         }}
       />
 
-      {/* Visualização / detalhes (somente leitura via dialog) */}
+      {/* Visualização de Bipagem/Separação */}
       <OrdemSeparacaoDialog
         ordemId={viewOrdemId}
         onClose={() => setViewOrdemId(null)}
+      />
+
+      {/* Visualização de Detalhes e Gravação */}
+      <OrderDetailsView
+        ordemId={detailsOrdemId}
+        onClose={() => setDetailsOrdemId(null)}
       />
 
       {/* Resumo Full Orders */}
@@ -1167,7 +1186,7 @@ export const OrdensFullTab = () => {
                             </Button>
                           )}
                           <Button size="sm" variant="ghost" className="h-8" onClick={() => {
-                            if (matchingOrder) setViewOrdemId(matchingOrder.id);
+                            if (matchingOrder) handleViewOrder(matchingOrder);
                             else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
                           }}>
                             Ver Detalhes
