@@ -900,7 +900,19 @@ export const OrdensFullTab = () => {
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
-                          {o.atribuido ? (o.atribuido.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
+                          {o.separado_por_profile ? (
+                            <div className="flex flex-col">
+                              <span className="font-bold text-emerald-600">{o.separado_por_profile.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground">Executado</span>
+                            </div>
+                          ) : o.atribuido ? (
+                            <div className="flex flex-col">
+                              <span>{o.atribuido.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground">Atribuído</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Qualquer</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs">
                           {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
