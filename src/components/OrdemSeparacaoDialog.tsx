@@ -206,6 +206,28 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 <Progress value={progress.pct} className="h-2" />
               </div>
 
+              {/* Alerta de conclusão e ação rápida */}
+              {allComplete && isExec && (
+                <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Bipagem concluída!</p>
+                      <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Todos os itens desta ordem foram bipados com sucesso.</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={marcarComoEnviado}
+                    disabled={marcarEnviada.isPending}
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm"
+                  >
+                    {marcarEnviada.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                    Marcar como enviado
+                  </Button>
+                </div>
+              )}
+
               {/* Iniciar */}
               {ordem.status === "aguardando" && (
                 <div className="text-center py-4">
