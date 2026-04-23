@@ -146,17 +146,17 @@ const Separacao = () => {
     await new Promise(r => setTimeout(r, 300));
     
     // 3. Avançar para finalização
-    handleFinish();
+    handleFinalizarSeparacao();
     
     // FIM DEV ONLY
   };
 
-  const handleFinish = async () => {
+  const handleFinalizarSeparacao = async () => {
     if (!orderInfo) return;
     setIsFinishing(true);
     try {
       await updateStatus.mutateAsync({ id: orderInfo.id, status: "concluida" });
-      toast({ title: "Separação finalizada com sucesso!", description: "A ordem foi marcada como enviada." });
+      toast({ title: "✅ Separação concluída — pronto para carregamento", description: "A ordem foi marcada como enviada." });
       localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
