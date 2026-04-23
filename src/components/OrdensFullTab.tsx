@@ -891,20 +891,21 @@ export const OrdensFullTab = () => {
                           </div>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          <div className="flex flex-col">
-                            <span>{o.descricao || "-"}</span>
-                            {o.previsao_carregamento && (
-                              <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> Previsão: {format(new Date(o.previsao_carregamento), "dd/MM HH:mm")}
-                              </span>
-                            )}
-                          </div>
+                          <span>{o.descricao || "-"}</span>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
-                          {o.atribuido_para ? (responsavel?.profile?.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
+                          {o.atribuido ? (o.atribuido.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {o.previsao_carregamento ? (
+                            <div className="flex flex-col">
+                              <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
+                              <span className="text-[10px] text-muted-foreground">{format(new Date(o.previsao_carregamento), "HH:mm")}</span>
+                            </div>
+                          ) : "—"}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`${sb.cls} gap-1`}>
@@ -912,14 +913,14 @@ export const OrdensFullTab = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
+                          <div className="flex justify-end items-center gap-1">
                             {podeExecutar && (
                               <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
                             
-                            {(o.status === 'aguardando_carregamento' || o.status === 'separada') ? (
+                            {(o.status === 'aguardando_carregamento' || o.status === 'separada' || o.status === 'carregando') ? (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="outline" size="sm" className="gap-2">
@@ -939,6 +940,11 @@ export const OrdensFullTab = () => {
                                   <DropdownMenuItem onClick={() => window.print()}>
                                     <Printer className="h-4 w-4 mr-2" /> Imprimir relatório
                                   </DropdownMenuItem>
+                                  {canManageOrders && (
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleCancel(o)}>
+                                      <Trash2 className="h-4 w-4 mr-2" /> Excluir/Cancelar
+                                    </DropdownMenuItem>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             ) : (
@@ -947,14 +953,9 @@ export const OrdensFullTab = () => {
                               </Button>
                             )}
 
-                            {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado" && (
-                              <Button size="icon" variant="ghost" title="Cancelar" onClick={() => handleCancel(o)}>
-                                <X className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            )}
-                            {canManageOrders && (o.status === "rascunho" || o.status === "cancelada") && (
-                              <Button size="icon" variant="ghost" title="Excluir" onClick={() => handleDelete(o)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            {canManageOrders && (o.status !== 'aguardando_carregamento' && o.status !== 'separada' && o.status !== 'carregando') && (
+                              <Button size="icon" variant="ghost" title="Excluir/Cancelar" className="text-destructive" onClick={() => handleCancel(o)}>
+                                <Trash2 className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
