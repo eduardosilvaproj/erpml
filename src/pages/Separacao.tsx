@@ -233,7 +233,7 @@ const Separacao = () => {
     setIsFinishing(true);
     try {
       await updateStatus.mutateAsync({ id: orderInfo.id, status: "concluida" });
-      toast({ title: "✅ Separação concluída — pronto para carregamento", description: "A ordem foi marcada como enviada." });
+      toast({ title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, description: "A ordem foi marcada como enviada." });
       localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
