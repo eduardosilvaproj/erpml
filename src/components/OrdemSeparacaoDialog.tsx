@@ -161,7 +161,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           await recorder.uploadAndSave({
             blob, companyId, userId: user.id,
             envioId: ordem.id, orderNumber: ordem.numero,
-            tipo: "carregamento",
+            tipo: "despacho",
             duracaoSegundos: recorder.seconds,
           });
         }
