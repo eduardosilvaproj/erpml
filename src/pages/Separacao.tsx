@@ -119,14 +119,14 @@ const Separacao = () => {
   }, []);
 
   const getStatusBadge = (item: SeparacaoItem) => {
-    if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1"><CheckCircle2 className="h-3 w-3" /> Completo</Badge>;
+    if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white"><CheckCircle2 className="h-3 w-3" /> Completo</Badge>;
     if (item.status === "parcial") return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 gap-1"><RefreshCcw className="h-3 w-3 animate-spin-slow" /> Faltam {item.neededQty - item.scannedQty}</Badge>;
     return <Badge variant="outline" className="text-muted-foreground gap-1"><Box className="h-3 w-3" /> Pendente</Badge>;
   };
 
   return (
     <div className="container mx-auto p-4 space-y-6 max-w-5xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate("/movimentacao-full")}>
             <ArrowLeft className="h-5 w-5" />
@@ -177,67 +177,67 @@ const Separacao = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-muted/30 p-4 rounded-xl">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progresso de Unidades</span>
-                <span className="font-bold">{totalUnitsScanned} / {totalUnitsNeeded}</span>
+          <div className="grid grid-cols-1 gap-4 bg-muted/30 p-4 rounded-xl">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center text-sm gap-x-6 gap-y-2">
+                <span className="font-medium">Progresso: <span className="font-bold text-lg">{totalUnitsScanned}/{totalUnitsNeeded}</span> unidades</span>
+                <span className="text-muted-foreground hidden sm:inline">|</span>
+                <span className="font-medium"><span className="font-bold text-lg">{productsComplete}/{totalProducts}</span> produtos completos</span>
               </div>
-              <Progress value={(totalUnitsScanned / totalUnitsNeeded) * 100} className="h-3" />
-            </div>
-            <div className="flex justify-around divide-x">
-              <div className="text-center px-4">
-                <p className="text-2xl font-bold">{productsComplete} / {totalProducts}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Produtos Completos</p>
-              </div>
-              <div className="text-center px-4">
-                <p className="text-2xl font-bold">{totalUnitsScanned}</p>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Total Bipado</p>
-              </div>
+              <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
-            <TableHead className="w-[400px]">PRODUTO</TableHead>
-            <TableHead className="text-center">NECESSÁRIO</TableHead>
-            <TableHead className="text-center">BIPADO</TableHead>
-            <TableHead className="text-right">STATUS</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.productId} className={item.status === 'completo' ? 'bg-emerald-50/30' : ''}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt="" className="h-10 w-10 rounded-md object-cover border" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                      <Package className="h-5 w-5 text-muted-foreground/40" />
-                    </div>
-                  )}
-                  <div className="flex flex-col">
-                    <span className="font-bold text-sm leading-tight">{item.name}</span>
-                    <span className="text-xs text-muted-foreground font-mono">SKU: {item.sku}</span>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell className="text-center font-bold text-lg">{item.neededQty}</TableCell>
-              <TableCell className="text-center font-bold text-lg">
-                <span className={item.scannedQty > 0 ? "text-primary" : "text-muted-foreground"}>
-                  {item.scannedQty}
-                </span>
-              </TableCell>
-              <TableCell className="text-right">
-                {getStatusBadge(item)}
-              </TableCell>
+      <Card className="overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-[400px]">PRODUTO</TableHead>
+              <TableHead className="text-center">NECESSÁRIO</TableHead>
+              <TableHead className="text-center">BIPADO</TableHead>
+              <TableHead className="text-right">STATUS</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => (
+              <TableRow key={item.productId} className={item.status === 'completo' ? 'bg-emerald-50/20' : ''}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="h-10 w-10 rounded-md object-cover border" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
+                        <Package className="h-5 w-5 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="font-bold text-sm leading-tight">{item.name}</span>
+                      <span className="text-xs text-muted-foreground font-mono">SKU: {item.sku}</span>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center font-bold text-lg">{item.neededQty}</TableCell>
+                <TableCell className="text-center font-bold text-lg">
+                  <span className={item.scannedQty > 0 ? "text-primary" : "text-muted-foreground"}>
+                    {item.scannedQty}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  {getStatusBadge(item)}
+                </TableCell>
+              </TableRow>
+            ))}
+            {items.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                  Nenhum produto nesta ordem.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Card>
 
       <div className="flex justify-end gap-3 pt-4">
@@ -246,8 +246,8 @@ const Separacao = () => {
         </Button>
         <Button 
           size="lg" 
-          className="px-10 font-bold bg-emerald-600 hover:bg-emerald-700"
-          disabled={productsComplete < totalProducts}
+          className="px-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+          disabled={productsComplete < totalProducts || totalProducts === 0}
         >
           Concluir Separação
         </Button>
