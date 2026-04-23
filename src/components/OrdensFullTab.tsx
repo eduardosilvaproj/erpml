@@ -1065,10 +1065,16 @@ export const OrdensFullTab = () => {
         }}
       />
 
-      {/* Visualização / detalhes (somente leitura via dialog) */}
+      {/* Visualização de Bipagem/Separação */}
       <OrdemSeparacaoDialog
         ordemId={viewOrdemId}
         onClose={() => setViewOrdemId(null)}
+      />
+
+      {/* Visualização de Detalhes e Gravação */}
+      <OrderDetailsView
+        ordemId={detailsOrdemId}
+        onClose={() => setDetailsOrdemId(null)}
       />
 
       {/* Resumo Full Orders */}
