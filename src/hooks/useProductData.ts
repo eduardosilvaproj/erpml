@@ -129,7 +129,7 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
       while (true) {
         let q = supabase
           .from("products")
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name))")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)")
           .eq("company_id", companyId!)
           .order("name", { ascending: true })
           .range(page * PAGE, (page + 1) * PAGE - 1);
