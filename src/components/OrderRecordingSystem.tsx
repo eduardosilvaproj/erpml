@@ -21,9 +21,11 @@ interface OrderRecordingSystemProps {
   freteMl?: string | null;
   trigger?: React.ReactNode;
   defaultType?: RecordingType;
+  onFinished?: (url: string) => void;
 }
 
-export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, defaultType = "carregamento" }: OrderRecordingSystemProps) {
+export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, defaultType = "carregamento", onFinished }: OrderRecordingSystemProps) {
+
   const [activeType, setActiveType] = useState<RecordingType>(defaultType);
 
 
