@@ -440,8 +440,8 @@ export const OrdensFullTab = () => {
   };
 
   const handleDelete = async (o: OrdemFull) => {
-    if (o.status !== "rascunho") {
-      toast({ title: "Apenas rascunhos podem ser excluídos", variant: "destructive" });
+    if (o.status !== "rascunho" && o.status !== "cancelada") {
+      toast({ title: "Apenas rascunhos ou ordens canceladas podem ser excluídos", variant: "destructive" });
       return;
     }
     if (!confirm(`Excluir a ordem ${o.numero}?`)) return;
