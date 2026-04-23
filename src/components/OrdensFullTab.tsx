@@ -169,12 +169,12 @@ export const OrdensFullTab = () => {
       
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, image_url, stock_physical")
-        .or(`barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
+        .select("id, name, sku, barcode, ean, image_url, stock_physical")
+        .or(`ean.in.(${eans.join(",")}),barcode.in.(${eans.join(",")}),sku.in.(${skus.join(",")})`);
 
       const itemsWithProducts = uniqueItems.map(item => ({
         ...item,
-        product: products?.find(p => p.barcode === item.ean || (item.sku && p.sku === item.sku))
+        product: products?.find(p => p.ean === item.ean || p.barcode === item.ean || (item.sku && p.sku === item.sku))
       }));
 
       setParsedData({ shippingNumber, items: itemsWithProducts });
