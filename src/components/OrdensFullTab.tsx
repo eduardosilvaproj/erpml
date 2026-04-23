@@ -126,40 +126,48 @@ export const OrdensFullTab = () => {
                           fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
-      // Nova lógica de parser completa para Mercado Livre PDF
-      const extractedProducts: { ean: string; nomePDF: string }[] = [];
-      const blockRegex = /Código ML:\s*\w+\s+Código universal:[\s\n]*(7\d{12})\s+SKU:\s*\S+\s*\n((?:(?!SUPERMERCADO|Código ML:).+\n?)+)SUPERMERCADO/g;
-      
-      let blockMatch;
-      while ((blockMatch = blockRegex.exec(fullText)) !== null) {
-        const ean = blockMatch[1];
-        const nomePDF = blockMatch[2]
-          .split('\n')
-          .map(l => l.trim())
-          .filter(l => l && l !== 'Código universal' && !l.match(/^\d+$/))
-          .join(' ')
-          .trim();
-        extractedProducts.push({ ean, nomePDF });
-      }
+      // Nova lógica de parser completa e segura para Mercado Livre PDF
+      const parseMercadoLivrePDF = (text: string) => {
+        const blocks = text.split('SUPERMERCADO');
+        const products = [];
+        
+        for (const block of blocks) {
+          const eanMatch = block.match(/\b(7\d{12})\b/);
+          if (!eanMatch) continue;
+          const ean = eanMatch[1];
+          
+          const skuMatch = block.match(/SKU:\s*\S+\s*\n([\s\S]+)/);
+          const nomePDF = skuMatch 
+            ? skuMatch[1].replace(/\n/g, ' ').replace(/Código universal/g, '').trim()
+            : '';
+          
+          products.push({ ean, nomePDF });
+        }
+        
+        const qtys = [...text.matchAll(/(\d+)\s*[•·]\s*A data de validade/g)]
+          .map(m => parseInt(m[1]));
+        
+        return products.map((p, i) => ({ 
+          ean: p.ean,
+          sku: "",
+          pdfName: p.nomePDF || "—",
+          quantity: qtys[i] || 0 
+        }));
+      };
 
-      // Extrair quantidades separadamente
-      const allQtys = [...fullText.matchAll(/(\d+)\s*•\s*A data de validade/g)]
-        .map(m => parseInt(m[1]));
-
-      // ZIP posicional — Concatena produtos extraídos com quantidades
-      const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = extractedProducts.map((p, index) => ({
-        ean: p.ean,
-        sku: "", 
-        pdfName: p.nomePDF || "—",
-        quantity: allQtys[index] || 0
-      }));
+      const items = (await Promise.race([
+        Promise.resolve(parseMercadoLivrePDF(fullText)),
+        new Promise<any[]>((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: o processamento do PDF demorou mais de 10s')), 10000)
+        )
+      ])) as any[];
 
       // Validação obrigatória
-      const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalUnits = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
       console.log(`Parsed: ${items.length} produtos, ${totalUnits} unidades`);
 
       // Deduplicate by EAN and SKU
-      const uniqueItems = items.reduce((acc, curr) => {
+      const uniqueItems = items.reduce((acc: any[], curr: any) => {
         const existing = acc.find(i => i.ean === curr.ean);
         if (existing) {
           existing.quantity += curr.quantity; // Soma as quantidades se houver duplicatas
@@ -170,7 +178,7 @@ export const OrdensFullTab = () => {
           acc.push({ ...curr });
         }
         return acc;
-      }, [] as typeof items);
+      }, []);
 
       if (uniqueItems.length === 0) {
         throw new Error("Não foi possível encontrar produtos no PDF. Verifique se o arquivo é um pedido do Mercado Livre FULL.");
