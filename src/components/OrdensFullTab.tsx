@@ -1041,10 +1041,51 @@ export const OrdensFullTab = () => {
           )}
         </CardHeader>
         <CardContent>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por frete..." 
+                className="pl-10"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="aguardando">📄 PDF Carregado</SelectItem>
+                <SelectItem value="em_separacao">🔄 Em Separação</SelectItem>
+                <SelectItem value="separada">✅ Separado</SelectItem>
+                <SelectItem value="aguardando_carregamento">🚛 Aguardando Coleta</SelectItem>
+                <SelectItem value="enviado">📦 Enviado</SelectItem>
+                <SelectItem value="cancelada">❌ Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={ordenacao} onValueChange={setOrdenacao}>
+              <SelectTrigger className="w-[200px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recente">Mais recente primeiro</SelectItem>
+                <SelectItem value="antigo">Mais antigo primeiro</SelectItem>
+                <SelectItem value="previsao">Previsão de coleta</SelectItem>
+                <SelectItem value="quantidade">Maior quantidade</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {isLoading ? (
             <p className="text-center text-sm text-muted-foreground py-8">Carregando...</p>
-          ) : (ordens || []).length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma ordem criada ainda</p>
+          ) : ordensFiltradas.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma ordem encontrada com os filtros selecionados</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
