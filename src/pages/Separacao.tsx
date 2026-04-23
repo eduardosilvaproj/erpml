@@ -261,7 +261,8 @@ const Separacao = () => {
           {orderInfo && (
             <OrderRecordingSystem 
               pedidoId={orderInfo.id} 
-              orderNumber={orderInfo.number} 
+              orderNumber={orderInfo.frete_ml || orderInfo.number} 
+              freteMl={orderInfo.frete_ml}
             />
           )}
         </div>
