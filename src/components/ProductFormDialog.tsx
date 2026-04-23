@@ -226,9 +226,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     };
 
     if (product) {
-      await updateProduct.mutateAsync({ id: product.id, data: formData });
+      const result = await updateProduct.mutateAsync({ id: product.id, data: formData });
+      onSuccess?.(result);
     } else {
-      await createProduct.mutateAsync(formData);
+      const result = await createProduct.mutateAsync(formData);
+      onSuccess?.(result);
     }
     resetDirty();
     onOpenChange(false);
