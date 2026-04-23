@@ -750,10 +750,10 @@ const MovimentacaoFull = () => {
         <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
       </div>
 
-      <Tabs defaultValue="envio" className="space-y-6">
+      <Tabs defaultValue="ordens" className="space-y-6">
         <TabsList>
-          <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
           <TabsTrigger value="ordens">📋 Ordens</TabsTrigger>
+          <TabsTrigger value="envio">📦 Envio FULL</TabsTrigger>
           <TabsTrigger value="gravacoes">📹 Gravações</TabsTrigger>
         </TabsList>
 
