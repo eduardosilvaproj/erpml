@@ -429,6 +429,12 @@ const Separacao = () => {
           </Card>
         </div>
       ) : (
+        <div className="space-y-6">
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
         <>
           <Card className="border-2 border-primary/20 shadow-lg">
             <CardContent className="p-6 space-y-6">
