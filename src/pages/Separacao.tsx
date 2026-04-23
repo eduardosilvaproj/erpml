@@ -122,6 +122,8 @@ const Separacao = () => {
     if (!code.trim()) return;
     const trimmed = code.trim().toUpperCase();
     
+    if (!startTime) setStartTime(new Date());
+
     setItems(prev => {
       const itemIndex = prev.findIndex(i => 
         i.barcode === trimmed || 
@@ -158,7 +160,49 @@ const Separacao = () => {
     });
 
     setScanValue("");
-  }, []);
+  }, [startTime]);
+
+  const generatePDF = useCallback(() => {
+    if (!orderInfo) return;
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.text("RELATÓRIO DE SEPARAÇÃO", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.text(`Pedido: ${orderInfo.number}`, 14, 30);
+    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 37);
+    doc.text(`Responsável: ${userName}`, 14, 44);
+
+    const tableData = items.map((item, index) => [
+      index + 1,
+      item.barcode || item.sku,
+      item.name,
+      item.neededQty,
+      item.scannedQty,
+      item.status === "completo" ? "✅ OK" : "❌ PENDENTE"
+    ]);
+
+    autoTable(doc, {
+      startY: 55,
+      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'STATUS']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [45, 45, 45] },
+      styles: { fontSize: 9 }
+    });
+
+    doc.setFontSize(12);
+    doc.text(`TOTAL: ${totalProducts} produtos · ${totalUnitsScanned} unidades`, 14, (doc as any).lastAutoTable.finalY + 10);
+    
+    doc.save(`relatorio-separacao-${orderInfo.number}.pdf`);
+  }, [orderInfo, items, totalProducts, totalUnitsScanned, userName]);
+
+  useEffect(() => {
+    if (items.length > 0 && items.every(i => i.status === "completo") && !endTime) {
+      setEndTime(new Date());
+    }
+  }, [items, endTime]);
 
   const getStatusBadge = (item: SeparacaoItem) => {
     if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white">✅ Completo</Badge>;
