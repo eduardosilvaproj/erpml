@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import {
-  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada,
+  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada, useMarcarOrdemEnviada,
   itemStatusBadge, ordemStatusBadge, type OrdemItem,
 } from "@/hooks/useOrdensFull";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
