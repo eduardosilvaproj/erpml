@@ -455,7 +455,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                               <div>
                                 <p className="text-sm text-muted-foreground leading-none mb-1">Responsável</p>
                                 <p className="text-base font-bold text-gray-900">
-                                  {ordem.separado_por || "Administrador"}
+                                  {responsavelNome || "Administrador"}
                                 </p>
                               </div>
                             </div>
