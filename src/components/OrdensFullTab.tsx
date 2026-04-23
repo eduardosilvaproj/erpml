@@ -711,6 +711,22 @@ export const OrdensFullTab = () => {
         open={productFormOpen}
         onOpenChange={setProductFormOpen}
         product={selectedProductData ? { ean: selectedProductData.ean, name: selectedProductData.name } as any : null}
+        onSuccess={(registered) => {
+          if (editingItemIdx !== null) {
+            handleManualLink(editingItemIdx, registered);
+          }
+        }}
+      />
+      
+      <KitFormDialog
+        open={kitFormOpen}
+        onOpenChange={setKitFormOpen}
+        initialData={selectedProductData ? { ean: selectedProductData.ean, name: selectedProductData.name } : undefined}
+        onSuccess={(registered) => {
+          if (editingItemIdx !== null) {
+            handleManualLink(editingItemIdx, { ...registered, isKit: true });
+          }
+        }}
       />
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
