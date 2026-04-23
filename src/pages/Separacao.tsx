@@ -93,6 +93,7 @@ const Separacao = () => {
       setOrderInfo({
         id: ordem.id,
         number: ordem.numero,
+        frete_ml: ordem.frete_ml,
         description: ordem.descricao
       });
       
