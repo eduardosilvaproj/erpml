@@ -16,6 +16,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
 
 interface SeparacaoItem {
   productId: string;
@@ -160,9 +161,12 @@ const Separacao = () => {
           <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCcw className="h-4 w-4" /> Reiniciar
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
-            <History className="h-4 w-4" /> Histórico
-          </Button>
+          {orderInfo && (
+            <OrderRecordingSystem 
+              pedidoId={orderInfo.id} 
+              orderNumber={orderInfo.number} 
+            />
+          )}
         </div>
       </div>
 

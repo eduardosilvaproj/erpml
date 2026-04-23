@@ -1326,6 +1326,44 @@ export type Database = {
           },
         ]
       }
+      order_recordings: {
+        Row: {
+          criado_em: string | null
+          duracao_segundos: number | null
+          id: string
+          pedido_id: string
+          responsavel_id: string | null
+          tipo: string | null
+          video_url: string | null
+        }
+        Insert: {
+          criado_em?: string | null
+          duracao_segundos?: number | null
+          id?: string
+          pedido_id: string
+          responsavel_id?: string | null
+          tipo?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          criado_em?: string | null
+          duracao_segundos?: number | null
+          id?: string
+          pedido_id?: string
+          responsavel_id?: string | null
+          tipo?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_recordings_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_logs: {
         Row: {
           asaas_payment_id: string | null
