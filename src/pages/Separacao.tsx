@@ -214,7 +214,8 @@ const Separacao = () => {
 
   const handleSkipSeparacao = async () => {
     // DEV ONLY - REMOVER ANTES DO DEPLOY
-    
+    if (!startTime) setStartTime(new Date());
+
     // 1. Marcar todos os itens com quantidade completa
     const completed: SeparacaoItem[] = items.map(item => ({
       ...item,
@@ -222,12 +223,6 @@ const Separacao = () => {
       status: 'completo'
     }));
     setItems(completed);
-    
-    // 2. Aguardar render
-    await new Promise(r => setTimeout(r, 300));
-    
-    // 3. Avançar para finalização
-    handleFinalizarSeparacao();
     
     // FIM DEV ONLY
   };
