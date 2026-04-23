@@ -860,7 +860,7 @@ export const OrdensFullTab = () => {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className={`${sb.cls} gap-1`}>
-                            {o.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : sb.label}
+                            {sb.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -870,10 +870,36 @@ export const OrdensFullTab = () => {
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
-                            <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
-                              <Eye className="h-3.5 w-3.5" />
-                            </Button>
-                            {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && (
+                            
+                            {(o.status === 'aguardando_carregamento' || o.status === 'separada') ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="gap-2">
+                                    Ações <ChevronDown className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56">
+                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                    <Eye className="h-4 w-4 mr-2" /> Ver detalhes
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                    <Calendar className="h-4 w-4 mr-2" /> Editar previsão de coleta
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                    <Truck className="h-4 w-4 mr-2" /> Iniciar carregamento
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => window.print()}>
+                                    <Printer className="h-4 w-4 mr-2" /> Imprimir relatório
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <Button size="icon" variant="ghost" title="Ver" onClick={() => setViewOrdemId(o.id)}>
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+
+                            {canManageOrders && o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado" && (
                               <Button size="icon" variant="ghost" title="Cancelar" onClick={() => handleCancel(o)}>
                                 <X className="h-3.5 w-3.5 text-destructive" />
                               </Button>
