@@ -18,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 interface OrderRecordingSystemProps {
   pedidoId: string;
   orderNumber?: string;
+  freteMl?: string | null;
   trigger?: React.ReactNode;
 }
 
