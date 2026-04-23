@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play, Printer, Box, Clock, Calendar, ArrowRight, Truck } from "lucide-react";
+import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play, Printer, Box, Clock, Calendar, ArrowRight, Truck, Boxes } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -51,8 +51,9 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const ordem = data?.ordem;
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
-  const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento";
-  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || isSeparada;
+  const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento" || ordem?.status === "carregando";
+  const isLoadingPhase = ordem?.status === 'aguardando_carregamento' || ordem?.status === 'carregando';
+  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || (isSeparada && !isLoadingPhase);
 
   useEffect(() => {
     if (!ordemId) {
@@ -131,7 +132,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     if (!ordem || !user || !companyId) return;
     if (!allComplete && !confirm("Existem itens pendentes/parciais. Marcar como separada mesmo assim?")) return;
     try {
-      // Para gravação se ativa
       if (recorder.status === "recording" || recorder.status === "paused") {
         const blob = await recorder.stop();
         if (blob) {
@@ -161,7 +161,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           await recorder.uploadAndSave({
             blob, companyId, userId: user.id,
             envioId: ordem.id, orderNumber: ordem.numero,
-            tipo: "separacao",
+            tipo: "despacho",
             duracaoSegundos: recorder.seconds,
           });
         }
@@ -179,20 +179,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     if (!ordem?.frete_ml) return;
     try {
       const novaData = new Date(`${novaPrevisaoData}T${novaPrevisaoHora}:00`).toISOString();
-      
-      // Atualizar em ambas as tabelas para garantir sincronia
       const { error: e1 } = await supabase
         .from('full_orders')
         .update({ previsao_carregamento: novaData })
         .eq('frete_ml', ordem.frete_ml);
-      
       const { error: e2 } = await supabase
         .from('ordens_full')
         .update({ previsao_carregamento: novaData })
         .eq('id', ordem.id);
-
       if (e1 || e2) throw e1 || e2;
-
       toast({ title: '✅ Previsão atualizada' });
       setEditingPrevisao(false);
       refetch();
@@ -217,7 +212,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     <>
       <Dialog open={!!ordemId} onOpenChange={(o) => !o && onClose()}>
         <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden p-0">
-          {/* BARRA DE PROGRESSO DE STATUS NO TOPO */}
           <div className="bg-gray-50 border-b p-6">
             <div className="flex items-center justify-between max-w-2xl mx-auto">
               {[
@@ -313,101 +307,185 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
               </DialogDescription>
             </DialogHeader>
 
-          {isLoading ? (
-            <div className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
-          ) : !ordem ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">Ordem não encontrada</p>
-          ) : (
-            <div className="space-y-4">
-              {/* Progresso */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{progress.completos} de {itens.length} produtos completos</span>
-                  <span className="font-medium">{progress.sep}/{progress.total} unidades ({progress.pct}%)</span>
-                </div>
-                <Progress value={progress.pct} className="h-2" />
-              </div>
-
-              {/* Alerta de conclusão e ação rápida */}
-              {allComplete && (isExec || isSeparada) && (
-                <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4">
-                  <div className="flex items-center gap-3 flex-1">
-                    <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Bipagem concluída!</p>
-                      <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Todos os itens desta ordem foram bipados com sucesso.</p>
+            {isLoading ? (
+              <div className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
+            ) : !ordem ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">Ordem não encontrada</p>
+            ) : (
+              <div className="space-y-4">
+                {!isLoadingPhase ? (
+                  <>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>{progress.completos} de {itens.length} produtos completos</span>
+                        <span className="font-medium">{progress.sep}/{progress.total} unidades ({progress.pct}%)</span>
+                      </div>
+                      <Progress value={progress.pct} className="h-2" />
                     </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={marcarComoEnviado}
-                    disabled={marcarEnviada.isPending}
-                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm"
-                  >
-                    {marcarEnviada.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                    Marcar como enviado
-                  </Button>
-                </div>
-              )}
 
-              {/* Iniciar */}
-              {ordem.status === "aguardando" && (
-                <div className="text-center py-4">
-                  <Button size="lg" onClick={handleStart}>
-                    <Play className="h-4 w-4 mr-2" /> Iniciar separação
-                  </Button>
-                </div>
-              )}
-
-              {/* Bipagem */}
-              {isExec && (
-                <div className="flex flex-col lg:grid lg:grid-cols-[1fr,300px] gap-4">
-                  <div className="space-y-3 order-2 lg:order-1 min-w-0">
-                    <ItensTable itens={itens} onAdjust={ajustarQtd} />
-                  </div>
-                  <div className="space-y-3 order-1 lg:order-2 min-w-0 lg:border-l-0 border-b lg:border-b-0 border-border pb-3 lg:pb-0">
-                    <div className="border border-border rounded-md p-3 space-y-2">
-                      <p className="text-sm font-medium flex items-center gap-2"><ScanBarcode className="h-4 w-4" /> Bipar produto</p>
-                      <BarcodeScannerInput
-                        value={scan}
-                        onChange={setScan}
-                        onScan={handleScan}
-                        placeholder="Bipe o código..."
-                        autoFocus
-                        scanMode
-                      />
-                      {lastScan && (
-                        <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
-                          {lastScan.ok ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : <AlertTriangle className="h-3 w-3 inline mr-1" />}
-                          {lastScan.msg}
+                    {allComplete && (isExec || (isSeparada && !isLoadingPhase)) && (
+                      <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4">
+                        <div className="flex items-center gap-3 flex-1">
+                          <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <div>
+                            <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Bipagem concluída!</p>
+                            <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Todos os itens desta ordem foram bipados com sucesso.</p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    {recorder.status === "recording" && (
-                      <video ref={recorder.videoRef} className="w-full rounded-md border border-border bg-black aspect-video" />
+                        <Button
+                          size="sm"
+                          onClick={marcarComoEnviado}
+                          disabled={marcarEnviada.isPending}
+                          className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm"
+                        >
+                          {marcarEnviada.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                          Marcar como enviado
+                        </Button>
+                      </div>
                     )}
-                  </div>
-                </div>
-              )}
 
-              {/* Visualização (concluída/cancelada) */}
-              {isView && <ItensTable itens={itens} readonly />}
+                    {ordem.status === "aguardando" && (
+                      <div className="text-center py-4">
+                        <Button size="lg" onClick={handleStart}>
+                          <Play className="h-4 w-4 mr-2" /> Iniciar separação
+                        </Button>
+                      </div>
+                    )}
 
-              {/* Gravações Salvas Section */}
-              {ordem && (isSeparada || ordem.status === 'concluida' || ordem.status === 'enviado') && (
-                <div className="mt-8 pt-8 border-t">
-                  <h3 className="text-lg font-black mb-4 flex items-center gap-2">
-                    <Truck className="h-5 w-5" /> 🚛 CARREGAMENTO
-                  </h3>
-                  
-                  <div className="bg-muted/30 p-6 rounded-xl border border-dashed text-center">
-                    <p className="text-sm text-muted-foreground mb-4">Gravações salvas:</p>
-                    <p className="text-xs text-muted-foreground italic">(nenhuma ainda)</p>
+                    {isExec && (
+                      <div className="flex flex-col lg:grid lg:grid-cols-[1fr,300px] gap-4">
+                        <div className="space-y-3 order-2 lg:order-1 min-w-0">
+                          <ItensTable itens={itens} onAdjust={ajustarQtd} />
+                        </div>
+                        <div className="space-y-3 order-1 lg:order-2 min-w-0 lg:border-l-0 border-b lg:border-b-0 border-border pb-3 lg:pb-0">
+                          <div className="border border-border rounded-md p-3 space-y-2">
+                            <p className="text-sm font-medium flex items-center gap-2"><ScanBarcode className="h-4 w-4" /> Bipar produto</p>
+                            <BarcodeScannerInput
+                              value={scan}
+                              onChange={setScan}
+                              onScan={handleScan}
+                              placeholder="Bipe o código..."
+                              autoFocus
+                              scanMode
+                            />
+                            {lastScan && (
+                              <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
+                                {lastScan.ok ? <CheckCircle2 className="h-3 w-3 inline mr-1" /> : <AlertTriangle className="h-3 w-3 inline mr-1" />}
+                                {lastScan.msg}
+                              </div>
+                            )}
+                          </div>
+                          {recorder.status === "recording" && (
+                            <video ref={recorder.videoRef} className="w-full rounded-md border border-border bg-black aspect-video" />
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {isView && <ItensTable itens={itens} readonly />}
+                  </>
+                ) : (
+                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+                      <div className="bg-gray-50 px-4 py-2 border-b">
+                        <h3 className="text-sm font-black flex items-center gap-2 text-gray-700">
+                          <Box className="h-4 w-4" /> 📦 RESUMO DA SEPARAÇÃO
+                        </h3>
+                      </div>
+                      <div className="p-6">
+                        <div className="grid sm:grid-cols-2 gap-6">
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-blue-50 rounded-full text-blue-600">
+                                <Boxes className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground leading-none mb-1">Total Separado</p>
+                                <p className="text-lg font-black text-gray-900">
+                                  {ordem.total_produtos} produtos · {ordem.total_itens} unidades
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-amber-50 rounded-full text-amber-600">
+                                <Clock className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground leading-none mb-1">Data/Hora</p>
+                                <p className="text-base font-bold text-gray-900">
+                                  {ordem.separado_em ? format(new Date(ordem.separado_em), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "Não registrada"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-4">
+                              <div className="p-3 bg-emerald-50 rounded-full text-emerald-600">
+                                <CheckCircle2 className="h-6 w-6" />
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground leading-none mb-1">Responsável</p>
+                                <p className="text-base font-bold text-gray-900">
+                                  {ordem.separado_por || "Administrador"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <Button variant="outline" className="w-full sm:w-auto gap-2 border-dashed h-12" onClick={() => window.print()}>
+                              <Printer className="h-5 w-5" /> Ver/Imprimir Relatório
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-black flex items-center gap-2">
+                        <Truck className="h-5 w-5 text-primary" /> 🚛 GRAVAÇÃO DO CARREGAMENTO
+                      </h3>
+                      
+                      <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-2xl bg-muted/20 gap-4">
+                        {recorder.status === "recording" ? (
+                          <div className="w-full max-w-md space-y-4">
+                            <video ref={recorder.videoRef} className="w-full rounded-xl border-4 border-destructive shadow-2xl bg-black aspect-video" autoPlay muted />
+                            <div className="flex items-center justify-center gap-4">
+                              <div className="px-4 py-2 bg-destructive text-white rounded-full font-black flex items-center gap-2 animate-pulse">
+                                <Circle className="h-3 w-3 fill-current" /> {formatDuration(recorder.seconds)}
+                              </div>
+                              <Button variant="outline" size="lg" className="rounded-full h-14 w-14 p-0 border-2" onClick={() => recorder.stop()}>
+                                <Square className="h-6 w-6 fill-current text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <OrderRecordingSystem 
+                            pedidoId={ordem.id} 
+                            orderNumber={ordem.frete_ml || ordem.numero} 
+                            trigger={
+                              <Button 
+                                size="lg"
+                                className="h-24 w-full sm:w-80 rounded-2xl gap-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-xl shadow-xl shadow-orange-500/30 group transition-all hover:scale-[1.02]"
+                              >
+                                <div className="bg-white/20 p-3 rounded-full group-hover:bg-white/30 transition-colors">
+                                  <Video className="h-8 w-8" />
+                                </div>
+                                Iniciar Gravação
+                              </Button>
+                            }
+                          />
+                        )}
+
+                        <div className="text-center">
+                          <p className="text-sm font-bold text-muted-foreground">Gravações salvas: <span className="font-normal opacity-70">(nenhuma ainda)</span></p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 p-6 border-t bg-gray-50/50">
@@ -423,28 +501,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2">
-              {ordem && (ordem.status === 'aguardando_carregamento' || isSeparada) && (
-                <OrderRecordingSystem 
-                  pedidoId={ordem.id} 
-                  orderNumber={ordem.frete_ml || ordem.numero} 
-                  trigger={
-                    <Button 
-                      variant="default" 
-                      className="gap-2 bg-red-600 hover:bg-red-700 text-white font-bold h-11 px-6 shadow-lg shadow-red-500/20"
-                    >
-                      <Video className="h-5 w-5 animate-pulse" /> Iniciar Gravação de Carregamento
-                    </Button>
-                  }
-                />
-              )}
-
-              {isExec && (
-                <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="gap-2 h-11 px-6">
-                  {marcarSeparada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <CheckCircle2 className="h-5 w-5" /> Concluir separação
-                </Button>
-              )}
-              {(isSeparada || ordem?.status === 'aguardando_carregamento') && (
+              {(isSeparada || isLoadingPhase) && (
                 <Button 
                   onClick={marcarComoEnviado} 
                   disabled={marcarEnviada.isPending} 
@@ -459,7 +516,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         </DialogContent>
       </Dialog>
 
-      {/* Pergunta gravação */}
       <Dialog open={askRecord} onOpenChange={setAskRecord}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -475,7 +531,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         </DialogContent>
       </Dialog>
 
-      {/* Picker de câmera */}
       <Dialog open={pickCamera} onOpenChange={setPickCamera}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
