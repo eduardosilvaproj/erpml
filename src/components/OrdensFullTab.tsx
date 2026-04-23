@@ -1260,6 +1260,61 @@ export const OrdensFullTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" /> ⚠️ Cancelar/Excluir esta ordem?
+            </DialogTitle>
+            <DialogDescription className="py-2">
+              <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
+                Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:bg-primary/5 has-[:checked]:border-primary">
+                <input 
+                  type="radio" 
+                  name="deleteOption" 
+                  checked={deleteOption === "cancel"} 
+                  onChange={() => setDeleteOption("cancel")}
+                  className="w-4 h-4 text-primary focus:ring-primary"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm">Cancelar ordem</span>
+                  <span className="text-xs text-muted-foreground">Mantém no histórico como 'Cancelada'</span>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 border rounded-md cursor-pointer hover:bg-muted/50 transition-colors has-[:checked]:bg-destructive/5 has-[:checked]:border-destructive">
+                <input 
+                  type="radio" 
+                  name="deleteOption" 
+                  checked={deleteOption === "delete"} 
+                  onChange={() => setDeleteOption("delete")}
+                  className="w-4 h-4 text-destructive focus:ring-destructive"
+                />
+                <div className="flex flex-col">
+                  <span className="font-bold text-sm text-destructive">Excluir permanentemente</span>
+                  <span className="text-xs text-muted-foreground">Remove todos os dados da base de dados</span>
+                </div>
+              </label>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)} disabled={isDeleting}>Voltar</Button>
+            <Button 
+              variant={deleteOption === "delete" ? "destructive" : "default"} 
+              onClick={confirmDeleteAction}
+              disabled={isDeleting}
+              className="px-8"
+            >
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
