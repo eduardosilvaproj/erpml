@@ -1577,13 +1577,9 @@ export const OrdensFullTab = () => {
             <DialogDescription className="py-2">
               <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
                 Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
-            >
-              Criar nova ordem mesmo assim
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
