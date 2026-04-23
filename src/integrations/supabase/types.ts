@@ -1464,6 +1464,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           description: string | null
+          ean: string | null
           id: string
           name: string
           price: number
@@ -1475,6 +1476,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          ean?: string | null
           id?: string
           name: string
           price?: number
@@ -1486,6 +1488,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          ean?: string | null
           id?: string
           name?: string
           price?: number
