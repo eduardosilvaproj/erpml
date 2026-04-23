@@ -513,12 +513,59 @@ export const OrdensFullTab = () => {
     const list = ordens || [];
     const today = new Date().toDateString();
     return {
-      abertas: list.filter((o) => o.status !== "concluida" && o.status !== "cancelada").length,
+      abertas: list.filter((o) => o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado").length,
       aguardando: list.filter((o) => o.status === "aguardando").length,
       em_separacao: list.filter((o) => o.status === "em_separacao").length,
-      concluidas_hoje: list.filter((o) => o.status === "concluida" && o.concluida_em && new Date(o.concluida_em).toDateString() === today).length,
+      concluidas_hoje: list.filter((o) => (o.status === "concluida" || o.status === "enviado") && o.concluida_em && new Date(o.concluida_em).toDateString() === today).length,
     };
   }, [ordens]);
+
+  const ordensFiltradas = useMemo(() => {
+    if (!ordens) return [];
+    let list = [...ordens];
+
+    // Status Filter
+    if (filtroStatus !== 'todos') {
+      if (filtroStatus === 'abertas') {
+        list = list.filter(o => o.status !== 'concluida' && o.status !== 'cancelada' && o.status !== 'enviado');
+      } else if (filtroStatus === 'concluidas_hoje') {
+        const today = new Date().toDateString();
+        list = list.filter(o => (o.status === 'concluida' || o.status === 'enviado') && o.concluida_em && new Date(o.concluida_em).toDateString() === today);
+      } else if (filtroStatus === 'enviado') {
+        list = list.filter(o => o.status === 'enviado' || o.status === 'concluida');
+      } else {
+        list = list.filter(o => o.status === filtroStatus);
+      }
+    }
+
+    // Search Filter
+    if (busca) {
+      list = list.filter(o => 
+        (o.frete_ml && o.frete_ml.toLowerCase().includes(busca.toLowerCase())) ||
+        (o.numero && o.numero.toLowerCase().includes(busca.toLowerCase())) ||
+        (o.descricao && o.descricao.toLowerCase().includes(busca.toLowerCase()))
+      );
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      switch (ordenacao) {
+        case 'antigo':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'previsao':
+          if (!a.previsao_carregamento) return 1;
+          if (!b.previsao_carregamento) return -1;
+          return new Date(a.previsao_carregamento).getTime() - new Date(b.previsao_carregamento).getTime();
+        case 'quantidade':
+          return (b.total_itens || 0) - (a.total_itens || 0);
+        case 'recente':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return list;
+  }, [ordens, filtroStatus, busca, ordenacao]);
 
   const resetForm = () => {
     setDescricao(""); setPrazo(""); setAtribuidoPara("any");
