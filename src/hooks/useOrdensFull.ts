@@ -19,6 +19,8 @@ export interface OrdemFull {
   concluida_em: string | null;
   total_itens: number;
   total_produtos: number;
+  total_itens_separados: number;
+  total_produtos_separados: number;
   created_at: string;
   updated_at: string;
 }
