@@ -43,7 +43,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const ordem = data?.ordem;
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
-  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada";
+  const isSeparada = ordem?.status === "separada";
+  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada" || isSeparada;
 
   useEffect(() => {
     if (!ordemId) {
