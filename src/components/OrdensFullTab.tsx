@@ -53,6 +53,7 @@ export const OrdensFullTab = () => {
   const { data: ordens, isLoading } = useOrdensFull();
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
+  const deleteFullOrder = useDeleteFullOrder();
   const updateStatus = useUpdateOrdemStatus();
   const marcarEnviada = useMarcarOrdemEnviada();
   const { data: fullOrders, isLoading: isLoadingFull } = useQuery({
