@@ -47,7 +47,7 @@ const Separacao = () => {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
-  const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; description: string | null } | null>(null);
+  const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; frete_ml?: string | null; description: string | null } | null>(null);
   const [items, setItems] = useState<SeparacaoItem[]>([]);
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
@@ -93,6 +93,7 @@ const Separacao = () => {
       setOrderInfo({
         id: ordem.id,
         number: ordem.numero,
+        frete_ml: ordem.frete_ml,
         description: ordem.descricao
       });
       
@@ -170,7 +171,7 @@ const Separacao = () => {
     doc.text("RELATÓRIO DE SEPARAÇÃO", 14, 20);
     
     doc.setFontSize(12);
-    doc.text(`Pedido: ${orderInfo.number}`, 14, 30);
+    doc.text(`Pedido: Frete #${orderInfo.frete_ml || orderInfo.number}`, 14, 30);
     doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 37);
     doc.text(`Responsável: ${userName}`, 14, 44);
 
@@ -195,7 +196,7 @@ const Separacao = () => {
     doc.setFontSize(12);
     doc.text(`TOTAL: ${totalProducts} produtos · ${totalUnitsScanned} unidades`, 14, (doc as any).lastAutoTable.finalY + 10);
     
-    doc.save(`relatorio-separacao-${orderInfo.number}.pdf`);
+    doc.save(`relatorio-separacao-frete-${orderInfo.frete_ml || orderInfo.number}.pdf`);
   }, [orderInfo, items, totalProducts, totalUnitsScanned, userName]);
 
   useEffect(() => {
@@ -232,7 +233,7 @@ const Separacao = () => {
     setIsFinishing(true);
     try {
       await updateStatus.mutateAsync({ id: orderInfo.id, status: "concluida" });
-      toast({ title: "✅ Separação concluída — pronto para carregamento", description: "A ordem foi marcada como enviada." });
+      toast({ title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, description: "A ordem foi marcada como enviada." });
       localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
@@ -250,7 +251,7 @@ const Separacao = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            📦 Separação — {orderInfo?.description || `Ordem #${orderInfo?.number}`}
+            📦 Separação — {orderInfo?.frete_ml ? `Frete #${orderInfo.frete_ml}` : (orderInfo?.description || `Ordem #${orderInfo?.number}`)}
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -260,7 +261,8 @@ const Separacao = () => {
           {orderInfo && (
             <OrderRecordingSystem 
               pedidoId={orderInfo.id} 
-              orderNumber={orderInfo.number} 
+              orderNumber={orderInfo.frete_ml || orderInfo.number} 
+              freteMl={orderInfo.frete_ml}
             />
           )}
         </div>

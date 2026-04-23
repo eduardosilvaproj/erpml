@@ -8,6 +8,7 @@ export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 export interface OrdemFull {
   id: string;
   numero: string;
+  frete_ml: string | null;
   descricao: string | null;
   status: OrdemStatus;
   prazo: string | null;
@@ -89,6 +90,7 @@ export const useCreateOrdemFull = () => {
   return useMutation({
     mutationFn: async (params: {
       descricao: string;
+      frete_ml?: string | null;
       prazo: string | null;
       atribuido_para: string | null;
       itens: { product_id: string; qtd_solicitada: number }[];
@@ -106,6 +108,8 @@ export const useCreateOrdemFull = () => {
         .from("ordens_full")
         .insert({
           descricao: params.descricao,
+          frete_ml: params.frete_ml,
+          numero: params.frete_ml ? params.frete_ml : undefined, // If frete_ml is provided, use it as the number
           prazo: params.prazo,
           atribuido_para: params.atribuido_para,
           status: params.enviarParaSeparacao ? "aguardando" : "rascunho",

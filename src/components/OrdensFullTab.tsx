@@ -132,8 +132,8 @@ export const OrdensFullTab = () => {
 
       // Extract Shipping Number (Frete # or Envio #)
       const shippingMatch = fullText.match(/Frete\s*#\s*(\d+)/i) || 
-                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i) ||
-                          fullText.match(/Envio\s*#\s*(\d+)/i);
+                          fullText.match(/Envio\s*#\s*(\d+)/i) ||
+                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // Nova lógica de parser completa e segura para Mercado Livre PDF
@@ -280,7 +280,8 @@ export const OrdensFullTab = () => {
 
     try {
       await createOrdem.mutateAsync({
-        descricao: `Pedido ML #${parsedData.shippingNumber}`,
+        descricao: `Frete #${parsedData.shippingNumber}`,
+        frete_ml: parsedData.shippingNumber,
         prazo: null,
         atribuido_para: null,
         itens: validItems.map(i => ({
@@ -294,6 +295,7 @@ export const OrdensFullTab = () => {
       if (companyId && parsedData.shippingNumber) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
+          frete_ml: parsedData.shippingNumber,
           pdf_frete_id: parsedData.shippingNumber,
           status: "separacao"
         });
@@ -332,6 +334,7 @@ export const OrdensFullTab = () => {
       localStorage.setItem("ordem_ativa", JSON.stringify({
         id: ordem.id,
         numero: ordem.numero,
+        frete_ml: ordem.frete_ml,
         descricao: ordem.descricao,
         produtos,
       }));
@@ -831,7 +834,7 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">{o.numero}</TableCell>
+                        <TableCell className="font-mono text-xs">#{o.frete_ml || o.numero}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{o.descricao || "-"}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
@@ -1047,7 +1050,7 @@ export const OrdensFullTab = () => {
                   
                   return (
                     <TableRow key={fo.id}>
-                      <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
+                      <TableCell className="font-mono font-bold text-primary">#{fo.frete_ml || fo.pdf_frete_id || "—"}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className={
                           fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :

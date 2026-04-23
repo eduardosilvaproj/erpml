@@ -7,10 +7,11 @@ export type RecordingType = "separacao" | "carregamento";
 interface UseOrderRecordingProps {
   pedidoId: string;
   tipo: RecordingType;
+  freteMl?: string | null;
   onFinished?: (url: string) => void;
 }
 
-export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecordingProps) => {
+export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOrderRecordingProps) => {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -102,7 +103,8 @@ export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecord
     setIsUploading(true);
     const timestamp = new Date().getTime();
     const fileName = `${uploadTipo}_${timestamp}.webm`;
-    const filePath = `${pedidoId}/${fileName}`;
+    const folder = freteMl || pedidoId;
+    const filePath = `${folder}/${fileName}`;
 
     try {
       // 1. Upload to Storage

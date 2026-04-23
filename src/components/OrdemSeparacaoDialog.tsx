@@ -181,7 +181,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span>Ordem {ordem?.numero}</span>
+              <span>Ordem #{ordem?.frete_ml || ordem?.numero}</span>
               {ordem && <Badge variant="outline" className={ordemStatusBadge(ordem.status).cls}>{ordemStatusBadge(ordem.status).label}</Badge>}
               {recorder.status === "recording" && (
                 <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse ml-auto">
