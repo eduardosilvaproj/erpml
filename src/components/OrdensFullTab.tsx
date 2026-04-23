@@ -24,9 +24,10 @@ import {
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
-// Set worker src for pdfjs
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set worker src for pdfjs locally from node_modules
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 interface NovoItem {
   product_id: string;
@@ -103,28 +104,30 @@ export const OrdensFullTab = () => {
 
       // Extract Shipping Number (Frete # or Envio #)
       const shippingMatch = fullText.match(/Frete\s*#\s*(\d+)/i) || 
-                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
+                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i) ||
+                          fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // Extract items (EAN and Quantity)
       const items: { ean: string; sku?: string; quantity: number }[] = [];
       
       // Look for "Código universal: XXXXXXXXXXXXX"
-      const eanPattern = /Código\s+universal:\s*(\d{13})/gi;
+      const eanPattern = /Código\s+universal:\s*(\d{13,14})/gi;
       let eanMatch;
       while ((eanMatch = eanPattern.exec(fullText)) !== null) {
         const ean = eanMatch[1];
         
-        // Search for SKU and Quantity near this EAN
-        const searchWindow = fullText.substring(eanMatch.index, eanMatch.index + 200);
+        // Search for SKU and Quantity near this EAN (look backward and forward)
+        const windowStart = Math.max(0, eanMatch.index - 300);
+        const searchWindow = fullText.substring(windowStart, eanMatch.index + 300);
         
-        // SKU pattern
+        // SKU pattern: "SKU: XXXXX" or similar
         const skuMatch = searchWindow.match(/SKU:\s*(\S+)/i);
         const sku = skuMatch ? skuMatch[1] : undefined;
         
-        // Quantity pattern: often a number followed by "un", "unidade" or just a number in a column
-        const qtyMatch = searchWindow.match(/(\d+)\s*(?:un|unidades|pc|peças)/i) || 
-                         searchWindow.match(/Quantidade:\s*(\d+)/i);
+        // Quantity pattern: "Quantidade: X", "Quantidades: X", "X un", etc.
+        const qtyMatch = searchWindow.match(/(?:Quantidade|Quantidades|Qtd):\s*(\d+)/i) ||
+                         searchWindow.match(/(\d+)\s*(?:un|unidades|pc|peças)/i);
         
         const quantity = qtyMatch ? parseInt(qtyMatch[1]) : 1;
         
