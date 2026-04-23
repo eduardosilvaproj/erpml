@@ -132,8 +132,8 @@ export const OrdensFullTab = () => {
 
       // Extract Shipping Number (Frete # or Envio #)
       const shippingMatch = fullText.match(/Frete\s*#\s*(\d+)/i) || 
-                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i) ||
-                          fullText.match(/Envio\s*#\s*(\d+)/i);
+                          fullText.match(/Envio\s*#\s*(\d+)/i) ||
+                          fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
       // Nova lógica de parser completa e segura para Mercado Livre PDF
