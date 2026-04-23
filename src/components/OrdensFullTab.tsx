@@ -981,6 +981,8 @@ export const OrdensFullTab = () => {
                     <TableHead className="text-center">Itens</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Previsão Coleta</TableHead>
+                    <TableHead className="hidden md:table-cell">🎥 Grav. Sep.</TableHead>
+                    <TableHead className="hidden md:table-cell">🚛 Grav. Carreg.</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -998,10 +1000,10 @@ export const OrdensFullTab = () => {
                             {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
+                        <TableCell className="max-w-[150px] truncate">
                           <span>{o.descricao || "-"}</span>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
@@ -1020,15 +1022,23 @@ export const OrdensFullTab = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
-                            <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
-                          ) : "—"}
+                          <PrevisaoColetaCell o={o} onUpdate={() => {
+                            refetchOrdens();
+                            refetchRecordings();
+                          }} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <RecordingCell o={o} type="separacao" recordings={allRecordings || []} onUpdate={refetchRecordings} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <RecordingCell o={o} type="carregamento" recordings={allRecordings || []} onUpdate={refetchRecordings} />
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`${sb.cls} gap-1`}>
+                          <Badge variant="outline" className={`${sb.cls} gap-1 text-[10px] px-1.5`}>
                             {sb.label}
                           </Badge>
                         </TableCell>
+
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center gap-1">
                             {podeExecutar && (
