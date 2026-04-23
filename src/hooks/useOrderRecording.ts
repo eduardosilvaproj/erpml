@@ -11,7 +11,7 @@ interface UseOrderRecordingProps {
   onFinished?: (url: string) => void;
 }
 
-export const useOrderRecording = ({ pedidoId, tipo, onFinished }: UseOrderRecordingProps) => {
+export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOrderRecordingProps) => {
   const { toast } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
