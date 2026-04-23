@@ -25,7 +25,7 @@ import { useMyCompany, useCompanyMembers } from "@/hooks/useCompanyData";
 import { useProducts } from "@/hooks/useProductData";
 import {
   useOrdensFull, useCreateOrdemFull, useDeleteOrdem, useUpdateOrdemStatus, useMarcarOrdemEnviada,
-  ordemStatusBadge, type OrdemFull,
+  useDeleteFullOrder, ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import * as pdfjsLib from "pdfjs-dist";
