@@ -872,6 +872,7 @@ export const OrdensFullTab = () => {
                     <TableHead className="text-center">Produtos</TableHead>
                     <TableHead className="text-center">Itens</TableHead>
                     <TableHead>Responsável</TableHead>
+                    <TableHead>Previsão Coleta</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
