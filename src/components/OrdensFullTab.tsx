@@ -84,8 +84,15 @@ export const OrdensFullTab = () => {
   } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [productFormOpen, setProductFormOpen] = useState(false);
+  const [kitFormOpen, setKitFormOpen] = useState(false);
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+
+  const isKit = (name?: string) => {
+    if (!name) return false;
+    const keywords = ['Kit', 'Combo', 'Pack', 'Conjunto'];
+    return keywords.some(k => name.toLowerCase().includes(k.toLowerCase()));
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
