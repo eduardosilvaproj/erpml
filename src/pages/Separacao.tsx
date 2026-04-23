@@ -19,7 +19,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-// import { OrderRecordingSystem } from "@/components/OrderRecordingSystem"; // Removido daqui conforme pedido
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -292,10 +292,20 @@ const Separacao = () => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <OrderRecordingSystem 
+            pedidoId={orderInfo?.id || ""} 
+            orderNumber={orderInfo?.number}
+            freteMl={orderInfo?.frete_ml}
+            defaultType="separacao"
+            trigger={
+              <Button variant="outline" size="sm" className="gap-2 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">
+                <Video className="h-4 w-4" /> 🎥 Gravar Separação
+              </Button>
+            }
+          />
           <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCcw className="h-4 w-4" /> Reiniciar
           </Button>
-          {/* Removido Gravar Carregamento daqui */}
         </div>
       </div>
 
@@ -468,24 +478,11 @@ const Separacao = () => {
                   </div>
                   <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
                   {/* DEV ONLY - REMOVER ANTES DO DEPLOY */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <button
-                      onClick={handleSkipSeparacao}
-                      style={{
-                        background: '#ff6b00',
-                        color: 'white',
-                        border: '2px dashed #ff9900',
-                        borderRadius: '8px',
-                        padding: '8px 16px',
-                        fontSize: '12px',
-                        cursor: 'pointer',
-                        margin: '8px 0',
-                        width: '100%'
-                      }}
-                    >
-                      ⚡ [DEV] Pular bipagem — marcar todos como completos
-                    </button>
-                  )}
+                  <button onClick={handleSkipSeparacao}
+                    style={{background:'#ff6b00', color:'white', border:'2px dashed #ff9900',
+                    borderRadius:'8px', padding:'8px 16px', fontSize:'12px', cursor:'pointer', margin:'8px 0', width: '100%'}}>
+                    ⚡ [DEV] Pular bipagem — marcar todos como completos
+                  </button>
                   {/* FIM DEV ONLY */}
                 </div>
               </div>
