@@ -41,9 +41,10 @@ const Separacao = () => {
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
+  const updateFullOrder = useUpdateFullOrder();
   
   const { user } = useAuth();
-  const [userName, setUserName] = useState<string>("Anderson"); // Default/Placeholder as in request
+  const [userName, setUserName] = useState<string>("Anderson"); 
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,9 @@ const Separacao = () => {
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
-  const [isMarkingAsShipped, setIsMarkingAsShipped] = useState(false);
+  
+  const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
+  const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
 
   // Fetch user profile name
   useEffect(() => {
