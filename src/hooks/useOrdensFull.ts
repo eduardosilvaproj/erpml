@@ -15,6 +15,10 @@ export interface OrdemFull {
   company_id: string;
   criado_por: string;
   atribuido_para: string | null;
+  atribuido?: {
+    full_name: string | null;
+    name: string | null;
+  } | null;
   gravacao_id: string | null;
   iniciada_em: string | null;
   concluida_em: string | null;
