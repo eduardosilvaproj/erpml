@@ -493,12 +493,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                             trigger={
                               <Button 
                                 size="lg"
-                                className="h-24 w-full sm:w-80 rounded-2xl gap-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-xl shadow-xl shadow-orange-500/30 group transition-all hover:scale-[1.02]"
+                                className="h-24 w-full sm:w-80 rounded-2xl gap-4 bg-orange-600 hover:bg-orange-700 text-white font-black text-xl shadow-xl shadow-orange-600/30 group transition-all hover:scale-[1.02]"
                               >
                                 <div className="bg-white/20 p-3 rounded-full group-hover:bg-white/30 transition-colors">
                                   <Video className="h-8 w-8" />
                                 </div>
-                                Iniciar Gravação
+                                🎥 Gravar Carregamento
                               </Button>
                             }
                           />
