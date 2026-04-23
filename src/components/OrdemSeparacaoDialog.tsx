@@ -35,6 +35,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateStatus = useUpdateOrdemStatus();
   const marcarSeparada = useMarcarOrdemSeparada();
   const marcarEnviada = useMarcarOrdemEnviada();
+  const updateFullOrder = useUpdateFullOrder();
   const recorder = useFullRecorder();
 
   const [askRecord, setAskRecord] = useState(false);
@@ -46,8 +47,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const ordem = data?.ordem;
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
-  const isSeparada = ordem?.status === "separada";
-  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada" || isSeparada;
+  const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento";
+  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || isSeparada;
 
   useEffect(() => {
     if (!ordemId) {
