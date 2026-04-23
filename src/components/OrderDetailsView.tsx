@@ -40,45 +40,18 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
   const ordem = data?.ordem;
 
   useEffect(() => {
-    async function fetchResponsavel() {
-      if (ordem?.separado_por) {
-        // Se for um UUID, busca o nome no perfil
-        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
-        if (isUUID) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', ordem.separado_por)
-            .maybeSingle();
-          
-          if (profile?.full_name) {
-            setResponsavelNome(profile.full_name);
-          } else {
-            // Tenta buscar no auth como fallback
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user && user.id === ordem.separado_por) {
-              setResponsavelNome(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Administrador');
-            } else {
-              setResponsavelNome('Administrador');
-            }
-          }
-        } else {
-          setResponsavelNome(ordem.separado_por);
-        }
-      } else if (ordem?.atribuido_para) {
-         // Se não foi separado ainda, mostra quem está atribuído
-         const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', ordem.atribuido_para)
-            .maybeSingle();
-         setResponsavelNome(profile?.full_name || 'Administrador');
+    if (ordem) {
+      if (ordem.separado_por_profile?.full_name) {
+        setResponsavelNome(ordem.separado_por_profile.full_name);
+      } else if (ordem.atribuido?.full_name) {
+        setResponsavelNome(ordem.atribuido.full_name);
+      } else if (ordem.separado_por) {
+        setResponsavelNome("Usuário " + ordem.separado_por.slice(0, 8));
       } else {
         setResponsavelNome("Administrador");
       }
     }
-    fetchResponsavel();
-  }, [ordem?.separado_por]);
+  }, [ordem]);
 
   const handleMarcarEnviado = async () => {
     if (!ordem) return;
