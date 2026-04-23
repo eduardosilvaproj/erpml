@@ -232,11 +232,38 @@ const Separacao = () => {
   };
 
   const handleFinalizarSeparacao = async () => {
-    if (!orderInfo) return;
+    if (!orderInfo || !user) return;
     setIsFinishing(true);
     try {
-      await updateStatus.mutateAsync({ id: orderInfo.id, status: "concluida" });
-      toast({ title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, description: "A ordem foi marcada como enviada." });
+      // 1. Update the ordens_full status
+      await updateStatus.mutateAsync({ 
+        id: orderInfo.id, 
+        status: "concluida",
+        extra: {
+          concluida_em: new Date().toISOString(),
+          separado_em: new Date().toISOString(),
+          separado_por: user.id
+        }
+      });
+      
+      // 2. Update the full_orders status and forecast as requested
+      const previsaoCompleta = (previsaoData && previsaoHora) 
+        ? new Date(`${previsaoData}T${previsaoHora}`).toISOString()
+        : null;
+
+      await updateFullOrder.mutateAsync({
+        frete_ml: orderInfo.frete_ml || orderInfo.number,
+        status: 'aguardando_carregamento',
+        separado_em: new Date().toISOString(),
+        separado_por: user.id,
+        previsao_carregamento: previsaoCompleta
+      });
+
+      toast({ 
+        title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, 
+        description: "Status alterado para Aguardando Carregamento." 
+      });
+      
       localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
