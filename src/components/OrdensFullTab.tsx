@@ -280,7 +280,8 @@ export const OrdensFullTab = () => {
 
     try {
       await createOrdem.mutateAsync({
-        descricao: `Pedido ML #${parsedData.shippingNumber}`,
+        descricao: `Frete #${parsedData.shippingNumber}`,
+        frete_ml: parsedData.shippingNumber,
         prazo: null,
         atribuido_para: null,
         itens: validItems.map(i => ({
@@ -294,6 +295,7 @@ export const OrdensFullTab = () => {
       if (companyId && parsedData.shippingNumber) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
+          frete_ml: parsedData.shippingNumber,
           pdf_frete_id: parsedData.shippingNumber,
           status: "separacao"
         });
