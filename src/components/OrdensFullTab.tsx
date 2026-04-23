@@ -470,18 +470,25 @@ export const OrdensFullTab = () => {
         .from('full_orders')
         .select('id, status')
         .eq('frete_ml', parsedData.shippingNumber)
+        .order('created_at', { ascending: false }) // Pegar a mais recente
+        .limit(1)
         .maybeSingle();
 
       if (error) throw error;
 
       if (existing) {
-        setDuplicateCheck({
-          isOpen: true,
-          existingId: existing.id,
-          existingStatus: existing.status,
-          freteNumero: parsedData.shippingNumber
-        });
-        return;
+        const confirma = window.confirm(
+          `Frete #${parsedData.shippingNumber} já existe com status "${existing.status}".\nDeseja abrir a ordem existente?`
+        );
+        if (confirma) {
+          const existingOrder = ordens?.find(o => o.frete_ml === parsedData.shippingNumber || o.numero === parsedData.shippingNumber);
+          if (existingOrder) {
+            handleViewOrder(existingOrder);
+          } else {
+            toast({ title: "Ordem não encontrada na lista", variant: "destructive" });
+          }
+        }
+        return; // Não criar nova
       }
 
       await executeCreateOrdem();
