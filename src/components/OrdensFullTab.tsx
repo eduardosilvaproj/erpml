@@ -92,6 +92,10 @@ export const OrdensFullTab = () => {
   const [kitFormOpen, setKitFormOpen] = useState(false);
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<OrdemFull | null>(null);
+  const [deleteOption, setDeleteOption] = useState<"cancel" | "delete">("cancel");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
