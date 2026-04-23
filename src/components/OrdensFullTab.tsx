@@ -553,9 +553,9 @@ export const OrdensFullTab = () => {
                     <TableCell className="text-center font-bold text-base">{item.quantity}</TableCell>
                     <TableCell>
                       {item.error ? (
-                        <div className="flex items-center gap-1 text-destructive font-bold whitespace-nowrap text-xs">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>🔴 {item.error}</span>
+                        <div className="flex items-start gap-1 text-destructive font-bold text-xs max-w-[150px]">
+                          <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="leading-tight">{item.error}</span>
                         </div>
                       ) : item.product ? (
                         <div className="flex items-center gap-1 text-emerald-600 font-bold whitespace-nowrap text-xs">
