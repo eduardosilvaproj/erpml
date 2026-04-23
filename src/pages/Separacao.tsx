@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
-  ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare
+  ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
+  Clock, Calendar, User, Video, ExternalLink
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +20,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface SeparacaoItem {
   productId: string;
