@@ -292,10 +292,20 @@ const Separacao = () => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <OrderRecordingSystem 
+            pedidoId={orderInfo?.id || ""} 
+            orderNumber={orderInfo?.number}
+            freteMl={orderInfo?.frete_ml}
+            defaultType="separacao"
+            trigger={
+              <Button variant="outline" size="sm" className="gap-2 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">
+                <Video className="h-4 w-4" /> 🎥 Gravar Separação
+              </Button>
+            }
+          />
           <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
             <RefreshCcw className="h-4 w-4" /> Reiniciar
           </Button>
-          {/* Removido Gravar Carregamento daqui */}
         </div>
       </div>
 
