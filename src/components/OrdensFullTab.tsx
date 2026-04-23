@@ -903,11 +903,8 @@ export const OrdensFullTab = () => {
                           {o.atribuido ? (o.atribuido.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {o.previsao_carregamento ? (
-                            <div className="flex flex-col">
-                              <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
-                              <span className="text-[10px] text-muted-foreground">{format(new Date(o.previsao_carregamento), "HH:mm")}</span>
-                            </div>
+                          {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
+                            <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
                           ) : "—"}
                         </TableCell>
                         <TableCell>

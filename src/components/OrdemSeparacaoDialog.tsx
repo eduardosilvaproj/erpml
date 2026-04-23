@@ -315,14 +315,9 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                     ) : (
                       <div className="flex items-center gap-3">
                         <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
-                          {ordem?.previsao_carregamento 
+                          {ordem?.previsao_carregamento && !isNaN(new Date(ordem.previsao_carregamento).getTime())
                             ? format(new Date(ordem.previsao_carregamento), "dd/MM/yyyy")
-                            : "--/--/----"}
-                        </span>
-                        <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
-                          {ordem?.previsao_carregamento 
-                            ? format(new Date(ordem.previsao_carregamento), "HH:mm")
-                            : "--:--"}
+                            : "—"}
                         </span>
                         <Button variant="outline" size="sm" onClick={() => setEditingPrevisao(true)} className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50">
                           ✏️ Editar

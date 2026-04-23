@@ -371,7 +371,7 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
       ) : (
         <div className="flex items-center gap-3">
           <span className="text-xl font-black text-blue-900 bg-white px-3 py-1 rounded border shadow-sm">
-            {value ? format(new Date(value), "dd/MM/yyyy") : "--/--/----"}
+            {value && !isNaN(new Date(value).getTime()) ? format(new Date(value), "dd/MM/yyyy") : "—"}
           </span>
           <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-2 border-blue-200 text-blue-700 hover:bg-blue-50">
             ✏️ Editar
