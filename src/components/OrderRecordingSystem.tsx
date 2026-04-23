@@ -56,6 +56,7 @@ export function OrderRecordingSystem({
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
