@@ -47,7 +47,6 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, trigger }: OrderRe
 
   const handleStartRecording = (type: RecordingType) => {
     setActiveType(type);
-    // Pass type directly to avoid race condition with state
     startRecording(type);
   };
 
@@ -61,60 +60,61 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, trigger }: OrderRe
 
   return (
     <>
-  const systemUI = (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center -space-x-px">
-        <Button 
-          variant={isRecording ? "destructive" : "outline"} 
-          size="sm" 
-          className={`gap-2 rounded-r-none ${isRecording ? "animate-pulse" : ""}`}
-          onClick={handleToggleTopRecording}
-          disabled={isUploading}
-        >
-          {isRecording ? (
-            <>
-              <VideoOff className="h-4 w-4" /> 
-              <span>Parar Gravação</span>
-              <span className="ml-1 font-mono text-xs tabular-nums">● {formatDuration(duration)}</span>
-            </>
-          ) : (
-            <>
-              <Video className="h-4 w-4" /> Iniciar {activeType === 'separacao' ? 'Separação' : 'Carregamento'}
-            </>
-          )}
-        </Button>
-        
-        {!isRecording && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="px-2 rounded-l-none border-l-0" disabled={isUploading}>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleStartRecording("separacao")}>
-                <Video className="mr-2 h-4 w-4" /> Gravar Separação
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleStartRecording("carregamento")}>
-                <Video className="mr-2 h-4 w-4" /> Gravar Carregamento
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-
-      <Dialog>
-        <DialogTrigger asChild>
-          {trigger || (
-            <Button variant="outline" size="sm" className="gap-2">
-              <History className="h-4 w-4" /> Histórico
+      <div className="flex items-center gap-2">
+        {!trigger && (
+          <div className="flex items-center -space-x-px">
+            <Button 
+              variant={isRecording ? "destructive" : "outline"} 
+              size="sm" 
+              className={`gap-2 rounded-r-none ${isRecording ? "animate-pulse" : ""}`}
+              onClick={handleToggleTopRecording}
+              disabled={isUploading}
+            >
+              {isRecording ? (
+                <>
+                  <VideoOff className="h-4 w-4" /> 
+                  <span>Parar Gravação</span>
+                  <span className="ml-1 font-mono text-xs tabular-nums">● {formatDuration(duration)}</span>
+                </>
+              ) : (
+                <>
+                  <Video className="h-4 w-4" /> Iniciar {activeType === 'separacao' ? 'Separação' : 'Carregamento'}
+                </>
+              )}
             </Button>
-          )}
-        </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Sistema de Gravação — Pedido {orderNumber ? `#${orderNumber}` : ""}</DialogTitle>
-          </DialogHeader>
+            
+            {!isRecording && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="px-2 rounded-l-none border-l-0" disabled={isUploading}>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleStartRecording("separacao")}>
+                    <Video className="mr-2 h-4 w-4" /> Gravar Separação
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStartRecording("carregamento")}>
+                    <Video className="mr-2 h-4 w-4" /> Gravar Carregamento
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
+
+        <Dialog>
+          <DialogTrigger asChild>
+            {trigger || (
+              <Button variant="outline" size="sm" className="gap-2">
+                <History className="h-4 w-4" /> Histórico
+              </Button>
+            )}
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Sistema de Gravação — Pedido {orderNumber ? `#${orderNumber}` : ""}</DialogTitle>
+            </DialogHeader>
             
             <div className="space-y-6 py-4">
               <RecordingSection 
@@ -135,14 +135,11 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, trigger }: OrderRe
                 isRecording={isRecording}
               />
             </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+          </DialogContent>
+        </Dialog>
+      </div>
 
-  return (
-    <>
-      {systemUI}
+      {/* Floating Preview Window */}
       {isRecording && stream && (
         <div className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${isPreviewMinimized ? 'w-16 h-16' : 'w-64 aspect-video'}`}>
           <Card className="overflow-hidden border-2 border-primary shadow-2xl relative">
