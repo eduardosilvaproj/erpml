@@ -48,7 +48,7 @@ interface BoxConfig {
 
 const MovimentacaoFull = () => {
   const { toast } = useToast();
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const [items, setItems] = useState<TransferItem[]>([]);
   const [usedKits, setUsedKits] = useState<string[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
