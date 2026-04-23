@@ -1,5 +1,5 @@
-import { useMemo, useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
@@ -29,10 +29,13 @@ import {
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import { OrderDetailsView } from "@/components/OrderDetailsView";
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { type RecordingType } from "@/hooks/useOrderRecording";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
 
 // Set worker src for pdfjs locally from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -46,14 +49,105 @@ interface NovoItem {
   qtd: number;
 }
 
+const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) => {
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempDate, setTempDate] = useState(o.previsao_carregamento ? format(new Date(o.previsao_carregamento), "yyyy-MM-dd") : "");
+
+  const handleSave = async () => {
+    try {
+      const { error } = await supabase
+        .from("ordens_full")
+        .update({ previsao_carregamento: tempDate || null })
+        .eq("id", o.id);
+      if (error) throw error;
+      
+      if (o.frete_ml) {
+         await supabase
+          .from("full_orders")
+          .update({ previsao_carregamento: tempDate || null })
+          .eq("frete_ml", o.frete_ml);
+      }
+      
+      toast({ title: "✅ Previsão atualizada" });
+      setIsEditing(false);
+      onUpdate();
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar previsão", description: err.message, variant: "destructive" });
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <Input 
+        type="date" 
+        className="h-8 w-32" 
+        autoFocus 
+        value={tempDate} 
+        onChange={e => setTempDate(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={e => e.key === 'Enter' && handleSave()}
+      />
+    );
+  }
+
+  return (
+    <div 
+      className="cursor-pointer group flex items-center gap-1"
+      onClick={() => setIsEditing(true)}
+    >
+      {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
+        <>
+          <span className="font-bold whitespace-nowrap">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity">✏️</span>
+        </>
+      ) : (
+        <span className="text-blue-600 text-[10px] hover:underline font-medium">+ Definir data</span>
+      )}
+    </div>
+  );
+};
+
+const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: RecordingType, recordings: any[], onUpdate: () => void }) => {
+  const hasRecording = recordings?.some((r: any) => r.pedido_id === o.id && r.tipo === type);
+  const isEnabled = type === 'separacao' || ['aguardando_carregamento', 'carregando', 'enviado', 'concluida', 'separada'].includes(o.status);
+
+  if (!isEnabled) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+
+  return (
+     <OrderRecordingSystem 
+        pedidoId={o.id}
+        defaultType={type}
+        freteMl={o.frete_ml}
+        orderNumber={o.numero}
+        onFinished={() => onUpdate()}
+        trigger={
+          hasRecording ? (
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-bold gap-1">
+              <Play className="h-3 w-3" /> Ver
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 font-bold gap-1">
+              <Video className="h-3 w-3" /> Gravar
+            </Button>
+          )
+        }
+     />
+  );
+};
+
+
 export const OrdensFullTab = () => {
+
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
   const companyId = useCompanyId();
   const { data: company } = useMyCompany();
   const { data: members } = useCompanyMembers(companyId || undefined);
-  const { data: ordens, isLoading } = useOrdensFull();
+  const { data: ordens, isLoading, refetch: refetchOrdens } = useOrdensFull();
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
   const deleteFullOrder = useDeleteFullOrder();
@@ -75,6 +169,19 @@ export const OrdensFullTab = () => {
     },
     enabled: !!companyId
   });
+
+  const { data: allRecordings, refetch: refetchRecordings } = useQuery({
+    queryKey: ["all-recordings", companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_recordings")
+        .select("pedido_id, tipo");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!companyId
+  });
+
 
   const [createOpen, setCreateOpen] = useState(false);
   const [iaOpen, setIaOpen] = useState(false);
@@ -876,6 +983,8 @@ export const OrdensFullTab = () => {
                     <TableHead className="text-center">Itens</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Previsão Coleta</TableHead>
+                    <TableHead className="hidden md:table-cell">🎥 Grav. Sep.</TableHead>
+                    <TableHead className="hidden md:table-cell">🚛 Grav. Carreg.</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -893,10 +1002,10 @@ export const OrdensFullTab = () => {
                             {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
+                        <TableCell className="max-w-[150px] truncate">
                           <span>{o.descricao || "-"}</span>
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
@@ -915,15 +1024,23 @@ export const OrdensFullTab = () => {
                           )}
                         </TableCell>
                         <TableCell className="text-xs">
-                          {o.previsao_carregamento && !isNaN(new Date(o.previsao_carregamento).getTime()) ? (
-                            <span className="font-bold">{format(new Date(o.previsao_carregamento), "dd/MM/yyyy")}</span>
-                          ) : "—"}
+                          <PrevisaoColetaCell o={o} onUpdate={() => {
+                            refetchOrdens();
+                            refetchRecordings();
+                          }} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <RecordingCell o={o} type="separacao" recordings={allRecordings || []} onUpdate={refetchRecordings} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <RecordingCell o={o} type="carregamento" recordings={allRecordings || []} onUpdate={refetchRecordings} />
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`${sb.cls} gap-1`}>
+                          <Badge variant="outline" className={`${sb.cls} gap-1 text-[10px] px-1.5`}>
                             {sb.label}
                           </Badge>
                         </TableCell>
+
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center gap-1">
                             {podeExecutar && (

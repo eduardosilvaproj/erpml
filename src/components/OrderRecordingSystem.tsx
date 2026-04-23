@@ -20,10 +20,14 @@ interface OrderRecordingSystemProps {
   orderNumber?: string;
   freteMl?: string | null;
   trigger?: React.ReactNode;
+  defaultType?: RecordingType;
+  onFinished?: (url: string) => void;
 }
 
-export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger }: OrderRecordingSystemProps) {
-  const [activeType, setActiveType] = useState<RecordingType>("carregamento");
+export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger, defaultType = "carregamento", onFinished }: OrderRecordingSystemProps) {
+
+  const [activeType, setActiveType] = useState<RecordingType>(defaultType);
+
 
   
   const { 
@@ -36,8 +40,10 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger }
   } = useOrderRecording({
     pedidoId,
     tipo: activeType,
-    freteMl
+    freteMl,
+    onFinished
   });
+
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
