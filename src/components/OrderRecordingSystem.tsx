@@ -116,6 +116,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
               </Button>
             </div>
             
+            {!isPreviewMinimized && (
               <VideoPreview stream={stream} />
             )}
             
