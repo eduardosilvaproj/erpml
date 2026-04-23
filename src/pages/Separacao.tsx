@@ -196,7 +196,7 @@ const Separacao = () => {
     doc.setFontSize(12);
     doc.text(`TOTAL: ${totalProducts} produtos · ${totalUnitsScanned} unidades`, 14, (doc as any).lastAutoTable.finalY + 10);
     
-    doc.save(`relatorio-separacao-${orderInfo.number}.pdf`);
+    doc.save(`relatorio-separacao-frete-${orderInfo.frete_ml || orderInfo.number}.pdf`);
   }, [orderInfo, items, totalProducts, totalUnitsScanned, userName]);
 
   useEffect(() => {
