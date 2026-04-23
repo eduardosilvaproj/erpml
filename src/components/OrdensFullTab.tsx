@@ -155,19 +155,19 @@ export const OrdensFullTab = () => {
         }));
       };
 
-      const items = await Promise.race([
+      const items = (await Promise.race([
         Promise.resolve(parseMercadoLivrePDF(fullText)),
         new Promise<any[]>((_, reject) => 
           setTimeout(() => reject(new Error('Timeout: o processamento do PDF demorou mais de 10s')), 10000)
         )
-      ]);
+      ])) as any[];
 
       // Validação obrigatória
-      const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalUnits = items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
       console.log(`Parsed: ${items.length} produtos, ${totalUnits} unidades`);
 
       // Deduplicate by EAN and SKU
-      const uniqueItems = items.reduce((acc, curr) => {
+      const uniqueItems = items.reduce((acc: any[], curr: any) => {
         const existing = acc.find(i => i.ean === curr.ean);
         if (existing) {
           existing.quantity += curr.quantity; // Soma as quantidades se houver duplicatas
@@ -178,7 +178,7 @@ export const OrdensFullTab = () => {
           acc.push({ ...curr });
         }
         return acc;
-      }, [] as typeof items);
+      }, []);
 
       if (uniqueItems.length === 0) {
         throw new Error("Não foi possível encontrar produtos no PDF. Verifique se o arquivo é um pedido do Mercado Livre FULL.");
