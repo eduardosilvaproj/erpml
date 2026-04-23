@@ -323,20 +323,51 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             </div>
           )}
 
-          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3">
-            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
-            {isExec && (
-              <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="w-full sm:w-auto">
-                {marcarSeparada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 p-6 border-t bg-gray-50/50">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} className="gap-2">
+                <ArrowRight className="h-4 w-4 rotate-180" /> Fechar
               </Button>
-            )}
-            {isSeparada && (
-              <Button onClick={marcarComoEnviado} disabled={marcarEnviada.isPending} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none">
-                {marcarEnviada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Marcar como enviado
-              </Button>
-            )}
+              {isView && (
+                <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" /> Imprimir Relatório
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              {ordem && (ordem.status === 'aguardando_carregamento' || isSeparada) && (
+                <OrderRecordingSystem 
+                  pedidoId={ordem.id} 
+                  orderNumber={ordem.frete_ml || ordem.numero} 
+                  trigger={
+                    <Button 
+                      variant="default" 
+                      className="gap-2 bg-red-600 hover:bg-red-700 text-white font-bold h-11 px-6 shadow-lg shadow-red-500/20"
+                    >
+                      <Video className="h-5 w-5 animate-pulse" /> Iniciar Gravação de Carregamento
+                    </Button>
+                  }
+                />
+              )}
+
+              {isExec && (
+                <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="gap-2 h-11 px-6">
+                  {marcarSeparada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <CheckCircle2 className="h-5 w-5" /> Concluir separação
+                </Button>
+              )}
+              {(isSeparada || ordem?.status === 'aguardando_carregamento') && (
+                <Button 
+                  onClick={marcarComoEnviado} 
+                  disabled={marcarEnviada.isPending} 
+                  className="gap-2 h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-lg shadow-emerald-500/20 font-black uppercase tracking-tight"
+                >
+                  {marcarEnviada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <CheckCircle2 className="h-5 w-5" /> Marcar como Enviado
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
