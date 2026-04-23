@@ -122,6 +122,7 @@ const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: Record
         defaultType={type}
         freteMl={o.frete_ml}
         orderNumber={o.numero}
+        onFinished={() => onUpdate()}
         trigger={
           hasRecording ? (
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px] bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 font-bold gap-1">
@@ -136,6 +137,7 @@ const RecordingCell = ({ o, type, recordings, onUpdate }: { o: any, type: Record
      />
   );
 };
+
 
 export const OrdensFullTab = () => {
 
