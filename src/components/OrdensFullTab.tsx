@@ -19,7 +19,7 @@ import { useCompanyId } from "@/hooks/useCompanyId";
 import { useMyCompany, useCompanyMembers } from "@/hooks/useCompanyData";
 import { useProducts } from "@/hooks/useProductData";
 import {
-  useOrdensFull, useCreateOrdemFull, useDeleteOrdem, useUpdateOrdemStatus,
+  useOrdensFull, useCreateOrdemFull, useDeleteOrdem, useUpdateOrdemStatus, useMarcarOrdemEnviada,
   ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
