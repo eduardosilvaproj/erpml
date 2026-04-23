@@ -96,7 +96,26 @@ const PDV = () => {
         .select("id, name, sku, barcode, ean, price, stock_physical")
         .or(`ean.eq.${code.trim()},barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
 
-      const product = products?.[0];
+      let product = products?.[0];
+
+      if (!product) {
+        // Fallback: check alternative GTINs
+        const { data: altGtinMatch } = await supabase
+          .from("product_alternative_gtins")
+          .select("product_id")
+          .eq("gtin", code.trim())
+          .maybeSingle();
+
+        if (altGtinMatch) {
+          const { data: altProduct } = await supabase
+            .from("products")
+            .select("id, name, sku, barcode, ean, price, stock_physical")
+            .eq("id", altGtinMatch.product_id)
+            .maybeSingle();
+          if (altProduct) product = altProduct;
+        }
+      }
+
       if (!product) {
         setLastScan({ success: false, message: `Produto "${code}" não encontrado.` });
         playBeep(200, 400);
