@@ -126,52 +126,42 @@ export const OrdensFullTab = () => {
                           fullText.match(/Envio\s*#\s*(\d+)/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
-      // 1. Extrair produtos em ordem
-      const productPattern = /Código ML:\s*\w+\s+Código universal:\s*\n?(\d{8,14})\s+SKU:\s*(\S+)\s+([\w\s\-\.\,\'çãáéíóúâêîôûàèìòùÀ-ÿ]+?)(?=\nSUPERMERCADO|\nCódigo ML:)/gs;
-      const productsFound: { ean: string; sku: string; pdfName: string }[] = [];
-      let productMatch;
-      
-      while ((productMatch = productPattern.exec(fullText)) !== null) {
-        productsFound.push({
-          ean: productMatch[1],
-          sku: productMatch[2],
-          pdfName: productMatch[3].trim()
-        });
+      // 1. Extrair todos os EANs (789 + 10 dígitos) em ordem de aparecimento
+      const eanRegex = /\b(789\d{10})\b/g;
+      const allEans: string[] = [];
+      let eMatch;
+      while ((eMatch = eanRegex.exec(fullText)) !== null) {
+        allEans.push(eMatch[1]);
       }
 
-      // 2. Extrair quantidades em ordem
-      const qtyPattern = /(\d+)\s*•\s*A data de validade/g;
-      const quantities: number[] = [];
-      let qtyMatch;
-      
-      while ((qtyMatch = qtyPattern.exec(fullText)) !== null) {
-        quantities.push(parseInt(qtyMatch[1]));
+      // 2. Extrair todas as quantidades em ordem de aparecimento
+      // Padrão: número inteiro isolado imediatamente antes de • A data de validade
+      const qtyRegex = /(\d+)\s*•\s*A data de validade/g;
+      const allQtys: number[] = [];
+      let qMatch;
+      while ((qMatch = qtyRegex.exec(fullText)) !== null) {
+        allQtys.push(parseInt(qMatch[1]));
       }
 
-      console.log("Found products:", productsFound.length);
-      console.log("Found quantities:", quantities.length);
+      console.log("Total EANs encontrados:", allEans.length);
+      console.log("Total Quantidades encontradas:", allQtys.length);
 
-      // 3. ZIP: Associar produtos e quantidades por índice
-      const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = productsFound.map((prod, index) => ({
-        ean: prod.ean,
-        sku: prod.sku,
-        pdfName: prod.pdfName,
-        quantity: quantities[index] || 1 // Fallback para 1 se não houver quantidade correspondente
+      if (allEans.length !== allQtys.length && allQtys.length > 0) {
+        console.warn(`Aviso: O número de EANs (${allEans.length}) não coincide com o número de quantidades (${allQtys.length}).`);
+      }
+
+      // 3. Zip posicional: eans[0] -> qtys[0], eans[1] -> qtys[1]
+      // Nunca usar números do SKU como quantidade
+      const items: { ean: string; sku: string; quantity: number; pdfName: string }[] = allEans.map((ean, index) => ({
+        ean,
+        sku: "", 
+        pdfName: `Produto ${ean}`,
+        quantity: allQtys[index] || 0
       }));
 
-      // Se nada for encontrado com o padrão específico, tenta o modo genérico
-      if (items.length === 0) {
-        const genericEanRegex = /(\d{13})/g;
-        let match;
-        while ((match = genericEanRegex.exec(fullText)) !== null) {
-          const ean = match[1];
-          const textAfter = fullText.substring(match.index + 13, match.index + 100);
-          const qtyMatch = textAfter.match(/(\d+)\s*(?:un|unidades|pc|peças)?/i);
-          if (qtyMatch) {
-            items.push({ ean, sku: "", quantity: parseInt(qtyMatch[1]), pdfName: "Produto EAN " + ean });
-          }
-        }
-      }
+      // Validação rápida baseada no feedback do usuário
+      const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
+      console.log(`Resumo: ${items.length} produtos, ${totalUnits} unidades.`);
 
       // Deduplicate by EAN and SKU
       const uniqueItems = items.reduce((acc, curr) => {
