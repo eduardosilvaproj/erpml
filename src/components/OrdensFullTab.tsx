@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -775,6 +776,73 @@ export const OrdensFullTab = () => {
         ordemId={viewOrdemId}
         onClose={() => setViewOrdemId(null)}
       />
+
+      {/* Resumo Full Orders */}
+      <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Resumo de Pedidos Full</DialogTitle>
+            <DialogDescription>
+              Status atual e progresso das ordens integradas com o Mercado Livre Full.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isLoadingFull ? (
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (fullOrders || []).length === 0 ? (
+            <div className="text-center p-12 bg-muted/20 rounded-lg border-2 border-dashed">
+              <Package className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
+              <p className="text-muted-foreground font-medium">Nenhum registro de pedido full encontrado.</p>
+              <p className="text-xs text-muted-foreground mt-1">Carregue um PDF para iniciar o rastreamento.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>PDF Frete ID</TableHead>
+                  <TableHead>Status Atual</TableHead>
+                  <TableHead>Data Criação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fullOrders?.map((fo) => (
+                  <TableRow key={fo.id}>
+                    <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={
+                        fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
+                        fo.status === 'completo' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
+                        'bg-amber-500/10 text-amber-600 border-amber-200'
+                      }>
+                        {fo.status || 'separacao'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(fo.created_at).toLocaleString("pt-BR")}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => {
+                        const matching = ordens?.find(o => o.descricao?.includes(fo.pdf_frete_id));
+                        if (matching) setViewOrdemId(matching.id);
+                        else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
+                      }}>
+                        Ver Detalhes
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSummaryOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
