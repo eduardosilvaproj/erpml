@@ -127,7 +127,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber }: OrderRecordingSy
             )}
             
             <div className="absolute bottom-1 left-2 flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-red-500 animate-ping" />
+              <span className="h-2 w-2 rounded-full bg-destructive animate-ping" />
               <span className="text-[10px] font-bold text-primary-foreground drop-shadow-md">{formatDuration(duration)}</span>
             </div>
           </Card>
