@@ -139,6 +139,29 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     }
   };
 
+  const marcarComoEnviado = async () => {
+    if (!ordem || !user || !companyId) return;
+    try {
+      if (recorder.status === "recording" || recorder.status === "paused") {
+        const blob = await recorder.stop();
+        if (blob) {
+          await recorder.uploadAndSave({
+            blob, companyId, userId: user.id,
+            envioId: ordem.id, orderNumber: ordem.numero,
+            tipo: "separacao",
+            duracaoSegundos: recorder.seconds,
+          });
+        }
+      }
+      await marcarEnviada.mutateAsync(ordem.id);
+      toast({ title: "✅ Ordem enviada!", description: "A ordem foi marcada como enviada ao FULL." });
+      onClose();
+      navigate("/movimentacao-full");
+    } catch (e: any) {
+      toast({ title: "Erro ao marcar como enviado", description: e.message, variant: "destructive" });
+    }
+  };
+
   const ajustarQtd = async (item: OrdemItem, delta: number) => {
     const newQtd = Math.max(0, item.qtd_separada + delta);
     await updateItem.mutateAsync({
