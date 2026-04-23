@@ -131,6 +131,26 @@ const Separacao = () => {
 
   const isComplete = productsComplete === totalProducts && totalProducts > 0;
 
+  const handleSkipSeparacao = async () => {
+    // DEV ONLY - REMOVER ANTES DO DEPLOY
+    
+    // 1. Marcar todos os itens com quantidade completa
+    const completed: SeparacaoItem[] = items.map(item => ({
+      ...item,
+      scannedQty: item.neededQty,
+      status: 'completo'
+    }));
+    setItems(completed);
+    
+    // 2. Aguardar render
+    await new Promise(r => setTimeout(r, 300));
+    
+    // 3. Avançar para finalização
+    handleFinish();
+    
+    // FIM DEV ONLY
+  };
+
   const handleFinish = async () => {
     if (!orderInfo) return;
     setIsFinishing(true);
