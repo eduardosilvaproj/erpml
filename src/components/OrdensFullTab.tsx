@@ -418,19 +418,15 @@ export const OrdensFullTab = () => {
     }
   };
 
-  const confirmParsedOrder = async () => {
+  const executeCreateOrdem = async (forcedNumero?: string) => {
     if (!parsedData) return;
-
     const validItems = parsedData.items.filter(i => i.product);
-    if (validItems.length === 0) {
-      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
-      return;
-    }
+    const freteNumero = forcedNumero || parsedData.shippingNumber;
 
     try {
       await createOrdem.mutateAsync({
-        descricao: `Frete #${parsedData.shippingNumber}`,
-        frete_ml: parsedData.shippingNumber,
+        descricao: `Frete #${freteNumero}`,
+        frete_ml: freteNumero,
         prazo: null,
         atribuido_para: null,
         itens: validItems.map(i => ({
@@ -441,11 +437,11 @@ export const OrdensFullTab = () => {
       });
 
       // Registrar na tabela full_orders para rastreamento
-      if (companyId && parsedData.shippingNumber) {
+      if (companyId && freteNumero) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
-          frete_ml: parsedData.shippingNumber,
-          pdf_frete_id: parsedData.shippingNumber,
+          frete_ml: freteNumero,
+          pdf_frete_id: freteNumero,
           status: "separacao"
         });
       }
@@ -453,8 +449,44 @@ export const OrdensFullTab = () => {
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
       setParsedData(null);
+      setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
     } catch (err: any) {
       toast({ title: "Erro ao criar ordem", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const confirmParsedOrder = async () => {
+    if (!parsedData) return;
+
+    const validItems = parsedData.items.filter(i => i.product);
+    if (validItems.length === 0) {
+      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
+      return;
+    }
+
+    // 1. Verificar se o frete já existe antes de criar
+    try {
+      const { data: existing, error } = await supabase
+        .from('full_orders')
+        .select('id, status')
+        .eq('frete_ml', parsedData.shippingNumber)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (existing) {
+        setDuplicateCheck({
+          isOpen: true,
+          existingId: existing.id,
+          existingStatus: existing.status,
+          freteNumero: parsedData.shippingNumber
+        });
+        return;
+      }
+
+      await executeCreateOrdem();
+    } catch (err: any) {
+      toast({ title: "Erro ao verificar frete existente", description: err.message, variant: "destructive" });
     }
   };
 
