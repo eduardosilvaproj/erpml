@@ -30,6 +30,8 @@ import {
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // Set worker src for pdfjs locally from node_modules
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -834,15 +836,33 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">#{o.frete_ml || o.numero}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{o.descricao || "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">
+                          <div className="flex flex-col">
+                            <span>#{o.frete_ml || o.numero}</span>
+                            {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          <div className="flex flex-col">
+                            <span>{o.descricao || "-"}</span>
+                            {o.previsao_carregamento && (
+                              <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Previsão: {format(new Date(o.previsao_carregamento), "dd/MM HH:mm")}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
                         <TableCell className="text-center">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
                           {o.atribuido_para ? (responsavel?.profile?.full_name || "—") : <span className="text-muted-foreground">Qualquer</span>}
                         </TableCell>
-                        <TableCell><Badge variant="outline" className={sb.cls}>{sb.label}</Badge></TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`${sb.cls} gap-1`}>
+                            {o.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : sb.label}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {podeExecutar && (
@@ -1045,20 +1065,38 @@ export const OrdensFullTab = () => {
               </TableHeader>
               <TableBody>
                 {fullOrders?.map((fo) => {
-                  const matchingOrder = ordens?.find(o => o.descricao?.includes(fo.pdf_frete_id));
+                  const matchingOrder = ordens?.find(o => o.frete_ml === fo.frete_ml || o.descricao?.includes(fo.pdf_frete_id || ""));
                   const progress = matchingOrder ? (matchingOrder.total_itens_separados / (matchingOrder.total_itens || 1)) * 100 : 0;
                   
                   return (
                     <TableRow key={fo.id}>
-                      <TableCell className="font-mono font-bold text-primary">#{fo.frete_ml || fo.pdf_frete_id || "—"}</TableCell>
+                      <TableCell className="font-mono font-bold text-primary">
+                        <div className="flex flex-col">
+                          <span>#{fo.frete_ml || fo.pdf_frete_id || "—"}</span>
+                          {fo.previsao_carregamento && (
+                            <span className="text-[10px] text-blue-600 font-bold flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {format(new Date(fo.previsao_carregamento), "dd/MM HH:mm")}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={
-                          fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
-                          fo.status === 'completo' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
-                          'bg-amber-500/10 text-amber-600 border-amber-200'
-                        }>
-                          {fo.status || 'separacao'}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant="outline" className={
+                            fo.status === 'enviado' ? 'bg-emerald-500 text-white border-emerald-200' :
+                            fo.status === 'aguardando_carregamento' ? 'bg-purple-100 text-purple-700 border-purple-200 font-bold' :
+                            fo.status === 'separando' ? 'bg-amber-100 text-amber-700' :
+                            'bg-gray-100 text-gray-600'
+                          }>
+                            {fo.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : 
+                             fo.status === 'separando' ? '📦 Separando' :
+                             fo.status === 'pdf_carregado' ? '📄 PDF Lido' :
+                             fo.status}
+                          </Badge>
+                          {fo.separado_em && (
+                            <span className="text-[10px] text-emerald-600 font-medium">Separado ✅</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {matchingOrder ? (
@@ -1079,7 +1117,7 @@ export const OrdensFullTab = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(fo.created_at).toLocaleString("pt-BR")}
+                        {format(new Date(fo.created_at), "dd/MM/yyyy HH:mm")}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

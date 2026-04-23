@@ -572,6 +572,9 @@ export type Database = {
           frete_ml: string | null
           id: string
           pdf_frete_id: string | null
+          previsao_carregamento: string | null
+          separado_em: string | null
+          separado_por: string | null
           status: string | null
           updated_at: string | null
         }
@@ -581,6 +584,9 @@ export type Database = {
           frete_ml?: string | null
           id?: string
           pdf_frete_id?: string | null
+          previsao_carregamento?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -590,6 +596,9 @@ export type Database = {
           frete_ml?: string | null
           id?: string
           pdf_frete_id?: string | null
+          previsao_carregamento?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1227,6 +1236,9 @@ export type Database = {
           iniciada_em: string | null
           numero: string
           prazo: string | null
+          previsao_carregamento: string | null
+          separado_em: string | null
+          separado_por: string | null
           status: Database["public"]["Enums"]["ordem_full_status"]
           total_itens: number
           total_itens_separados: number | null
@@ -1247,6 +1259,9 @@ export type Database = {
           iniciada_em?: string | null
           numero?: string
           prazo?: string | null
+          previsao_carregamento?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
           status?: Database["public"]["Enums"]["ordem_full_status"]
           total_itens?: number
           total_itens_separados?: number | null
@@ -1267,6 +1282,9 @@ export type Database = {
           iniciada_em?: string | null
           numero?: string
           prazo?: string | null
+          previsao_carregamento?: string | null
+          separado_em?: string | null
+          separado_por?: string | null
           status?: Database["public"]["Enums"]["ordem_full_status"]
           total_itens?: number
           total_itens_separados?: number | null

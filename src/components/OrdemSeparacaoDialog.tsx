@@ -5,17 +5,20 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play } from "lucide-react";
+import { ScanBarcode, Video, Square, Circle, CheckCircle2, AlertTriangle, Loader2, Play, Printer, Box, Clock, Calendar, ArrowRight, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import {
   useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada, useMarcarOrdemEnviada,
-  itemStatusBadge, ordemStatusBadge, type OrdemItem,
+  itemStatusBadge, ordemStatusBadge, type OrdemItem, useUpdateFullOrder
 } from "@/hooks/useOrdensFull";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { useNavigate } from "react-router-dom";
+import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Props {
   ordemId: string | null;
@@ -32,6 +35,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateStatus = useUpdateOrdemStatus();
   const marcarSeparada = useMarcarOrdemSeparada();
   const marcarEnviada = useMarcarOrdemEnviada();
+  const updateFullOrder = useUpdateFullOrder();
   const recorder = useFullRecorder();
 
   const [askRecord, setAskRecord] = useState(false);
@@ -43,8 +47,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const ordem = data?.ordem;
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
-  const isSeparada = ordem?.status === "separada";
-  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada" || isSeparada;
+  const isSeparada = ordem?.status === "separada" || ordem?.status === "aguardando_carregamento";
+  const isView = ordem?.status === "concluida" || ordem?.status === "enviado" || ordem?.status === "cancelada" || isSeparada;
 
   useEffect(() => {
     if (!ordemId) {
@@ -178,19 +182,64 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   return (
     <>
       <Dialog open={!!ordemId} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <span>Ordem #{ordem?.frete_ml || ordem?.numero}</span>
-              {ordem && <Badge variant="outline" className={ordemStatusBadge(ordem.status).cls}>{ordemStatusBadge(ordem.status).label}</Badge>}
-              {recorder.status === "recording" && (
-                <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse ml-auto">
-                  <Circle className="h-2 w-2 mr-1 fill-current" /> REC {formatDuration(recorder.seconds)}
-                </Badge>
-              )}
-            </DialogTitle>
-            <DialogDescription>{ordem?.descricao || "Sem descrição"}</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[92vh] overflow-y-auto overflow-x-hidden p-0">
+          {/* BARRA DE PROGRESSO DE STATUS NO TOPO */}
+          <div className="bg-gray-50 border-b p-6">
+            <div className="flex items-center justify-between max-w-2xl mx-auto">
+              {[
+                { label: 'PDF', icon: Box, active: true },
+                { label: 'Separando', icon: ScanBarcode, active: (ordem?.status === 'separando' || ordem?.status === 'em_separacao' || isSeparada || ordem?.status === 'concluida') },
+                { label: 'Aguardando', icon: Truck, active: (ordem?.status === 'aguardando_carregamento' || ordem?.status === 'concluida' || isSeparada) },
+                { label: 'Carregando', icon: Video, active: (ordem?.status === 'carregando' || ordem?.status === 'concluida') },
+                { label: 'Enviado', icon: CheckCircle2, active: (ordem?.status === 'enviado' || ordem?.status === 'concluida') }
+              ].map((step, idx, arr) => (
+                <div key={step.label} className="flex items-center flex-1 last:flex-none">
+                  <div className="flex flex-col items-center relative">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs z-10 border-2 transition-all ${
+                      step.active 
+                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-md' 
+                        : 'bg-white border-gray-200 text-gray-400'
+                    }`}>
+                      <step.icon className="h-4 w-4" />
+                    </div>
+                    <span className={`text-[10px] mt-1 font-bold uppercase ${step.active ? 'text-emerald-600' : 'text-gray-400'}`}>
+                      {step.label}
+                    </span>
+                  </div>
+                  {idx < arr.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-2 -mt-4 transition-all ${
+                      arr[idx+1].active ? 'bg-emerald-500' : 'bg-gray-200'
+                    }`} />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <DialogHeader>
+              <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <span className="text-2xl font-black">Frete #{ordem?.frete_ml || ordem?.numero}</span>
+                <div className="flex gap-2">
+                  {ordem && <Badge variant="outline" className={`${ordemStatusBadge(ordem.status).cls} px-3 py-1 text-xs font-bold uppercase`}>
+                    {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status).label}
+                  </Badge>}
+                  {recorder.status === "recording" && (
+                    <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse">
+                      <Circle className="h-2 w-2 mr-1 fill-current" /> REC {formatDuration(recorder.seconds)}
+                    </Badge>
+                  )}
+                </div>
+              </DialogTitle>
+              <DialogDescription className="text-base">
+                {ordem?.descricao || "Sem descrição"}
+                {ordem?.previsao_carregamento && (
+                  <span className="block mt-1 font-bold text-blue-600 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" /> Previsão: {format(new Date(ordem.previsao_carregamento), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
 
           {isLoading ? (
             <div className="py-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>
@@ -273,21 +322,53 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
               {isView && <ItensTable itens={itens} readonly />}
             </div>
           )}
+          </div>
 
-          <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-3">
-            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
-            {isExec && (
-              <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="w-full sm:w-auto">
-                {marcarSeparada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
+          <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 p-6 border-t bg-gray-50/50">
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} className="gap-2">
+                <ArrowRight className="h-4 w-4 rotate-180" /> Fechar
               </Button>
-            )}
-            {isSeparada && (
-              <Button onClick={marcarComoEnviado} disabled={marcarEnviada.isPending} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none">
-                {marcarEnviada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Marcar como enviado
-              </Button>
-            )}
+              {isView && (
+                <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+                  <Printer className="h-4 w-4" /> Imprimir Relatório
+                </Button>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2">
+              {ordem && (ordem.status === 'aguardando_carregamento' || isSeparada) && (
+                <OrderRecordingSystem 
+                  pedidoId={ordem.id} 
+                  orderNumber={ordem.frete_ml || ordem.numero} 
+                  trigger={
+                    <Button 
+                      variant="default" 
+                      className="gap-2 bg-red-600 hover:bg-red-700 text-white font-bold h-11 px-6 shadow-lg shadow-red-500/20"
+                    >
+                      <Video className="h-5 w-5 animate-pulse" /> Iniciar Gravação de Carregamento
+                    </Button>
+                  }
+                />
+              )}
+
+              {isExec && (
+                <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="gap-2 h-11 px-6">
+                  {marcarSeparada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <CheckCircle2 className="h-5 w-5" /> Concluir separação
+                </Button>
+              )}
+              {(isSeparada || ordem?.status === 'aguardando_carregamento') && (
+                <Button 
+                  onClick={marcarComoEnviado} 
+                  disabled={marcarEnviada.isPending} 
+                  className="gap-2 h-11 px-8 bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-lg shadow-emerald-500/20 font-black uppercase tracking-tight"
+                >
+                  {marcarEnviada.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <CheckCircle2 className="h-5 w-5" /> Marcar como Enviado
+                </Button>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
