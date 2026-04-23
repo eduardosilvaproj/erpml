@@ -270,7 +270,29 @@ export const useLimparEnvioPendente = () => {
 export const useDeleteOrdem = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, frete_ml }: { id: string, frete_ml?: string | null }) => {
+      // 1. Itens da ordem
+      const { error: errorItens } = await supabase
+        .from("ordens_full_itens")
+        .delete()
+        .eq("ordem_id", id);
+      if (errorItens) throw errorItens;
+
+      // 2. Gravações vinculadas
+      await supabase
+        .from("order_recordings")
+        .delete()
+        .eq("pedido_id", id);
+
+      // 3. Registro na tabela full_orders (se houver frete_ml)
+      if (frete_ml) {
+        await supabase
+          .from("full_orders")
+          .delete()
+          .eq("frete_ml", frete_ml);
+      }
+
+      // 4. A própria ordem
       const { error } = await supabase.from("ordens_full").delete().eq("id", id);
       if (error) throw error;
     },
