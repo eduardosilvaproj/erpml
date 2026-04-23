@@ -1225,7 +1225,9 @@ export type Database = {
           prazo: string | null
           status: Database["public"]["Enums"]["ordem_full_status"]
           total_itens: number
+          total_itens_separados: number | null
           total_produtos: number
+          total_produtos_separados: number | null
           updated_at: string
         }
         Insert: {
@@ -1242,7 +1244,9 @@ export type Database = {
           prazo?: string | null
           status?: Database["public"]["Enums"]["ordem_full_status"]
           total_itens?: number
+          total_itens_separados?: number | null
           total_produtos?: number
+          total_produtos_separados?: number | null
           updated_at?: string
         }
         Update: {
@@ -1259,7 +1263,9 @@ export type Database = {
           prazo?: string | null
           status?: Database["public"]["Enums"]["ordem_full_status"]
           total_itens?: number
+          total_itens_separados?: number | null
           total_produtos?: number
+          total_produtos_separados?: number | null
           updated_at?: string
         }
         Relationships: [
