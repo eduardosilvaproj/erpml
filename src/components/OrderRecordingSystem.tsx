@@ -255,14 +255,16 @@ function RecordingSection({
       <div className="border rounded-lg p-4 space-y-4">
         {recordings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-4 bg-muted/20 rounded-md border border-dashed">
-            <Button 
-              variant="outline" 
-              className="gap-2" 
-              onClick={onStartRecording}
-              disabled={isRecording}
-            >
-              <Play className="h-4 w-4" /> Iniciar gravação de {title.toLowerCase()}
-            </Button>
+            {!viewOnly && (
+              <Button 
+                variant="outline" 
+                className="gap-2" 
+                onClick={onStartRecording}
+                disabled={isRecording}
+              >
+                <Play className="h-4 w-4" /> Iniciar gravação de {title.toLowerCase()}
+              </Button>
+            )}
             <p className="text-xs text-muted-foreground mt-2">Nenhuma gravação salva</p>
           </div>
         ) : (
@@ -283,25 +285,29 @@ function RecordingSection({
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => window.open(rec.video_url, "_blank")}>
+                  <Button variant="ghost" size="icon" onClick={() => onPlay(rec.video_url)}>
                     <Play className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(rec)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!viewOnly && (
+                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => onDelete(rec)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
             
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full gap-2" 
-              onClick={onStartRecording}
-              disabled={isRecording}
-            >
-              <Play className="h-4 w-4" /> Nova gravação de {title.toLowerCase()}
-            </Button>
+            {!viewOnly && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2" 
+                onClick={onStartRecording}
+                disabled={isRecording}
+              >
+                <Play className="h-4 w-4" /> Nova gravação de {title.toLowerCase()}
+              </Button>
+            )}
           </div>
         )}
       </div>
