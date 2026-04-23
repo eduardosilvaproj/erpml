@@ -1498,8 +1498,11 @@ export const OrdensFullTab = () => {
   );
 };
 
-const SummaryCard = ({ icon: Icon, label, value, color }: any) => (
-  <Card>
+const SummaryCard = ({ icon: Icon, label, value, color, onClick, isSelected }: any) => (
+  <Card 
+    className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
+    onClick={onClick}
+  >
     <CardContent className="p-4">
       <div className="flex items-center gap-3">
         <Icon className={`h-5 w-5 ${color}`} />
