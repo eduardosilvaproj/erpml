@@ -322,6 +322,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
               {isView && <ItensTable itens={itens} readonly />}
             </div>
           )}
+          </div>
 
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 p-6 border-t bg-gray-50/50">
             <div className="flex gap-2">
