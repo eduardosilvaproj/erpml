@@ -48,6 +48,7 @@ export const OrdensFullTab = () => {
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
   const updateStatus = useUpdateOrdemStatus();
+  const marcarEnviada = useMarcarOrdemEnviada();
   const { data: fullOrders, isLoading: isLoadingFull } = useQuery({
     queryKey: ["full-orders", companyId],
     queryFn: async () => {
