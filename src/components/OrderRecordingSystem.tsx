@@ -57,7 +57,7 @@ export function OrderRecordingSystem({ pedidoId, orderNumber, freteMl, trigger }
     if (isRecording) {
       stopRecording();
     } else {
-      handleStartRecording("separacao");
+      handleStartRecording("carregamento");
     }
   };
 
