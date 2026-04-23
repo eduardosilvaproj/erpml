@@ -119,9 +119,9 @@ const Separacao = () => {
   }, []);
 
   const getStatusBadge = (item: SeparacaoItem) => {
-    if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white"><CheckCircle2 className="h-3 w-3" /> Completo</Badge>;
-    if (item.status === "parcial") return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 gap-1"><RefreshCcw className="h-3 w-3 animate-spin-slow" /> Faltam {item.neededQty - item.scannedQty}</Badge>;
-    return <Badge variant="outline" className="text-muted-foreground gap-1"><Box className="h-3 w-3" /> Pendente</Badge>;
+    if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white">✅ Completo</Badge>;
+    if (item.status === "parcial") return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 gap-1">🔄 Faltam {item.neededQty - item.scannedQty}</Badge>;
+    return <Badge variant="outline" className="text-muted-foreground gap-1">⏳ Pendente</Badge>;
   };
 
   return (
