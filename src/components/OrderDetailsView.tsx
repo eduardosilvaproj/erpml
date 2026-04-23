@@ -42,23 +42,37 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
   useEffect(() => {
     async function fetchResponsavel() {
       if (ordem?.separado_por) {
-        // Se for um UUID, busca o nome
+        // Se for um UUID, busca o nome no perfil
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ordem.separado_por);
         if (isUUID) {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, name' as any)
+            .select('full_name')
             .eq('id', ordem.separado_por)
             .maybeSingle();
           
-          if (profile) {
-            setResponsavelNome((profile as any).full_name || (profile as any).name || 'Administrador');
+          if (profile?.full_name) {
+            setResponsavelNome(profile.full_name);
           } else {
-            setResponsavelNome(ordem.separado_por);
+            // Tenta buscar no auth como fallback
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user && user.id === ordem.separado_por) {
+              setResponsavelNome(user.user_metadata?.full_name || user.email?.split('@')[0] || 'Administrador');
+            } else {
+              setResponsavelNome('Administrador');
+            }
           }
         } else {
           setResponsavelNome(ordem.separado_por);
         }
+      } else if (ordem?.atribuido_para) {
+         // Se não foi separado ainda, mostra quem está atribuído
+         const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', ordem.atribuido_para)
+            .maybeSingle();
+         setResponsavelNome(profile?.full_name || 'Administrador');
       } else {
         setResponsavelNome("Administrador");
       }
