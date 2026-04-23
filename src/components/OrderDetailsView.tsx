@@ -161,9 +161,10 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
                           <div>
                             <p className="text-sm text-muted-foreground leading-none mb-1">Responsável</p>
                             <p className="text-base font-bold text-gray-900">
-                              {ordem.separado_por || "Administrador"}
+                              {responsavelNome || "Administrador"}
                             </p>
                           </div>
+
                         </div>
 
                         <Button variant="outline" className="w-full sm:w-auto gap-2 border-dashed h-12" onClick={() => window.print()}>
