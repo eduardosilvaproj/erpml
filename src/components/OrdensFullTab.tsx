@@ -614,8 +614,17 @@ export const OrdensFullTab = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-amber-500 font-bold whitespace-nowrap text-xs">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>⚠️ Não encontrado</span>
+                          {isKit(item.pdfName) ? (
+                            <>
+                              <Gift className="h-3 w-3" />
+                              <span>🎁 Sugestão: Kit</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-3 w-3" />
+                              <span>⚠️ Não encontrado</span>
+                            </>
+                          )}
                         </div>
                       )}
                     </TableCell>
