@@ -803,37 +803,60 @@ export const OrdensFullTab = () => {
                 <TableRow>
                   <TableHead>PDF Frete ID</TableHead>
                   <TableHead>Status Atual</TableHead>
+                  <TableHead>Progresso (Bipagem)</TableHead>
                   <TableHead>Data Criação</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fullOrders?.map((fo) => (
-                  <TableRow key={fo.id}>
-                    <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={
-                        fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
-                        fo.status === 'completo' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
-                        'bg-amber-500/10 text-amber-600 border-amber-200'
-                      }>
-                        {fo.status || 'separacao'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(fo.created_at).toLocaleString("pt-BR")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => {
-                        const matching = ordens?.find(o => o.descricao?.includes(fo.pdf_frete_id));
-                        if (matching) setViewOrdemId(matching.id);
-                        else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
-                      }}>
-                        Ver Detalhes
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {fullOrders?.map((fo) => {
+                  const matchingOrder = ordens?.find(o => o.descricao?.includes(fo.pdf_frete_id));
+                  const progress = matchingOrder ? (matchingOrder.total_itens_separados / (matchingOrder.total_itens || 1)) * 100 : 0;
+                  
+                  return (
+                    <TableRow key={fo.id}>
+                      <TableCell className="font-mono font-bold text-primary">{fo.pdf_frete_id || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          fo.status === 'enviado' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-200' :
+                          fo.status === 'completo' ? 'bg-blue-500/10 text-blue-600 border-blue-200' :
+                          'bg-amber-500/10 text-amber-600 border-amber-200'
+                        }>
+                          {fo.status || 'separacao'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {matchingOrder ? (
+                          <div className="space-y-1 w-[150px]">
+                            <div className="flex justify-between text-[10px] font-medium">
+                              <span>{matchingOrder.total_itens_separados} / {matchingOrder.total_itens} un.</span>
+                              <span>{Math.round(progress)}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all duration-500" 
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">Ordem não vinculada</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(fo.created_at).toLocaleString("pt-BR")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          if (matchingOrder) setViewOrdemId(matchingOrder.id);
+                          else toast({ title: "Ordem correspondente não encontrada", variant: "destructive" });
+                        }}>
+                          Ver Detalhes
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
