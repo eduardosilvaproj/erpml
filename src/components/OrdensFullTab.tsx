@@ -892,13 +892,13 @@ export const OrdensFullTab = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Eye className="h-4 w-4 mr-2" /> Ver detalhes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Calendar className="h-4 w-4 mr-2" /> Editar previsão de coleta
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setViewOrdemId(o.id)}>
+                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
                                     <Truck className="h-4 w-4 mr-2" /> Iniciar carregamento
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => window.print()}>
