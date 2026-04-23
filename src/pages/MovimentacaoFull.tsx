@@ -848,11 +848,175 @@ const MovimentacaoFull = () => {
             </Card>
           )}
 
-          {/* ... Rest of the envio tab content (Stats, Scan, Table etc.) */}
-          {/* I'll use ellipsis but keep the structure intact for this move */}
-          ...
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg"><Package className="h-5 w-5 text-blue-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Produtos</p>
+                  <p className="text-xl font-bold">{items.length}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-emerald-500/10 rounded-lg"><Boxes className="h-5 w-5 text-emerald-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Total Unidades</p>
+                  <p className="text-xl font-bold">{totalQty}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg"><Truck className="h-5 w-5 text-amber-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Total Caixas</p>
+                  <p className="text-xl font-bold">{totalBoxes}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-purple-500/10 rounded-lg"><Video className="h-5 w-5 text-purple-500" /></div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Status REC</p>
+                  <p className="text-xl font-bold">{isRecording ? "Gravando" : "Ocioso"}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card>
-            {/* ... table etc ... */}
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <ScanBarcode className="h-5 w-5 text-primary" /> Bipar Produtos para Envio
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="box-mode" className="text-sm cursor-pointer">Modo Caixas</Label>
+                <Switch id="box-mode" checked={boxModeEnabled} onCheckedChange={setBoxModeEnabled} />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <BarcodeScannerInput
+                    ref={scanInputRef}
+                    value={scanBuffer}
+                    onChange={setScanBuffer}
+                    onScan={handleScan}
+                    placeholder="Bipe o EAN ou SKU do produto..."
+                    autoFocus
+                  />
+                </div>
+                {lastScan && (
+                  <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${
+                    lastScan.success ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-destructive/10 border-destructive/30 text-destructive"
+                  }`}>
+                    {lastScan.success ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                    <span className="text-sm font-medium">{lastScan.message}</span>
+                  </div>
+                )}
+              </div>
+
+              {items.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/30">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <ScanBarcode className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-sm font-medium">Nenhum item bipado</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Comece a bipar os produtos para preparar o envio FULL.</p>
+                </div>
+              ) : (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead>Produto / SKU</TableHead>
+                        <TableHead className="text-center">Qtd</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.productId}>
+                          <TableCell>
+                            <div className="font-medium text-sm">{item.productName}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{item.productSku}</div>
+                            {item.barcode && <div className="text-[10px] text-muted-foreground">EAN: {item.barcode}</div>}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(item.productId, -1)}><Minus className="h-3 w-3" /></Button>
+                              <span className="font-bold text-lg w-8">{item.quantity}</span>
+                              <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => updateQty(item.productId, 1)}><Plus className="h-3 w-3" /></Button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => removeItem(item.productId)}><Trash2 className="h-4 w-4" /></Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {items.length > 0 && (
+            <div className="flex justify-end gap-3">
+               <Button variant="outline" onClick={() => { if(confirm("Limpar lista?")) setItems([]); setBoxConfigs({}); }}>Limpar Lista</Button>
+               <Button size="lg" className="px-10 gap-2" onClick={handleCreateOrder} disabled={createOrder.isPending}>
+                 {createOrder.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Truck className="h-4 w-4" />}
+                 Gerar Ordem de Envio FULL
+               </Button>
+            </div>
+          )}
+
+          {/* Lista de Ordens Recentes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" /> Histórico Recente de Envios
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orders && orders.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader className="bg-muted/50">
+                      <TableRow>
+                        <TableHead>Nº Ordem</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.slice(0, 10).map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString("pt-BR")}</TableCell>
+                          <TableCell>{statusBadge(order.status)}</TableCell>
+                          <TableCell className="text-right">
+                             <Button size="sm" variant="ghost" onClick={() => {
+                               setRecordingMode("despacho");
+                               setDespachoOrderId({ id: order.id, number: order.order_number });
+                               setShowAskRecord(true);
+                             }}>
+                               <Video className="h-4 w-4 text-red-500 mr-1" /> Gravar Despacho
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-center py-6 text-muted-foreground">Nenhum envio realizado recentemente.</p>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
 
