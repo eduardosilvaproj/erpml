@@ -47,7 +47,7 @@ const Separacao = () => {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
-  const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; description: string | null } | null>(null);
+  const [orderInfo, setOrderInfo] = useState<{ id: string; number: string; frete_ml?: string | null; description: string | null } | null>(null);
   const [items, setItems] = useState<SeparacaoItem[]>([]);
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
