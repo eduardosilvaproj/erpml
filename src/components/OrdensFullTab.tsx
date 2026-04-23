@@ -25,7 +25,7 @@ import { useMyCompany, useCompanyMembers } from "@/hooks/useCompanyData";
 import { useProducts } from "@/hooks/useProductData";
 import {
   useOrdensFull, useCreateOrdemFull, useDeleteOrdem, useUpdateOrdemStatus, useMarcarOrdemEnviada,
-  ordemStatusBadge, type OrdemFull,
+  useDeleteFullOrder, ordemStatusBadge, type OrdemFull,
 } from "@/hooks/useOrdensFull";
 import { OrdemSeparacaoDialog } from "@/components/OrdemSeparacaoDialog";
 import * as pdfjsLib from "pdfjs-dist";
@@ -53,6 +53,7 @@ export const OrdensFullTab = () => {
   const { data: ordens, isLoading } = useOrdensFull();
   const createOrdem = useCreateOrdemFull();
   const deleteOrdem = useDeleteOrdem();
+  const deleteFullOrder = useDeleteFullOrder();
   const updateStatus = useUpdateOrdemStatus();
   const marcarEnviada = useMarcarOrdemEnviada();
   const { data: fullOrders, isLoading: isLoadingFull } = useQuery({
@@ -439,8 +440,8 @@ export const OrdensFullTab = () => {
   };
 
   const handleDelete = async (o: OrdemFull) => {
-    if (o.status !== "rascunho") {
-      toast({ title: "Apenas rascunhos podem ser excluídos", variant: "destructive" });
+    if (o.status !== "rascunho" && o.status !== "cancelada") {
+      toast({ title: "Apenas rascunhos ou ordens canceladas podem ser excluídos", variant: "destructive" });
       return;
     }
     if (!confirm(`Excluir a ordem ${o.numero}?`)) return;
@@ -854,7 +855,7 @@ export const OrdensFullTab = () => {
                                 <X className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             )}
-                            {canManageOrders && o.status === "rascunho" && (
+                            {canManageOrders && (o.status === "rascunho" || o.status === "cancelada") && (
                               <Button size="icon" variant="ghost" title="Excluir" onClick={() => handleDelete(o)}>
                                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
@@ -1104,6 +1105,25 @@ export const OrdensFullTab = () => {
                           }}>
                             Ver Detalhes
                           </Button>
+                          {canManageOrders && (
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 text-destructive"
+                              onClick={async () => {
+                                if (confirm("Excluir registro de rastreamento deste pedido FULL?")) {
+                                  try {
+                                    await deleteFullOrder.mutateAsync(fo.id);
+                                    toast({ title: "Registro excluído" });
+                                  } catch (err: any) {
+                                    toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+                                  }
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

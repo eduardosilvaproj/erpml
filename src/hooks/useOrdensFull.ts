@@ -257,6 +257,19 @@ export const useDeleteOrdem = () => {
   });
 };
 
+export const useDeleteFullOrder = () => {
+  const qc = useQueryClient();
+  const companyId = useCompanyId();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("full_orders").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["full-orders", companyId] }),
+  });
+};
+
+
 export const ordemStatusBadge = (s: OrdemStatus) => {
   const map: Record<OrdemStatus, { label: string; cls: string }> = {
     rascunho: { label: "Rascunho", cls: "bg-muted text-muted-foreground" },
