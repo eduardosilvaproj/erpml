@@ -10,6 +10,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
@@ -205,6 +215,17 @@ export const OrdensFullTab = () => {
   const [orderToDelete, setOrderToDelete] = useState<OrdemFull | null>(null);
   const [deleteOption, setDeleteOption] = useState<"cancel" | "delete">("cancel");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [duplicateCheck, setDuplicateCheck] = useState<{
+    isOpen: boolean;
+    existingId: string;
+    existingStatus: string;
+    freteNumero: string;
+  }>({
+    isOpen: false,
+    existingId: "",
+    existingStatus: "",
+    freteNumero: "",
+  });
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
@@ -397,19 +418,15 @@ export const OrdensFullTab = () => {
     }
   };
 
-  const confirmParsedOrder = async () => {
+  const executeCreateOrdem = async (forcedNumero?: string) => {
     if (!parsedData) return;
-
     const validItems = parsedData.items.filter(i => i.product);
-    if (validItems.length === 0) {
-      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
-      return;
-    }
+    const freteNumero = forcedNumero || parsedData.shippingNumber;
 
     try {
       await createOrdem.mutateAsync({
-        descricao: `Frete #${parsedData.shippingNumber}`,
-        frete_ml: parsedData.shippingNumber,
+        descricao: `Frete #${freteNumero}`,
+        frete_ml: freteNumero,
         prazo: null,
         atribuido_para: null,
         itens: validItems.map(i => ({
@@ -420,11 +437,11 @@ export const OrdensFullTab = () => {
       });
 
       // Registrar na tabela full_orders para rastreamento
-      if (companyId && parsedData.shippingNumber) {
+      if (companyId && freteNumero) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
-          frete_ml: parsedData.shippingNumber,
-          pdf_frete_id: parsedData.shippingNumber,
+          frete_ml: freteNumero,
+          pdf_frete_id: freteNumero,
           status: "separacao"
         });
       }
@@ -432,8 +449,44 @@ export const OrdensFullTab = () => {
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
       setParsedData(null);
+      setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
     } catch (err: any) {
       toast({ title: "Erro ao criar ordem", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const confirmParsedOrder = async () => {
+    if (!parsedData) return;
+
+    const validItems = parsedData.items.filter(i => i.product);
+    if (validItems.length === 0) {
+      toast({ title: "Nenhum produto vinculado", description: "Vincule os produtos do PDF ao estoque antes de continuar.", variant: "destructive" });
+      return;
+    }
+
+    // 1. Verificar se o frete já existe antes de criar
+    try {
+      const { data: existing, error } = await supabase
+        .from('full_orders')
+        .select('id, status')
+        .eq('frete_ml', parsedData.shippingNumber)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (existing) {
+        setDuplicateCheck({
+          isOpen: true,
+          existingId: existing.id,
+          existingStatus: existing.status,
+          freteNumero: parsedData.shippingNumber
+        });
+        return;
+      }
+
+      await executeCreateOrdem();
+    } catch (err: any) {
+      toast({ title: "Erro ao verificar frete existente", description: err.message, variant: "destructive" });
     }
   };
 
@@ -1517,7 +1570,42 @@ export const OrdensFullTab = () => {
             <DialogDescription className="py-2">
               <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
                 Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
-              </div>
+      <AlertDialog open={duplicateCheck.isOpen} onOpenChange={(open) => setDuplicateCheck(prev => ({ ...prev, isOpen: open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Frete Duplicado</AlertDialogTitle>
+            <AlertDialogDescription>
+              O frete #{duplicateCheck.freteNumero} já existe com o status "{duplicateCheck.existingStatus}". O que deseja fazer?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                const existingOrder = ordens?.find(o => o.frete_ml === duplicateCheck.freteNumero || o.numero === duplicateCheck.freteNumero);
+                if (existingOrder) {
+                  handleViewOrder(existingOrder);
+                } else {
+                  toast({ title: "Ordem não encontrada na lista atual", variant: "destructive" });
+                }
+                setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
+              }}
+            >
+              Abrir ordem existente
+            </Button>
+            <AlertDialogAction 
+              onClick={() => {
+                const novoNumero = `${duplicateCheck.freteNumero}-${Date.now()}`;
+                executeCreateOrdem(novoNumero);
+              }}
+            >
+              Criar nova ordem mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
