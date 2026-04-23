@@ -31,6 +31,7 @@ type UnsplashPhoto = {
 const schema = z.object({
   sku: z.string().min(1, "SKU obrigatório").max(50),
   barcode: z.string().max(50).optional().or(z.literal("")),
+  ean: z.string().max(50).optional().or(z.literal("")),
   name: z.string().min(1, "Nome obrigatório").max(200),
   description: z.string().max(1000).optional().or(z.literal("")),
   category_id: z.string().optional().or(z.literal("")),
@@ -93,6 +94,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
     barcode: p?.barcode || "",
+    ean: (p as any)?.ean || p?.barcode || "",
     name: p?.name || "",
     description: p?.description || "",
     category_id: p?.category_id || "",
@@ -143,6 +145,14 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     return (data && data.length > 0) || false;
   };
 
+  const checkEanExists = async (ean: string, excludeId?: string): Promise<boolean> => {
+    if (!ean) return false;
+    let query = supabase.from("products").select("id").eq("ean", ean).limit(1);
+    if (excludeId) query = query.neq("id", excludeId);
+    const { data } = await query;
+    return (data && data.length > 0) || false;
+  };
+
   const uploadImageToStorage = async (sku: string): Promise<string | null> => {
     // Upload from file
     if (photoSource === "file" && selectedFileRef.current) {
@@ -187,6 +197,7 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     const formData: ProductFormData = {
       sku: values.sku,
       barcode: values.barcode || undefined,
+      ean: values.ean || values.barcode || undefined,
       name: values.name,
       description: values.description || undefined,
       category_id: values.category_id || undefined,
@@ -215,12 +226,23 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     form.reset();
   };
   const onSubmit = async (values: FormValues) => {
-    const exists = await checkSkuExists(values.sku, product?.id);
-    if (exists) {
+    const skuExists = await checkSkuExists(values.sku, product?.id);
+    if (skuExists) {
       const suggested = generateAlternativeSku(values.sku);
       setSkuConflict({ suggestedSku: suggested, pendingValues: values });
       return;
     }
+
+    const eanExists = await checkEanExists(values.ean || values.barcode || "", product?.id);
+    if (eanExists) {
+      toast({
+        title: "Código EAN já cadastrado",
+        description: "Já existe outro produto com este EAN/Código de barras.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     await submitProduct(values);
   };
 
