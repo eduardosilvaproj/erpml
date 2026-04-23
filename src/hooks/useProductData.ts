@@ -31,6 +31,7 @@ export type Product = {
   box_quantity: number | null;
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
+  product_alternative_gtins?: { gtin: string }[];
 };
 
 export type ProductFormData = {
