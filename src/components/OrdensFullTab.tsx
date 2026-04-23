@@ -855,7 +855,7 @@ export const OrdensFullTab = () => {
                                 <X className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             )}
-                            {canManageOrders && o.status === "rascunho" && (
+                            {canManageOrders && (o.status === "rascunho" || o.status === "cancelada") && (
                               <Button size="icon" variant="ghost" title="Excluir" onClick={() => handleDelete(o)}>
                                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
