@@ -1698,22 +1698,11 @@ const Conferencia = () => {
                 {adjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Ajustar estoque automaticamente
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => {
-                const headers = ["Produto", "SKU", "Qtd Sistema", "Qtd Contada", "Diferença", "Status"];
-                const rows = [
-                  ...results.ok.map(p => [p.name, p.sku, p.systemQty, p.scannedQty, 0, "OK"].join(",")),
-                  ...results.divergent.map(p => [p.name, p.sku, p.systemQty, p.scannedQty, p.scannedQty - p.systemQty, "Divergente"].join(",")),
-                  ...results.notFound.map(p => [p.name, p.sku, p.systemQty, 0, -p.systemQty, "Não encontrado"].join(",")),
-                ];
-                const csv = [headers.join(","), ...rows].join("\n");
-                const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a"); a.href = url;
-                a.download = `conferencia_${conferenceName || "resultado"}_${new Date().toISOString().slice(0, 10)}.csv`;
-                a.click(); URL.revokeObjectURL(url);
-                toast({ title: "Relatório exportado!" });
-              }}>
-                <Download className="h-4 w-4" /> Exportar relatório
+              <Button variant="outline" className="gap-2" onClick={handleExportCSV}>
+                <Download className="h-4 w-4" /> Exportar CSV
+              </Button>
+              <Button variant="outline" className="gap-2 border-primary/50 text-primary hover:bg-primary/5" onClick={handleExportPDF}>
+                <FileDown className="h-4 w-4" /> Exportar PDF (Audit)
               </Button>
               <Button variant="outline" onClick={() => setStep(2)} className="gap-2">
                 <ArrowLeft className="h-4 w-4" /> Voltar à bipagem
