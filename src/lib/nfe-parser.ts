@@ -185,7 +185,8 @@ export function matchProducts(
     if (normalizedXmlBarcode) {
       const exactMatch = dbProducts.find((dp) => 
         normalizeBarcode(dp.ean) === normalizedXmlBarcode || 
-        normalizeBarcode(dp.barcode) === normalizedXmlBarcode
+        normalizeBarcode(dp.barcode) === normalizedXmlBarcode ||
+        dp.product_alternative_gtins?.some(ag => normalizeBarcode(ag.gtin) === normalizedXmlBarcode)
       );
       if (exactMatch) {
         return {
