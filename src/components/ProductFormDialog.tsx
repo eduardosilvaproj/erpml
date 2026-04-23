@@ -56,6 +56,7 @@ interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
+  onSuccess?: (newProduct: any) => void;
 }
 
 function generateAlternativeSku(baseSku: string): string {
@@ -74,7 +75,7 @@ function generateRandomSku(): string {
   return result;
 }
 
-export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDialogProps) {
+export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: ProductFormDialogProps) {
   const { toast } = useToast();
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
@@ -225,9 +226,11 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
     };
 
     if (product) {
-      await updateProduct.mutateAsync({ id: product.id, data: formData });
+      const result = await updateProduct.mutateAsync({ id: product.id, data: formData });
+      onSuccess?.(result);
     } else {
-      await createProduct.mutateAsync(formData);
+      const result = await createProduct.mutateAsync(formData);
+      onSuccess?.(result);
     }
     resetDirty();
     onOpenChange(false);

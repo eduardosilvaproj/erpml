@@ -11,11 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
+import { KitFormDialog } from "@/components/KitFormDialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -82,8 +84,15 @@ export const OrdensFullTab = () => {
   } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [productFormOpen, setProductFormOpen] = useState(false);
+  const [kitFormOpen, setKitFormOpen] = useState(false);
   const [selectedProductData, setSelectedProductData] = useState<{ ean: string; name: string } | null>(null);
   const [editingItemIdx, setEditingItemIdx] = useState<number | null>(null);
+
+  const isKit = (name?: string) => {
+    if (!name) return false;
+    const keywords = ['Kit', 'Combo', 'Pack', 'Conjunto'];
+    return keywords.some(k => name.toLowerCase().includes(k.toLowerCase()));
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -208,13 +217,30 @@ export const OrdensFullTab = () => {
         .select("id, name, sku, barcode, ean, image_url, stock_physical, product_alternative_gtins(gtin)")
         .or(orConditions.join(","));
 
+      const { data: kits } = await supabase
+        .from("product_kits")
+        .select("id, name, sku, ean")
+        .or(`ean.in.(${eans.join(",")}),sku.in.(${eans.join(",")})`);
+
       const itemsWithProducts = uniqueItems.map(item => {
-        const product = products?.find(p => 
+        let product = products?.find(p => 
           p.ean === item.ean || 
           p.barcode === item.ean || 
           (item.sku && p.sku === item.sku) ||
           (p as any).product_alternative_gtins?.some((ag: any) => ag.gtin === item.ean)
         );
+
+        if (!product) {
+          const kit = kits?.find(k => k.ean === item.ean || k.sku === item.ean);
+          if (kit) {
+            product = {
+              ...kit,
+              image_url: null, // Kits don't have images in current schema
+              stock_physical: 0, // Kit stock is calculated from components
+              isKit: true
+            } as any;
+          }
+        }
         
         const isValid = item.ean.length >= 8 && item.ean.length <= 14;
         let error = !isValid ? "EAN Inválido" : undefined;
@@ -509,7 +535,7 @@ export const OrdensFullTab = () => {
                   <TableRow 
                     key={idx} 
                     className={`transition-colors cursor-pointer group ${
-                      !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-muted/50"
+                      !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "bg-emerald-500/5 hover:bg-emerald-500/10"
                     }`}
                     onClick={() => {
                       if (!item.product) {
@@ -527,26 +553,50 @@ export const OrdensFullTab = () => {
                     <TableCell>
                       {item.product ? (
                         <div className="flex items-center gap-2">
-                          {item.product.image_url && (
+                          {item.product.image_url ? (
                             <img src={item.product.image_url} alt="" className="h-6 w-6 rounded object-cover border" />
+                          ) : (
+                            <div className="h-6 w-6 rounded border flex items-center justify-center bg-muted">
+                              {(item.product as any).isKit ? <Gift className="h-3 w-3 text-primary" /> : <Package className="h-3 w-3 text-muted-foreground" />}
+                            </div>
                           )}
                           <span className="text-sm font-semibold">{item.product.name}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col gap-2">
                           <span className="text-muted-foreground/50">—</span>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="h-7 text-[10px] w-fit px-2 gap-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
-                              setProductFormOpen(true);
-                            }}
-                          >
-                            <Plus className="h-3 w-3" /> Cadastrar produto
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className={`h-7 text-[10px] w-fit px-2 gap-1 ${isKit(item.pdfName) ? "border-primary bg-primary/5 text-primary font-bold shadow-sm" : ""}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {isKit(item.pdfName) ? <Gift className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                                {isKit(item.pdfName) ? "🎁 Cadastrar Kit" : "➕ Cadastrar"}
+                                <ChevronDown className="h-3 w-3 ml-0.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingItemIdx(idx);
+                                setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
+                                setProductFormOpen(true);
+                              }}>
+                                <Package className="h-4 w-4 mr-2" /> Cadastrar como Produto
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingItemIdx(idx);
+                                setSelectedProductData({ ean: item.ean, name: item.pdfName || "" });
+                                setKitFormOpen(true);
+                              }}>
+                                <Gift className="h-4 w-4 mr-2" /> Cadastrar como Kit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </TableCell>
@@ -564,8 +614,17 @@ export const OrdensFullTab = () => {
                         </div>
                       ) : (
                         <div className="flex items-center gap-1 text-amber-500 font-bold whitespace-nowrap text-xs">
-                          <AlertCircle className="h-3 w-3" />
-                          <span>⚠️ Não encontrado</span>
+                          {isKit(item.pdfName) ? (
+                            <>
+                              <Gift className="h-3 w-3" />
+                              <span>🎁 Sugestão: Kit</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-3 w-3" />
+                              <span>⚠️ Não encontrado</span>
+                            </>
+                          )}
                         </div>
                       )}
                     </TableCell>
@@ -661,6 +720,22 @@ export const OrdensFullTab = () => {
         open={productFormOpen}
         onOpenChange={setProductFormOpen}
         product={selectedProductData ? { ean: selectedProductData.ean, name: selectedProductData.name } as any : null}
+        onSuccess={(registered) => {
+          if (editingItemIdx !== null) {
+            handleManualLink(editingItemIdx, registered);
+          }
+        }}
+      />
+      
+      <KitFormDialog
+        open={kitFormOpen}
+        onOpenChange={setKitFormOpen}
+        initialData={selectedProductData ? { ean: selectedProductData.ean, name: selectedProductData.name } : undefined}
+        onSuccess={(registered) => {
+          if (editingItemIdx !== null) {
+            handleManualLink(editingItemIdx, { ...registered, isKit: true });
+          }
+        }}
       />
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

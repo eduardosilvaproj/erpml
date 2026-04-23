@@ -7,6 +7,7 @@ export interface Kit {
   id: string;
   name: string;
   sku: string;
+  ean?: string;
   description: string | null;
   price: number;
   active: boolean;
@@ -28,6 +29,7 @@ export interface KitItem {
 export interface KitFormData {
   name: string;
   sku: string;
+  ean?: string;
   description?: string;
   price: number;
   items: { product_id: string; quantity: number }[];
