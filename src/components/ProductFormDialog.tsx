@@ -56,6 +56,7 @@ interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product | null;
+  onSuccess?: (newProduct: any) => void;
 }
 
 function generateAlternativeSku(baseSku: string): string {
