@@ -516,7 +516,12 @@ export const OrdensFullTab = () => {
                     className={`transition-colors cursor-pointer group ${
                       !item.product ? "bg-amber-500/5 hover:bg-amber-500/10" : "hover:bg-muted/50"
                     }`}
-                    onClick={() => !item.product && setEditingItemIdx(idx)}
+                    onClick={() => {
+                      if (!item.product) {
+                        setEditingItemIdx(idx);
+                        setProductSearch(item.ean);
+                      }
+                    }}
                   >
                     <TableCell className="font-mono text-xs text-muted-foreground">{item.ean}</TableCell>
                     <TableCell className="max-w-[180px]">
