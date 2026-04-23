@@ -565,6 +565,41 @@ export type Database = {
           },
         ]
       }
+      full_orders: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          id: string
+          pdf_frete_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          pdf_frete_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          id?: string
+          pdf_frete_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "full_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gravacoes_full: {
         Row: {
           company_id: string
