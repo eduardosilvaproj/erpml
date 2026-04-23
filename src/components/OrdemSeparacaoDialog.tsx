@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import {
-  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada,
+  useOrdemFull, useUpdateItemQuantity, useUpdateOrdemStatus, useMarcarOrdemSeparada, useMarcarOrdemEnviada,
   itemStatusBadge, ordemStatusBadge, type OrdemItem,
 } from "@/hooks/useOrdensFull";
 import { useFullRecorder, formatDuration } from "@/hooks/useFullRecorder";
@@ -31,6 +31,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateItem = useUpdateItemQuantity();
   const updateStatus = useUpdateOrdemStatus();
   const marcarSeparada = useMarcarOrdemSeparada();
+  const marcarEnviada = useMarcarOrdemEnviada();
   const recorder = useFullRecorder();
 
   const [askRecord, setAskRecord] = useState(false);
@@ -42,7 +43,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const ordem = data?.ordem;
   const itens = data?.itens || [];
   const isExec = ordem?.status === "em_separacao";
-  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada";
+  const isSeparada = ordem?.status === "separada";
+  const isView = ordem?.status === "concluida" || ordem?.status === "cancelada" || isSeparada;
 
   useEffect(() => {
     if (!ordemId) {
@@ -138,6 +140,29 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     }
   };
 
+  const marcarComoEnviado = async () => {
+    if (!ordem || !user || !companyId) return;
+    try {
+      if (recorder.status === "recording" || recorder.status === "paused") {
+        const blob = await recorder.stop();
+        if (blob) {
+          await recorder.uploadAndSave({
+            blob, companyId, userId: user.id,
+            envioId: ordem.id, orderNumber: ordem.numero,
+            tipo: "separacao",
+            duracaoSegundos: recorder.seconds,
+          });
+        }
+      }
+      await marcarEnviada.mutateAsync(ordem.id);
+      toast({ title: "✅ Ordem enviada!", description: "A ordem foi marcada como enviada ao FULL." });
+      onClose();
+      navigate("/movimentacao-full");
+    } catch (e: any) {
+      toast({ title: "Erro ao marcar como enviado", description: e.message, variant: "destructive" });
+    }
+  };
+
   const ajustarQtd = async (item: OrdemItem, delta: number) => {
     const newQtd = Math.max(0, item.qtd_separada + delta);
     await updateItem.mutateAsync({
@@ -181,6 +206,28 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 </div>
                 <Progress value={progress.pct} className="h-2" />
               </div>
+
+              {/* Alerta de conclusão e ação rápida */}
+              {allComplete && (isExec || isSeparada) && (
+                <div className="bg-emerald-500/15 border border-emerald-500/30 rounded-lg p-4 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="flex items-center gap-3 flex-1">
+                    <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Bipagem concluída!</p>
+                      <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80">Todos os itens desta ordem foram bipados com sucesso.</p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={marcarComoEnviado}
+                    disabled={marcarEnviada.isPending}
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-sm"
+                  >
+                    {marcarEnviada.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                    Marcar como enviado
+                  </Button>
+                </div>
+              )}
 
               {/* Iniciar */}
               {ordem.status === "aguardando" && (
@@ -233,6 +280,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
               <Button onClick={finalizar} disabled={marcarSeparada.isPending} className="w-full sm:w-auto">
                 {marcarSeparada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
                 <CheckCircle2 className="h-4 w-4 mr-1" /> Concluir separação
+              </Button>
+            )}
+            {isSeparada && (
+              <Button onClick={marcarComoEnviado} disabled={marcarEnviada.isPending} className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white border-none">
+                {marcarEnviada.isPending && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Marcar como enviado
               </Button>
             )}
           </DialogFooter>
