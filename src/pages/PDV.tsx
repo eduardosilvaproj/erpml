@@ -93,8 +93,8 @@ const PDV = () => {
     try {
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, price, stock_physical")
-        .or(`barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
+        .select("id, name, sku, barcode, ean, price, stock_physical")
+        .or(`ean.eq.${code.trim()},barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
 
       const product = products?.[0];
       if (!product) {

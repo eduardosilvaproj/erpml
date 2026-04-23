@@ -134,9 +134,14 @@ const Conferencia = () => {
     let q = supabase.from("products").select("*").limit(1);
     if (companyId) q = q.eq("company_id", companyId);
 
-    // Try barcode first
-    const { data: byBarcode, error: e1 } = await q.eq("barcode", trimmed).maybeSingle();
-    console.log("[Conferencia] por barcode:", byBarcode, e1);
+    // Try EAN first (Master Key)
+    const { data: byEan, error: e0 } = await q.eq("ean", trimmed).maybeSingle();
+    if (byEan) return byEan;
+
+    // Try barcode
+    let qB = supabase.from("products").select("*").limit(1);
+    if (companyId) qB = qB.eq("company_id", companyId);
+    const { data: byBarcode, error: e1 } = await qB.eq("barcode", trimmed).maybeSingle();
     if (byBarcode) return byBarcode;
 
     // Try SKU
@@ -439,7 +444,7 @@ const Conferencia = () => {
       if (companyId) q = q.eq("company_id", companyId);
       const { data: dbMatches } = await q
         .or(
-          variantList.flatMap(v => [`barcode.eq.${v}`, `gtin_cx.eq.${v}`, `sku.eq.${v}`, `sku_ml.eq.${v}`]).join(",")
+          variantList.flatMap(v => [`ean.eq.${v}`, `barcode.eq.${v}`, `gtin_cx.eq.${v}`, `sku.eq.${v}`, `sku_ml.eq.${v}`]).join(",")
         )
         .limit(5);
       if (dbMatches && dbMatches.length > 0) {
