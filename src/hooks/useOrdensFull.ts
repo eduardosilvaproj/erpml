@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 
-export type OrdemStatus = "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "enviada" | "cancelada";
+export type OrdemStatus = "pdf_carregado" | "separando" | "aguardando_carregamento" | "carregando" | "enviado" | "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "cancelada";
 export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 
 export interface OrdemFull {
@@ -18,6 +18,9 @@ export interface OrdemFull {
   gravacao_id: string | null;
   iniciada_em: string | null;
   concluida_em: string | null;
+  separado_em?: string | null;
+  separado_por?: string | null;
+  previsao_carregamento?: string | null;
   total_itens: number;
   total_produtos: number;
   total_itens_separados: number;
