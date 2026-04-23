@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
@@ -183,6 +183,11 @@ export const OrdensFullTab = () => {
   const [detailsOrdemId, setDetailsOrdemId] = useState<string | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [startingId, setStartingId] = useState<string | null>(null);
+
+  // Filtros e Ordenação
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [busca, setBusca] = useState('');
+  const [ordenacao, setOrdenacao] = useState('recente');
 
   // PDF Upload state
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -508,12 +513,59 @@ export const OrdensFullTab = () => {
     const list = ordens || [];
     const today = new Date().toDateString();
     return {
-      abertas: list.filter((o) => o.status !== "concluida" && o.status !== "cancelada").length,
+      abertas: list.filter((o) => o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado").length,
       aguardando: list.filter((o) => o.status === "aguardando").length,
       em_separacao: list.filter((o) => o.status === "em_separacao").length,
-      concluidas_hoje: list.filter((o) => o.status === "concluida" && o.concluida_em && new Date(o.concluida_em).toDateString() === today).length,
+      concluidas_hoje: list.filter((o) => (o.status === "concluida" || o.status === "enviado") && o.concluida_em && new Date(o.concluida_em).toDateString() === today).length,
     };
   }, [ordens]);
+
+  const ordensFiltradas = useMemo(() => {
+    if (!ordens) return [];
+    let list = [...ordens];
+
+    // Status Filter
+    if (filtroStatus !== 'todos') {
+      if (filtroStatus === 'abertas') {
+        list = list.filter(o => o.status !== 'concluida' && o.status !== 'cancelada' && o.status !== 'enviado');
+      } else if (filtroStatus === 'concluidas_hoje') {
+        const today = new Date().toDateString();
+        list = list.filter(o => (o.status === 'concluida' || o.status === 'enviado') && o.concluida_em && new Date(o.concluida_em).toDateString() === today);
+      } else if (filtroStatus === 'enviado') {
+        list = list.filter(o => o.status === 'enviado' || o.status === 'concluida');
+      } else {
+        list = list.filter(o => o.status === filtroStatus);
+      }
+    }
+
+    // Search Filter
+    if (busca) {
+      list = list.filter(o => 
+        (o.frete_ml && o.frete_ml.toLowerCase().includes(busca.toLowerCase())) ||
+        (o.numero && o.numero.toLowerCase().includes(busca.toLowerCase())) ||
+        (o.descricao && o.descricao.toLowerCase().includes(busca.toLowerCase()))
+      );
+    }
+
+    // Sorting
+    list.sort((a, b) => {
+      switch (ordenacao) {
+        case 'antigo':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'previsao':
+          if (!a.previsao_carregamento) return 1;
+          if (!b.previsao_carregamento) return -1;
+          return new Date(a.previsao_carregamento).getTime() - new Date(b.previsao_carregamento).getTime();
+        case 'quantidade':
+          return (b.total_itens || 0) - (a.total_itens || 0);
+        case 'recente':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
+
+    return list;
+  }, [ordens, filtroStatus, busca, ordenacao]);
 
   const resetForm = () => {
     setDescricao(""); setPrazo(""); setAtribuidoPara("any");
@@ -896,10 +948,38 @@ export const OrdensFullTab = () => {
       />
       {/* Cards resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard icon={ClipboardList} label="Ordens abertas" value={summary.abertas} color="text-primary" />
-        <SummaryCard icon={Clock} label="Aguardando" value={summary.aguardando} color="text-yellow-500" />
-        <SummaryCard icon={Package} label="Em separação" value={summary.em_separacao} color="text-blue-500" />
-        <SummaryCard icon={CheckCircle2} label="Concluídas hoje" value={summary.concluidas_hoje} color="text-emerald-500" />
+        <SummaryCard 
+          icon={ClipboardList} 
+          label="Ordens abertas" 
+          value={summary.abertas} 
+          color="text-primary" 
+          onClick={() => setFiltroStatus(filtroStatus === 'abertas' ? 'todos' : 'abertas')}
+          isSelected={filtroStatus === 'abertas'}
+        />
+        <SummaryCard 
+          icon={Clock} 
+          label="Aguardando" 
+          value={summary.aguardando} 
+          color="text-yellow-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'aguardando' ? 'todos' : 'aguardando')}
+          isSelected={filtroStatus === 'aguardando'}
+        />
+        <SummaryCard 
+          icon={Package} 
+          label="Em separação" 
+          value={summary.em_separacao} 
+          color="text-blue-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'em_separacao' ? 'todos' : 'em_separacao')}
+          isSelected={filtroStatus === 'em_separacao'}
+        />
+        <SummaryCard 
+          icon={CheckCircle2} 
+          label="Concluídas hoje" 
+          value={summary.concluidas_hoje} 
+          color="text-emerald-500" 
+          onClick={() => setFiltroStatus(filtroStatus === 'concluidas_hoje' ? 'todos' : 'concluidas_hoje')}
+          isSelected={filtroStatus === 'concluidas_hoje'}
+        />
       </div>
 
       {/* Painel funcionário (ordens atribuídas) */}
@@ -961,10 +1041,51 @@ export const OrdensFullTab = () => {
           )}
         </CardHeader>
         <CardContent>
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="relative flex-1 min-w-[240px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar por frete..." 
+                className="pl-10"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+              />
+            </div>
+
+            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+              <SelectTrigger className="w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="aguardando">📄 PDF Carregado</SelectItem>
+                <SelectItem value="em_separacao">🔄 Em Separação</SelectItem>
+                <SelectItem value="separada">✅ Separado</SelectItem>
+                <SelectItem value="aguardando_carregamento">🚛 Aguardando Coleta</SelectItem>
+                <SelectItem value="enviado">📦 Enviado</SelectItem>
+                <SelectItem value="cancelada">❌ Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={ordenacao} onValueChange={setOrdenacao}>
+              <SelectTrigger className="w-[200px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recente">Mais recente primeiro</SelectItem>
+                <SelectItem value="antigo">Mais antigo primeiro</SelectItem>
+                <SelectItem value="previsao">Previsão de coleta</SelectItem>
+                <SelectItem value="quantidade">Maior quantidade</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {isLoading ? (
             <p className="text-center text-sm text-muted-foreground py-8">Carregando...</p>
-          ) : (ordens || []).length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma ordem criada ainda</p>
+          ) : ordensFiltradas.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma ordem encontrada com os filtros selecionados</p>
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -984,7 +1105,7 @@ export const OrdensFullTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(ordens || []).map((o) => {
+                  {ordensFiltradas.map((o) => {
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && (o.status === "aguardando" || o.status === "em_separacao");
                     const sb = ordemStatusBadge(o.status);
@@ -1446,8 +1567,11 @@ export const OrdensFullTab = () => {
   );
 };
 
-const SummaryCard = ({ icon: Icon, label, value, color }: any) => (
-  <Card>
+const SummaryCard = ({ icon: Icon, label, value, color, onClick, isSelected }: any) => (
+  <Card 
+    className={`cursor-pointer transition-all duration-200 hover:shadow-md ${isSelected ? 'ring-2 ring-primary border-primary bg-primary/5' : ''}`}
+    onClick={onClick}
+  >
     <CardContent className="p-4">
       <div className="flex items-center gap-3">
         <Icon className={`h-5 w-5 ${color}`} />
