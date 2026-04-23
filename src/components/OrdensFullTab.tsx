@@ -1577,35 +1577,6 @@ export const OrdensFullTab = () => {
             <DialogDescription className="py-2">
               <div className="bg-muted p-3 rounded-md text-foreground font-medium mb-4">
                 Frete #{orderToDelete?.frete_ml || orderToDelete?.numero} — {orderToDelete?.total_produtos} produtos · {orderToDelete?.total_itens} unidades
-      <AlertDialog open={duplicateCheck.isOpen} onOpenChange={(open) => setDuplicateCheck(prev => ({ ...prev, isOpen: open }))}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Frete Duplicado</AlertDialogTitle>
-            <AlertDialogDescription>
-              O frete #{duplicateCheck.freteNumero} já existe com o status "{duplicateCheck.existingStatus}". O que deseja fazer?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                const existingOrder = ordens?.find(o => o.frete_ml === duplicateCheck.freteNumero || o.numero === duplicateCheck.freteNumero);
-                if (existingOrder) {
-                  handleViewOrder(existingOrder);
-                } else {
-                  toast({ title: "Ordem não encontrada na lista atual", variant: "destructive" });
-                }
-                setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
-              }}
-            >
-              Abrir ordem existente
-            </Button>
-            <AlertDialogAction 
-              onClick={() => {
-                const novoNumero = `${duplicateCheck.freteNumero}-${Date.now()}`;
-                executeCreateOrdem(novoNumero);
-              }}
             >
               Criar nova ordem mesmo assim
             </AlertDialogAction>
