@@ -7,6 +7,7 @@ export type Product = {
   id: string;
   sku: string;
   barcode: string | null;
+  ean: string | null;
   name: string;
   description: string | null;
   category_id: string | null;
@@ -35,6 +36,7 @@ export type Product = {
 export type ProductFormData = {
   sku: string;
   barcode?: string;
+  ean?: string;
   name: string;
   description?: string;
   category_id?: string;
@@ -76,7 +78,7 @@ export function useProducts(filters?: {
       }
 
       if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`);
+        query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%,ean.ilike.%${filters.search}%`);
       }
       if (filters?.category_id) {
         query = query.eq("category_id", filters.category_id);
@@ -157,6 +159,7 @@ export function useCreateProduct() {
       const insertData = {
         ...productData,
         barcode: productData.barcode || null,
+        ean: productData.ean || productData.barcode || null,
         description: productData.description || null,
         category_id: productData.category_id || null,
         weight: productData.weight ?? null,
@@ -212,6 +215,7 @@ export function useUpdateProduct() {
       const updateData = {
         ...productData,
         barcode: productData.barcode || null,
+        ean: productData.ean || productData.barcode || null,
         description: productData.description || null,
         category_id: productData.category_id || null,
         weight: productData.weight ?? null,
