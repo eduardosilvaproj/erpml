@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus } from "@/hooks/useOrdensFull";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface SeparacaoItem {
   productId: string;
@@ -182,9 +183,37 @@ const Separacao = () => {
             </div>
 
             <div className="flex flex-wrap justify-center gap-4 pt-4">
-              <Button variant="outline" size="lg" className="gap-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-semibold shadow-sm">
-                <FileText className="h-5 w-5" /> Ver resumo
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="lg" className="gap-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-semibold shadow-sm">
+                    <FileText className="h-5 w-5" /> Ver resumo
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Resumo da Separação</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Produto</TableHead>
+                          <TableHead className="text-center">Quantidade</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((item) => (
+                          <TableRow key={item.productId}>
+                            <TableCell className="font-medium">{item.name}</TableCell>
+                            <TableCell className="text-center">{item.scannedQty} / {item.neededQty}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Button variant="outline" size="lg" className="gap-2 border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-semibold shadow-sm" onClick={() => window.print()}>
                 <Printer className="h-5 w-5" /> Imprimir lista
               </Button>
