@@ -17,7 +17,6 @@ export interface OrdemFull {
   atribuido_para: string | null;
   atribuido?: {
     full_name: string | null;
-    name: string | null;
   } | null;
   gravacao_id: string | null;
   iniciada_em: string | null;
@@ -61,7 +60,7 @@ export const useOrdensFull = () => {
         .from("ordens_full")
         .select(`
           *,
-          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name, name)
+          atribuido:profiles!ordens_full_atribuido_para_fkey(full_name)
         `)
         .eq("company_id", companyId!)
         .order("created_at", { ascending: false });
