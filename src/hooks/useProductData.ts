@@ -91,25 +91,6 @@ export function useProducts(filters?: {
           query = query.eq("company_id", companyId);
         }
       }
-        
-        // Search in supplier SKUs - unfortunately we can't easily do or() with joined tables in a simple way
-        // with the current Supabase client structure in a single query OR if we want to stay within .or()
-        // Alternative: Use a RPC or search separately.
-        // For now, let's keep it simple and maybe update the server-side search if needed.
-        // But the user requested "buscar também pelos SKUs de fornecedores".
-        // One way is: name.ilike...,sku.ilike...,product_supplier_skus.supplier_sku.ilike...
-        // However, PostgREST doesn't support deep or() filtering easily without computed columns or specialized views.
-        // Let's try if it works with the standard syntax if they have some setup for it.
-        // Actually, the best way for searching across relations is usually a view or RPC.
-        // But let's try the joined search if possible:
-        // query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,product_supplier_skus.supplier_sku.ilike.%${filters.search}%`);
-        // Wait, I'll need to check if product_supplier_skus is filterable this way.
-        // Actually, a common trick is to use a computed column or just search in the client for small datasets.
-        // But for production, a view is better.
-        // Let's stick to the user's request and try to make it work.
-        // If the above fails, I'll add a view.
-
-      }
       if (filters?.category_id) {
         query = query.eq("category_id", filters.category_id);
       }
