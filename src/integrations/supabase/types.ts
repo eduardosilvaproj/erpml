@@ -1642,6 +1642,7 @@ export type Database = {
           created_at: string | null
           id: string
           product_id: string
+          supplier_cnpj: string | null
           supplier_name: string | null
           supplier_sku: string | null
         }
@@ -1649,6 +1650,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           product_id: string
+          supplier_cnpj?: string | null
           supplier_name?: string | null
           supplier_sku?: string | null
         }
@@ -1656,6 +1658,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           product_id?: string
+          supplier_cnpj?: string | null
           supplier_name?: string | null
           supplier_sku?: string | null
         }
