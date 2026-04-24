@@ -98,6 +98,8 @@ export function useProducts(filters?: {
 
       if (filters?.needsCorrection === "no_sku") {
         query = query.or("sku.is.null,sku.eq.''");
+      } else if (filters?.needsCorrection === "no_ean") {
+        query = query.eq("ean_pending", true);
       }
 
       const sortBy = filters?.sortBy || "created_at";
