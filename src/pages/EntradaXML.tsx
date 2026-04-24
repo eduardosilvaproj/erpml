@@ -226,6 +226,15 @@ const EntradaXML = () => {
       setProgress(Math.round(((i) / total) * 100));
 
       try {
+        const updatedMatches = qf.matches.map(m => {
+          const newEan = registeredEans[m.xmlProduct.code];
+          return {
+            ...m,
+            newEan,
+            eanPending: !m.xmlProduct.ean && !newEan && !m.matchedProductEan && !m.matchedProductBarcode
+          };
+        });
+
         await importInvoice.mutateAsync({
           nfeData: {
             number: qf.nfeData.number,
@@ -234,7 +243,7 @@ const EntradaXML = () => {
             issuerCnpj: qf.nfeData.issuerCnpj,
             totalValue: qf.nfeData.totalValue,
           },
-          matches: qf.matches,
+          matches: updatedMatches,
           createNewProducts,
         });
 
