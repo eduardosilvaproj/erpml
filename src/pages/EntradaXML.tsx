@@ -53,6 +53,11 @@ const EntradaXML = () => {
   const [importResults, setImportResults] = useState<ImportResult[]>([]);
   const [expandedHistory, setExpandedHistory] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [itemsNeedingEan, setItemsNeedingEan] = useState<MatchResult[]>([]);
+  const [currentEanIndex, setCurrentEanIndex] = useState(0);
+  const [manualEan, setManualEan] = useState("");
+  const [eanAlertShown, setEanAlertShown] = useState(false);
+  const [skipPendingEan, setSkipPendingEan] = useState(false);
 
   const { data: stats } = useInvoiceStats();
   const { data: invoices } = useInvoices();
