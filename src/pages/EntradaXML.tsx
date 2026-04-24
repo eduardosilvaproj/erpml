@@ -58,6 +58,7 @@ const EntradaXML = () => {
   const [manualEan, setManualEan] = useState("");
   const [eanAlertShown, setEanAlertShown] = useState(false);
   const [skipPendingEan, setSkipPendingEan] = useState(false);
+  const [registeredEans, setRegisteredEans] = useState<Record<string, string>>({});
 
   const { data: stats } = useInvoiceStats();
   const { data: invoices } = useInvoices();
