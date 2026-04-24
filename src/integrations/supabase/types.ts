@@ -2662,6 +2662,42 @@ export type Database = {
       marcar_ordem_enviada: { Args: { _ordem_id: string }; Returns: undefined }
       marcar_ordem_separada: { Args: { _ordem_id: string }; Returns: undefined }
       reset_company_data: { Args: { p_company_id: string }; Returns: undefined }
+      search_products_with_suppliers: {
+        Args: { p_company_id: string; search_term: string }
+        Returns: {
+          active: boolean
+          barcode: string | null
+          box_quantity: number | null
+          category_id: string | null
+          company_id: string | null
+          cost: number
+          created_at: string
+          depth: number | null
+          description: string | null
+          ean: string | null
+          gtin_cx: string | null
+          height: number | null
+          id: string
+          id_ml: string | null
+          image_url: string | null
+          min_stock: number
+          name: string
+          price: number
+          sku: string
+          sku_ml: string | null
+          stock_full: number
+          stock_physical: number
+          updated_at: string
+          weight: number | null
+          width: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
