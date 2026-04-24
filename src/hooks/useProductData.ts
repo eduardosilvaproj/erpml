@@ -96,6 +96,10 @@ export function useProducts(filters?: {
         query = query.eq("category_id", filters.category_id);
       }
 
+      if (filters?.needsCorrection === "no_sku") {
+        query = query.or("sku.is.null,sku.eq.''");
+      }
+
       const sortBy = filters?.sortBy || "created_at";
       const sortOrder = filters?.sortOrder === "asc" ? true : false;
       query = query.order(sortBy, { ascending: sortOrder });
