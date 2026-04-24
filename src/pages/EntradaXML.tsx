@@ -177,9 +177,39 @@ const EntradaXML = () => {
     setStep("ean_registration");
   };
 
-  const continueWithoutEans = () => {
-    setSkipPendingEan(true);
-    setStep("review");
+  const handleBiparEan = async (ean: string) => {
+    if (!ean) return;
+    
+    const currentItem = itemsNeedingEan[currentEanIndex];
+    if (!currentItem) return;
+
+    // Save registration locally
+    setRegisteredEans(prev => ({
+      ...prev,
+      [currentItem.xmlProduct.code]: ean
+    }));
+
+    setManualEan("");
+    
+    if (currentEanIndex < itemsNeedingEan.length - 1) {
+      setCurrentEanIndex(prev => prev + 1);
+    } else {
+      setStep("review");
+    }
+  };
+
+  const skipItem = () => {
+    if (currentEanIndex < itemsNeedingEan.length - 1) {
+      setCurrentEanIndex(prev => prev + 1);
+    } else {
+      setStep("review");
+    }
+  };
+
+  const prevItem = () => {
+    if (currentEanIndex > 0) {
+      setCurrentEanIndex(prev => prev - 1);
+    }
   };
 
   const handleImportAll = async () => {
