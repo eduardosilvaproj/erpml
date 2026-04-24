@@ -66,7 +66,7 @@ export function useProducts(filters?: {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
-  needsCorrection?: "no_sku" | "no_supplier";
+  needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
 }) {
   const companyId = useCompanyId();
 
@@ -83,6 +83,13 @@ export function useProducts(filters?: {
             p_company_id: companyId
           })
           .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)");
+        
+        if (filters?.needsCorrection === "no_sku") {
+          query = query.or("sku.is.null,sku.eq.''");
+        } else if (filters?.needsCorrection === "no_ean") {
+          query = query.eq("ean_pending", true);
+        }
+
       } else {
         query = supabase
           .from("products")
@@ -98,6 +105,8 @@ export function useProducts(filters?: {
 
       if (filters?.needsCorrection === "no_sku") {
         query = query.or("sku.is.null,sku.eq.''");
+      } else if (filters?.needsCorrection === "no_ean") {
+        query = query.eq("ean_pending", true);
       }
 
       const sortBy = filters?.sortBy || "created_at";

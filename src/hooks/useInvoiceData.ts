@@ -120,7 +120,8 @@ export function useImportInvoice() {
             .from("products")
             .insert({
               sku,
-              barcode: xmlP.ean || null,
+              barcode: match.newEan || xmlP.ean || null,
+              ean: match.newEan || xmlP.ean || null,
               name: xmlP.description,
               description,
               cost,
@@ -128,6 +129,7 @@ export function useImportInvoice() {
               stock_physical: 0,
               min_stock: 1,
               active: true,
+              ean_pending: match.eanPending ?? false,
               weight: enrichedData.weight_kg ?? null,
               width: enrichedData.width_cm ?? null,
               height: enrichedData.height_cm ?? null,
@@ -160,7 +162,7 @@ export function useImportInvoice() {
         if (productId) {
           const { data: current } = await supabase
             .from("products")
-            .select("stock_physical, cost, barcode, name, description, price, min_stock")
+            .select("stock_physical, cost, barcode, ean, name, description, price, min_stock, ean_pending")
             .eq("id", productId)
             .single();
 
@@ -176,8 +178,13 @@ export function useImportInvoice() {
               cost: Math.round(avgCost * 100) / 100,
             };
 
-            if (!current.barcode && xmlP.ean) {
-              updates.barcode = xmlP.ean;
+            if ((!current.barcode || !current.ean) && (xmlP.ean || match.newEan)) {
+              updates.barcode = match.newEan || xmlP.ean || current.barcode;
+              updates.ean = match.newEan || xmlP.ean || current.ean;
+              updates.ean_pending = false;
+            }
+            if (!match.newEan && !xmlP.ean && !current.barcode && !current.ean) {
+              updates.ean_pending = true;
             }
             if (!current.description || current.description.length < 5) {
               updates.description = `NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;

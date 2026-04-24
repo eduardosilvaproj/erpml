@@ -1793,6 +1793,7 @@ export type Database = {
           depth: number | null
           description: string | null
           ean: string | null
+          ean_pending: boolean | null
           gtin_cx: string | null
           height: number | null
           id: string
@@ -1820,6 +1821,7 @@ export type Database = {
           depth?: number | null
           description?: string | null
           ean?: string | null
+          ean_pending?: boolean | null
           gtin_cx?: string | null
           height?: number | null
           id?: string
@@ -1847,6 +1849,7 @@ export type Database = {
           depth?: number | null
           description?: string | null
           ean?: string | null
+          ean_pending?: boolean | null
           gtin_cx?: string | null
           height?: number | null
           id?: string
@@ -2678,6 +2681,7 @@ export type Database = {
           depth: number | null
           description: string | null
           ean: string | null
+          ean_pending: boolean | null
           gtin_cx: string | null
           height: number | null
           id: string

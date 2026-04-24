@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2 } from "lucide-react";
+import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2, AlertTriangle, Barcode, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,6 +49,7 @@ const Produtos = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0, name: "" });
+  const [inlineEans, setInlineEans] = useState<Record<string, string>>({});
 
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
@@ -180,6 +181,28 @@ const Produtos = () => {
 
   const sortIndicator = (col: string) => sortBy === col ? (sortOrder === "asc" ? " ↑" : " ↓") : "";
 
+  const handleInlineEan = async (productId: string, ean: string) => {
+    if (!ean) return;
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ barcode: ean, ean: ean, ean_pending: false } as any)
+        .eq("id", productId);
+
+      if (error) throw error;
+      
+      toast({ title: "EAN vinculado com sucesso!" });
+      setInlineEans(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Erro ao vincular EAN", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="products">
@@ -270,8 +293,21 @@ const Produtos = () => {
                     <SelectItem value="all">Sem filtros de corr.</SelectItem>
                     <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
                     <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
+                    <SelectItem value="no_ean">Sem EAN</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* No EAN Alert */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:text-amber-800 border border-amber-200/50"
+                  onClick={() => { setCorrectionFilter("no_ean"); setPage(1); }}
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  {data?.products?.filter(p => (p as any).ean_pending).length || 0} produtos sem EAN
+                </Button>
+
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {data?.total ?? 0} produtos encontrados
                 </span>
@@ -336,6 +372,9 @@ const Produtos = () => {
                           <TableHead className="cursor-pointer text-center" onClick={() => handleSort("stock_physical")}>
                             Estoque{sortIndicator("stock_physical")}
                           </TableHead>
+                          {correctionFilter === "no_ean" && (
+                            <TableHead className="w-[200px]">EAN (Bipar)</TableHead>
+                          )}
                           <TableHead className="text-center">Status</TableHead>
                           <TableHead className="w-[90px]">Ações</TableHead>
                         </TableRow>
@@ -387,6 +426,21 @@ const Produtos = () => {
                                   {totalStock}
                                 </span>
                               </TableCell>
+                              {correctionFilter === "no_ean" && (
+                                <TableCell>
+                                  <div className="relative">
+                                    <Barcode className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground opacity-50" />
+                                    <Input
+                                      size={1}
+                                      className="h-8 pl-7 text-xs"
+                                      placeholder="bipe aqui 📷"
+                                      value={inlineEans[product.id] || ""}
+                                      onChange={(e) => setInlineEans(prev => ({ ...prev, [product.id]: e.target.value }))}
+                                      onKeyDown={(e) => e.key === "Enter" && handleInlineEan(product.id, inlineEans[product.id])}
+                                    />
+                                  </div>
+                                </TableCell>
+                              )}
                               <TableCell className="text-center">
                                 <Badge
                                   variant="outline"
