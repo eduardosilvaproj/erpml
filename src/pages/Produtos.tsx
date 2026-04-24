@@ -253,6 +253,16 @@ const Produtos = () => {
                     {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <Select value={correctionFilter || "all"} onValueChange={(v) => { setCorrectionFilter(v === "all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Necessita correção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Sem filtros de corr.</SelectItem>
+                    <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
+                    <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
+                  </SelectContent>
+                </Select>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {data?.total ?? 0} produtos encontrados
                 </span>
