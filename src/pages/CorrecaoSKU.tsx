@@ -50,7 +50,7 @@ const CorrecaoSKU = () => {
       const { data: products, error } = await supabase
         .from("products")
         .select("id, name")
-        .or("sku.is.null,sku.eq.''")
+        .or('sku.is.null,sku.eq.""')
         .order("name", { ascending: true });
 
       if (error) throw error;
