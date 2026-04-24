@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
