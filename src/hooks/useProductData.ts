@@ -66,6 +66,7 @@ export function useProducts(filters?: {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  needsCorrection?: "no_sku" | "no_supplier";
 }) {
   const companyId = useCompanyId();
 
@@ -95,6 +96,10 @@ export function useProducts(filters?: {
         query = query.eq("category_id", filters.category_id);
       }
 
+      if (filters?.needsCorrection === "no_sku") {
+        query = query.or("sku.is.null,sku.eq.''");
+      }
+
       const sortBy = filters?.sortBy || "created_at";
       const sortOrder = filters?.sortOrder === "asc" ? true : false;
       query = query.order(sortBy, { ascending: sortOrder });
@@ -112,6 +117,9 @@ export function useProducts(filters?: {
         filtered = filtered.filter((p) =>
           p.product_suppliers?.some((ps) => ps.supplier_id === filters.supplier_id)
         );
+      }
+      if (filters?.needsCorrection === "no_supplier") {
+        filtered = filtered.filter((p) => !p.product_supplier_skus || p.product_supplier_skus.length === 0);
       }
 
       return { products: filtered, total: count || 0 };

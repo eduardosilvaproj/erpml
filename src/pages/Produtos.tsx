@@ -1,5 +1,6 @@
-import { useState, useCallback } from "react";
-import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,11 +22,22 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const Produtos = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const correction = params.get("correction");
+    if (correction) {
+      setCorrectionFilter(correction);
+    }
+  }, [location.search]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
+  const [correctionFilter, setCorrectionFilter] = useState<string>("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortBy, setSortBy] = useState("created_at");
@@ -44,6 +56,7 @@ const Produtos = () => {
     search: search || undefined,
     category_id: categoryFilter || undefined,
     supplier_id: supplierFilter || undefined,
+    needsCorrection: (correctionFilter as any) || undefined,
     page,
     pageSize,
     sortBy,
@@ -191,6 +204,9 @@ const Produtos = () => {
               <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Importar
               </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("/produtos/correcao")}>
+                <Settings2 className="mr-2 h-4 w-4" /> Corrigir SKUs
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" /> Exportar
               </Button>
@@ -244,6 +260,16 @@ const Produtos = () => {
                   <SelectContent>
                     <SelectItem value="all">Todas categorias</SelectItem>
                     {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={correctionFilter || "all"} onValueChange={(v) => { setCorrectionFilter(v === "all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Necessita correção" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Sem filtros de corr.</SelectItem>
+                    <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
+                    <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
