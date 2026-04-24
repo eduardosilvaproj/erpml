@@ -66,7 +66,7 @@ export function useProducts(filters?: {
   pageSize?: number;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
-  needsCorrection?: "no_sku" | "no_supplier";
+  needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
 }) {
   const companyId = useCompanyId();
 
