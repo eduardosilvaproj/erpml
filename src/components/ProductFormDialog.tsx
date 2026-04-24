@@ -238,7 +238,10 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       image_url: imageUrl || undefined,
       gtin_cx: values.gtin_cx || undefined,
       box_quantity: typeof values.box_quantity === "number" ? values.box_quantity : undefined,
-      supplier_skus: values.supplier_skus,
+      supplier_skus: values.supplier_skus?.map(s => ({
+        supplier_name: s.supplier_name,
+        supplier_sku: s.supplier_sku
+      })),
     };
 
     if (product) {
