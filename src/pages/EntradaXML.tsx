@@ -172,10 +172,11 @@ const EntradaXML = () => {
     setStep("review");
   };
 
-  const startEanRegistration = () => {
-    setCurrentEanIndex(0);
-    setStep("ean_registration");
+  const continueWithoutEans = () => {
+    setSkipPendingEan(true);
+    setStep("review");
   };
+
 
   const handleBiparEan = async (ean: string) => {
     if (!ean) return;
