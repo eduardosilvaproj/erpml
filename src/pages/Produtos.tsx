@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const Produtos = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
