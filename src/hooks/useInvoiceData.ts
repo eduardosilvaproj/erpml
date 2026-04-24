@@ -178,8 +178,13 @@ export function useImportInvoice() {
               cost: Math.round(avgCost * 100) / 100,
             };
 
-            if (!current.barcode && xmlP.ean) {
-              updates.barcode = xmlP.ean;
+            if ((!current.barcode || !current.ean) && (xmlP.ean || match.newEan)) {
+              updates.barcode = match.newEan || xmlP.ean || current.barcode;
+              updates.ean = match.newEan || xmlP.ean || current.ean;
+              updates.ean_pending = false;
+            }
+            if (!match.newEan && !xmlP.ean && !current.barcode && !current.ean) {
+              updates.ean_pending = true;
             }
             if (!current.description || current.description.length < 5) {
               updates.description = `NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;
