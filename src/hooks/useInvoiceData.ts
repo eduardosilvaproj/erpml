@@ -120,7 +120,8 @@ export function useImportInvoice() {
             .from("products")
             .insert({
               sku,
-              barcode: xmlP.ean || null,
+              barcode: match.newEan || xmlP.ean || null,
+              ean: match.newEan || xmlP.ean || null,
               name: xmlP.description,
               description,
               cost,
@@ -128,6 +129,7 @@ export function useImportInvoice() {
               stock_physical: 0,
               min_stock: 1,
               active: true,
+              ean_pending: match.eanPending ?? false,
               weight: enrichedData.weight_kg ?? null,
               width: enrichedData.width_cm ?? null,
               height: enrichedData.height_cm ?? null,
