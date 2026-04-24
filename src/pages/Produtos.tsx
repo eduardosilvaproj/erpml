@@ -270,8 +270,21 @@ const Produtos = () => {
                     <SelectItem value="all">Sem filtros de corr.</SelectItem>
                     <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
                     <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
+                    <SelectItem value="no_ean">Sem EAN</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* No EAN Alert */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 hover:text-amber-800 border border-amber-200/50"
+                  onClick={() => { setCorrectionFilter("no_ean"); setPage(1); }}
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  {data?.products?.filter(p => (p as any).ean_pending).length || 0} produtos sem EAN
+                </Button>
+
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {data?.total ?? 0} produtos encontrados
                 </span>
