@@ -118,6 +118,9 @@ export function useProducts(filters?: {
           p.product_suppliers?.some((ps) => ps.supplier_id === filters.supplier_id)
         );
       }
+      if (filters?.needsCorrection === "no_supplier") {
+        filtered = filtered.filter((p) => !p.product_supplier_skus || p.product_supplier_skus.length === 0);
+      }
 
       return { products: filtered, total: count || 0 };
     },
