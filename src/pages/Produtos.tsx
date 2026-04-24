@@ -426,6 +426,21 @@ const Produtos = () => {
                                   {totalStock}
                                 </span>
                               </TableCell>
+                              {correctionFilter === "no_ean" && (
+                                <TableCell>
+                                  <div className="relative">
+                                    <Barcode className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground opacity-50" />
+                                    <Input
+                                      size={1}
+                                      className="h-8 pl-7 text-xs"
+                                      placeholder="bipe aqui 📷"
+                                      value={inlineEans[product.id] || ""}
+                                      onChange={(e) => setInlineEans(prev => ({ ...prev, [product.id]: e.target.value }))}
+                                      onKeyDown={(e) => e.key === "Enter" && handleInlineEan(product.id, inlineEans[product.id])}
+                                    />
+                                  </div>
+                                </TableCell>
+                              )}
                               <TableCell className="text-center">
                                 <Badge
                                   variant="outline"
