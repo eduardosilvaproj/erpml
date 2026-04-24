@@ -534,6 +534,154 @@ const EntradaXML = () => {
         </div>
       )}
 
+      {/* ===== MISSING EAN ALERT ===== */}
+      {eanAlertShown && step === "upload" && (
+        <Alert variant="destructive" className="bg-destructive/10 border-destructive/20">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle className="font-bold">{itemsNeedingEan.length} produtos sem EAN detectados</AlertTitle>
+          <AlertDescription className="space-y-4">
+            <p>Estes itens precisam ter o EAN cadastrado para entrar no estoque com rastreabilidade total.</p>
+            <div className="flex gap-3">
+              <Button onClick={continueWithoutEans} variant="outline" className="bg-background">
+                <Check className="mr-2 h-4 w-4" /> Continuar os que têm EAN
+              </Button>
+              <Button onClick={startEanRegistration}>
+                <Camera className="mr-2 h-4 w-4" /> Iniciar cadastro de EANs
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* ===== EAN REGISTRATION STEP ===== */}
+      {step === "ean_registration" && itemsNeedingEan.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Barcode className="h-5 w-5" />
+                Vincular EANs — Nota Fiscal #{selectedFile?.nfeData?.number || "Múltiplas"}
+              </h2>
+              <p className="text-sm text-muted-foreground">Fornecedor: {selectedFile?.nfeData?.issuerName || "Vários"}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-medium">Progresso: {Object.keys(registeredEans).length}/{itemsNeedingEan.length} vinculados</p>
+              <Progress value={(Object.keys(registeredEans).length / itemsNeedingEan.length) * 100} className="w-48 h-2" />
+            </div>
+          </div>
+
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+            <Card className="lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Lista de Produtos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="max-h-[500px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>PRODUTO DA NOTA</TableHead>
+                        <TableHead>SKU FORN.</TableHead>
+                        <TableHead>EAN</TableHead>
+                        <TableHead>STATUS</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {itemsNeedingEan.map((item, idx) => {
+                        const isDone = !!registeredEans[item.xmlProduct.code];
+                        const isActive = idx === currentEanIndex;
+                        return (
+                          <TableRow 
+                            key={idx} 
+                            className={`${isActive ? "bg-primary/5 ring-1 ring-primary/20" : ""} ${isDone ? "opacity-60" : ""}`}
+                            onClick={() => setCurrentEanIndex(idx)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center gap-2">
+                                {isDone ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : (isActive ? <ArrowRight className="h-4 w-4 text-primary animate-pulse" /> : <div className="w-4" />)}
+                                {item.xmlProduct.description}
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{item.xmlProduct.code}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {registeredEans[item.xmlProduct.code] || (isActive ? "[bipe aqui]" : "—")}
+                            </TableCell>
+                            <TableCell>
+                              {isDone ? <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-200">OK</Badge> : (isActive ? <Badge variant="secondary">Ativo</Badge> : <Badge variant="outline" className="opacity-40">Pendente</Badge>)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/50 ring-1 ring-primary/20">
+              <CardHeader>
+                <CardTitle className="text-base">Produto atual para bipar</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg bg-secondary/50 p-4 border space-y-2">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded bg-primary/10 p-2">
+                      <Package className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-bold leading-tight">{itemsNeedingEan[currentEanIndex].xmlProduct.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">SKU Fornecedor: {itemsNeedingEan[currentEanIndex].xmlProduct.code}</p>
+                      <p className="text-xs text-muted-foreground">Qtd na nota: {itemsNeedingEan[currentEanIndex].xmlProduct.quantity} unidades</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4">
+                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg bg-primary/5 border-primary/20 text-center">
+                    <Barcode className="h-10 w-10 text-primary mb-2 opacity-40" />
+                    <p className="text-sm font-medium">Bipe o EAN do produto agora</p>
+                    <p className="text-xs text-muted-foreground">O leitor preencherá o campo abaixo</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        autoFocus
+                        placeholder="Ou digite o EAN aqui..."
+                        className="pl-9"
+                        value={manualEan}
+                        onChange={(e) => setManualEan(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleBiparEan(manualEan)}
+                      />
+                    </div>
+                    <Button onClick={() => handleBiparEan(manualEan)} disabled={!manualEan}>OK</Button>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between border-t bg-muted/30 pt-4">
+                <Button variant="ghost" size="sm" onClick={prevItem} disabled={currentEanIndex === 0}>
+                  <ChevronLeft className="mr-1 h-4 w-4" /> Anterior
+                </Button>
+                <Button variant="ghost" size="sm" onClick={skipItem}>
+                  Pular este item <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+
+          <div className="flex justify-between items-center pt-4">
+            <Button variant="ghost" onClick={() => setStep("upload")}>Cancelar e Voltar</Button>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={continueWithoutEans}>Finalizar Depois</Button>
+              <Button onClick={() => setStep("review")} disabled={Object.keys(registeredEans).length === 0}>
+                Revisar Nota <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===== REVIEW STEP ===== */}
       {step === "review" && (
         <div className="space-y-4">
