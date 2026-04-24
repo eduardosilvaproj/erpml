@@ -162,7 +162,7 @@ export function useImportInvoice() {
         if (productId) {
           const { data: current } = await supabase
             .from("products")
-            .select("stock_physical, cost, barcode, name, description, price, min_stock")
+            .select("stock_physical, cost, barcode, ean, name, description, price, min_stock, ean_pending")
             .eq("id", productId)
             .single();
 
