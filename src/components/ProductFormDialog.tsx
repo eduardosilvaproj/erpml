@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw, Plus, Trash2 } from "lucide-react";
+import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw, Plus, Trash2, Dices } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
@@ -497,7 +497,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                       <div className="flex gap-2">
                         <FormControl><Input {...field} placeholder="SKU-001" /></FormControl>
                         <Button type="button" variant="outline" size="icon" title="Gerar automaticamente" onClick={() => form.setValue("sku", generateRandomSku())}>
-                          <Wand2 className="h-4 w-4" />
+                          <Dices className="h-4 w-4" />
                         </Button>
                       </div>
                       <FormMessage />
