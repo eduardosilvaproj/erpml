@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw, Plus, Trash2, Dices } from "lucide-react";
+import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw, Plus, Trash2, Dices, Lock, Unlock } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
@@ -95,6 +95,8 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
   const fileInputRef = useRef<HTMLInputElement>(null);
   const selectedFileRef = useRef<File | null>(null);
   const [photoSource, setPhotoSource] = useState<"file" | "unsplash" | null>(null);
+  const [isSkuLocked, setIsSkuLocked] = useState(true);
+  const [isGeneratingSku, setIsGeneratingSku] = useState(false);
 
   const getDefaults = (p?: Product | null): FormValues => ({
     sku: p?.sku || "",
@@ -134,6 +136,25 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
 
 
 
+  const gerarSkuInterno = async () => {
+    setIsGeneratingSku(true);
+    try {
+      const { count, error } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) throw error;
+      const nextNum = (count || 0) + 1;
+      const newSku = `SKU-${String(nextNum).padStart(5, '0')}`;
+      form.setValue("sku", newSku);
+    } catch (err: any) {
+      console.error("Erro ao gerar SKU:", err);
+      toast({ title: "Erro ao gerar SKU", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingSku(false);
+    }
+  };
+
   useEffect(() => {
     if (open) {
       form.reset(getDefaults(product));
@@ -143,6 +164,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       setShowPhotoGrid(false);
       selectedFileRef.current = null;
       setPhotoSource(product?.image_url ? "unsplash" : null);
+      setIsSkuLocked(true);
+      
+      if (!product) {
+        gerarSkuInterno();
+      }
     }
   }, [open, product]);
 
@@ -495,10 +521,44 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                     <FormItem>
                       <FormLabel>SKU Interno *</FormLabel>
                       <div className="flex gap-2">
-                        <FormControl><Input {...field} placeholder="SKU-001" /></FormControl>
-                        <Button type="button" variant="outline" size="icon" title="Gerar automaticamente" onClick={() => form.setValue("sku", generateRandomSku())}>
-                          <Dices className="h-4 w-4" />
+                        <FormControl>
+                          <div className="relative flex-1">
+                            <Input 
+                              {...field} 
+                              placeholder="SKU-00001" 
+                              readOnly={isSkuLocked}
+                              className={isSkuLocked ? "pr-10 bg-muted/50 cursor-not-allowed" : ""}
+                            />
+                            {isGeneratingSku && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </FormControl>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="icon" 
+                          className="shrink-0"
+                          title={isSkuLocked ? "Desbloquear para edição" : "Bloquear edição"}
+                          onClick={() => setIsSkuLocked(!isSkuLocked)}
+                        >
+                          {isSkuLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </Button>
+                        {!product && (
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            className="shrink-0"
+                            title="Regerar SKU" 
+                            onClick={gerarSkuInterno}
+                            disabled={isGeneratingSku}
+                          >
+                            <RefreshCw className={`h-4 w-4 ${isGeneratingSku ? 'animate-spin' : ''}`} />
+                          </Button>
+                        )}
                       </div>
                       <FormMessage />
                     </FormItem>
