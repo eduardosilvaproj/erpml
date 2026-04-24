@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCategories, useCreateProduct, useUpdateProduct, type Product, type ProductFormData } from "@/hooks/useProductData";
-import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, Camera, AlertTriangle, Wand2, Search, Check, RefreshCw, Plus, Trash2, Dices } from "lucide-react";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, isValidEAN13 } from "@/lib/ean13";
@@ -48,6 +48,10 @@ const schema = z.object({
   active: z.boolean().optional(),
   gtin_cx: z.string().max(50).optional().or(z.literal("")),
   box_quantity: z.coerce.number().int().min(0).optional().or(z.literal("")),
+  supplier_skus: z.array(z.object({
+    supplier_name: z.string().min(1, "Nome obrigatório"),
+    supplier_sku: z.string().min(1, "SKU obrigatório"),
+  })).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -112,12 +116,23 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     active: p?.active ?? true,
     gtin_cx: (p as any)?.gtin_cx || "",
     box_quantity: (p as any)?.box_quantity ?? "",
+    supplier_skus: p?.product_supplier_skus?.map(s => ({
+      supplier_name: s.supplier_name,
+      supplier_sku: s.supplier_sku
+    })) || [],
   });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: getDefaults(product),
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "supplier_skus",
+  });
+
+
 
   useEffect(() => {
     if (open) {
@@ -223,6 +238,10 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       image_url: imageUrl || undefined,
       gtin_cx: values.gtin_cx || undefined,
       box_quantity: typeof values.box_quantity === "number" ? values.box_quantity : undefined,
+      supplier_skus: values.supplier_skus?.map(s => ({
+        supplier_name: s.supplier_name,
+        supplier_sku: s.supplier_sku
+      })),
     };
 
     if (product) {
@@ -474,11 +493,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="sku" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Código SKU *</FormLabel>
+                      <FormLabel>SKU Interno *</FormLabel>
                       <div className="flex gap-2">
                         <FormControl><Input {...field} placeholder="SKU-001" /></FormControl>
                         <Button type="button" variant="outline" size="icon" title="Gerar automaticamente" onClick={() => form.setValue("sku", generateRandomSku())}>
-                          <Wand2 className="h-4 w-4" />
+                          <Dices className="h-4 w-4" />
                         </Button>
                       </div>
                       <FormMessage />
@@ -516,6 +535,71 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                       <FormMessage />
                     </FormItem>
                   )} />
+                </div>
+
+                {/* Suppliers (External SKUs) */}
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <FormLabel className="text-base font-semibold">Fornecedores (SKUs externos)</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ supplier_name: "", supplier_sku: "" })}
+                      className="h-8"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar fornecedor
+                    </Button>
+                  </div>
+                  
+                  {fields.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">
+                      Nenhum SKU de fornecedor cadastrado.
+                    </p>
+                  )}
+
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="flex gap-3 items-end group">
+                        <FormField
+                          control={form.control}
+                          name={`supplier_skus.${index}.supplier_name`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormLabel className="text-xs">Fornecedor {index + 1}</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="Nome do fornecedor" className="h-9" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`supplier_skus.${index}.supplier_sku`}
+                          render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <FormLabel className="text-xs">SKU</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="SKU do fornecedor" className="h-9" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => remove(index)}
+                          className="h-9 w-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* GTIN CX (Box barcode) */}

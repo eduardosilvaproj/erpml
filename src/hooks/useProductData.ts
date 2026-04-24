@@ -32,6 +32,7 @@ export type Product = {
   categories?: { name: string } | null;
   product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
   product_alternative_gtins?: { gtin: string }[];
+  product_supplier_skus?: { id: string; supplier_name: string; supplier_sku: string }[];
 };
 
 export type ProductFormData = {
@@ -54,6 +55,7 @@ export type ProductFormData = {
   image_url?: string;
   gtin_cx?: string;
   box_quantity?: number;
+  supplier_skus?: { supplier_name: string; supplier_sku: string }[];
 };
 
 export function useProducts(filters?: {
@@ -70,16 +72,24 @@ export function useProducts(filters?: {
   return useQuery({
     queryKey: ["products", filters, companyId],
     queryFn: async () => {
-      let query = supabase
-        .from("products")
-        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)", { count: "exact" });
+      let query;
+      
+      if (filters?.search && companyId) {
+        // Use the RPC for searching across products and supplier SKUs
+        query = supabase
+          .rpc("search_products_with_suppliers", {
+            search_term: filters.search,
+            p_company_id: companyId
+          })
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)");
+      } else {
+        query = supabase
+          .from("products")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)", { count: "exact" });
 
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%,ean.ilike.%${filters.search}%`);
+        if (companyId) {
+          query = query.eq("company_id", companyId);
+        }
       }
       if (filters?.category_id) {
         query = query.eq("category_id", filters.category_id);
@@ -129,7 +139,7 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
       while (true) {
         let q = supabase
           .from("products")
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin)")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)")
           .eq("company_id", companyId!)
           .order("name", { ascending: true })
           .range(page * PAGE, (page + 1) * PAGE - 1);
@@ -156,7 +166,7 @@ export function useCreateProduct() {
 
   return useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const { supplier_ids, ...productData } = data;
+      const { supplier_ids, supplier_skus, ...productData } = data;
       const insertData = {
         ...productData,
         barcode: productData.barcode || null,
@@ -193,6 +203,16 @@ export function useCreateProduct() {
         const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
         if (linkError) throw linkError;
       }
+      
+      if (supplier_skus && supplier_skus.length > 0) {
+        const skusToInsert = supplier_skus.map(s => ({
+          product_id: product.id,
+          supplier_name: s.supplier_name,
+          supplier_sku: s.supplier_sku
+        }));
+        const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert);
+        if (skuError) throw skuError;
+      }
 
       return product;
     },
@@ -212,7 +232,7 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ProductFormData }) => {
-      const { supplier_ids, ...productData } = data;
+      const { supplier_ids, supplier_skus, ...productData } = data;
       const updateData = {
         ...productData,
         barcode: productData.barcode || null,
@@ -243,6 +263,16 @@ export function useUpdateProduct() {
           is_primary: i === 0,
         }));
         await supabase.from("product_suppliers").insert(supplierLinks);
+      }
+
+      await supabase.from("product_supplier_skus").delete().eq("product_id", id);
+      if (supplier_skus && supplier_skus.length > 0) {
+        const skusToInsert = supplier_skus.map(s => ({
+          product_id: id,
+          supplier_name: s.supplier_name,
+          supplier_sku: s.supplier_sku
+        }));
+        await supabase.from("product_supplier_skus").insert(skusToInsert);
       }
     },
     onSuccess: () => {
