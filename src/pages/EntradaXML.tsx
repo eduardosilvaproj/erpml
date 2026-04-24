@@ -157,6 +157,27 @@ const EntradaXML = () => {
       toast({ title: "Nenhum arquivo válido", description: "Adicione ao menos um XML válido.", variant: "destructive" });
       return;
     }
+
+    const missingEan = parsedFiles.flatMap(f => 
+      f.matches?.filter(m => !m.xmlProduct.ean && (!m.matchedProductEan && !m.matchedProductBarcode)) || []
+    );
+
+    if (missingEan.length > 0 && !eanAlertShown) {
+      setItemsNeedingEan(missingEan);
+      setEanAlertShown(true);
+      return;
+    }
+
+    setStep("review");
+  };
+
+  const startEanRegistration = () => {
+    setCurrentEanIndex(0);
+    setStep("ean_registration");
+  };
+
+  const continueWithoutEans = () => {
+    setSkipPendingEan(true);
     setStep("review");
   };
 
