@@ -1,0 +1,1 @@
+ALTER FUNCTION public.validate_ean_uniqueness() SET search_path = public;
