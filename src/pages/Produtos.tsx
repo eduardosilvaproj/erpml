@@ -181,6 +181,28 @@ const Produtos = () => {
 
   const sortIndicator = (col: string) => sortBy === col ? (sortOrder === "asc" ? " ↑" : " ↓") : "";
 
+  const handleInlineEan = async (productId: string, ean: string) => {
+    if (!ean) return;
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ barcode: ean, ean: ean, ean_pending: false } as any)
+        .eq("id", productId);
+
+      if (error) throw error;
+      
+      toast({ title: "EAN vinculado com sucesso!" });
+      setInlineEans(prev => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    } catch (err: any) {
+      toast({ title: "Erro ao vincular EAN", description: err.message, variant: "destructive" });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue="products">
