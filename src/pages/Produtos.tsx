@@ -372,6 +372,9 @@ const Produtos = () => {
                           <TableHead className="cursor-pointer text-center" onClick={() => handleSort("stock_physical")}>
                             Estoque{sortIndicator("stock_physical")}
                           </TableHead>
+                          {correctionFilter === "no_ean" && (
+                            <TableHead className="w-[200px]">EAN (Bipar)</TableHead>
+                          )}
                           <TableHead className="text-center">Status</TableHead>
                           <TableHead className="w-[90px]">Ações</TableHead>
                         </TableRow>
