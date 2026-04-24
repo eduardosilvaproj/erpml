@@ -47,6 +47,7 @@ const Produtos = () => {
     search: search || undefined,
     category_id: categoryFilter || undefined,
     supplier_id: supplierFilter || undefined,
+    needsCorrection: (correctionFilter as any) || undefined,
     page,
     pageSize,
     sortBy,
