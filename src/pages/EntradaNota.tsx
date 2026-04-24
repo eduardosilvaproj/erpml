@@ -834,6 +834,16 @@ const EntradaNota = () => {
             await supabase.from("products").update(update as any).eq("id", productId);
           }
         }
+
+        // Link supplier SKU
+        if (productId && match.xmlProduct.code) {
+          await supabase.from("product_supplier_skus").upsert({
+            product_id: productId,
+            supplier_name: nfeData.issuerName,
+            supplier_sku: match.xmlProduct.code,
+            supplier_cnpj: nfeData.issuerCnpj
+          }, { onConflict: 'product_id,supplier_sku' });
+        }
       }
 
       await queryClient.invalidateQueries({ queryKey: ["invoices"] });
@@ -945,6 +955,16 @@ const EntradaNota = () => {
 
               await supabase.from("products").update(update as any).eq("id", productId);
             }
+          }
+
+          // Link supplier SKU
+          if (productId && match.xmlProduct.code) {
+            await supabase.from("product_supplier_skus").upsert({
+              product_id: productId,
+              supplier_name: nf.nfeData.issuerName,
+              supplier_sku: match.xmlProduct.code,
+              supplier_cnpj: nf.nfeData.issuerCnpj
+            }, { onConflict: 'product_id,supplier_sku' });
           }
 
           totalProducts++;
