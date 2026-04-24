@@ -1,20 +1,23 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import {
   FileText, Upload, CheckCircle, AlertTriangle, Loader2, X, Package,
-  ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp, Trash2, Files
+  ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp, Trash2, Files,
+  Camera, Barcode, ChevronLeft, ChevronRight, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
 import { parseNFeXml, matchProducts, type NFeData, type MatchResult } from "@/lib/nfe-parser";
 import { useInvoiceStats, useInvoices, useImportInvoice } from "@/hooks/useInvoiceData";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ImportStep = "upload" | "review" | "processing" | "done";
 
