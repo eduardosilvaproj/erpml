@@ -34,7 +34,6 @@ export type Product = {
   product_alternative_gtins?: { gtin: string }[];
   product_supplier_skus?: { id: string; supplier_name: string; supplier_sku: string }[];
 };
-};
 
 export type ProductFormData = {
   sku: string;
