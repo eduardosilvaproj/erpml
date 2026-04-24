@@ -244,7 +244,7 @@ const CorrecaoSKU = () => {
             <Button 
               variant="outline" 
               className="h-auto flex-col items-center gap-3 p-6 text-center hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200"
-              onClick={() => navigate("/produtos")}
+              onClick={() => navigate("/produtos?correction=no_sku")}
             >
               <div className="rounded-full bg-emerald-100 p-3">
                 <ListFilter className="h-6 w-6 text-emerald-600" />
