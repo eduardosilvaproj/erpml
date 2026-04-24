@@ -23,8 +23,17 @@ import { useQueryClient } from "@tanstack/react-query";
 const Produtos = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const correction = params.get("correction");
+    if (correction) {
+      setCorrectionFilter(correction);
+    }
+  }, [location.search]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
