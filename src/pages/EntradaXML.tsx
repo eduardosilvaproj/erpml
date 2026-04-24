@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-type ImportStep = "upload" | "review" | "processing" | "done";
+type ImportStep = "upload" | "review" | "ean_registration" | "processing" | "done";
 
 interface QueuedFile {
   id: string;
