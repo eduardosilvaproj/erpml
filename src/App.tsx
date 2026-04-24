@@ -14,6 +14,7 @@ import { PlanProtectedRoute } from "@/components/PlanProtectedRoute";
 import AppLayout from "@/components/AppLayout";
 import Index from "./pages/Index";
 import Produtos from "./pages/Produtos";
+import CorrecaoSKU from "./pages/CorrecaoSKU";
 import EntradaXML from "./pages/EntradaXML";
 import Conferencia from "./pages/Conferencia";
 import Separacao from "./pages/Separacao";
