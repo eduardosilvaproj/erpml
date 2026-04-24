@@ -49,6 +49,7 @@ const Produtos = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ current: 0, total: 0, name: "" });
+  const [inlineEans, setInlineEans] = useState<Record<string, string>>({});
 
   const { data: categories } = useCategories();
   const { data: suppliers } = useSuppliers();
