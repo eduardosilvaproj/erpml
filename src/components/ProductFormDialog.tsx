@@ -122,10 +122,16 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     })) || [],
   });
 
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: getDefaults(product),
+  });
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "supplier_skus",
   });
+
 
 
   useEffect(() => {
