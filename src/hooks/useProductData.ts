@@ -72,16 +72,25 @@ export function useProducts(filters?: {
   return useQuery({
     queryKey: ["products", filters, companyId],
     queryFn: async () => {
-      let query = supabase
-        .from("products")
-        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)", { count: "exact" });
+      let query;
+      
+      if (filters?.search && companyId) {
+        // Use the RPC for searching across products and supplier SKUs
+        query = supabase
+          .rpc("search_products_with_suppliers", {
+            search_term: filters.search,
+            p_company_id: companyId
+          })
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)");
+      } else {
+        query = supabase
+          .from("products")
+          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)", { count: "exact" });
 
-      if (companyId) {
-        query = query.eq("company_id", companyId);
+        if (companyId) {
+          query = query.eq("company_id", companyId);
+        }
       }
-
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%,ean.ilike.%${filters.search}%`);
         
         // Search in supplier SKUs - unfortunately we can't easily do or() with joined tables in a simple way
         // with the current Supabase client structure in a single query OR if we want to stay within .or()

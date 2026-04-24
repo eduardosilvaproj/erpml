@@ -298,7 +298,7 @@ const Produtos = () => {
                           </TableHead>
                           <TableHead className="w-[50px]">Foto</TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("sku")}>
-                            Código{sortIndicator("sku")}
+                            SKU / Fornecedores{sortIndicator("sku")}
                           </TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                             Nome{sortIndicator("name")}
@@ -337,7 +337,18 @@ const Produtos = () => {
                                   </div>
                                 )}
                               </TableCell>
-                              <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-mono text-xs font-bold text-foreground">
+                                    SKU: {product.sku}
+                                  </span>
+                                  {product.product_supplier_skus && product.product_supplier_skus.length > 0 && (
+                                    <span className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={product.product_supplier_skus.map(s => `${s.supplier_name}: ${s.supplier_sku}`).join("\n")}>
+                                      Fornecedores: {product.product_supplier_skus.map(s => s.supplier_name).join(" · ")}
+                                    </span>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell className="font-medium max-w-[200px] truncate">{product.name}</TableCell>
                               <TableCell>
                                 {product.categories?.name && (
