@@ -106,6 +106,7 @@ const App = () => {
                     <Routes>
                       <Route path="/" element={<Index />} />
                       <Route path="/produtos" element={<Produtos />} />
+                      <Route path="/produtos/correcao" element={<CorrecaoSKU />} />
                       <Route path="/entrada-xml" element={<EntradaXML />} />
                       <Route path="/entrada-nota" element={<EntradaNota />} />
                       <Route path="/conferencia" element={<Conferencia />} />
