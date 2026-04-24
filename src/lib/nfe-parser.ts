@@ -167,6 +167,8 @@ export interface MatchResult {
   matchedProductBoxQty: number | null;
   matchType: "exact" | "fuzzy" | "new" | "none";
   confidence: number;
+  newEan?: string;
+  eanPending?: boolean;
 }
 
 export function matchProducts(
