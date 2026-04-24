@@ -1588,6 +1588,38 @@ export type Database = {
           },
         ]
       }
+      product_supplier_skus: {
+        Row: {
+          created_at: string | null
+          id: string
+          product_id: string
+          supplier_name: string | null
+          supplier_sku: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          product_id: string
+          supplier_name?: string | null
+          supplier_sku?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          supplier_name?: string | null
+          supplier_sku?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_supplier_skus_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_suppliers: {
         Row: {
           cost: number
