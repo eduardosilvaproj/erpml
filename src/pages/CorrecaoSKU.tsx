@@ -24,7 +24,7 @@ const CorrecaoSKU = () => {
       const { count: noSkuCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
-        .or("sku.is.null,sku.eq.''");
+        .or('sku.is.null,sku.eq.""');
 
       const { data: allProducts } = await supabase
         .from("products")
