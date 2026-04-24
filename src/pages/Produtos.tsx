@@ -193,6 +193,9 @@ const Produtos = () => {
               <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" /> Importar
               </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate("/produtos/correcao")}>
+                <Settings2 className="mr-2 h-4 w-4" /> Corrigir SKUs
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" /> Exportar
               </Button>
