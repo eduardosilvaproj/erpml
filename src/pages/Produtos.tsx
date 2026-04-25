@@ -29,6 +29,8 @@ const Produtos = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const barcodeSearch = useBarcodeSearch();
+  const [barcodeInput, setBarcodeInput] = useState("");
   
   useEffect(() => {
     const params = new URLSearchParams(location.search);
