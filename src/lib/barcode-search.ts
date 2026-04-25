@@ -12,11 +12,11 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
   if (!codigo) return null;
   const trimmed = codigo.trim();
 
-  // 1. Primeiro busca em products onde ean = código bipado (produto unitário)
+  // 1. PRIORIDADE MÁXIMA: EAN (ou barcode) do produto (Unidade)
   let queryEan = supabase
     .from('products')
     .select('*, product_gtins(*)')
-    .eq('ean', trimmed);
+    .or(`ean.eq."${trimmed}",barcode.eq."${trimmed}"`);
   
   if (companyId) queryEan = queryEan.eq('company_id', companyId);
   const { data: porEan } = await queryEan.maybeSingle();
@@ -25,7 +25,7 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
     return { produto: porEan, tipo: 'unidade', qty: 1 };
   }
 
-  // 2. Se não achar, busca em products onde gtin_cx = código bipado (caixa conhecida)
+  // 2. FALLBACK 1: GTIN de Caixa (gtin_cx) cadastrado no produto
   let queryGtinCx = supabase
     .from('products')
     .select('*, product_gtins(*)')
@@ -38,11 +38,11 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
     return {
       produto: porGtinCx,
       tipo: 'caixa',
-      qty: porGtinCx.box_quantity || 12 // Usa box_quantity do produto
+      qty: porGtinCx.box_quantity || 12
     };
   }
 
-  // 3. Buscar como GTIN de caixa na tabela específica (legado/detalhado)
+  // 3. FALLBACK 2: GTIN na tabela de GTINs extras (product_gtins)
   let queryGtinTable = supabase
     .from('product_gtins')
     .select('*, product:products(*)')
@@ -54,13 +54,13 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
   if (porGtinTable && porGtinTable.product) {
     return {
       produto: porGtinTable.product,
-      tipo: 'caixa',
-      qty: porGtinTable.box_quantity,
+      tipo: porGtinTable.tipo === 'caixa' ? 'caixa' : 'unidade',
+      qty: porGtinTable.box_quantity || 1,
       gtin: porGtinTable
     };
   }
 
-  // 4. Buscar em SKUs de fornecedores
+  // 4. Último caso: SKUs de fornecedores (apenas se configurado)
   let querySupplier = supabase
     .from('product_supplier_skus')
     .select('*, product:products(*)')
@@ -70,14 +70,13 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
   
   if (porSkuFornecedor && porSkuFornecedor.product) {
     if (companyId && porSkuFornecedor.product.company_id !== companyId) {
-      // Not for this company
-    } else {
-      return {
-        produto: porSkuFornecedor.product,
-        tipo: 'unidade',
-        qty: 1
-      };
+      return null;
     }
+    return {
+      produto: porSkuFornecedor.product,
+      tipo: 'unidade',
+      qty: 1
+    };
   }
 
   return null;
