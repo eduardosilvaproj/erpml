@@ -222,24 +222,20 @@ export default function Login() {
         className="w-full max-w-md z-10"
       >
         <Card className="login-card-glass">
-          <CardHeader className="text-center pb-0">
-            <div className="flex justify-center logo-container">
+          <CardHeader className="text-center pb-2">
+            <div className="flex flex-col items-center gap-4">
               <img
                 src="/chatgpt-image.png"
                 alt="Stovix"
                 style={{
-                  height: '180px',
+                  height: '160px',
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
-                  animation: 'pulse-glow 3s ease-in-out infinite',
-                  marginBottom: '-20px'
+                  animation: 'pulse-glow 3s ease-in-out infinite'
                 }}
               />
-            </div>
-          </CardHeader>
-          <form onSubmit={handleLogin} noValidate>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              
+              <div className="grid grid-cols-2 gap-3 w-full">
                 <Button
                   type="button"
                   variant="outline"
@@ -276,6 +272,10 @@ export default function Login() {
                   Apple
                 </Button>
               </div>
+            </div>
+          </CardHeader>
+          <form onSubmit={handleLogin} noValidate>
+            <CardContent className="space-y-4 pt-0">
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
