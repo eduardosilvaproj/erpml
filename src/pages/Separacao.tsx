@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
   ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
-  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X, ChevronDown, Plus
+  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X, ChevronDown, Plus, Circle
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
@@ -22,6 +22,7 @@ import { useProducts } from "@/hooks/useProductData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
 import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { Label } from "@/components/ui/label";
 
 import { OrderRecordingSystem, type OrderRecordingSystemHandle } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
