@@ -135,7 +135,7 @@ const Separacao = () => {
         // 1. Tentar restaurar estado do Supabase
         const { data: fullOrder } = await supabase
           .from("full_orders")
-          .select("*, full_order_items(*, products(*))")
+          .select("*, full_order_items(*, product:products(*))")
           .eq("frete_ml", ordem.frete_ml)
           .eq("company_id", companyId)
           .maybeSingle();
