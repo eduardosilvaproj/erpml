@@ -645,7 +645,7 @@ const BalancoEstoque = () => {
                 <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{lastScanned.name}</p>
-                  <p className="text-xs text-muted-foreground">EAN/SKU: {lastScanned.ean || lastScanned.sku}</p>
+                  <p className="text-xs text-muted-foreground">EAN/SKU: {lastScanned.sku}</p>
                 </div>
                 <Badge className="bg-primary/15 text-primary text-lg px-3 py-1">
                   {lastScanned.count}
