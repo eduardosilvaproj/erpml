@@ -441,11 +441,8 @@ const Conferencia = () => {
     // Se estivermos esperando o produto interno da caixa
     if (boxMode === "scan_internal") {
       const internalCode = code.trim().toUpperCase();
-      const found = allProducts.find(p => 
-        p.ean === internalCode || 
-        p.barcode === internalCode || 
-        p.sku?.toUpperCase() === internalCode
-      );
+      // Use the more robust search function instead of just local allProducts
+      const found = await searchProductByCode(internalCode);
 
       if (found) {
         const qtyToLow = parseInt(tempBoxQty);
@@ -453,9 +450,15 @@ const Conferencia = () => {
         setLastScan({ success: true, name: `📦 Caixa de ${qtyToLow}x ${found.name}`, code: internalCode });
         playBeep(800, 100);
         setBoxMode("idle");
+        setInternalScanValue("");
       } else {
-        setLastScan({ success: false, name: "Produto interno não encontrado", code: internalCode });
+        setLastScan({ success: false, name: "Produto não encontrado para esse EAN", code: internalCode });
         playBeep(300, 200);
+        toast({
+          title: "Produto não encontrado",
+          description: `O EAN ${internalCode} não foi localizado no sistema.`,
+          variant: "destructive"
+        });
       }
       return;
     }
