@@ -167,7 +167,7 @@ export function useDeductKitStock() {
       // Get kit items
       const { data: kitItems, error } = await supabase
         .from("kit_items")
-        .select("product_id, quantity, products(id, name, stock_physical, stock_full)")
+        .select("product_id, quantity, products(id, name, ean, barcode, stock_physical, stock_full)")
         .eq("kit_id", kitId);
 
       if (error) throw error;
