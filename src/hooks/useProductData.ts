@@ -152,7 +152,7 @@ export function useProducts(filters?: {
  */
 export function useAllProducts(opts?: { activeOnly?: boolean }) {
   const companyId = useCompanyId();
-  const activeOnly = opts?.activeOnly ?? false;
+  const activeOnly = opts?.activeOnly ?? true;
 
   return useQuery({
     queryKey: ["products-all", companyId, activeOnly],
