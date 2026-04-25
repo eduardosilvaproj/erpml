@@ -215,19 +215,14 @@ export default function Equipe() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Equipe</h1>
-          <p className="text-muted-foreground">Membros da sua empresa</p>
+          <p className="text-muted-foreground text-lg">Gerencie os membros e permissões da sua empresa</p>
         </div>
+        
         {isOwner && (
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Novo Membro
-              </Button>
-            </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Membro</DialogTitle>
