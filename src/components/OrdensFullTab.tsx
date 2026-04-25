@@ -526,9 +526,9 @@ export const OrdensFullTab = () => {
     try {
       setStartingId(ordem.id);
       const { data: itens, error } = await supabase
-        .from("full_orders")
+        .from("full_order_items")
         .select("*, product:products(id, name, sku, barcode, image_url, stock_physical)")
-        .eq("ordem_id", ordem.id);
+        .eq("order_id", ordem.id);
       if (error) throw error;
 
       const produtos = (itens || [])
@@ -540,7 +540,7 @@ export const OrdensFullTab = () => {
           barcode: it.product.barcode,
           image_url: it.product.image_url,
           stock_physical: it.product.stock_physical,
-          qtd_solicitada: it.qtd_solicitada,
+          qtd_solicitada: it.quantity,
         }));
 
       localStorage.setItem("ordem_ativa", JSON.stringify({
