@@ -157,7 +157,7 @@ export function useDashboardData(period: PeriodFilter) {
 
       // Pending shipments (full orders in specific statuses + transfer orders in "separando" status)
       const pendingShipments = (pendingFull || 0) + xfers.filter(t => t.status === "separando").length;
-      const sentShipments = xfers.filter(t => t.status === "enviado" || t.status === "recebido").length;
+      const sentShipments = (sentFull || 0) + xfers.filter(t => t.status === "enviado" || t.status === "recebido").length;
 
       // Stock alerts
       const lowStockProducts = prods.filter(p => 
