@@ -716,7 +716,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Box className="h-5 w-5 text-blue-500" />
-              Fluxo de Caixa: {tempBoxCode}
+              {knownBoxProduct ? `Caixa: ${knownBoxProduct.product?.name}` : `Fluxo de Caixa: ${tempBoxCode}`}
             </DialogTitle>
           </DialogHeader>
 
