@@ -646,24 +646,56 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 autoFocus
                 onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
               />
-              <Button className="w-full bg-blue-600" onClick={() => setBoxMode("scan_internal")}>
-                Próximo: Bipar item interno
+              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setBoxMode("scan_internal")}>
+                Confirmar Quantidade
               </Button>
             </div>
           )}
 
           {boxMode === "scan_internal" && (
-            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-                <ScanBarcode className="h-10 w-10 text-blue-600" />
+            <div className="py-6 space-y-6">
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                  <ScanBarcode className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-blue-900">Aguardando leitura...</p>
+                  <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-lg font-bold">Aguardando leitura...</p>
-                <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+              
+              <div className="space-y-3">
+                <Input
+                  autoFocus
+                  placeholder="Bipe ou digite o EAN do produto dentro da caixa"
+                  value={internalScan}
+                  onChange={(e) => setInternalScan(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && internalScan.trim()) {
+                      handleScan(internalScan);
+                      setInternalScan("");
+                    }
+                  }}
+                  className="h-12 text-lg text-center font-mono border-2 focus:border-blue-500"
+                />
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setBoxMode("qty")}>
+                    Voltar
+                  </Button>
+                  <Button 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                    onClick={() => {
+                      if (internalScan.trim()) {
+                        handleScan(internalScan);
+                        setInternalScan("");
+                      }
+                    }}
+                  >
+                    Confirmar Item
+                  </Button>
+                </div>
               </div>
-              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
-                Voltar
-              </Button>
             </div>
           )}
         </DialogContent>
