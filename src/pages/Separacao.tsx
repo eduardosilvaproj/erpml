@@ -524,6 +524,16 @@ const Separacao = () => {
                         {item.scannedQty}
                       </span>
                     </TableCell>
+                    <TableCell className="text-center">
+                      <span 
+                        className="text-lg font-bold"
+                        style={{
+                          color: (item.neededQty - item.scannedQty) <= 0 ? '#22c55e' : (item.neededQty - item.scannedQty) <= 10 ? '#f59e0b' : '#ef4444'
+                        }}
+                      >
+                        {(item.neededQty - item.scannedQty) <= 0 ? '✅ 0' : (item.neededQty - item.scannedQty)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       {getStatusBadge(item)}
                     </TableCell>
@@ -531,7 +541,7 @@ const Separacao = () => {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                       Nenhum produto nesta ordem.
                     </TableCell>
                   </TableRow>
