@@ -218,6 +218,7 @@ export const OrdensFullTab = () => {
     existingStatus: "",
     freteNumero: "",
   });
+  const [fullToDeleteId, setFullToDeleteId] = useState<string | null>(null);
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
