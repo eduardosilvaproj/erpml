@@ -35,6 +35,9 @@ export default function Equipe() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [invitePassword, setInvitePassword] = useState("");
+  const [inviteConfirmPassword, setInviteConfirmPassword] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [invitePerms, setInvitePerms] = useState<Permissions>({ ...moduleDefaults });
   const [inviting, setInviting] = useState(false);
