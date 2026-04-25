@@ -151,29 +151,27 @@ const Conferencia = () => {
     let q = supabase.from("products").select("*").limit(1);
     if (companyId) q = q.eq("company_id", companyId);
 
-    // Try EAN first (Master Key)
-    const { data: byEan, error: e0 } = await q.eq("ean", trimmed).maybeSingle();
+    // 1. Try EAN first (Unit Product)
+    const { data: byEan } = await q.eq("ean", trimmed).maybeSingle();
     if (byEan) return byEan;
 
-    // Try barcode
-    let qB = supabase.from("products").select("*").limit(1);
-    if (companyId) qB = qB.eq("company_id", companyId);
-    const { data: byBarcode, error: e1 } = await qB.eq("barcode", trimmed).maybeSingle();
-    if (byBarcode) return byBarcode;
-
-    // Try SKU
-    let q2 = supabase.from("products").select("*").limit(1);
-    if (companyId) q2 = q2.eq("company_id", companyId);
-    const { data: bySku, error: e2 } = await q2.eq("sku", trimmed).maybeSingle();
-    console.log("[Conferencia] por sku:", bySku, e2);
-    if (bySku) return bySku;
-
-    // Try GTIN CX
+    // 2. Try GTIN CX (Known Box)
     let q3 = supabase.from("products").select("*").limit(1);
     if (companyId) q3 = q3.eq("company_id", companyId);
-    const { data: byGtin, error: e3 } = await q3.eq("gtin_cx", trimmed).maybeSingle();
-    console.log("[Conferencia] por gtin_cx:", byGtin, e3);
+    const { data: byGtin } = await q3.eq("gtin_cx", trimmed).maybeSingle();
     if (byGtin) return byGtin;
+
+    // 3. Try SKU
+    let q2 = supabase.from("products").select("*").limit(1);
+    if (companyId) q2 = q2.eq("company_id", companyId);
+    const { data: bySku } = await q2.eq("sku", trimmed).maybeSingle();
+    if (bySku) return bySku;
+
+    // 4. Try barcode field
+    let qB = supabase.from("products").select("*").limit(1);
+    if (companyId) qB = qB.eq("company_id", companyId);
+    const { data: byBarcode } = await qB.eq("barcode", trimmed).maybeSingle();
+    if (byBarcode) return byBarcode;
 
     // Try Alternative GTINs table
     const { data: byAltGtin } = await supabase
@@ -998,6 +996,7 @@ const Conferencia = () => {
         codigo={barcodeSearch.lastCodigo}
         produto={barcodeSearch.lastResult?.produto}
         boxQty={barcodeSearch.lastResult?.qty}
+        isFullMode={conferenceType === "full"}
         onConfirmBox={(qty) => {
           if (barcodeSearch.lastResult) {
             addScannedUnits(barcodeSearch.lastResult.produto, qty);
