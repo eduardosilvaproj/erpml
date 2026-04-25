@@ -145,7 +145,7 @@ export const useCreateOrdemFull = () => {
           criado_por: userId,
           total_itens: totalItens,
           total_produtos: totalProdutos,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
