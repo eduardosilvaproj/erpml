@@ -230,14 +230,14 @@ const Conferencia = () => {
 
   // Auto-focus scan input when modal opens or tab switches to "scan"
   useEffect(() => {
-    if (gtinModal.open && gtinSelectMode === "scan" && !gtinModal.selectedProductId) {
-      const t = setTimeout(() => gtinScanInputRef.current?.focus(), 150);
-      return () => clearTimeout(t);
+    if (boxMode === "qty") {
+      setTimeout(() => qtyInputRef.current?.focus(), 150);
+    } else if (boxMode === "scan_internal") {
+      setTimeout(() => internalScannerRef.current?.focus(), 150);
+    } else if (boxMode === "idle" && step === 2) {
+      setTimeout(() => scanInputRef.current?.focus(), 150);
     }
-    if (boxMode !== "scan_internal") {
-      setInternalScanValue("");
-    }
-  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId, boxMode]);
+  }, [boxMode, step]);
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
