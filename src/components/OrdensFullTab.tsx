@@ -58,7 +58,7 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
   const handleSave = async () => {
     try {
       const { error } = await supabase
-        .from("ordens_full")
+        .from("full_orders")
         .update({ previsao_carregamento: tempDate || null })
         .eq("id", o.id)
         .eq("company_id", companyId);
@@ -527,7 +527,7 @@ export const OrdensFullTab = () => {
     try {
       setStartingId(ordem.id);
       const { data: itens, error } = await supabase
-        .from("ordens_full_itens")
+        .from("full_orders")
         .select("*, product:products(id, name, sku, barcode, image_url, stock_physical)")
         .eq("ordem_id", ordem.id);
       if (error) throw error;
