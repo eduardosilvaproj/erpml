@@ -445,12 +445,14 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                           <div className="border border-border rounded-md p-3 space-y-2">
                             <p className="text-sm font-medium flex items-center gap-2"><ScanBarcode className="h-4 w-4" /> Bipar produto</p>
                             <BarcodeScannerInput
+                              ref={scannerRef}
                               value={scan}
                               onChange={setScan}
                               onScan={handleScan}
                               placeholder="Bipe o código..."
                               autoFocus
                               scanMode
+                              disabled={blockingAlert.isOpen}
                             />
                             {lastScan && (
                               <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
