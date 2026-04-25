@@ -99,6 +99,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       setNovaPrevisaoData(format(d, "yyyy-MM-dd"));
       setNovaPrevisaoHora(format(d, "HH:mm"));
     }
+  }, [ordemId, ordem?.previsao_carregamento]);
+
   useEffect(() => {
     if (boxMode === "qty") {
       setTimeout(() => qtyInputRef.current?.focus(), 150);
