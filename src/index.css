@@ -177,10 +177,23 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 .login-card-glass {
   background: rgba(22, 27, 34, 0.85) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(34, 197, 94, 0.3) !important;
-  box-shadow: 
-    0 0 40px rgba(34, 197, 94, 0.1),
-    0 25px 50px rgba(0,0,0,0.5) !important;
+  border: 1px solid rgba(34, 197, 94, 0.4) !important;
+  box-shadow: 0 0 60px rgba(34, 197, 94, 0.15), inset 0 1px 0 rgba(255,255,255,0.05), 0 25px 50px rgba(0,0,0,0.5) !important;
+}
+
+.logo-container {
+  margin-bottom: 32px;
+}
+
+.btn-entrar:hover {
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+input:focus {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+  outline: none !important;
 }
 
 .typing-cursor::after {
