@@ -51,6 +51,7 @@ export interface OrdemItem {
     name: string;
     sku: string;
     barcode: string | null;
+    ean?: string | null;
     image_url: string | null;
     stock_physical: number;
     stock_full: number;
