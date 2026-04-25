@@ -54,8 +54,8 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
-        name: "ErpML - ERP Mercado Livre",
-        short_name: "ErpML",
+        name: "Stovix - ERP Mercado Livre",
+        short_name: "Stovix",
         description: "Sistema ERP integrado ao Mercado Livre",
         theme_color: "#7c3aed",
         background_color: "#0f0a1e",

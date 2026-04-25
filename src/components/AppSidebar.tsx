@@ -160,7 +160,7 @@ function SidebarContent({
         <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
           <span className="text-base font-bold text-primary">E</span>
         </div>
-        <span className="text-sm font-bold text-foreground tracking-tight truncate">ERP System</span>
+        <span className="text-sm font-bold text-foreground tracking-tight truncate">Stovix</span>
       </div>
 
       {/* Nav */}
