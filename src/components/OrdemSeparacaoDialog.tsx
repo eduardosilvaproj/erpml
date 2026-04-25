@@ -54,6 +54,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
   const [internalScan, setInternalScan] = useState("");
+  const [blockingAlert, setBlockingAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
