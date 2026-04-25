@@ -800,8 +800,14 @@ export const OrdensFullTab = () => {
                   Frete #{parsedData?.shippingNumber}
                 </p>
                 <p className="text-sm text-muted-foreground font-medium">
-                  {parsedData?.items.length} produtos · {parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades
+                  {parsedData?.expectedProducts || parsedData?.items.length} produtos · {parsedData?.expectedUnits || parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades
                 </p>
+                {parsedData && parsedData.expectedProducts && parsedData.expectedProducts > parsedData.items.length && (
+                  <p className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    ⚠️ Parser encontrou {parsedData.items.length}/{parsedData.expectedProducts} produtos
+                  </p>
+                )}
               </div>
             </DialogHeader>
           </div>
