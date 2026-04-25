@@ -29,6 +29,7 @@ interface OrderRecordingSystemProps {
   trigger?: React.ReactNode;
   defaultType?: RecordingType;
   onFinished?: (url: string) => void;
+  onRecordingChange?: (isRecording: boolean, duration: number) => void;
   viewOnly?: boolean;
 }
 
@@ -39,6 +40,7 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
   trigger, 
   defaultType = "carregamento", 
   onFinished,
+  onRecordingChange,
   viewOnly = false
 }, ref) => {
 
