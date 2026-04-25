@@ -328,7 +328,8 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
         await supabase
           .from('full_orders')
           .update({ previsao_carregamento: novaData })
-          .eq('frete_ml', freteId);
+          .eq('frete_ml', freteId)
+          .eq('company_id', companyId);
       }
 
       if (e1) throw e1;
