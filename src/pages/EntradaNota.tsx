@@ -77,6 +77,8 @@ const EntradaNota = () => {
   const navigate = useNavigate();
   const companyId = useCompanyId();
   const queryClient = useQueryClient();
+  const barcodeSearch = useBarcodeSearch();
+
 
   // Wizard state
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
