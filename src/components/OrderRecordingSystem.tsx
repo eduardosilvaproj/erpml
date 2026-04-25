@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Video, VideoOff, History, Play, Trash2, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,12 @@ import { useOrderRecordings, OrderRecording } from "@/hooks/useOrderRecordings";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export interface OrderRecordingSystemHandle {
+  startRecording: (type: RecordingType) => void;
+  stopRecording: () => void;
+  isRecording: boolean;
+}
+
 interface OrderRecordingSystemProps {
   pedidoId: string;
   orderNumber?: string;
@@ -25,7 +31,7 @@ interface OrderRecordingSystemProps {
   viewOnly?: boolean;
 }
 
-export function OrderRecordingSystem({ 
+export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, OrderRecordingSystemProps>(({ 
   pedidoId, 
   orderNumber, 
   freteMl, 
@@ -33,7 +39,7 @@ export function OrderRecordingSystem({
   defaultType = "carregamento", 
   onFinished,
   viewOnly = false
-}: OrderRecordingSystemProps) {
+}, ref) => {
 
   const [activeType, setActiveType] = useState<RecordingType>(defaultType);
 
