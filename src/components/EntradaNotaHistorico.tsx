@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Search, Download, FileText, RefreshCw } from "lucide-react";
+import { Eye, Search, Download, FileText, RefreshCw, Trash2, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useToast } from "@/hooks/use-toast";
@@ -137,6 +139,7 @@ export function EntradaNotaHistorico() {
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState<Period>("all");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [reprocessingAll, setReprocessingAll] = useState(false);
 
   const { data: invoices = [], isLoading } = useQuery({
@@ -314,9 +317,12 @@ export function EntradaNotaHistorico() {
                         <TableCell className="text-right font-medium">{fmt(Number(i.total_value))}</TableCell>
                         <TableCell>{tipoBadge(i.issuer_name)}</TableCell>
                         <TableCell>{statusBadge(i.status)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right flex items-center justify-end gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailId(i.id)}>
                             <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(i.id)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -330,6 +336,7 @@ export function EntradaNotaHistorico() {
       </div>
 
       <DetailDialog invoiceId={detailId} onClose={() => setDetailId(null)} />
+      <DeleteDialog invoiceId={deleteId} onClose={() => setDeleteId(null)} />
     </>
   );
 }
@@ -570,6 +577,163 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           )}
           <Button onClick={exportPdf} disabled={!data} className="gap-2">
             <Download className="h-4 w-4" /> Exportar PDF
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClose: () => void }) {
+  const companyId = useCompanyId();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [stockAction, setStockAction] = useState<"revert" | "keep">("keep");
+
+  const { data: invoice } = useQuery({
+    queryKey: ["entrada-nota-delete-info", invoiceId],
+    enabled: !!invoiceId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, invoice_items(*)")
+        .eq("id", invoiceId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleDelete = async () => {
+    if (!invoice || !companyId) return;
+    setLoading(true);
+
+    try {
+      const reverterEstoque = stockAction === "revert";
+      const items = (invoice.invoice_items as any[]) || [];
+
+      if (reverterEstoque) {
+        // 2. Para cada item, subtrair do estoque
+        for (const item of items) {
+          if (item.product_id && item.stock_updated) {
+            await supabase.rpc('decrementar_estoque', {
+              p_product_id: item.product_id,
+              p_quantidade: Math.floor(Number(item.quantity) || 0),
+              p_company_id: companyId
+            });
+          }
+        }
+      }
+
+      // 3. Deletar conferências vinculadas
+      const { data: conferences } = await supabase
+        .from('conferences')
+        .select('id')
+        .eq('invoice_id', invoice.id);
+      
+      if (conferences && conferences.length > 0) {
+        const confIds = conferences.map(c => c.id);
+        await supabase.from('conference_items').delete().in('conference_id', confIds);
+        await supabase.from('conferences').delete().eq('invoice_id', invoice.id);
+      }
+
+      // 4. Deletar itens da nota
+      await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoice.id);
+
+      // 5. Deletar a nota
+      await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoice.id);
+
+      toast({
+        title: reverterEstoque ? "✅ Nota deletada e estoque revertido" : "✅ Nota deletada — estoque mantido",
+        variant: "default",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["entrada-nota-historico"] });
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      onClose();
+    } catch (e: any) {
+      toast({
+        title: "Erro ao deletar",
+        description: e.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!invoice) return null;
+
+  const totalUnits = ((invoice.invoice_items as any[]) || []).reduce((acc, it) => acc + Number(it.quantity || 0), 0);
+
+  return (
+    <Dialog open={!!invoiceId} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <div className="flex items-center gap-2 text-destructive mb-2">
+            <AlertTriangle className="h-5 w-5" />
+            <DialogTitle>Deletar Nota Fiscal #{invoice.number}?</DialogTitle>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6 py-4">
+          <div className="bg-muted/30 p-4 rounded-lg space-y-2 text-sm border border-border/50">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Fornecedor:</span>
+              <span className="font-medium">{invoice.issuer_name || "—"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Data:</span>
+              <span className="font-medium">{fmtDate(invoice.created_at)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Produtos:</span>
+              <span className="font-medium">{invoice.items_count} produtos · {totalUnits} unidades</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-sm font-medium">O que deseja fazer com os itens do estoque?</p>
+            <RadioGroup value={stockAction} onValueChange={(v: any) => setStockAction(v)} className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <RadioGroupItem value="revert" id="revert" className="mt-1" />
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="revert" className="text-sm font-medium cursor-pointer">Reverter estoque</Label>
+                  <p className="text-xs text-muted-foreground">Remover as unidades que entraram com esta nota</p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-3">
+                <RadioGroupItem value="keep" id="keep" className="mt-1" />
+                <div className="grid gap-1.5 leading-none">
+                  <Label htmlFor="keep" className="text-sm font-medium cursor-pointer">Manter estoque</Label>
+                  <p className="text-xs text-muted-foreground">Deletar só o registro da nota, manter quantidades</p>
+                </div>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-md flex gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive font-medium leading-tight">
+              ⚠️ Esta ação não pode ser desfeita.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={onClose} disabled={loading} className="sm:mr-auto">
+            Cancelar
+          </Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2">
+            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            Confirmar exclusão
           </Button>
         </DialogFooter>
       </DialogContent>
