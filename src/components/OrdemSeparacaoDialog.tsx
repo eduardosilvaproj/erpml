@@ -679,7 +679,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                   <Label>Campo de Bipagem</Label>
                   <BarcodeScannerInput
                     value={internalScan}
-                    onChange={setInternalScan}
                     onScan={handleScan}
                     onChange={(val) => {
                       setInternalScan(val);
