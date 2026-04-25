@@ -162,7 +162,7 @@ export function useImportInvoice() {
               description,
               cost,
               price,
-              stock_physical: 0,
+              stock_physical: Math.floor(xmlP.quantity),
               min_stock: 1,
               active: true,
               ean_pending: match.eanPending ?? false,
@@ -193,12 +193,12 @@ export function useImportInvoice() {
           total_value: match.xmlProduct.totalValue,
           match_type: productId ? match.matchType : "none",
           match_confidence: match.confidence,
-          stock_updated: false, // Será atualizado logo abaixo se o estoque for atualizado
+          stock_updated: match.matchType === "none" && !!productId, // For new products, it's already set during creation
         }).select().single();
 
         if (itemError) throw itemError;
 
-        if (productId) {
+        if (productId && match.matchType !== "none") {
           const { data: current } = await supabase
             .from("products")
             .select("stock_physical, cost, barcode, ean, name, description, price, min_stock, ean_pending")

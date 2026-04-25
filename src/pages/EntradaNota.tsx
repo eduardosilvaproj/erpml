@@ -908,7 +908,7 @@ const EntradaNota = () => {
             }
           }
 
-          const { error: itemError } = await supabase.from("invoice_items").insert({
+          const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
             invoice_id: invoice.id,
             product_id: productId,
             xml_code: match.xmlProduct.code,
@@ -922,8 +922,8 @@ const EntradaNota = () => {
             total_value: match.xmlProduct.totalValue,
             match_type: productId ? (wasMatched ? match.matchType : "auto_created") : "none",
             match_confidence: match.confidence,
-            stock_updated: !!productId && autoUpdateStock,
-          });
+            stock_updated: !wasMatched && !!productId && autoUpdateStock, // For new products, it's already updated during creation
+          }).select().single();
 
           if (itemError) {
             console.error(`Erro ao inserir item ${match.xmlProduct.description} no lote:`, itemError);
@@ -976,6 +976,12 @@ const EntradaNota = () => {
 
               if (updateError) {
                 console.error(`Erro ao atualizar estoque para ${match.xmlProduct.description}:`, updateError);
+              } else {
+                // Somente marca como atualizado se o update no produto teve sucesso
+                await supabase
+                  .from("invoice_items")
+                  .update({ stock_updated: true })
+                  .eq("id", insertedItem.id);
               }
             }
           }
