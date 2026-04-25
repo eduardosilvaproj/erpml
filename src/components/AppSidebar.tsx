@@ -157,18 +157,28 @@ function SidebarContent({
   return (
     <>
       {/* Logo */}
-      <div className={`flex items-center gap-3 px-4 border-b border-border/30 shrink-0 ${compact ? 'h-16 justify-center' : 'h-14'}`}>
+      <div className={`flex items-center gap-3 px-4 py-3 border-b border-border/30 shrink-0 ${compact ? 'h-16 justify-center' : 'min-h-[64px]'}`}>
         {compact ? (
           <img 
             src="/chatgpt-image.png" 
             alt="S" 
-            style={{height: '32px', width: '32px', objectFit: 'contain', objectPosition: 'top center'}} 
+            style={{
+              height: '32px', 
+              width: '32px', 
+              objectFit: 'contain', 
+              objectPosition: 'top center',
+              filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.4))'
+            }} 
           />
         ) : (
           <img 
             src="/chatgpt-image.png" 
             alt="Stovix" 
-            style={{height: '48px', objectFit: 'contain'}} 
+            style={{
+              height: '48px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.4))'
+            }} 
           />
         )}
       </div>
