@@ -2358,7 +2358,9 @@ const Conferencia = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
+
 
 export default Conferencia;
