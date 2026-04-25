@@ -574,10 +574,12 @@ export type Database = {
       }
       full_orders: {
         Row: {
+          bipagem_state: Json | null
           company_id: string | null
           created_at: string | null
           frete_ml: string | null
           id: string
+          pausado_em: string | null
           pdf_frete_id: string | null
           previsao_carregamento: string | null
           separado_em: string | null
@@ -586,10 +588,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          bipagem_state?: Json | null
           company_id?: string | null
           created_at?: string | null
           frete_ml?: string | null
           id?: string
+          pausado_em?: string | null
           pdf_frete_id?: string | null
           previsao_carregamento?: string | null
           separado_em?: string | null
@@ -598,10 +602,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          bipagem_state?: Json | null
           company_id?: string | null
           created_at?: string | null
           frete_ml?: string | null
           id?: string
+          pausado_em?: string | null
           pdf_frete_id?: string | null
           previsao_carregamento?: string | null
           separado_em?: string | null
@@ -1583,6 +1589,58 @@ export type Database = {
           },
           {
             foreignKeyName: "product_alternative_gtins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_search_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_gtins: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          gtin: string
+          id: string
+          product_id: string
+          qtd_por_caixa: number | null
+          tipo: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          gtin: string
+          id?: string
+          product_id: string
+          qtd_por_caixa?: number | null
+          tipo?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          gtin?: string
+          id?: string
+          product_id?: string
+          qtd_por_caixa?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_gtins_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_gtins_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_gtins_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_search_view"
