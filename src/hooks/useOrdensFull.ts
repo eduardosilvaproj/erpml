@@ -137,6 +137,7 @@ export const useCreateOrdemFull = () => {
     mutationFn: async (params: {
       descricao: string;
       frete_ml?: string | null;
+      prazo?: string | null;
       itens: { product_id: string; product?: any; quantity?: number; qtd_solicitada?: number }[];
       status?: OrdemStatus;
     }) => {
