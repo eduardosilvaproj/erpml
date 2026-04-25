@@ -39,42 +39,37 @@ export function useDashboardData(period: PeriodFilter) {
 
   return useQuery({
     queryKey: ["dashboard-data", period, companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       // Fetch current period sales with items
-      let salesQuery = supabase
+      const { data: currentSales } = await supabase
         .from("sales")
         .select("id, total_value, created_at, customer_id, payment_method, sale_items(product_id, product_name, quantity, unit_price, total_price)")
         .gte("created_at", from)
         .lte("created_at", to + "T23:59:59")
-        .eq("status", "finalizada");
-
-      if (companyId) salesQuery = salesQuery.eq("company_id", companyId);
-      const { data: currentSales } = await salesQuery;
+        .eq("status", "finalizada")
+        .eq("company_id", companyId);
 
       // Fetch previous period sales for trend
-      let prevSalesQuery = supabase
+      const { data: prevSales } = await supabase
         .from("sales")
         .select("id, total_value, created_at, customer_id")
         .gte("created_at", prevFrom)
         .lt("created_at", from)
-        .eq("status", "finalizada");
-
-      if (companyId) prevSalesQuery = prevSalesQuery.eq("company_id", companyId);
-      const { data: prevSales } = await prevSalesQuery;
+        .eq("status", "finalizada")
+        .eq("company_id", companyId);
 
       // Fetch products for cost/margin calculation
-      let productsQuery = supabase
+      const { data: products } = await supabase
         .from("products")
-        .select("id, name, cost, price, stock_physical, stock_full, min_stock, active");
-      if (companyId) productsQuery = productsQuery.eq("company_id", companyId);
-      const { data: products } = await productsQuery;
+        .select("id, name, cost, price, stock_physical, stock_full, min_stock, active")
+        .eq("company_id", companyId);
 
       // Fetch customers
-      let customersQuery = supabase
+      const { data: customers } = await supabase
         .from("customers")
-        .select("id, created_at");
-      if (companyId) customersQuery = customersQuery.eq("company_id", companyId);
-      const { data: customers } = await customersQuery;
+        .select("id, created_at")
+        .eq("company_id", companyId);
 
       // Fetch pending full orders
       const { count: pendingFull } = await supabase
@@ -83,18 +78,24 @@ export function useDashboardData(period: PeriodFilter) {
         .eq('company_id', companyId)
         .in('status', ['pausado', 'separando', 'aguardando_carregamento']);
 
-      // Fetch pending transfer orders
-      let transferQuery = supabase
+      // Fetch sent full orders
+      const { count: sentFull } = await supabase
+        .from('full_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'enviado');
+
+      // Fetch transfer orders
+      const { data: transfers } = await supabase
         .from("transfer_orders")
-        .select("id, status, total_quantity");
-      if (companyId) transferQuery = transferQuery.eq("company_id", companyId);
-      const { data: transfers } = await transferQuery;
+        .select("id, status, total_quantity")
+        .eq("company_id", companyId);
 
       // Fetch overdue payments
-      let paymentsQuery = supabase
+      const { data: payments } = await supabase
         .from("invoice_payments")
-        .select("id, status, due_date, amount");
-      const { data: payments } = await paymentsQuery;
+        .select("id, status, due_date, amount")
+        .eq("company_id", companyId);
 
       const sales = currentSales || [];
       const prev = prevSales || [];
