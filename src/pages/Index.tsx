@@ -2,14 +2,18 @@ import { useState } from "react";
 import {
   Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
   DollarSign, Percent, Truck, Send, UserPlus,
-  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle
+  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle, ScanBarcode
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useNavigate } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useToast } from "@/hooks/use-toast";
 
 const periodLabels: Record<PeriodFilter, string> = {
   today: "Hoje",
