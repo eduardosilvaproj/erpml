@@ -150,6 +150,17 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         const qtyToLow = parseInt(tempBoxQty);
         const newQtd = (target.qtd_separada || 0) + qtyToLow;
         
+        if (newQtd > (target.qtd_solicitada || 0)) {
+          setBlockingAlert({
+            isOpen: true,
+            title: "⚠️ Quantidade Excedida",
+            message: `A caixa com ${qtyToLow} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+          });
+          setScan("");
+          setInternalScan("");
+          return;
+        }
+
         await updateItem.mutateAsync({
           itemId: target.id,
           qtd_separada: newQtd,
@@ -162,7 +173,13 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         setScan("");
         setInternalScan("");
       } else {
-        setLastScan({ ok: false, msg: `O produto "${internalCode}" não está nesta ordem.` });
+        setBlockingAlert({
+          isOpen: true,
+          title: "🚫 Produto Inválido",
+          message: "O produto interno da caixa não pertence a esta ordem! Verifique o item e tente novamente."
+        });
+        setScan("");
+        setInternalScan("");
       }
       return;
     }
