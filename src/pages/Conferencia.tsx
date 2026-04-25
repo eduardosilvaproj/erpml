@@ -124,6 +124,8 @@ const Conferencia = () => {
 
   // GTIN CX modal (unknown box code → user must select product)
   const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
+  const internalScannerRef = useRef<any>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
   const [internalScanValue, setInternalScanValue] = useState("");
