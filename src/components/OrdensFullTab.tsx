@@ -157,7 +157,8 @@ export const OrdensFullTab = () => {
         .from("full_orders")
         .select(`
           *,
-          responsavel:profiles!full_orders_separado_por_fkey(full_name)
+          responsavel:profiles!full_orders_separado_por_fkey(full_name),
+          full_order_items(*, products(*))
         `)
         .eq("company_id", companyId!)
         .not("frete_ml", "is", null)
