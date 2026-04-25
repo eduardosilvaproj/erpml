@@ -160,6 +160,8 @@ export const OrdensFullTab = () => {
           responsavel:profiles!full_orders_separado_por_fkey(full_name)
         `)
         .eq("company_id", companyId!)
+        .not("frete_ml", "is", null)
+        .neq("frete_ml", "")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
