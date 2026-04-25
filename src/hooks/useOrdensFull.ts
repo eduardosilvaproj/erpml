@@ -90,7 +90,7 @@ export const useOrdemFull = (ordemId: string | null) => {
     queryFn: async () => {
       const { data: ordem, error } = await supabase
         .from("full_orders")
-        .select(`*, full_order_items(*, products(*))`)
+        .select(`*, full_order_items(*, product:products(*))`)
         .eq("id", ordemId!)
         .maybeSingle();
       if (error) throw error;
