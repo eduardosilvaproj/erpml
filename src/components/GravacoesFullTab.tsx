@@ -109,8 +109,7 @@ export const GravacoesFullTab = () => {
     window.open(data.signedUrl, "_blank");
   };
 
-  const remove = async (rec: Recording) => {
-    if (!confirm("Excluir esta gravação? Esta ação não pode ser desfeita.")) return;
+  const confirmRemove = async (rec: Recording) => {
     await supabase.storage.from("gravacoes-full").remove([rec.storage_path]);
     const { error } = await supabase.from("gravacoes_full").delete().eq("id", rec.id);
     if (error) {
@@ -118,7 +117,12 @@ export const GravacoesFullTab = () => {
       return;
     }
     toast({ title: "Gravação excluída" });
+    setDeleteRec(null);
     load();
+  };
+
+  const remove = (rec: Recording) => {
+    setDeleteRec(rec);
   };
 
   const linkToOrder = async () => {
