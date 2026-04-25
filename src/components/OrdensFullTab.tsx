@@ -1228,14 +1228,17 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="font-mono text-[10px] whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span>#{o.frete_ml || o.numero}</span>
+                            <span className="font-bold text-foreground">{(o as any).ordem_id || o.numero}</span>
                             {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate">
-                          <span>{o.descricao || "-"}</span>
+                        <TableCell className="max-w-[200px] truncate">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-primary">Frete #{o.frete_ml || "—"}</span>
+                            <span className="text-[10px] text-muted-foreground truncate">{o.descricao || "-"}</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
