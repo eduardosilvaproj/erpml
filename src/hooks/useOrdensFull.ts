@@ -370,9 +370,34 @@ export const useConcluirOrdem = () => {
 export const useMarcarOrdemSeparada = () => {
   const qc = useQueryClient();
   const { user } = useAuth();
+  const companyId = useCompanyId();
+  
   return useMutation({
     mutationFn: async (ordemId: string) => {
-      const { error } = await supabase
+      // 1. Fetch current order state to prevent double execution and get items
+      const { data: ordem, error: fetchError } = await supabase
+        .from("full_orders")
+        .select(`*`)
+        .eq("id", ordemId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      
+      // Proteção contra duplicidade: Verificar se separado_em já está preenchido
+      if (ordem.separado_em) {
+        console.log("Ordem já marcada como separada, pulando movimentação de estoque.");
+        return;
+      }
+
+      // Usar bipagem_state para saber as quantidades reais bipadas
+      const bipagemItems = Array.isArray(ordem.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
+      
+      if (bipagemItems.length === 0) {
+        console.warn("Não há itens bipados para processar o estoque.");
+      }
+
+      // 2. Atualizar status e timestamp da ordem
+      const { error: updateOrderError } = await supabase
         .from("full_orders")
         .update({ 
           status: "aguardando_carregamento",
@@ -381,10 +406,62 @@ export const useMarcarOrdemSeparada = () => {
           updated_at: new Date().toISOString()
         })
         .eq("id", ordemId);
-      if (error) throw error;
+
+      if (updateOrderError) throw updateOrderError;
+
+      // 3. Atualizar estoques para cada produto bipado
+      for (const item of bipagemItems) {
+        const qty = item.scannedQty || 0;
+        if (qty <= 0) continue;
+
+        const productId = item.productId;
+
+        // Buscar estoque atual para calcular o novo valor (PostgREST não suporta incremento direto no update)
+        const { data: product, error: prodError } = await supabase
+          .from("products")
+          .select("stock_physical, stock_full")
+          .eq("id", productId)
+          .eq("company_id", companyId!)
+          .single();
+
+        if (prodError) {
+          console.error(`Erro ao buscar produto ${productId}:`, prodError);
+          continue;
+        }
+
+        if (product) {
+          const { error: stockError } = await supabase
+            .from("products")
+            .update({
+              stock_physical: (product.stock_physical || 0) - qty,
+              stock_full: (product.stock_full || 0) + qty,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", productId)
+            .eq("company_id", companyId!);
+            
+          if (stockError) {
+            console.error(`Erro ao atualizar estoque do produto ${productId}:`, stockError);
+          }
+        }
+      }
+
+      // 4. Registrar no log de auditoria
+      await supabase.from("company_audit_log").insert({
+        company_id: companyId!,
+        user_id: user?.id,
+        action: "full_order_separated",
+        details: {
+          order_id: ordemId,
+          frete_ml: ordem.frete_ml,
+          items_count: bipagemItems.length,
+          timestamp: new Date().toISOString()
+        }
+      });
     },
-    onSuccess: () => {
+    onSuccess: (_, ordemId) => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
+      qc.invalidateQueries({ queryKey: ["ordem-full", ordemId] });
     },
   });
 };
