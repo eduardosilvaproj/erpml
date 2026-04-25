@@ -191,7 +191,7 @@ export function useImportInvoice() {
           quantity: match.xmlProduct.quantity,
           unit_value: match.xmlProduct.unitValue,
           total_value: match.xmlProduct.totalValue,
-          match_type: productId ? match.matchType : "none",
+          match_type: productId ? (match.matchType || 'manual') : "none",
           match_confidence: match.confidence,
           stock_updated: match.matchType === "none" && !!productId, // For new products, it's already set during creation
         }).select().single();
