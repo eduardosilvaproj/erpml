@@ -437,19 +437,27 @@ export const OrdensFullTab = () => {
       // 1. Verificar duplicidade apenas dentro da mesma empresa
       const { data: existing } = await supabase
         .from('full_orders')
-        .select('id, status')
+        .select('id, status, bipagem_state')
         .eq('frete_ml', freteNumero)
         .eq('company_id', companyId)
         .maybeSingle();
 
       if (existing && !forcedNumero) {
-        setDuplicateCheck({
-          isOpen: true,
-          existingId: existing.id,
-          existingStatus: existing.status,
-          freteNumero: freteNumero
-        });
-        return;
+        // Se já existe e não é forçado, verificamos se está zerado para limpeza automática
+        const itemsCount = Array.isArray(existing.bipagem_state) ? existing.bipagem_state.length : 0;
+        
+        if (itemsCount === 0 && (existing.status === 'rascunho' || existing.status === 'aguardando' || existing.status === 'em_separacao')) {
+          console.log("Limpando rascunho zerado anterior para o frete", freteNumero);
+          await supabase.from('full_orders').delete().eq('id', existing.id);
+        } else {
+          setDuplicateCheck({
+            isOpen: true,
+            existingId: existing.id,
+            existingStatus: existing.status,
+            freteNumero: freteNumero
+          });
+          return;
+        }
       }
 
       const newOrder = await createOrdem.mutateAsync({
@@ -459,16 +467,18 @@ export const OrdensFullTab = () => {
         atribuido_para: null,
         itens: validItems.map(i => ({
           product_id: i.product.id,
-          qtd_solicitada: i.quantity
+          product: i.product,
+          quantity: i.quantity
         })),
         enviarParaSeparacao: true,
-        status: "pdf_carregado"
+        status: "aguardando"
       });
 
-      toast({ title: "Ordem criada e enviada para separação!" });
+      toast({ title: "✅ Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
       setParsedData(null);
       setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
+      refetchOrdens();
     } catch (err: any) {
       toast({ title: "Erro ao criar ordem", description: err.message, variant: "destructive" });
     }
