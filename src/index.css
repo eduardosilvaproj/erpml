@@ -53,7 +53,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 127 63% 49%;
     --success-foreground: 0 0% 100%;
 
     /* Borders: clearly visible ~#4B5C73 */
