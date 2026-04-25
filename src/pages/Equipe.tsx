@@ -75,11 +75,33 @@ export default function Equipe() {
 
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !company?.id) return;
+    
+    if (invitePassword && invitePassword !== inviteConfirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
     setInviting(true);
     try {
-      await callEdgeFunction("invite", { email: inviteEmail.trim(), role: inviteRole });
-      toast.success("Membro adicionado com sucesso!");
+      if (invitePassword) {
+        // Direct creation
+        await callEdgeFunction("create-member", { 
+          email: inviteEmail.trim(), 
+          role: inviteRole,
+          fullName: inviteFullName.trim(),
+          password: invitePassword
+        });
+        toast.success("Membro criado com sucesso!");
+      } else {
+        // Standard invite (keeping support for just in case, or for existing users)
+        await callEdgeFunction("invite", { email: inviteEmail.trim(), role: inviteRole });
+        toast.success("Membro convidado com sucesso!");
+      }
+      
       setInviteEmail("");
+      setInviteFullName("");
+      setInvitePassword("");
+      setInviteConfirmPassword("");
       setInviteRole("member");
       setInvitePerms({ ...moduleDefaults });
       setInviteOpen(false);
