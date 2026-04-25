@@ -57,6 +57,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
   const [internalScan, setInternalScan] = useState("");
+  const [knownBoxProduct, setKnownBoxProduct] = useState<OrdemItem | null>(null);
   const [blockingAlert, setBlockingAlert] = useState<{
     isOpen: boolean;
     title: string;
@@ -152,6 +153,35 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     refetch();
   };
 
+  const confirmBox = async (target: OrdemItem, quantity: number) => {
+    const newQtd = (target.qtd_separada || 0) + quantity;
+    
+    if (newQtd > (target.qtd_solicitada || 0)) {
+      setBlockingAlert({
+        isOpen: true,
+        title: "⚠️ Quantidade Excedida",
+        message: `A caixa com ${quantity} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+      });
+      setScan("");
+      setInternalScan("");
+      return;
+    }
+
+    setBoxMode("idle");
+    setScan("");
+    setInternalScan("");
+    setKnownBoxProduct(null);
+    setLastScan({ ok: true, msg: `📦 Caixa de ${quantity}x ${target.product?.name} registrada!` });
+
+    await updateItem.mutateAsync({
+      itemId: target.id,
+      qtd_separada: newQtd,
+      qtd_solicitada: target.qtd_solicitada || 0,
+      orderId: ordem?.id,
+    });
+    refetch();
+  };
+
   const handleScan = async (code: string) => {
     if (!code.trim() || !isExec) return;
 
@@ -164,31 +194,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
       if (target) {
         const qtyToLow = parseInt(tempBoxQty);
-        const newQtd = (target.qtd_separada || 0) + qtyToLow;
-        
-        if (newQtd > (target.qtd_solicitada || 0)) {
-          setBlockingAlert({
-            isOpen: true,
-            title: "⚠️ Quantidade Excedida",
-            message: `A caixa com ${qtyToLow} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
-          });
-          setScan("");
-          setInternalScan("");
-          return;
-        }
-
-        setBoxMode("idle");
-        setScan("");
-        setInternalScan("");
-        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
-
-        await updateItem.mutateAsync({
-          itemId: target.id,
-          qtd_separada: newQtd,
-          qtd_solicitada: target.qtd_solicitada || 0,
-          orderId: ordem?.id,
-        });
-        refetch();
+        await confirmBox(target, qtyToLow);
       } else {
         setBlockingAlert({
           isOpen: true,
@@ -205,36 +211,68 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       i.product?.barcode === code.trim() || i.product?.sku === code.trim()
     );
 
-    if (!target) {
-      setBlockingAlert({
-        isOpen: true,
-        title: "🚫 Produto Inválido",
-        message: "Produto não pertence a esta ordem! Verifique o item e tente novamente."
+    if (target) {
+      const newQtd = (target.qtd_separada || 0) + 1;
+      if (newQtd > (target.qtd_solicitada || 0)) {
+        setBlockingAlert({
+          isOpen: true,
+          title: "Produto já completo!",
+          message: `${target.product?.name} já atingiu a quantidade necessária. Verifique o item.`
+        });
+        setScan("");
+        return;
+      }
+
+      setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+      
+      await updateItem.mutateAsync({
+        itemId: target.id,
+        qtd_separada: newQtd,
+        qtd_solicitada: target.qtd_solicitada || 0,
+        orderId: ordem?.id,
       });
+      refetch();
       setScan("");
       return;
     }
 
-    const newQtd = (target.qtd_separada || 0) + 1;
-    if (newQtd > (target.qtd_solicitada || 0)) {
-      setBlockingAlert({
-        isOpen: true,
-        title: "Produto já completo!",
-        message: `${target.product?.name} já atingiu a quantidade necessária. Verifique o item.`
-      });
-      setScan("");
-      return;
-    }
-
-    setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+    // Novo fluxo: Buscar se o código bipado é um GTIN de caixa (gtin_cx)
+    // 1. Primeiro verifica se algum produto DA ORDEM tem esse gtin_cx
+    const targetInOrder = itens.find(i => (i.product as any)?.gtin_cx === code.trim());
     
-    await updateItem.mutateAsync({
-      itemId: target.id,
-      qtd_separada: newQtd,
-      qtd_solicitada: target.qtd_solicitada || 0,
-      orderId: ordem?.id,
-    });
-    refetch();
+    if (targetInOrder) {
+      setTempBoxCode(code.trim());
+      setTempBoxQty(((targetInOrder.product as any)?.box_quantity || 0).toString());
+      setKnownBoxProduct(targetInOrder);
+      setBoxMode("qty");
+      setScan("");
+      return;
+    }
+
+    // 2. Se não estiver na ordem, busca no banco geral para identificar se é uma caixa
+    const { data: product } = await supabase
+      .from("products")
+      .select("id, name, sku, barcode, gtin_cx, box_quantity")
+      .eq("company_id", companyId)
+      .eq("gtin_cx", code.trim())
+      .maybeSingle();
+
+    if (product) {
+      // É uma caixa de um produto conhecido, mas talvez não esteja na ordem
+      setTempBoxCode(code.trim());
+      setTempBoxQty((product.box_quantity || 0).toString());
+      // Procuramos se esse produto está na ordem (pelo ID agora)
+      const inOrder = itens.find(i => i.product?.id === product.id);
+      setKnownBoxProduct(inOrder || null);
+      setBoxMode("qty");
+    } else {
+      // Não encontrou gtin_cx: fluxo padrão de perguntar qty e pedir bipagem interna
+      setTempBoxCode(code.trim());
+      setTempBoxQty("");
+      setKnownBoxProduct(null);
+      setBoxMode("qty"); // Abre direto em qty (vazio) conforme solicitado
+    }
+    
     setScan("");
   };
 
@@ -677,13 +715,14 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         if (!open) {
           setBoxMode("idle");
           setInternalScan("");
+          setKnownBoxProduct(null);
         }
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Box className="h-5 w-5 text-blue-500" />
-              Fluxo de Caixa: {tempBoxCode}
+              {knownBoxProduct ? `Caixa: ${knownBoxProduct.product?.name}` : `Fluxo de Caixa: ${tempBoxCode}`}
             </DialogTitle>
           </DialogHeader>
 
@@ -706,17 +745,50 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
           {boxMode === "qty" && (
             <div className="py-6 space-y-4">
-              <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
-              <Input
-                ref={qtyInputRef}
-                type="number"
-                value={tempBoxQty}
-                onChange={(e) => setTempBoxQty(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
-              />
-              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setBoxMode("scan_internal")}>
-                Confirmar Quantidade
+              {knownBoxProduct && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2 animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <Box className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-emerald-800 uppercase tracking-wider">📦 Produto Identificado</p>
+                      <p className="text-sm font-bold text-emerald-900">{knownBoxProduct.product?.name}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
+                <Input
+                  ref={qtyInputRef}
+                  type="number"
+                  value={tempBoxQty}
+                  onChange={(e) => setTempBoxQty(e.target.value)}
+                  autoFocus
+                  className="h-12 text-lg font-bold"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (knownBoxProduct) {
+                        confirmBox(knownBoxProduct, parseInt(tempBoxQty));
+                      } else {
+                        setBoxMode("scan_internal");
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <Button 
+                className={`w-full h-12 text-base font-black uppercase tracking-tight shadow-lg ${knownBoxProduct ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`} 
+                onClick={() => {
+                  if (knownBoxProduct) {
+                    confirmBox(knownBoxProduct, parseInt(tempBoxQty));
+                  } else {
+                    setBoxMode("scan_internal");
+                  }
+                }}
+              >
+                {knownBoxProduct ? "Confirmar e Registrar Baixa" : "Confirmar Quantidade"}
               </Button>
             </div>
           )}

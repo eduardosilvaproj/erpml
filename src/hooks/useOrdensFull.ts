@@ -54,6 +54,8 @@ export interface OrdemItem {
     image_url: string | null;
     stock_physical: number;
     stock_full: number;
+    gtin_cx?: string | null;
+    box_quantity?: number | null;
   };
 }
 
@@ -120,7 +122,9 @@ export const useOrdemFull = (ordemId: string | null) => {
             barcode: product.barcode,
             image_url: product.image_url,
             stock_physical: product.stock_physical || 0,
-            stock_full: product.stock_full || 0
+            stock_full: product.stock_full || 0,
+            gtin_cx: product.gtin_cx,
+            box_quantity: product.box_quantity
           } : null
         };
       }) || [];
