@@ -162,7 +162,7 @@ export function useImportInvoice() {
               description,
               cost,
               price,
-              stock_physical: 0,
+              stock_physical: Math.floor(xmlP.quantity),
               min_stock: 1,
               active: true,
               ean_pending: match.eanPending ?? false,
