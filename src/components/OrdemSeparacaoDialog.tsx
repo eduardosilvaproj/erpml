@@ -207,8 +207,11 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       return;
     }
 
+    const codeTrimmed = code.trim();
+
+    // 1. PRIORIDADE: EAN/Barcode Unitário (Unidade)
     const target = itens.find((i) =>
-      i.product?.barcode === code.trim() || i.product?.sku === code.trim()
+      i.product?.barcode === codeTrimmed || i.product?.ean === codeTrimmed
     );
 
     if (target) {
@@ -236,43 +239,44 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       return;
     }
 
-    // Novo fluxo: Buscar se o código bipado é um GTIN de caixa (gtin_cx)
-    // 1. Primeiro verifica se algum produto DA ORDEM tem esse gtin_cx
-    const targetInOrder = itens.find(i => (i.product as any)?.gtin_cx === code.trim());
+    // 2. FALLBACK 1: GTIN de Caixa (gtin_cx)
+    const targetInOrderBox = itens.find(i => (i.product as any)?.gtin_cx === codeTrimmed);
     
-    if (targetInOrder) {
-      setTempBoxCode(code.trim());
-      setTempBoxQty(((targetInOrder.product as any)?.box_quantity || 0).toString());
-      setKnownBoxProduct(targetInOrder);
+    if (targetInOrderBox) {
+      setTempBoxCode(codeTrimmed);
+      setTempBoxQty(((targetInOrderBox.product as any)?.box_quantity || 0).toString());
+      setKnownBoxProduct(targetInOrderBox);
       setBoxMode("qty");
       setScan("");
       return;
     }
 
-    // 2. Se não estiver na ordem, busca no banco geral para identificar se é uma caixa
-    const { data: product } = await supabase
-      .from("products")
-      .select("id, name, sku, barcode, gtin_cx, box_quantity")
+    // 3. FALLBACK 2: GTINs extras (product_gtins)
+    // Buscamos no banco geral para ver se esse código pertence a algum produto da ordem
+    const { data: gtinInfo } = await supabase
+      .from("product_gtins")
+      .select("product_id, gtin, tipo, box_quantity")
       .eq("company_id", companyId)
-      .eq("gtin_cx", code.trim())
+      .eq("gtin", codeTrimmed)
       .maybeSingle();
 
-    if (product) {
-      // É uma caixa de um produto conhecido, mas talvez não esteja na ordem
-      setTempBoxCode(code.trim());
-      setTempBoxQty((product.box_quantity || 0).toString());
-      // Procuramos se esse produto está na ordem (pelo ID agora)
-      const inOrder = itens.find(i => i.product?.id === product.id);
-      setKnownBoxProduct(inOrder || null);
-      setBoxMode("qty");
-    } else {
-      // Não encontrou gtin_cx: fluxo padrão de perguntar qty e pedir bipagem interna
-      setTempBoxCode(code.trim());
-      setTempBoxQty("");
-      setKnownBoxProduct(null);
-      setBoxMode("qty"); // Abre direto em qty (vazio) conforme solicitado
+    if (gtinInfo) {
+      const inOrder = itens.find(i => i.product?.id === gtinInfo.product_id);
+      if (inOrder) {
+        setTempBoxCode(codeTrimmed);
+        setTempBoxQty((gtinInfo.box_quantity || 0).toString());
+        setKnownBoxProduct(inOrder);
+        setBoxMode("qty");
+        setScan("");
+        return;
+      }
     }
-    
+
+    // Se não encontrou nada, abre o modo de quantidade manual como último recurso (tratado como desconhecido)
+    setTempBoxCode(codeTrimmed);
+    setTempBoxQty("");
+    setKnownBoxProduct(null);
+    setBoxMode("qty");
     setScan("");
   };
 
