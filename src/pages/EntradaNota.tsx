@@ -743,7 +743,7 @@ const EntradaNota = () => {
           }
         }
 
-        const { error: itemError } = await supabase.from("invoice_items").insert({
+        const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
           invoice_id: invoice.id,
           product_id: productId,
           xml_code: match.xmlProduct.code,
@@ -757,8 +757,8 @@ const EntradaNota = () => {
           total_value: match.xmlProduct.totalValue,
           match_type: productId ? (match.matchedProductId ? match.matchType : "auto_created") : "none",
           match_confidence: match.confidence,
-          stock_updated: !!productId && autoUpdateStock,
-        });
+          stock_updated: false, // Inicia como false, atualiza após sucesso do update no estoque
+        }).select().single();
 
         if (itemError) {
           console.error("Erro ao inserir item da nota:", itemError);
@@ -771,6 +771,7 @@ const EntradaNota = () => {
             .from("products")
             .select("stock_physical, cost, price")
             .eq("id", productId)
+            .eq("company_id", companyId)
             .single();
 
           if (fetchError) {
@@ -799,7 +800,7 @@ const EntradaNota = () => {
               update.cost = Math.round(xmlUnit * 100) / 100;
             }
 
-            if (currentPrice === 0 && xmlUnit > 0) {
+            if ((currentPrice === 0 || !currentPrice) && xmlUnit > 0) {
               update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
             }
 
@@ -809,11 +810,23 @@ const EntradaNota = () => {
               .eq("id", productId)
               .eq("company_id", companyId);
 
-            if (updateError) {
+            if (!updateError) {
+              // Somente marca como atualizado se o update no produto teve sucesso
+              await supabase
+                .from("invoice_items")
+                .update({ stock_updated: true })
+                .eq("id", insertedItem.id);
+            } else {
               console.error("Erro ao atualizar produto:", updateError);
               throw new Error(`Erro ao atualizar estoque/custo do produto ${match.xmlProduct.description}: ${updateError.message}`);
             }
           }
+        } else if (productId && !match.matchedProductId && autoUpdateStock) {
+          // Para produtos recém-criados, marcar como stock_updated: true pois o estoque inicial já foi definido
+          await supabase
+            .from("invoice_items")
+            .update({ stock_updated: true })
+            .eq("id", insertedItem.id);
         }
 
         // Link supplier SKU
