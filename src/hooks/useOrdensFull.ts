@@ -19,9 +19,16 @@ export interface OrdemFull {
   bipagem_state?: any;
   created_at: string;
   updated_at: string;
-  // Compatibility fields (can be derived)
+  // Compatibility fields
   total_itens?: number;
   total_produtos?: number;
+  total_itens_separados?: number;
+  total_produtos_separados?: number;
+  atribuido_para?: string | null;
+  atribuido?: { full_name: string | null } | null;
+  separado_por_profile?: { full_name: string | null } | null;
+  concluida_em?: string | null;
+  prazo?: string | null;
 }
 
 export interface OrdemItem {
