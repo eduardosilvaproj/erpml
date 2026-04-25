@@ -206,36 +206,68 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       i.product?.barcode === code.trim() || i.product?.sku === code.trim()
     );
 
-    if (!target) {
-      setBlockingAlert({
-        isOpen: true,
-        title: "🚫 Produto Inválido",
-        message: "Produto não pertence a esta ordem! Verifique o item e tente novamente."
+    if (target) {
+      const newQtd = (target.qtd_separada || 0) + 1;
+      if (newQtd > (target.qtd_solicitada || 0)) {
+        setBlockingAlert({
+          isOpen: true,
+          title: "Produto já completo!",
+          message: `${target.product?.name} já atingiu a quantidade necessária. Verifique o item.`
+        });
+        setScan("");
+        return;
+      }
+
+      setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+      
+      await updateItem.mutateAsync({
+        itemId: target.id,
+        qtd_separada: newQtd,
+        qtd_solicitada: target.qtd_solicitada || 0,
+        orderId: ordem?.id,
       });
+      refetch();
       setScan("");
       return;
     }
 
-    const newQtd = (target.qtd_separada || 0) + 1;
-    if (newQtd > (target.qtd_solicitada || 0)) {
-      setBlockingAlert({
-        isOpen: true,
-        title: "Produto já completo!",
-        message: `${target.product?.name} já atingiu a quantidade necessária. Verifique o item.`
-      });
-      setScan("");
-      return;
-    }
-
-    setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+    // Novo fluxo: Buscar se o código bipado é um GTIN de caixa (gtin_cx)
+    // 1. Primeiro verifica se algum produto DA ORDEM tem esse gtin_cx
+    const targetInOrder = itens.find(i => (i.product as any)?.gtin_cx === code.trim());
     
-    await updateItem.mutateAsync({
-      itemId: target.id,
-      qtd_separada: newQtd,
-      qtd_solicitada: target.qtd_solicitada || 0,
-      orderId: ordem?.id,
-    });
-    refetch();
+    if (targetInOrder) {
+      setTempBoxCode(code.trim());
+      setTempBoxQty(((targetInOrder.product as any)?.box_quantity || 0).toString());
+      setKnownBoxProduct(targetInOrder);
+      setBoxMode("qty");
+      setScan("");
+      return;
+    }
+
+    // 2. Se não estiver na ordem, busca no banco geral para identificar se é uma caixa
+    const { data: product } = await supabase
+      .from("products")
+      .select("id, name, sku, barcode, gtin_cx, box_quantity")
+      .eq("company_id", companyId)
+      .eq("gtin_cx", code.trim())
+      .maybeSingle();
+
+    if (product) {
+      // É uma caixa de um produto conhecido, mas talvez não esteja na ordem
+      setTempBoxCode(code.trim());
+      setTempBoxQty((product.box_quantity || 0).toString());
+      // Procuramos se esse produto está na ordem (pelo ID agora)
+      const inOrder = itens.find(i => i.product?.id === product.id);
+      setKnownBoxProduct(inOrder || null);
+      setBoxMode("qty");
+    } else {
+      // Não encontrou gtin_cx: fluxo padrão de perguntar qty e pedir bipagem interna
+      setTempBoxCode(code.trim());
+      setTempBoxQty("");
+      setKnownBoxProduct(null);
+      setBoxMode("qty"); // Abre direto em qty (vazio) conforme solicitado
+    }
+    
     setScan("");
   };
 
