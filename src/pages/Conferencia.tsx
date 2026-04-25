@@ -126,6 +126,7 @@ const Conferencia = () => {
   const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
+  const [internalScanValue, setInternalScanValue] = useState("");
 
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
