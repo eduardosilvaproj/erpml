@@ -880,6 +880,32 @@ const Separacao = () => {
           </div>
         </>
       )}
+      <Dialog open={blockingAlert.isOpen} onOpenChange={(open) => setBlockingAlert(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8 border-4 border-destructive/20 shadow-2xl">
+          <div className="flex flex-col items-center space-y-6">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
+              <AlertCircle className="h-12 w-12" />
+            </div>
+            
+            <div className="space-y-3">
+              <h2 className="text-2xl font-black uppercase tracking-tight">{blockingAlert.title}</h2>
+              <p className="text-muted-foreground text-lg font-medium leading-tight">
+                {blockingAlert.message}
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setBlockingAlert(prev => ({ ...prev, isOpen: false }));
+                setTimeout(() => scanInputRef.current?.focus(), 150);
+              }} 
+              className="w-full h-16 text-2xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
+            >
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </>
   );
