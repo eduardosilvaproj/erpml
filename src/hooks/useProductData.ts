@@ -62,6 +62,7 @@ export function useProducts(filters?: {
   search?: string;
   category_id?: string;
   supplier_id?: string;
+  status?: "active" | "inactive" | "all";
   page?: number;
   pageSize?: number;
   sortBy?: string;
