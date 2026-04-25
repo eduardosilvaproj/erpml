@@ -249,7 +249,8 @@ const Separacao = () => {
         bipagem_state: items as any,
         status: 'pausado',
         pausado_em: new Date().toISOString()
-      }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number);
+      }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number)
+        .eq('company_id', companyId);
 
       setIsPaused(true);
       toast({ 
