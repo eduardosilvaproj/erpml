@@ -1670,6 +1670,42 @@ export const OrdensFullTab = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!fullToDeleteId} onOpenChange={(o) => !o && setFullToDeleteId(null)}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🗑️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Excluir registro?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Deseja excluir o registro de rastreamento deste pedido FULL? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button 
+                variant="destructive" 
+                className="w-full py-6 text-base gap-2"
+                onClick={async () => {
+                  if (!fullToDeleteId) return;
+                  try {
+                    await deleteFullOrder.mutateAsync(fullToDeleteId);
+                    toast({ title: "Registro excluído" });
+                    setFullToDeleteId(null);
+                  } catch (err: any) {
+                    toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+                  }
+                }}
+              >
+                ❌ Sim, excluir agora
+              </Button>
+              <Button variant="outline" onClick={() => setFullToDeleteId(null)} className="w-full py-6 text-base gap-2">
+                Voltar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
