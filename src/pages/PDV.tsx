@@ -36,8 +36,10 @@ const PDV = () => {
   const createSale = useCreateSale();
   const { data: stats } = useSalesStats();
   const { data: allProducts } = useProducts();
+  const barcodeSearch = useBarcodeSearch();
 
   const productsList = allProducts?.products ?? [];
+
 
   const filteredProducts = useMemo(() => {
     const active = productsList.filter((p) => p.active && p.stock_physical > 0);
