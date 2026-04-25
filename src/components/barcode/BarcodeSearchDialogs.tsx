@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Package, Tag, Link as LinkIcon, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Package, Tag, Link as LinkIcon, X, Check } from "lucide-react";
 
 interface BarcodeSearchDialogsProps {
   notFoundOpen: boolean;
@@ -23,6 +25,7 @@ interface BarcodeSearchDialogsProps {
   onRegisterGtin: () => void;
   onRegisterProduct: () => void;
   onLinkProduct: () => void;
+  isFullMode?: boolean;
 }
 
 export const BarcodeSearchDialogs: React.FC<BarcodeSearchDialogsProps> = ({
@@ -37,7 +40,24 @@ export const BarcodeSearchDialogs: React.FC<BarcodeSearchDialogsProps> = ({
   onRegisterGtin,
   onRegisterProduct,
   onLinkProduct,
+  isFullMode = false,
 }) => {
+  const [editableQty, setEditableQty] = useState<string>(String(boxQty || 12));
+
+  useEffect(() => {
+    if (boxQty) {
+      setEditableQty(String(boxQty));
+    }
+  }, [boxQty, boxDetectedOpen]);
+
+  const handleConfirmBox = () => {
+    const qty = parseInt(editableQty);
+    if (!isNaN(qty) && qty > 0) {
+      onConfirmBox(qty);
+      setBoxDetectedOpen(false);
+    }
+  };
+
   return (
     <>
       {/* Modal: Código não reconhecido */}
@@ -62,30 +82,35 @@ export const BarcodeSearchDialogs: React.FC<BarcodeSearchDialogsProps> = ({
               }}
             >
               <Package className="h-4 w-4" />
-              É uma CAIXA — cadastrar GTIN
+              É uma CAIXA — tratar como caixa desconhecida
             </Button>
-            <Button
-              variant="outline"
-              className="justify-start gap-2"
-              onClick={() => {
-                setNotFoundOpen(false);
-                onRegisterProduct();
-              }}
-            >
-              <Tag className="h-4 w-4" />
-              É um PRODUTO — cadastrar novo
-            </Button>
-            <Button
-              variant="outline"
-              className="justify-start gap-2"
-              onClick={() => {
-                setNotFoundOpen(false);
-                onLinkProduct();
-              }}
-            >
-              <LinkIcon className="h-4 w-4" />
-              Vincular a produto existente
-            </Button>
+            
+            {!isFullMode && (
+              <>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-2"
+                  onClick={() => {
+                    setNotFoundOpen(false);
+                    onRegisterProduct();
+                  }}
+                >
+                  <Tag className="h-4 w-4" />
+                  É um PRODUTO — cadastrar novo
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start gap-2"
+                  onClick={() => {
+                    setNotFoundOpen(false);
+                    onLinkProduct();
+                  }}
+                >
+                  <LinkIcon className="h-4 w-4" />
+                  Vincular a produto existente
+                </Button>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setNotFoundOpen(false)}>
@@ -104,14 +129,25 @@ export const BarcodeSearchDialogs: React.FC<BarcodeSearchDialogsProps> = ({
               📦 CAIXA detectada!
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="font-medium">Produto: {produto?.name}</p>
-            <p className="text-sm text-muted-foreground">
-              Qtd por caixa: {boxQty} unidades
-            </p>
-            <p className="mt-4 font-semibold">
-              Bipar como {boxQty} unidades?
-            </p>
+          <div className="py-4 space-y-4">
+            <div>
+              <p className="font-medium">Produto: {produto?.name}</p>
+              <p className="text-sm text-muted-foreground">
+                GTIN da Caixa: {codigo}
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="box-qty">Quantidade nesta caixa:</Label>
+              <Input
+                id="box-qty"
+                type="number"
+                value={editableQty}
+                onChange={(e) => setEditableQty(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmBox()}
+                autoFocus
+              />
+            </div>
           </div>
           <DialogFooter className="flex flex-row gap-2 sm:justify-end">
             <Button
@@ -121,12 +157,11 @@ export const BarcodeSearchDialogs: React.FC<BarcodeSearchDialogsProps> = ({
               Cancelar
             </Button>
             <Button
-              onClick={() => {
-                if (boxQty) onConfirmBox(boxQty);
-                setBoxDetectedOpen(false);
-              }}
+              onClick={handleConfirmBox}
+              className="gap-2"
             >
-              ✅ Sim, +{boxQty} unidades
+              <Check className="h-4 w-4" />
+              Confirmar +{editableQty} unidades
             </Button>
           </DialogFooter>
         </DialogContent>
