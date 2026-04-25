@@ -218,8 +218,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     if (newQtd > (target.qtd_solicitada || 0)) {
       setBlockingAlert({
         isOpen: true,
-        title: "⚠️ Quantidade Excedida",
-        message: `Quantidade máxima já atingida para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+        title: "Produto já completo!",
+        message: `${target.product?.name} já atingiu a quantidade necessária. Verifique o item.`
       });
       setScan("");
       return;
