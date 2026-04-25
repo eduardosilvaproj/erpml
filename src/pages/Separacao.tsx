@@ -550,13 +550,7 @@ const Separacao = () => {
                   <Label>Campo de Bipagem</Label>
                   <BarcodeScannerInput
                     value={internalScanValue}
-                    onChange={(val) => {
-                      setInternalScanValue(val);
-                      if (val.length >= 8 && val.length <= 14 && /^\d+$/.test(val)) {
-                        handleScan(val);
-                        setInternalScanValue("");
-                      }
-                    }}
+                    onChange={setInternalScanValue}
                     onScan={handleScan}
                     placeholder="Bipe o código do item da caixa..."
                     autoFocus

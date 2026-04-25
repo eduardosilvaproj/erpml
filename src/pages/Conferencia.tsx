@@ -1064,13 +1064,7 @@ const Conferencia = () => {
                   <Label htmlFor="internal-ean">EAN do produto interno</Label>
                   <BarcodeScannerInput
                     value={internalScanValue}
-                    onChange={(val) => {
-                      setInternalScanValue(val);
-                      if (val.length >= 8 && val.length <= 14 && /^\d+$/.test(val)) {
-                        handleScan(val);
-                        setInternalScanValue("");
-                      }
-                    }}
+                    onChange={setInternalScanValue}
                     onScan={handleScan}
                     placeholder="Bipe o código do item da caixa..."
                     autoFocus
