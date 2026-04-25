@@ -74,7 +74,8 @@ export function AppSidebar() {
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const isMobile = useIsMobile();
-  const { openMobile, setOpenMobile } = useSidebar();
+  const { openMobile, setOpenMobile, state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   const isActive = (url: string) => {
     if (url === "/") return location.pathname === "/";
