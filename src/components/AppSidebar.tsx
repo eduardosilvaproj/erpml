@@ -174,8 +174,8 @@ function SidebarContent({
           <img 
             src="/chatgpt-image.png" 
             alt="Stovix" 
+            className="h-8 md:h-12 w-auto transition-all duration-300"
             style={{
-              height: '48px',
               objectFit: 'contain',
               filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.4))'
             }} 
