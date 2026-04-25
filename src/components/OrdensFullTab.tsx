@@ -461,22 +461,9 @@ export const OrdensFullTab = () => {
           product_id: i.product.id,
           qtd_solicitada: i.quantity
         })),
-        enviarParaSeparacao: true
+        enviarParaSeparacao: true,
+        status: "pdf_carregado"
       });
-
-      // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
-      // Mas o hook useCreateOrdemFull já cria na tabela 'full_orders'. 
-      // Parece que existe uma tabela redundante 'full_orders'. 
-      // O usuário quer que 'full_orders' seja usada também.
-      if (companyId && freteNumero) {
-        await supabase.from("full_orders").insert({
-          company_id: companyId,
-          frete_ml: freteNumero,
-          ordem_id: (newOrder as any).ordem_id, // Usar o novo ID interno
-          pdf_frete_id: freteNumero,
-          status: "separacao"
-        } as any);
-      }
 
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
@@ -1241,8 +1228,11 @@ export const OrdensFullTab = () => {
                 </TableHeader>
                 <TableBody>
                   {ordensFiltradas.map((o) => {
+                    console.log(`Frete ${o.frete_ml} -> status: "${o.status}"`);
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
-                    const mostrarExecutar = ['pdf_carregado', 'pausado', 'separando', 'aguardando', 'em_separacao', 'separacao'].includes(o.status);
+                    
+                    // Botão Executar — aparecer se não for enviado/cancelado/aguardando_carregamento
+                    const mostrarExecutar = !['enviado', 'cancelada', 'aguardando_carregamento', 'concluida', 'separada'].includes(o.status);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && mostrarExecutar;
                     const sb = ordemStatusBadge(o.status);
                     return (
@@ -1297,7 +1287,7 @@ export const OrdensFullTab = () => {
 
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center gap-2">
-                            {o.status === 'pdf_carregado' && podeExecutar && (
+                            {podeExecutar && !['pausado', 'separando', 'em_separacao'].includes(o.status) && (
                               <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
