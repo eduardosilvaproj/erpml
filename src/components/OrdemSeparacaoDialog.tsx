@@ -126,13 +126,43 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
   const handleScan = async (code: string) => {
     if (!code.trim() || !isExec) return;
+
+    // Se estivermos esperando o produto interno da caixa
+    if (boxMode === "scan_internal") {
+      const internalCode = code.trim().toUpperCase();
+      const target = itens.find((i) =>
+        i.product?.barcode === internalCode || i.product?.sku === internalCode
+      );
+
+      if (target) {
+        const qtyToLow = parseInt(tempBoxQty);
+        const newQtd = target.qtd_separada + qtyToLow;
+        
+        await updateItem.mutateAsync({
+          itemId: target.id,
+          qtd_separada: newQtd,
+          qtd_solicitada: target.qtd_solicitada,
+        });
+        refetch();
+        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
+        setBoxMode("idle");
+        setScan("");
+      } else {
+        setLastScan({ ok: false, msg: `O produto "${internalCode}" não está nesta ordem.` });
+      }
+      return;
+    }
+
     const target = itens.find((i) =>
       i.product?.barcode === code.trim() || i.product?.sku === code.trim()
     );
+
     if (!target) {
-      setLastScan({ ok: false, msg: `Produto "${code}" não está nesta ordem` });
+      setTempBoxCode(code.trim());
+      setBoxMode("ask");
       return;
     }
+
     const newQtd = target.qtd_separada + 1;
     if (newQtd > target.qtd_solicitada) {
       setLastScan({ ok: false, msg: `Excesso! ${target.product?.name} (${newQtd}/${target.qtd_solicitada})` });
