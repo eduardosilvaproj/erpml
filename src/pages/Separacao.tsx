@@ -95,7 +95,7 @@ const Separacao = () => {
     fetchProfile();
   }, [user]);
 
-  const durationFormatted = useMemo(() => {
+  const duration = useMemo(() => {
     if (!startTime || !endTime) return "00:00:00";
     const diff = endTime.getTime() - startTime.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
@@ -103,6 +103,10 @@ const Separacao = () => {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, '0');
     return `${hours}:${minutes}:${seconds}`;
   }, [startTime, endTime]);
+
+  const totalUnitsNeeded = items.reduce((acc, curr) => acc + curr.neededQty, 0);
+  const totalUnitsScanned = items.reduce((acc, curr) => acc + curr.scannedQty, 0);
+  const totalProducts = items.length;
 
   // Load order from localStorage or Supabase
   useEffect(() => {
