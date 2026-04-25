@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2, AlertTriangle, Barcode, Camera } from "lucide-react";
+import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2, AlertTriangle, Barcode, Camera, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,9 @@ import { enrichProduct } from "@/lib/enrich-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 
 const Produtos = () => {
   const { toast } = useToast();
@@ -26,6 +29,8 @@ const Produtos = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const barcodeSearch = useBarcodeSearch();
+  const [barcodeInput, setBarcodeInput] = useState("");
   
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -252,6 +257,73 @@ const Produtos = () => {
               <Progress value={(enrichProgress.current / enrichProgress.total) * 100} />
             </div>
           )}
+
+          {/* Barcode Scanner */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row gap-3 items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block flex items-center gap-1.5">
+                    <ScanBarcode className="h-3.5 w-3.5 text-primary" />
+                    Bipar código (EAN/SKU) para buscar ou cadastrar
+                  </label>
+                  <BarcodeScannerInput
+                    value={barcodeInput}
+                    onChange={setBarcodeInput}
+                    onScan={(code) => {
+                      barcodeSearch.handleSearch(code, (result) => {
+                        // If found, search for it in the table
+                        setSearch(code);
+                        setPage(1);
+                        toast({ title: `Produto encontrado: ${result.produto.name}` });
+                      });
+                    }}
+                    placeholder="Bipe o código de barras ou digite aqui..."
+                    inputClassName="h-11 text-lg font-mono"
+                    showCameraButton
+                    autoFocus
+                  />
+                </div>
+                <Button 
+                  className="h-11 px-6" 
+                  onClick={() => barcodeSearch.handleSearch(barcodeInput, (result) => {
+                    setSearch(barcodeInput);
+                    setPage(1);
+                    toast({ title: `Produto encontrado: ${result.produto.name}` });
+                  })}
+                  disabled={!barcodeInput.trim()}
+                >
+                  Buscar/Bipar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <BarcodeSearchDialogs
+            notFoundOpen={barcodeSearch.notFoundOpen}
+            setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+            boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+            setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+            codigo={barcodeSearch.lastCodigo}
+            produto={barcodeSearch.lastResult?.produto}
+            boxQty={barcodeSearch.lastResult?.qty}
+            onConfirmBox={(qty) => {
+              setSearch(barcodeSearch.lastCodigo);
+              setPage(1);
+            }}
+            onRegisterGtin={() => {
+              setEditingProduct({ gtin_cx: barcodeSearch.lastCodigo } as any);
+              setProductDialogOpen(true);
+            }}
+            onRegisterProduct={() => {
+              setEditingProduct({ barcode: barcodeSearch.lastCodigo } as any);
+              setProductDialogOpen(true);
+            }}
+            onLinkProduct={() => {
+              // This could open a list to link the GTIN
+              toast({ title: "Funcionalidade em desenvolvimento" });
+            }}
+          />
 
           {/* Filters */}
           <Card>

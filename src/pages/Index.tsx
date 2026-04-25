@@ -2,14 +2,19 @@ import { useState } from "react";
 import {
   Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
   DollarSign, Percent, Truck, Send, UserPlus,
-  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle
+  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle, ScanBarcode
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useToast } from "@/hooks/use-toast";
 
 const periodLabels: Record<PeriodFilter, string> = {
   today: "Hoje",
@@ -88,10 +93,14 @@ const quickActions = [
 ];
 
 const Index = () => {
+  const { toast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>("30d");
   const { data, isLoading } = useDashboardData(period);
   const [showNewProduct, setShowNewProduct] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [newProductBarcode, setNewProductBarcode] = useState<string | null>(null);
   const navigate = useNavigate();
+  const barcodeSearch = useBarcodeSearch();
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -111,6 +120,81 @@ const Index = () => {
           </button>
         ))}
       </div>
+
+      {/* Bipagem Rápida */}
+      <Card className="bg-primary/5 border-primary/20 shadow-sm">
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ScanBarcode className="h-4 w-4 text-primary" />
+            Bipar Produto (EAN/SKU)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-0 px-4 pb-4">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <BarcodeScannerInput
+                value={barcodeInput}
+                onChange={setBarcodeInput}
+                onScan={(code) => {
+                  barcodeSearch.handleSearch(code, (result) => {
+                    toast({ title: `Produto encontrado: ${result.produto.name}` });
+                    // Optionally navigate or open edit
+                    navigate(`/produtos?search=${code}`);
+                  });
+                }}
+                placeholder="Escaneie ou digite o código do item..."
+                inputClassName="h-10 text-sm font-mono"
+                showCameraButton
+              />
+            </div>
+            <Button 
+              size="sm" 
+              className="h-10 px-4"
+              onClick={() => barcodeSearch.handleSearch(barcodeInput, (result) => {
+                toast({ title: `Produto encontrado: ${result.produto.name}` });
+                navigate(`/produtos?search=${barcodeInput}`);
+              })}
+              disabled={!barcodeInput.trim()}
+            >
+              Bipar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          navigate(`/produtos?search=${barcodeSearch.lastCodigo}`);
+        }}
+        onRegisterGtin={() => {
+          setNewProductBarcode(barcodeSearch.lastCodigo);
+          setShowNewProduct(true);
+        }}
+        onRegisterProduct={() => {
+          setNewProductBarcode(barcodeSearch.lastCodigo);
+          setShowNewProduct(true);
+        }}
+        onLinkProduct={() => {
+          navigate("/produtos");
+        }}
+      />
+
+      <ProductFormDialog 
+        open={showNewProduct} 
+        onOpenChange={setShowNewProduct} 
+        product={newProductBarcode ? { barcode: newProductBarcode } as any : null}
+        onSuccess={() => {
+          setNewProductBarcode(null);
+          setBarcodeInput("");
+        }}
+      />
 
       {isLoading ? (
         <div className="space-y-6">
@@ -199,7 +283,7 @@ const Index = () => {
         </>
       ) : null}
 
-      <ProductFormDialog open={showNewProduct} onOpenChange={setShowNewProduct} />
+      {/* Original dialog removed because it's now wrapped in the barcode logic above */}
     </div>
   );
 };
