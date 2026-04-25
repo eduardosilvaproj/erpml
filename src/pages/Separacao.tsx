@@ -486,7 +486,7 @@ const Separacao = () => {
         isFullMode={true}
         onConfirmBox={(qty) => {
           if (barcodeSearch.lastResult) {
-            handleScan(barcodeSearch.lastCodigo);
+            processScanResult(barcodeSearch.lastResult.produto, qty, barcodeSearch.lastCodigo);
           }
         }}
         onRegisterGtin={() => {
