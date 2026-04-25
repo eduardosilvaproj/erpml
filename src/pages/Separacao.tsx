@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
   ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
-  Clock, Calendar, User, Video, ExternalLink
+  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
@@ -18,11 +18,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { OrderRecordingSystem, type OrderRecordingSystemHandle } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface SeparacaoItem {
   productId: string;
