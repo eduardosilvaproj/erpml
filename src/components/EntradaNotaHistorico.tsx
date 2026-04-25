@@ -645,7 +645,13 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
         await supabase.from('conferences').delete().eq('invoice_id', invoice.id);
       }
 
-      // 3. Deletar itens da nota
+      // 3. Deletar pagamentos da nota (se houver)
+      await supabase
+        .from('invoice_payments')
+        .delete()
+        .eq('invoice_id', invoice.id);
+
+      // 4. Deletar itens da nota
       const { error: itemsError } = await supabase
         .from('invoice_items')
         .delete()
