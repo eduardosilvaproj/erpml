@@ -110,6 +110,8 @@ export const useOrdemFull = (ordemId: string | null) => {
           image_url: product?.image_url || bState?.image_url || null,
           neededQty: item.quantity || bState?.neededQty || 0,
           scannedQty: bState?.scannedQty || 0,
+          qtd_solicitada: item.quantity || bState?.neededQty || 0,
+          qtd_separada: bState?.scannedQty || 0,
           status: bState?.status || 'pendente',
           product: product ? {
             id: product.id,
@@ -218,11 +220,58 @@ export const useUpdateOrdemStatus = () => {
 export const useUpdateItemQuantity = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ itemId, qtd_separada, qtd_solicitada }: { itemId: string; qtd_separada: number; qtd_solicitada: number }) => {
-      // In a real scenario, we'd need the order ID and update the JSONB field.
-      // For now, let's keep it as a no-op or just return success if it's not critical.
+    mutationFn: async ({ itemId, qtd_separada, qtd_solicitada, orderId }: { itemId: string; qtd_separada: number; qtd_solicitada: number; orderId?: string }) => {
+      let targetOrderId = orderId;
+      
+      if (!targetOrderId) {
+        const { data: itemData } = await supabase
+          .from('full_order_items')
+          .select('order_id')
+          .eq('id', itemId)
+          .single();
+        targetOrderId = itemData?.order_id;
+      }
+      
+      if (!targetOrderId) throw new Error("Ordem não identificada");
+
+      const { data: order } = await supabase
+        .from('full_orders')
+        .select('id, bipagem_state, full_order_items(id, product_id)')
+        .eq('id', targetOrderId)
+        .single();
+        
+      if (!order) throw new Error("Ordem não encontrada");
+      
+      const item = (order as any).full_order_items?.find((i: any) => i.id === itemId);
+      if (!item) throw new Error("Item não encontrado na ordem");
+      
+      const productId = item.product_id;
+      const bipagemState = Array.isArray(order.bipagem_state) ? [...order.bipagem_state] : [];
+      
+      const idx = bipagemState.findIndex((b: any) => b.productId === productId);
+      const status = qtd_separada >= qtd_solicitada ? 'completo' : (qtd_separada > 0 ? 'parcial' : 'pendente');
+      
+      if (idx !== -1) {
+        const currentState = (bipagemState[idx] as any) || {};
+        bipagemState[idx] = {
+          ...currentState,
+          scannedQty: qtd_separada,
+          status
+        };
+      }
+      
+      const { error } = await supabase
+        .from('full_orders')
+        .update({ bipagem_state: bipagemState })
+        .eq('id', targetOrderId);
+        
+      if (error) throw error;
+      return { orderId: targetOrderId };
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ordem-full"] }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["ordem-full"] });
+      if (data?.orderId) qc.invalidateQueries({ queryKey: ["ordem-full", data.orderId] });
+    },
   });
 };
 
