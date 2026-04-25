@@ -317,26 +317,44 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Check for relations before deleting
-      const { count: salesCount } = await supabase
-        .from("sale_items")
-        .select("id", { count: "exact", head: true })
-        .eq("product_id", id);
+      // Tabelas para verificar histórico
+      const tablesToCheck = [
+        "sale_items",
+        "full_order_items",
+        "invoice_items",
+        "ml_order_items",
+        "transfer_items",
+        "conference_items",
+        "store_orders" // Verificando pedidos vinculados também
+      ];
       
-      const { count: orderCount } = await supabase
-        .from("full_order_items")
-        .select("id", { count: "exact", head: true })
-        .eq("product_id", id);
+      let hasHistory = false;
 
-      const { count: invoiceCount } = await supabase
-        .from("invoice_items")
-        .select("id", { count: "exact", head: true })
-        .eq("product_id", id);
+      // Executa as verificações em paralelo para performance
+      const checks = await Promise.all(
+        tablesToCheck.map(async (table) => {
+          try {
+            const { count, error } = await supabase
+              .from(table)
+              .select("id", { count: "exact", head: true })
+              .eq("product_id", id);
+            
+            if (error) {
+              // Se a tabela não existir ou outro erro, apenas ignora
+              console.warn(`Erro ao verificar histórico na tabela ${table}:`, error);
+              return 0;
+            }
+            return count || 0;
+          } catch (e) {
+            return 0;
+          }
+        })
+      );
 
-      const hasHistory = (salesCount || 0) > 0 || (orderCount || 0) > 0 || (invoiceCount || 0) > 0;
+      hasHistory = checks.some(count => count > 0);
 
       if (hasHistory) {
-        // Deactivate instead of delete
+        // Desativa em vez de excluir
         const { error } = await supabase
           .from("products")
           .update({ active: false })
@@ -345,7 +363,7 @@ export function useDeleteProduct() {
         if (error) throw error;
         return { deactivated: true };
       } else {
-        // Safe to delete
+        // Tenta excluir (se houver outras FKs não mapeadas, o erro do banco será pego pelo onError)
         const { error } = await supabase.from("products").delete().eq("id", id);
         if (error) throw error;
         return { deactivated: false };
@@ -356,7 +374,7 @@ export function useDeleteProduct() {
       if (result.deactivated) {
         toast({ 
           title: "Produto desativado", 
-          description: "Este produto não pode ser excluído pois possui histórico de vendas ou movimentações. Para removê-lo da listagem, ele foi desativado.",
+          description: "Este produto não pode ser excluído pois possui histórico de vendas ou movimentações. Para preservá-lo no histórico, ele foi desativado.",
         });
       } else {
         toast({ title: "Produto excluído!" });
