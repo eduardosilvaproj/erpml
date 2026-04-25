@@ -40,7 +40,7 @@ const Produtos = () => {
     }
   }, [location.search]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [correctionFilter, setCorrectionFilter] = useState<string>("");
   const [page, setPage] = useState(1);
