@@ -148,6 +148,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
         setBoxMode("idle");
         setScan("");
+        setInternalScan("");
       } else {
         setLastScan({ ok: false, msg: `O produto "${internalCode}" não está nesta ordem.` });
       }
