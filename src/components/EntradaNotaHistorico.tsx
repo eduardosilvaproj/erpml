@@ -317,9 +317,12 @@ export function EntradaNotaHistorico() {
                         <TableCell className="text-right font-medium">{fmt(Number(i.total_value))}</TableCell>
                         <TableCell>{tipoBadge(i.issuer_name)}</TableCell>
                         <TableCell>{statusBadge(i.status)}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right flex items-center justify-end gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailId(i.id)}>
                             <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(i.id)}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
