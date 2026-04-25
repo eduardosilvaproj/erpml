@@ -60,6 +60,7 @@ const Separacao = () => {
   const [isFinishing, setIsFinishing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
+  const [recordingState, setRecordingState] = useState({ isRecording: false, duration: 0 });
   
   const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
