@@ -277,13 +277,16 @@ export const OrdensFullTab = () => {
                           fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
+      const totalProdutos = fullText.match(/Produtos do envio:\s*(\d+)/)?.[1];
+      const totalUnidades = fullText.match(/Total de unidades:\s*(\d+)/)?.[1];
+
       // Nova lógica de parser completa e segura para Mercado Livre PDF
       const parseMercadoLivrePDF = (text: string) => {
         const blocks = text.split('SUPERMERCADO');
         const products = [];
         
         for (const block of blocks) {
-          const eanMatch = block.match(/\b(7\d{12})\b/);
+          const eanMatch = block.match(/Código universal:[\s\n]*(\d{12,14})/);
           if (!eanMatch) continue;
           const ean = eanMatch[1];
           
