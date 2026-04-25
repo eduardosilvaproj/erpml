@@ -540,7 +540,7 @@ export const OrdensFullTab = () => {
           barcode: it.product.barcode,
           image_url: it.product.image_url,
           stock_physical: it.product.stock_physical,
-          qtd_solicitada: it.qtd_solicitada,
+          qtd_solicitada: it.quantity,
         }));
 
       localStorage.setItem("ordem_ativa", JSON.stringify({
