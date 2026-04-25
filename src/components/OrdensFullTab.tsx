@@ -1571,16 +1571,7 @@ export const OrdensFullTab = () => {
                               size="icon" 
                               variant="ghost" 
                               className="h-8 w-8 text-destructive"
-                              onClick={async () => {
-                                if (confirm("Excluir registro de rastreamento deste pedido FULL?")) {
-                                  try {
-                                    await deleteFullOrder.mutateAsync(fo.id);
-                                    toast({ title: "Registro excluído" });
-                                  } catch (err: any) {
-                                    toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
-                                  }
-                                }
-                              }}
+                              onClick={() => setFullToDeleteId(fo.id)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
