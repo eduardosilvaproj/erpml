@@ -676,7 +676,7 @@ const EntradaNota = () => {
 
     if (createErr) {
       console.error("Erro ao criar produto auto:", createErr);
-      return null;
+      throw createErr;
     }
     return created?.id ?? null;
   };
@@ -735,10 +735,15 @@ const EntradaNota = () => {
 
         // Auto-create product if no match found and stock update is enabled
         if (!productId && autoUpdateStock) {
-          productId = await autoCreateProductFromXml(match.xmlProduct);
+          try {
+            productId = await autoCreateProductFromXml(match.xmlProduct);
+          } catch (err: any) {
+            console.error("Erro ao criar produto automaticamente:", err);
+            throw new Error(`Erro ao cadastrar produto ${match.xmlProduct.description}: ${err.message}`);
+          }
         }
 
-        await supabase.from("invoice_items").insert({
+        const { error: itemError } = await supabase.from("invoice_items").insert({
           invoice_id: invoice.id,
           product_id: productId,
           xml_code: match.xmlProduct.code,
@@ -755,25 +760,38 @@ const EntradaNota = () => {
           stock_updated: !!productId && autoUpdateStock,
         });
 
+        if (itemError) {
+          console.error("Erro ao inserir item da nota:", itemError);
+          throw new Error(`Erro ao salvar item ${match.xmlProduct.description}: ${itemError.message}`);
+        }
+
         // Only ADD stock if product already existed (auto-created already has the qty as initial stock)
         if (productId && match.matchedProductId && autoUpdateStock) {
-          const { data: current } = await supabase
+          const { data: current, error: fetchError } = await supabase
             .from("products")
             .select("stock_physical, cost, price")
             .eq("id", productId)
             .single();
 
+          if (fetchError) {
+            console.error("Erro ao buscar estoque atual:", fetchError);
+            throw new Error(`Erro ao atualizar estoque do produto ${match.xmlProduct.description}`);
+          }
+
           if (current) {
             const qty = Math.floor(match.xmlProduct.quantity);
-            const newStock = current.stock_physical + qty;
+            const newStock = (Number(current.stock_physical) || 0) + qty;
             const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
             const currentCost = Number(current.cost) || 0;
             const currentPrice = Number(current.price) || 0;
 
-            const update: Record<string, any> = { stock_physical: newStock };
+            const update: Record<string, any> = { 
+              stock_physical: newStock,
+              updated_at: new Date().toISOString()
+            };
 
             if (autoUpdateCost) {
-              const totalOldCost = current.stock_physical * currentCost;
+              const totalOldCost = (Number(current.stock_physical) || 0) * currentCost;
               const totalNewCost = match.xmlProduct.quantity * xmlUnit;
               const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
               update.cost = Math.round(avgCost * 100) / 100;
@@ -781,23 +799,33 @@ const EntradaNota = () => {
               update.cost = Math.round(xmlUnit * 100) / 100;
             }
 
-            // Backfill price (1.5x markup) when product price is zero
             if (currentPrice === 0 && xmlUnit > 0) {
               update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
             }
 
-            await supabase.from("products").update(update as any).eq("id", productId);
+            const { error: updateError } = await supabase
+              .from("products")
+              .update(update as any)
+              .eq("id", productId)
+              .eq("company_id", companyId);
+
+            if (updateError) {
+              console.error("Erro ao atualizar produto:", updateError);
+              throw new Error(`Erro ao atualizar estoque/custo do produto ${match.xmlProduct.description}: ${updateError.message}`);
+            }
           }
         }
 
         // Link supplier SKU
         if (productId && match.xmlProduct.code) {
-          await supabase.from("product_supplier_skus").upsert({
+          const { error: skuError } = await supabase.from("product_supplier_skus").upsert({
             product_id: productId,
             supplier_name: nfeData.issuerName,
             supplier_sku: match.xmlProduct.code,
             supplier_cnpj: nfeData.issuerCnpj
           }, { onConflict: 'product_id,supplier_sku' });
+          
+          if (skuError) console.warn("Erro ao vincular SKU do fornecedor:", skuError);
         }
       }
 
@@ -809,6 +837,7 @@ const EntradaNota = () => {
       clearPersistedState();
       toast({ title: "Entrada confirmada!", description: "Estoque atualizado com sucesso." });
     } catch (err: any) {
+      console.error("Erro fatal ao confirmar entrada:", err);
       toast({ title: "Erro ao confirmar", description: err.message || "Tente novamente.", variant: "destructive" });
     } finally {
       setSaving(false);
@@ -858,10 +887,15 @@ const EntradaNota = () => {
 
           // Auto-create product if no match found
           if (!productId && autoUpdateStock) {
-            productId = await autoCreateProductFromXml(match.xmlProduct);
+            try {
+              productId = await autoCreateProductFromXml(match.xmlProduct);
+            } catch (err: any) {
+              console.error(`Erro ao criar produto ${match.xmlProduct.description} no lote:`, err);
+              continue; // Skip this product if creation fails
+            }
           }
 
-          await supabase.from("invoice_items").insert({
+          const { error: itemError } = await supabase.from("invoice_items").insert({
             invoice_id: invoice.id,
             product_id: productId,
             xml_code: match.xmlProduct.code,
@@ -878,24 +912,38 @@ const EntradaNota = () => {
             stock_updated: !!productId && autoUpdateStock,
           });
 
+          if (itemError) {
+            console.error(`Erro ao inserir item ${match.xmlProduct.description} no lote:`, itemError);
+            continue;
+          }
+
           // Only ADD to existing stock; auto-created already has the qty as initial stock
           if (productId && wasMatched && autoUpdateStock) {
-            const { data: current } = await supabase
+            const { data: current, error: fetchError } = await supabase
               .from("products")
               .select("stock_physical, cost, price")
               .eq("id", productId)
               .single();
 
+            if (fetchError) {
+              console.error(`Erro ao buscar estoque para ${match.xmlProduct.description}:`, fetchError);
+              continue;
+            }
+
             if (current) {
               const qty = Math.floor(match.xmlProduct.quantity);
-              const newStock = current.stock_physical + qty;
+              const newStock = (Number(current.stock_physical) || 0) + qty;
               const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
               const currentCost = Number(current.cost) || 0;
               const currentPrice = Number(current.price) || 0;
-              const update: Record<string, any> = { stock_physical: newStock };
+              
+              const update: Record<string, any> = { 
+                stock_physical: newStock,
+                updated_at: new Date().toISOString()
+              };
 
               if (autoUpdateCost) {
-                const totalOldCost = current.stock_physical * currentCost;
+                const totalOldCost = (Number(current.stock_physical) || 0) * currentCost;
                 const totalNewCost = match.xmlProduct.quantity * xmlUnit;
                 const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
                 update.cost = Math.round(avgCost * 100) / 100;
@@ -903,12 +951,19 @@ const EntradaNota = () => {
                 update.cost = Math.round(xmlUnit * 100) / 100;
               }
 
-              // Backfill price (1.5x markup) when product price is zero
               if (currentPrice === 0 && xmlUnit > 0) {
                 update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
               }
 
-              await supabase.from("products").update(update as any).eq("id", productId);
+              const { error: updateError } = await supabase
+                .from("products")
+                .update(update as any)
+                .eq("id", productId)
+                .eq("company_id", companyId);
+
+              if (updateError) {
+                console.error(`Erro ao atualizar estoque para ${match.xmlProduct.description}:`, updateError);
+              }
             }
           }
 
