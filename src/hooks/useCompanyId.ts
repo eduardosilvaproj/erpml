@@ -17,7 +17,7 @@ export function useCompanyId(): string | null {
         .from("profiles")
         .select("company_id")
         .eq("id", user!.id)
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

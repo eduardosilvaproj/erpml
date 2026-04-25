@@ -73,6 +73,7 @@ export function useProducts(filters?: {
 
   return useQuery({
     queryKey: ["products", filters, companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       let query;
       
@@ -390,6 +391,7 @@ export function useCategories() {
 
   return useQuery({
     queryKey: ["categories", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       let query = supabase.from("categories").select("*").order("name");
       if (companyId) {
@@ -407,6 +409,7 @@ export function useSuppliers() {
 
   return useQuery({
     queryKey: ["suppliers", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       let query = supabase.from("suppliers").select("*").eq("active", true).order("name");
       if (companyId) {

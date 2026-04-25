@@ -589,8 +589,8 @@ const Produtos = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                   <Package className="mb-4 h-12 w-12 opacity-20" />
-                  <p className="text-lg font-medium">Nenhum produto encontrado</p>
-                  <p className="text-sm">Clique em "Novo Produto" para começar</p>
+                  <p className="text-lg font-medium">Nenhum produto cadastrado ainda</p>
+                  <p className="text-sm">Clique em "+ Novo Produto" para começar</p>
                 </div>
               )}
             </CardContent>
