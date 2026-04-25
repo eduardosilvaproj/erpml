@@ -544,44 +544,6 @@ export type Database = {
           },
         ]
       }
-      envio_pendente: {
-        Row: {
-          company_id: string
-          created_at: string
-          id: string
-          ordem_id: string
-          product_id: string
-          quantidade: number
-          updated_at: string
-        }
-        Insert: {
-          company_id: string
-          created_at?: string
-          id?: string
-          ordem_id: string
-          product_id: string
-          quantidade?: number
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string
-          created_at?: string
-          id?: string
-          ordem_id?: string
-          product_id?: string
-          quantidade?: number
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "envio_pendente_ordem_id_fkey"
-            columns: ["ordem_id"]
-            isOneToOne: false
-            referencedRelation: "ordens_full"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       full_order_items: {
         Row: {
           created_at: string | null
@@ -636,8 +598,10 @@ export type Database = {
           bipagem_state: Json | null
           company_id: string | null
           created_at: string | null
+          descricao: string | null
           frete_ml: string | null
           id: string
+          numero: string | null
           ordem_id: string | null
           pausado_em: string | null
           pdf_frete_id: string | null
@@ -651,8 +615,10 @@ export type Database = {
           bipagem_state?: Json | null
           company_id?: string | null
           created_at?: string | null
+          descricao?: string | null
           frete_ml?: string | null
           id?: string
+          numero?: string | null
           ordem_id?: string | null
           pausado_em?: string | null
           pdf_frete_id?: string | null
@@ -666,8 +632,10 @@ export type Database = {
           bipagem_state?: Json | null
           company_id?: string | null
           created_at?: string | null
+          descricao?: string | null
           frete_ml?: string | null
           id?: string
+          numero?: string | null
           ordem_id?: string | null
           pausado_em?: string | null
           pdf_frete_id?: string | null
@@ -1341,165 +1309,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      ordens_full: {
-        Row: {
-          atribuido_para: string | null
-          company_id: string
-          concluida_em: string | null
-          created_at: string
-          criado_por: string
-          descricao: string | null
-          frete_ml: string | null
-          gravacao_id: string | null
-          id: string
-          iniciada_em: string | null
-          numero: string
-          prazo: string | null
-          previsao_carregamento: string | null
-          separado_em: string | null
-          separado_por: string | null
-          status: Database["public"]["Enums"]["ordem_full_status"]
-          total_itens: number
-          total_itens_separados: number | null
-          total_produtos: number
-          total_produtos_separados: number | null
-          updated_at: string
-        }
-        Insert: {
-          atribuido_para?: string | null
-          company_id: string
-          concluida_em?: string | null
-          created_at?: string
-          criado_por: string
-          descricao?: string | null
-          frete_ml?: string | null
-          gravacao_id?: string | null
-          id?: string
-          iniciada_em?: string | null
-          numero?: string
-          prazo?: string | null
-          previsao_carregamento?: string | null
-          separado_em?: string | null
-          separado_por?: string | null
-          status?: Database["public"]["Enums"]["ordem_full_status"]
-          total_itens?: number
-          total_itens_separados?: number | null
-          total_produtos?: number
-          total_produtos_separados?: number | null
-          updated_at?: string
-        }
-        Update: {
-          atribuido_para?: string | null
-          company_id?: string
-          concluida_em?: string | null
-          created_at?: string
-          criado_por?: string
-          descricao?: string | null
-          frete_ml?: string | null
-          gravacao_id?: string | null
-          id?: string
-          iniciada_em?: string | null
-          numero?: string
-          prazo?: string | null
-          previsao_carregamento?: string | null
-          separado_em?: string | null
-          separado_por?: string | null
-          status?: Database["public"]["Enums"]["ordem_full_status"]
-          total_itens?: number
-          total_itens_separados?: number | null
-          total_produtos?: number
-          total_produtos_separados?: number | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ordens_full_atribuido_para_fkey"
-            columns: ["atribuido_para"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ordens_full_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ordens_full_separado_por_profiles_fkey"
-            columns: ["separado_por"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ordens_full_itens: {
-        Row: {
-          company_id: string | null
-          created_at: string
-          id: string
-          ordem_id: string
-          product_id: string
-          qtd_separada: number
-          qtd_solicitada: number
-          status: Database["public"]["Enums"]["ordem_item_status"]
-          updated_at: string
-        }
-        Insert: {
-          company_id?: string | null
-          created_at?: string
-          id?: string
-          ordem_id: string
-          product_id: string
-          qtd_separada?: number
-          qtd_solicitada?: number
-          status?: Database["public"]["Enums"]["ordem_item_status"]
-          updated_at?: string
-        }
-        Update: {
-          company_id?: string | null
-          created_at?: string
-          id?: string
-          ordem_id?: string
-          product_id?: string
-          qtd_separada?: number
-          qtd_solicitada?: number
-          status?: Database["public"]["Enums"]["ordem_item_status"]
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ordens_full_itens_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ordens_full_itens_ordem_id_fkey"
-            columns: ["ordem_id"]
-            isOneToOne: false
-            referencedRelation: "ordens_full"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ordens_full_itens_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ordens_full_itens_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_search_view"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       order_recordings: {
         Row: {
