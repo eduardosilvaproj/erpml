@@ -223,12 +223,12 @@ export default function Login() {
       >
         <Card className="login-card-glass border-none">
           <CardHeader className="text-center">
-            <div className="flex justify-center">
+            <div className="flex justify-center logo-container">
               <img
                 src="/chatgpt-image.png"
                 alt="Stovix"
                 style={{
-                  height: '180px',
+                  height: '160px',
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
                   animation: 'pulse-glow 3s ease-in-out infinite'
