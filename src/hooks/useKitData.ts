@@ -43,7 +43,7 @@ export function useKits() {
     queryFn: async () => {
       let query = supabase
         .from("product_kits")
-        .select("*, kit_items(*, products(id, name, sku, stock_physical, stock_full, cost, price))")
+        .select("*, kit_items(*, products(id, name, sku, ean, barcode, stock_physical, stock_full, cost, price))")
         .order("created_at", { ascending: false });
 
       if (companyId) {
