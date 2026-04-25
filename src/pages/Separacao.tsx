@@ -250,10 +250,11 @@ const Separacao = () => {
           return newItems;
         });
 
-        setLastScan({ success: true, message: `📦 Caixa de ${qtyToLow}x ${item.name} registrada!` });
-        scanInputRef.current?.flash(true);
         setBoxMode("idle");
         setScanValue("");
+        setInternalScanValue("");
+        setLastScan({ success: true, message: `📦 Caixa de ${qtyToLow}x ${item.name} registrada!` });
+        scanInputRef.current?.flash(true);
       } else {
         setLastScan({ success: false, message: `O produto "${internalCode}" não está nesta ordem.` });
         scanInputRef.current?.flash(false);
@@ -549,13 +550,19 @@ const Separacao = () => {
                   <Label>Campo de Bipagem</Label>
                   <BarcodeScannerInput
                     value={internalScanValue}
-                    onChange={setInternalScanValue}
+                    onChange={(val) => {
+                      setInternalScanValue(val);
+                      if (val.length >= 8 && val.length <= 14 && /^\d+$/.test(val)) {
+                        handleScan(val);
+                        setInternalScanValue("");
+                      }
+                    }}
                     onScan={handleScan}
                     placeholder="Bipe o código do item da caixa..."
                     autoFocus
                     scanMode
                     className="h-12"
-                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white"
+                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white text-gray-900"
                   />
                 </div>
                 
@@ -766,6 +773,7 @@ const Separacao = () => {
                       autoFocus
                       scanMode
                       disabled={blockingAlert.isOpen}
+                      inputClassName="text-gray-900"
                     />
                     <Button onClick={() => handleScan(scanValue)} className="px-8 font-bold" disabled={blockingAlert.isOpen}>
                       Bipar

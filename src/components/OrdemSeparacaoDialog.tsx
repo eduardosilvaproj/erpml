@@ -177,6 +177,11 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           return;
         }
 
+        setBoxMode("idle");
+        setScan("");
+        setInternalScan("");
+        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
+
         await updateItem.mutateAsync({
           itemId: target.id,
           qtd_separada: newQtd,
@@ -184,10 +189,6 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           orderId: ordem?.id,
         });
         refetch();
-        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
-        setBoxMode("idle");
-        setScan("");
-        setInternalScan("");
       } else {
         setBlockingAlert({
           isOpen: true,
@@ -486,6 +487,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                               autoFocus
                               scanMode
                               disabled={blockingAlert.isOpen}
+                              inputClassName="text-gray-900"
                             />
                             {lastScan && (
                               <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
@@ -740,7 +742,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                     onScan={handleScan}
                     onChange={(val) => {
                       setInternalScan(val);
-                      if (val.length === 13) {
+                      if (val.length >= 8 && val.length <= 14 && /^\d+$/.test(val)) {
                         handleScan(val);
                         setInternalScan("");
                       }
@@ -749,7 +751,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                     autoFocus
                     scanMode
                     className="h-12"
-                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white"
+                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white text-gray-900"
                   />
                 </div>
                 
