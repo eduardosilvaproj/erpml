@@ -744,17 +744,50 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
           {boxMode === "qty" && (
             <div className="py-6 space-y-4">
-              <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
-              <Input
-                ref={qtyInputRef}
-                type="number"
-                value={tempBoxQty}
-                onChange={(e) => setTempBoxQty(e.target.value)}
-                autoFocus
-                onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
-              />
-              <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setBoxMode("scan_internal")}>
-                Confirmar Quantidade
+              {knownBoxProduct && (
+                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl space-y-2 animate-in fade-in zoom-in duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <Box className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-emerald-800 uppercase tracking-wider">📦 Produto Identificado</p>
+                      <p className="text-sm font-bold text-emerald-900">{knownBoxProduct.product?.name}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
+                <Input
+                  ref={qtyInputRef}
+                  type="number"
+                  value={tempBoxQty}
+                  onChange={(e) => setTempBoxQty(e.target.value)}
+                  autoFocus
+                  className="h-12 text-lg font-bold"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (knownBoxProduct) {
+                        confirmBox(knownBoxProduct, parseInt(tempBoxQty));
+                      } else {
+                        setBoxMode("scan_internal");
+                      }
+                    }
+                  }}
+                />
+              </div>
+              <Button 
+                className={`w-full h-12 text-base font-black uppercase tracking-tight shadow-lg ${knownBoxProduct ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'}`} 
+                onClick={() => {
+                  if (knownBoxProduct) {
+                    confirmBox(knownBoxProduct, parseInt(tempBoxQty));
+                  } else {
+                    setBoxMode("scan_internal");
+                  }
+                }}
+              >
+                {knownBoxProduct ? "Confirmar e Registrar Baixa" : "Confirmar Quantidade"}
               </Button>
             </div>
           )}
