@@ -481,6 +481,7 @@ const Separacao = () => {
         codigo={barcodeSearch.lastCodigo}
         produto={barcodeSearch.lastResult?.produto}
         boxQty={barcodeSearch.lastResult?.qty}
+        isFullMode={true}
         onConfirmBox={(qty) => {
           if (barcodeSearch.lastResult) {
             handleScan(barcodeSearch.lastCodigo);
