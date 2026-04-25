@@ -316,7 +316,7 @@ const Produtos = () => {
               setProductDialogOpen(true);
             }}
             onRegisterProduct={() => {
-              setEditingProduct(null);
+              setEditingProduct({ barcode: barcodeSearch.lastCodigo } as any);
               setProductDialogOpen(true);
             }}
             onLinkProduct={() => {
