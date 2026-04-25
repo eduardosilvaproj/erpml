@@ -54,6 +54,8 @@ export interface OrdemItem {
     image_url: string | null;
     stock_physical: number;
     stock_full: number;
+    gtin_cx?: string | null;
+    box_quantity?: number | null;
   };
 }
 
