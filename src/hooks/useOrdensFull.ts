@@ -27,7 +27,6 @@ export interface OrdemFull {
   atribuido_para?: string | null;
   atribuido?: { full_name: string | null } | null;
   separado_por_profile?: { full_name: string | null } | null;
-  concluida_em?: string | null;
   prazo?: string | null;
 }
 
