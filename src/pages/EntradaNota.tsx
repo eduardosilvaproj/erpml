@@ -743,27 +743,48 @@ const EntradaNota = () => {
           }
         }
 
-        const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
-          invoice_id: invoice.id,
-          product_id: productId,
-          xml_code: match.xmlProduct.code,
-          xml_description: match.xmlProduct.description,
-          xml_ean: match.xmlProduct.ean || "",
-          xml_ncm: match.xmlProduct.ncm || "",
-          xml_cfop: match.xmlProduct.cfop || "",
-          xml_unit: match.xmlProduct.unit || "UN",
-          quantity: match.xmlProduct.quantity,
-          unit_value: match.xmlProduct.unitValue,
-          total_value: match.xmlProduct.totalValue,
-          match_type: productId ? (match.matchedProductId ? match.matchType : "auto_created") : "none",
-          match_confidence: match.confidence,
-          stock_updated: false, // Inicia como false, atualiza após sucesso do update no estoque
-        }).select().single();
+        let itemsSaved = 0;
+        let itemsFailed = 0;
 
-        if (itemError) {
-          console.error("Erro ao inserir item da nota:", itemError);
-          throw new Error(`Erro ao salvar item ${match.xmlProduct.description}: ${itemError.message}`);
-        }
+        for (const match of itemsToImport) {
+          try {
+            let productId = match.matchedProductId;
+
+            // Auto-create product if no match found and stock update is enabled
+            if (!productId && autoUpdateStock) {
+              try {
+                productId = await autoCreateProductFromXml(match.xmlProduct);
+              } catch (err: any) {
+                console.error("Erro ao criar produto automaticamente:", err);
+                itemsFailed++;
+                continue;
+              }
+            }
+
+            const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
+              invoice_id: invoice.id,
+              product_id: productId,
+              xml_code: match.xmlProduct.code,
+              xml_description: match.xmlProduct.description,
+              xml_ean: match.xmlProduct.ean || "",
+              xml_ncm: match.xmlProduct.ncm || "",
+              xml_cfop: match.xmlProduct.cfop || "",
+              xml_unit: match.xmlProduct.unit || "UN",
+              quantity: match.xmlProduct.quantity,
+              unit_value: match.xmlProduct.unitValue,
+              total_value: match.xmlProduct.totalValue,
+              match_type: productId ? (match.matchedProductId ? (match.matchType || 'manual') : "new") : "none",
+              match_confidence: match.confidence,
+              stock_updated: false,
+            }).select().single();
+
+            if (itemError) {
+              console.error("Erro ao inserir item da nota:", itemError);
+              itemsFailed++;
+              continue;
+            }
+            
+            itemsSaved++;
 
         // Only ADD stock if product already existed (auto-created already has the qty as initial stock)
         if (productId && match.matchedProductId && autoUpdateStock) {
