@@ -76,7 +76,14 @@ export function useDashboardData(period: PeriodFilter) {
       if (companyId) customersQuery = customersQuery.eq("company_id", companyId);
       const { data: customers } = await customersQuery;
 
-      // Fetch pending transfer orders (proxy for "pendentes de envio")
+      // Fetch pending full orders
+      const { count: pendingFull } = await supabase
+        .from('full_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .in('status', ['pausado', 'separando', 'aguardando_carregamento']);
+
+      // Fetch pending transfer orders
       let transferQuery = supabase
         .from("transfer_orders")
         .select("id, status, total_quantity");
