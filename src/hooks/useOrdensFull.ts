@@ -289,7 +289,8 @@ export const useDeleteOrdem = () => {
         await supabase
           .from("full_orders")
           .delete()
-          .eq("frete_ml", frete_ml);
+          .eq("frete_ml", frete_ml)
+          .eq("company_id", companyId);
       }
 
       // 4. A própria ordem
