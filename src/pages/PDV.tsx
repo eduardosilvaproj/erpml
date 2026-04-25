@@ -226,7 +226,52 @@ const PDV = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            const { produto } = barcodeSearch.lastResult;
+            addToCart({
+              id: produto.id,
+              name: produto.name,
+              sku: produto.sku,
+              barcode: produto.barcode,
+              price: produto.price,
+              stock_physical: produto.stock_physical,
+              // We need to pass the qty to addToCart or handle it here
+            });
+            // Refactor: actually better to just call the logic in handleScan
+            setCart(prev => {
+              const existing = prev.find(i => i.productId === produto.id);
+              if (existing) {
+                return prev.map(i => i.productId === produto.id ? { ...i, quantity: i.quantity + qty } : i);
+              }
+              return [...prev, {
+                productId: produto.id,
+                productName: produto.name,
+                productSku: produto.sku,
+                barcode: produto.barcode,
+                quantity: qty,
+                unitPrice: produto.price,
+                stockPhysical: produto.stock_physical,
+              }];
+            });
+            playBeep(800, 100);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
       {/* Left: Product scan + catalog + cart */}
+
       <div className="md:col-span-2 space-y-4 flex flex-col min-h-[50vh] md:min-h-0">
         {/* Stats bar */}
         <div className="grid grid-cols-2 gap-3">
