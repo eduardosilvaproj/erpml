@@ -240,6 +240,16 @@ const Separacao = () => {
         const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtyToLow);
         const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
         
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems[itemIndex] = {
+            ...item,
+            scannedQty: newScannedQty,
+            status: newStatus
+          };
+          return newItems;
+        });
+
         setBoxMode("idle");
         setScanValue("");
         setInternalScanValue("");
