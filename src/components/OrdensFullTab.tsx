@@ -1241,10 +1241,15 @@ export const OrdensFullTab = () => {
                     console.log(`Frete ${o.frete_ml} -> status: "${o.status}"`);
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
                     
-                    // Botão Executar — aparecer se não for enviado/cancelado/aguardando_carregamento
-                    const mostrarExecutar = !['enviado', 'cancelada', 'aguardando_carregamento', 'concluida', 'separada'].includes(o.status);
-                    const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && mostrarExecutar;
+                    // Botão Executar — aparecer se não for enviado/cancelado/concluida
+                    // Corrigido: Agora permite executar se for manager/owner ou se não estiver atribuído
+                    const mostrarExecutar = !['enviado', 'cancelada', 'concluida', 'separada', 'aguardando_carregamento'].includes(o.status);
+                    const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null || canManageOrders) && mostrarExecutar;
                     const sb = ordemStatusBadge(o.status);
+                    
+                    // Bug 1: Botão de exclusão visível se total_itens for 0
+                    const isZerada = o.total_itens === 0;
+
                     return (
                       <TableRow key={o.id}>
                         <TableCell className="font-mono text-[10px] whitespace-nowrap">
@@ -1260,8 +1265,8 @@ export const OrdensFullTab = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
-                        <TableCell className="text-center">{o.total_produtos}</TableCell>
-                        <TableCell className="text-center">{o.total_itens}</TableCell>
+                        <TableCell className="text-center font-bold">{o.total_produtos}</TableCell>
+                        <TableCell className="text-center font-bold">{o.total_itens}</TableCell>
                         <TableCell className="text-xs">
                           {o.separado_por_profile ? (
                             <div className="flex flex-col">
@@ -1297,8 +1302,27 @@ export const OrdensFullTab = () => {
 
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center gap-2">
-                            {podeExecutar && !['pausado', 'separando', 'em_separacao'].includes(o.status) && (
-                              <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
+                            {/* Botão de Exclusão Direto para ordens zeradas */}
+                            {isZerada && o.status !== 'concluida' && o.status !== 'enviado' && (
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0" 
+                                onClick={() => handleDelete(o)}
+                                title="Excluir ordem zerada"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+
+                            {(podeExecutar || isZerada) && !['pausado', 'separando', 'em_separacao'].includes(o.status) && (
+                              <Button 
+                                size="sm" 
+                                variant="default" 
+                                disabled={startingId === o.id} 
+                                onClick={() => handleStartSeparation(o)}
+                                className="font-bold"
+                              >
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
                             )}
