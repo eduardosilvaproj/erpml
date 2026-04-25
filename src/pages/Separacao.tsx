@@ -773,6 +773,7 @@ const Separacao = () => {
                       autoFocus
                       scanMode
                       disabled={blockingAlert.isOpen}
+                      inputClassName="text-gray-900"
                     />
                     <Button onClick={() => handleScan(scanValue)} className="px-8 font-bold" disabled={blockingAlert.isOpen}>
                       Bipar
