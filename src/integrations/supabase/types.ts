@@ -338,6 +338,7 @@ export type Database = {
       conference_items: {
         Row: {
           atualizado_por: string | null
+          company_id: string | null
           conference_id: string
           created_at: string
           detalhes_caixa: Json | null
@@ -355,6 +356,7 @@ export type Database = {
         }
         Insert: {
           atualizado_por?: string | null
+          company_id?: string | null
           conference_id: string
           created_at?: string
           detalhes_caixa?: Json | null
@@ -372,6 +374,7 @@ export type Database = {
         }
         Update: {
           atualizado_por?: string | null
+          company_id?: string | null
           conference_id?: string
           created_at?: string
           detalhes_caixa?: Json | null
@@ -388,6 +391,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conference_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conference_items_conference_id_fkey"
             columns: ["conference_id"]
@@ -1366,6 +1376,7 @@ export type Database = {
       }
       ordens_full_itens: {
         Row: {
+          company_id: string | null
           created_at: string
           id: string
           ordem_id: string
@@ -1376,6 +1387,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           id?: string
           ordem_id: string
@@ -1386,6 +1398,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           id?: string
           ordem_id?: string
@@ -1396,6 +1409,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ordens_full_itens_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ordens_full_itens_ordem_id_fkey"
             columns: ["ordem_id"]
@@ -1421,6 +1441,7 @@ export type Database = {
       }
       order_recordings: {
         Row: {
+          company_id: string | null
           criado_em: string | null
           duracao_segundos: number | null
           id: string
@@ -1430,6 +1451,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          company_id?: string | null
           criado_em?: string | null
           duracao_segundos?: number | null
           id?: string
@@ -1439,6 +1461,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          company_id?: string | null
           criado_em?: string | null
           duracao_segundos?: number | null
           id?: string
@@ -1448,6 +1471,13 @@ export type Database = {
           video_url?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "order_recordings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_recordings_responsavel_id_fkey"
             columns: ["responsavel_id"]
@@ -1944,6 +1974,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_id: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -1951,6 +1982,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -1958,12 +1990,21 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          company_id?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sale_items: {
         Row: {
@@ -2683,6 +2724,7 @@ export type Database = {
           removed_rows: number
         }[]
       }
+      get_auth_company_id: { Args: never; Returns: string }
       get_conference_distinct_product_count: {
         Args: { _conference_id: string }
         Returns: number
