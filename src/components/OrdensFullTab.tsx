@@ -474,7 +474,7 @@ export const OrdensFullTab = () => {
           frete_ml: freteNumero,
           ordem_id: (newOrder as any).ordem_id, // Usar o novo ID interno
           pdf_frete_id: freteNumero,
-          status: "separacao"
+          status: "pdf_carregado"
         } as any);
       }
 
