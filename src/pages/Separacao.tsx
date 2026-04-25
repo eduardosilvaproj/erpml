@@ -42,6 +42,7 @@ const Separacao = () => {
   const navigate = useNavigate();
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const recorderRef = useRef<OrderRecordingSystemHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
   const updateFullOrder = useUpdateFullOrder();
   
@@ -56,9 +57,19 @@ const Separacao = () => {
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
   
   const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
+
+  // Estado para EAN não reconhecido
+  const [unrecognizedDialog, setUnrecognizedDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  const [caixaDialog, setCaixaDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [qtdCaixa, setQtdCaixa] = useState("12");
+  const [productSearch, setProductSearch] = useState("");
+  const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
 
   // Fetch user profile name
   useEffect(() => {
@@ -83,7 +94,7 @@ const Separacao = () => {
     fetchProfile();
   }, [user]);
 
-  const duration = useMemo(() => {
+  const durationFormatted = useMemo(() => {
     if (!startTime || !endTime) return "00:00:00";
     const diff = endTime.getTime() - startTime.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
@@ -92,38 +103,71 @@ const Separacao = () => {
     return `${hours}:${minutes}:${seconds}`;
   }, [startTime, endTime]);
 
-  // Load order from localStorage
+  // Load order from localStorage or Supabase
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem("ordem_ativa");
-      if (!raw) {
-        toast({ title: "Nenhuma ordem de separação ativa", variant: "destructive" });
+    const loadOrder = async () => {
+      try {
+        const raw = localStorage.getItem("ordem_ativa");
+        if (!raw) {
+          toast({ title: "Nenhuma ordem de separação ativa", variant: "destructive" });
+          navigate("/movimentacao-full");
+          return;
+        }
+        const ordem = JSON.parse(raw);
+        setOrderInfo({
+          id: ordem.id,
+          number: ordem.numero,
+          frete_ml: ordem.frete_ml,
+          description: ordem.descricao
+        });
+
+        // 1. Tentar restaurar estado do Supabase
+        const { data: fullOrder } = await supabase
+          .from("full_orders")
+          .select("bipagem_state, status")
+          .eq("frete_ml", ordem.frete_ml)
+          .maybeSingle();
+
+        if (fullOrder?.bipagem_state) {
+          console.log("Restaurando estado de bipagem do Supabase...");
+          setItems(fullOrder.bipagem_state as SeparacaoItem[]);
+          setIsPaused(fullOrder.status === 'pausado');
+          toast({ title: "🔄 Bipagem restaurada com sucesso!" });
+        } else {
+          const mappedItems: SeparacaoItem[] = ordem.produtos.map((p: any) => ({
+            productId: p.product_id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            image_url: p.image_url,
+            neededQty: p.qtd_solicitada,
+            scannedQty: 0,
+            status: "pendente"
+          }));
+          setItems(mappedItems);
+        }
+
+        // 2. Gravação Automática
+        if (ordem.autoStartRecording) {
+          setTimeout(() => {
+            if (recorderRef.current && !recorderRef.current.isRecording) {
+              recorderRef.current.startRecording('separacao');
+              toast({ title: "🎥 Gravação iniciada automaticamente" });
+              
+              // Limpar flag para não reiniciar ao dar refresh
+              const updatedOrdem = { ...ordem };
+              delete updatedOrdem.autoStartRecording;
+              localStorage.setItem("ordem_ativa", JSON.stringify(updatedOrdem));
+            }
+          }, 1000);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar ordem:", err);
         navigate("/movimentacao-full");
-        return;
       }
-      const ordem = JSON.parse(raw);
-      setOrderInfo({
-        id: ordem.id,
-        number: ordem.numero,
-        frete_ml: ordem.frete_ml,
-        description: ordem.descricao
-      });
-      
-      const mappedItems: SeparacaoItem[] = ordem.produtos.map((p: any) => ({
-        productId: p.product_id,
-        name: p.name,
-        sku: p.sku,
-        barcode: p.barcode,
-        image_url: p.image_url,
-        neededQty: p.qtd_solicitada,
-        scannedQty: 0,
-        status: "pendente"
-      }));
-      setItems(mappedItems);
-    } catch (err) {
-      console.error("Erro ao carregar ordem:", err);
-      navigate("/movimentacao-full");
-    }
+    };
+
+    loadOrder();
   }, [navigate, toast]);
 
   const totalUnitsNeeded = items.reduce((acc, curr) => acc + curr.neededQty, 0);
