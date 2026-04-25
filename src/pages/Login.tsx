@@ -101,28 +101,6 @@ const ParticlesBackground = () => {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" />;
 };
 
-const TypingSlogan = () => {
-  const [text, setText] = useState("");
-  const fullText = "Controle de estoque e operação sem erro";
-  
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setText(fullText.slice(0, i));
-      i++;
-      if (i > fullText.length) {
-        clearInterval(interval);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <p className="text-sm text-muted-foreground typing-cursor min-h-[1.25rem]">
-      {text}
-    </p>
-  );
-};
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -245,19 +223,18 @@ export default function Login() {
       >
         <Card className="login-card-glass border-none">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center">
               <img
                 src="/chatgpt-image.png"
                 alt="Stovix"
                 style={{
-                  height: '140px',
+                  height: '180px',
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 15px rgba(34,197,94,0.5))',
+                  filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
                   animation: 'pulse-glow 3s ease-in-out infinite'
                 }}
               />
             </div>
-            <TypingSlogan />
           </CardHeader>
           <form onSubmit={handleLogin} noValidate>
             <CardContent className="space-y-4">
