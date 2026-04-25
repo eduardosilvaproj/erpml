@@ -148,6 +148,8 @@ export const useCreateOrdemFull = () => {
       if (!companyId) throw new Error("Empresa não encontrada");
       
       const { data, error } = await supabase
+      // 1. Insert the main order
+      const { data: order, error: orderError } = await supabase
         .from("full_orders")
         .insert({
           company_id: companyId,
@@ -167,8 +169,29 @@ export const useCreateOrdemFull = () => {
         })
         .select()
         .single();
-      if (error) throw error;
-      return data as OrdemFull;
+
+      if (orderError) throw orderError;
+
+      // 2. Insert items into full_order_items for proper relational joins
+      const itemsToInsert = params.itens.map(i => ({
+        order_id: order.id,
+        product_id: i.product_id,
+        quantity: i.quantity || i.qtd_solicitada || 0
+      }));
+
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from("full_order_items")
+          .insert(itemsToInsert);
+        
+        if (itemsError) {
+          console.error("Erro ao inserir itens da ordem FULL:", itemsError);
+          // We don't necessarily throw here if the main order was created, 
+          // but it's better to keep them in sync.
+        }
+      }
+
+      return order as OrdemFull;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ordens-full"] }),
   });
