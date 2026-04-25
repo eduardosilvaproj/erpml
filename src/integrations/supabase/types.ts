@@ -1730,30 +1730,43 @@ export type Database = {
       }
       product_supplier_skus: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           product_id: string
           supplier_cnpj: string | null
+          supplier_id: string | null
           supplier_name: string | null
           supplier_sku: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           product_id: string
           supplier_cnpj?: string | null
+          supplier_id?: string | null
           supplier_name?: string | null
           supplier_sku?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           product_id?: string
           supplier_cnpj?: string | null
+          supplier_id?: string | null
           supplier_name?: string | null
           supplier_sku?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "product_supplier_skus_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "product_supplier_skus_product_id_fkey"
             columns: ["product_id"]
@@ -1766,6 +1779,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplier_skus_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -2414,40 +2434,70 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          bairro: string | null
+          cep: string | null
           cnpj: string | null
           company_id: string | null
           created_at: string
           email: string | null
           id: string
+          ie: string | null
+          logradouro: string | null
+          municipio: string | null
           name: string
+          nome_fantasia: string | null
           notes: string | null
+          numero: string | null
+          origem: string | null
           phone: string | null
+          razao_social: string | null
+          uf: string | null
           updated_at: string
         }
         Insert: {
           active?: boolean
           address?: string | null
+          bairro?: string | null
+          cep?: string | null
           cnpj?: string | null
           company_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          ie?: string | null
+          logradouro?: string | null
+          municipio?: string | null
           name: string
+          nome_fantasia?: string | null
           notes?: string | null
+          numero?: string | null
+          origem?: string | null
           phone?: string | null
+          razao_social?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Update: {
           active?: boolean
           address?: string | null
+          bairro?: string | null
+          cep?: string | null
           cnpj?: string | null
           company_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          ie?: string | null
+          logradouro?: string | null
+          municipio?: string | null
           name?: string
+          nome_fantasia?: string | null
           notes?: string | null
+          numero?: string | null
+          origem?: string | null
           phone?: string | null
+          razao_social?: string | null
+          uf?: string | null
           updated_at?: string
         }
         Relationships: [
