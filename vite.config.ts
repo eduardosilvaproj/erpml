@@ -54,10 +54,10 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
-        name: "Stovix - ERP Mercado Livre",
+        name: "Stovix - Controle de Estoque e Operação sem Erro",
         short_name: "Stovix",
-        description: "Sistema ERP integrado ao Mercado Livre",
-        theme_color: "#7c3aed",
+        description: "Controle de Estoque e Operação sem Erro",
+        theme_color: "#2ecc40",
         background_color: "#0f0a1e",
         display: "standalone",
         orientation: "portrait",
