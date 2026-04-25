@@ -92,10 +92,14 @@ const quickActions = [
 ];
 
 const Index = () => {
+  const { toast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>("30d");
   const { data, isLoading } = useDashboardData(period);
   const [showNewProduct, setShowNewProduct] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [newProductBarcode, setNewProductBarcode] = useState<string | null>(null);
   const navigate = useNavigate();
+  const barcodeSearch = useBarcodeSearch();
 
   return (
     <div className="space-y-6 lg:space-y-8">
