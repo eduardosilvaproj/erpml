@@ -589,6 +589,7 @@ export type Database = {
           created_at: string | null
           frete_ml: string | null
           id: string
+          ordem_id: string | null
           pausado_em: string | null
           pdf_frete_id: string | null
           previsao_carregamento: string | null
@@ -603,6 +604,7 @@ export type Database = {
           created_at?: string | null
           frete_ml?: string | null
           id?: string
+          ordem_id?: string | null
           pausado_em?: string | null
           pdf_frete_id?: string | null
           previsao_carregamento?: string | null
@@ -617,6 +619,7 @@ export type Database = {
           created_at?: string | null
           frete_ml?: string | null
           id?: string
+          ordem_id?: string | null
           pausado_em?: string | null
           pdf_frete_id?: string | null
           previsao_carregamento?: string | null

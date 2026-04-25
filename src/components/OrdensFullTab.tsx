@@ -429,7 +429,25 @@ export const OrdensFullTab = () => {
     const freteNumero = forcedNumero || parsedData.shippingNumber;
 
     try {
-      await createOrdem.mutateAsync({
+      // 1. Verificar duplicidade apenas dentro da mesma empresa
+      const { data: existing } = await supabase
+        .from('full_orders')
+        .select('id, status')
+        .eq('frete_ml', freteNumero)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (existing && !forcedNumero) {
+        setDuplicateCheck({
+          isOpen: true,
+          existingId: existing.id,
+          existingStatus: existing.status,
+          freteNumero: freteNumero
+        });
+        return;
+      }
+
+      const newOrder = await createOrdem.mutateAsync({
         descricao: `Frete #${freteNumero}`,
         frete_ml: freteNumero,
         prazo: null,
@@ -441,14 +459,18 @@ export const OrdensFullTab = () => {
         enviarParaSeparacao: true
       });
 
-      // Registrar na tabela full_orders para rastreamento
+      // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
+      // Mas o hook useCreateOrdemFull já cria na tabela 'ordens_full'. 
+      // Parece que existe uma tabela redundante 'full_orders'. 
+      // O usuário quer que 'full_orders' seja usada também.
       if (companyId && freteNumero) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
           frete_ml: freteNumero,
+          ordem_id: (newOrder as any).ordem_id, // Usar o novo ID interno
           pdf_frete_id: freteNumero,
           status: "separacao"
-        });
+        } as any);
       }
 
       toast({ title: "Ordem criada e enviada para separação!" });
@@ -1206,14 +1228,17 @@ export const OrdensFullTab = () => {
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
-                        <TableCell className="font-mono text-xs">
+                        <TableCell className="font-mono text-[10px] whitespace-nowrap">
                           <div className="flex flex-col">
-                            <span>#{o.frete_ml || o.numero}</span>
+                            <span className="font-bold text-foreground">{(o as any).ordem_id || o.numero}</span>
                             {o.separado_em && <span className="text-[10px] text-emerald-600 font-bold">Separado ✅</span>}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate">
-                          <span>{o.descricao || "-"}</span>
+                        <TableCell className="max-w-[200px] truncate">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-primary">Frete #{o.frete_ml || "—"}</span>
+                            <span className="text-[10px] text-muted-foreground truncate">{o.descricao || "-"}</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(o.created_at).toLocaleDateString("pt-BR")}</TableCell>
                         <TableCell className="text-center">{o.total_produtos}</TableCell>
@@ -1656,9 +1681,9 @@ export const OrdensFullTab = () => {
           <div className="flex flex-col items-center space-y-4">
             <div className="text-6xl mb-2">⚠️</div>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center">Frete já existe</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-center">Duplicidade Detectada</DialogTitle>
               <DialogDescription className="text-base text-center pt-2">
-                Frete <span className="font-bold">#{duplicateCheck.freteNumero}</span> já existe com status <span className="font-bold text-primary">"{duplicateCheck.existingStatus}"</span>.
+                Sua empresa já tem este frete como <span className="font-bold text-primary">"{duplicateCheck.existingStatus}"</span>.
               </DialogDescription>
             </DialogHeader>
             <p className="text-muted-foreground pt-2">Deseja continuar de onde parou?</p>
