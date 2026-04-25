@@ -745,16 +745,28 @@ const Separacao = () => {
               >
                 <Box className="h-5 w-5" /> 📦 Sim, é uma caixa
               </Button>
-              <Button 
-                variant="outline" 
-                className="h-14 gap-2"
-                onClick={() => {
-                  setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
-                  toast({ title: "🔗 Cadastrar como unidade", description: "Funcionalidade em desenvolvimento..." });
-                }}
-              >
-                <Package className="h-5 w-5" /> 🏷️ Não, é uma unidade
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-12 gap-2"
+                  onClick={() => {
+                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
+                    toast({ title: "🏷️ Cadastrar Novo Produto", description: "Utilize o menu lateral em 'Produtos' para cadastrar." });
+                  }}
+                >
+                  <Plus className="h-4 w-4" /> ➕ Cadastrar novo
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-12 gap-2"
+                  onClick={() => {
+                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
+                    toast({ title: "🔗 Vincular a existente", description: "Utilize o menu lateral em 'Produtos' para editar o EAN." });
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4" /> 🔗 Vincular a existente
+                </Button>
+              </div>
               <Button 
                 variant="ghost" 
                 onClick={() => setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false })}
