@@ -133,6 +133,7 @@ const Conferencia = () => {
   const [gtinScanLoading, setGtinScanLoading] = useState(false);
   const [gtinScanError, setGtinScanError] = useState<string | null>(null);
   const [gtinScanFlash, setGtinScanFlash] = useState<"success" | "error" | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Search a product directly in the DB by barcode / sku / gtin_cx, scoped by company
   const searchProductByCode = useCallback(async (code: string) => {
