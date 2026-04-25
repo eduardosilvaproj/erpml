@@ -238,6 +238,18 @@ export function useImportInvoice() {
               .eq("id", productId);
           }
         }
+
+        // 3. Salvar SKU do fornecedor vinculado ao produto
+        if (productId && supplierId) {
+          await supabase.from('product_supplier_skus').upsert({
+            product_id: productId,
+            supplier_id: supplierId,
+            supplier_name: nfeData.issuerName,
+            supplier_sku: match.xmlProduct.code,
+            company_id: companyId,
+            supplier_cnpj: nfeData.issuerCnpj
+          } as any, { onConflict: 'product_id,supplier_id' });
+        }
       }
 
       return invoice;
