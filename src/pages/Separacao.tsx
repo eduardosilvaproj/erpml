@@ -80,6 +80,15 @@ const Separacao = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [productSearch, setProductSearch] = useState("");
   const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
+  const [blockingAlert, setBlockingAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   // Fetch user profile name
   useEffect(() => {
@@ -265,7 +274,12 @@ const Separacao = () => {
       if (itemIndex !== -1) {
         const item = items[itemIndex];
         if (item.scannedQty >= item.neededQty) {
-          setLastScan({ success: false, message: `"${item.name}" já está completo.` });
+          setBlockingAlert({
+            isOpen: true,
+            title: "Produto já completo!",
+            message: `${item.name} já atingiu a quantidade necessária. Verifique o item.`
+          });
+          setScanValue("");
           scanInputRef.current?.flash(false);
           return;
         }
@@ -751,8 +765,9 @@ const Separacao = () => {
                       className="flex-1"
                       autoFocus
                       scanMode
+                      disabled={blockingAlert.isOpen}
                     />
-                    <Button onClick={() => handleScan(scanValue)} className="px-8 font-bold">
+                    <Button onClick={() => handleScan(scanValue)} className="px-8 font-bold" disabled={blockingAlert.isOpen}>
                       Bipar
                     </Button>
                   </div>
@@ -776,13 +791,14 @@ const Separacao = () => {
                     <span className="font-medium"><span className="font-bold text-lg">{productsComplete}/{totalProducts}</span> produtos completos</span>
                   </div>
                   <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
-                  {/* DEV ONLY - REMOVER ANTES DO DEPLOY */}
-                  <button onClick={handleSkipSeparacao}
-                    style={{background:'#ff6b00', color:'white', border:'2px dashed #ff9900',
-                    borderRadius:'8px', padding:'8px 16px', fontSize:'12px', cursor:'pointer', margin:'8px 0', width: '100%'}}>
-                    ⚡ [DEV] Pular bipagem — marcar todos como completos
-                  </button>
-                  {/* FIM DEV ONLY */}
+                  
+                  {import.meta.env.DEV && (
+                    <button onClick={handleSkipSeparacao}
+                      style={{background:'#ff6b00', color:'white', border:'2px dashed #ff9900',
+                      borderRadius:'8px', padding:'8px 16px', fontSize:'12px', cursor:'pointer', margin:'8px 0', width: '100%'}}>
+                      ⚡ [DEV] Pular bipagem — marcar todos como completos
+                    </button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -864,6 +880,32 @@ const Separacao = () => {
           </div>
         </>
       )}
+      <Dialog open={blockingAlert.isOpen} onOpenChange={(open) => setBlockingAlert(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8 border-4 border-destructive/20 shadow-2xl">
+          <div className="flex flex-col items-center space-y-6">
+            <div className="w-24 h-24 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
+              <AlertCircle className="h-12 w-12" />
+            </div>
+            
+            <div className="space-y-3">
+              <h2 className="text-2xl font-black uppercase tracking-tight">{blockingAlert.title}</h2>
+              <p className="text-muted-foreground text-lg font-medium leading-tight">
+                {blockingAlert.message}
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setBlockingAlert(prev => ({ ...prev, isOpen: false }));
+                setTimeout(() => scanInputRef.current?.focus(), 150);
+              }} 
+              className="w-full h-16 text-2xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
+            >
+              OK
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </>
   );
