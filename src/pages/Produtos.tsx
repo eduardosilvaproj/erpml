@@ -312,7 +312,7 @@ const Produtos = () => {
               setPage(1);
             }}
             onRegisterGtin={() => {
-              setEditingProduct(null);
+              setEditingProduct({ gtin_cx: barcodeSearch.lastCodigo } as any);
               setProductDialogOpen(true);
             }}
             onRegisterProduct={() => {
