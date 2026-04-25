@@ -15,13 +15,18 @@ import { useCreateSale, useSalesStats, type CartItem } from "@/hooks/useSalesDat
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useProducts } from "@/hooks/useProductData";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useNavigate } from "react-router-dom";
 
 const PDV = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
+
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [saleComplete, setSaleComplete] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
