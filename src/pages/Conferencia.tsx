@@ -126,6 +126,7 @@ const Conferencia = () => {
   const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
+  const [internalScanValue, setInternalScanValue] = useState("");
 
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
@@ -231,7 +232,10 @@ const Conferencia = () => {
       const t = setTimeout(() => gtinScanInputRef.current?.focus(), 150);
       return () => clearTimeout(t);
     }
-  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId]);
+    if (boxMode !== "scan_internal") {
+      setInternalScanValue("");
+    }
+  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId, boxMode]);
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
@@ -440,11 +444,8 @@ const Conferencia = () => {
     // Se estivermos esperando o produto interno da caixa
     if (boxMode === "scan_internal") {
       const internalCode = code.trim().toUpperCase();
-      const found = allProducts.find(p => 
-        p.ean === internalCode || 
-        p.barcode === internalCode || 
-        p.sku?.toUpperCase() === internalCode
-      );
+      // Use the more robust search function instead of just local allProducts
+      const found = await searchProductByCode(internalCode);
 
       if (found) {
         const qtyToLow = parseInt(tempBoxQty);
@@ -452,9 +453,15 @@ const Conferencia = () => {
         setLastScan({ success: true, name: `📦 Caixa de ${qtyToLow}x ${found.name}`, code: internalCode });
         playBeep(800, 100);
         setBoxMode("idle");
+        setInternalScanValue("");
       } else {
-        setLastScan({ success: false, name: "Produto interno não encontrado", code: internalCode });
+        setLastScan({ success: false, name: "Produto não encontrado para esse EAN", code: internalCode });
         playBeep(300, 200);
+        toast({
+          title: "Produto não encontrado",
+          description: `O EAN ${internalCode} não foi localizado no sistema.`,
+          variant: "destructive"
+        });
       }
       return;
     }
@@ -1039,15 +1046,42 @@ const Conferencia = () => {
           )}
 
           {boxMode === "scan_internal" && (
-            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-                <ScanBarcode className="h-10 w-10 text-blue-600" />
+            <div className="py-6 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <ScanBarcode className="h-8 w-8 text-blue-600" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 <p className="text-lg font-bold">Aguardando leitura...</p>
                 <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+                
+                <div className="mt-4 text-left space-y-2">
+                  <Label htmlFor="internal-ean">EAN do produto interno</Label>
+                  <Input
+                    id="internal-ean"
+                    placeholder="Bipe ou digite o EAN..."
+                    value={internalScanValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInternalScanValue(val);
+                      if (val.length >= 8) {
+                        handleScan(val);
+                        setInternalScanValue("");
+                      }
+                    }}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleScan(internalScanValue);
+                        setInternalScanValue("");
+                      }
+                    }}
+                  />
+                </div>
               </div>
-              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
+              <Button variant="ghost" onClick={() => {
+                setBoxMode("qty");
+                setInternalScanValue("");
+              }}>
                 Voltar
               </Button>
             </div>
