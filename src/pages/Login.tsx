@@ -169,7 +169,6 @@ export default function Login() {
     const validator = field === "email" ? validateEmail : validatePassword;
     setErrors(prev => ({ ...prev, [field]: validator(val) }));
   };
-...
 
 
   const handleLogin = async (e: React.FormEvent) => {
