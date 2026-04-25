@@ -320,7 +320,7 @@ export default function Login() {
             <CardFooter className="flex flex-col gap-3 pt-2">
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_35px_rgba(34,197,94,0.7)] transition-all duration-300 transform hover:-translate-y-0.5" 
+                className="w-full btn-entrar bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all duration-300 transform" 
                 disabled={loading || googleLoading}
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}
