@@ -1061,7 +1061,6 @@ const Conferencia = () => {
                 <div className="space-y-2 text-left">
                   <Label htmlFor="internal-ean">EAN do produto interno</Label>
                   <BarcodeScannerInput
-                    id="internal-ean"
                     value={internalScanValue}
                     onChange={setInternalScanValue}
                     onScan={handleScan}
