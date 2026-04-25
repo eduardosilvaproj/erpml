@@ -76,6 +76,8 @@ export function useDashboardData(period: PeriodFilter) {
         .from('full_orders')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
+        .not('frete_ml', 'is', null)
+        .neq('frete_ml', '')
         .in('status', ['pausado', 'separando', 'aguardando_carregamento']);
 
       // Fetch sent full orders
@@ -83,6 +85,8 @@ export function useDashboardData(period: PeriodFilter) {
         .from('full_orders')
         .select('*', { count: 'exact', head: true })
         .eq('company_id', companyId)
+        .not('frete_ml', 'is', null)
+        .neq('frete_ml', '')
         .eq('status', 'enviado');
 
       // Fetch transfer orders
