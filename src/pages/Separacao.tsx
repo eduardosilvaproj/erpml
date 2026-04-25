@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
   ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
-  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X
+  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X, ChevronDown
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
