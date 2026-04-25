@@ -345,10 +345,37 @@ export const useDeleteFullOrder = () => {
   const companyId = useCompanyId();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!companyId) throw new Error("Empresa não identificada");
+      
+      // 1. Buscar a ordem para obter frete_ml e ordem_id
+      const { data: order } = await supabase
+        .from("full_orders")
+        .select("id, frete_ml, ordem_id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!order) return;
+
+      // 2. Gravações vinculadas (usando o ID da full_orders ou frete_ml)
+      await supabase
+        .from("order_recordings")
+        .delete()
+        .or(`pedido_id.eq.${id},pedido_id.eq.${order.frete_ml || ''}`);
+
+      // 3. Estado de bipagem salvo (opcional se deletar a linha, mas o usuário pediu explicitamente)
+      await supabase
+        .from("full_orders")
+        .update({ bipagem_state: null })
+        .eq("id", id);
+
+      // 4. Deletar da tabela full_orders
       const { error } = await supabase.from("full_orders").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["full-orders", companyId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
+      qc.invalidateQueries({ queryKey: ["ordens-full", companyId] });
+    },
   });
 };
 
