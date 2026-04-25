@@ -48,6 +48,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [novaPrevisaoData, setNovaPrevisaoData] = useState("");
   const [novaPrevisaoHora, setNovaPrevisaoHora] = useState("");
   const [responsavelNome, setResponsavelNome] = useState<string | null>(null);
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
