@@ -99,7 +99,13 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       setNovaPrevisaoData(format(d, "yyyy-MM-dd"));
       setNovaPrevisaoHora(format(d, "HH:mm"));
     }
-  }, [ordemId, ordem?.previsao_carregamento]);
+  useEffect(() => {
+    if (boxMode === "qty") {
+      setTimeout(() => qtyInputRef.current?.focus(), 150);
+    } else if (boxMode === "scan_internal") {
+      setTimeout(() => internalScannerRef.current?.focus(), 150);
+    }
+  }, [boxMode]);
 
   const progress = useMemo(() => {
     const total = itens.reduce((s, i) => s + i.qtd_solicitada, 0);
