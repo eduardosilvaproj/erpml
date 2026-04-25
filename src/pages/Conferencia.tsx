@@ -2362,6 +2362,29 @@ const Conferencia = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Modal Confirmar Cancelamento da Conferência */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🛑</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Cancelar conferência?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Os bips serão descartados e a conferência será marcada como cancelada. Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={executeCancelConference} disabled={cancelling} variant="destructive" className="w-full py-6 text-base gap-2">
+                {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : "🛑 Sim, cancelar conferência"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowCancelConfirm(false)} className="w-full py-6 text-base gap-2">
+                Continuar conferindo
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
     </>
   );
