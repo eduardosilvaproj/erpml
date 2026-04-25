@@ -55,7 +55,7 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
     return {
       produto: porGtinTable.product,
       tipo: 'caixa',
-      qty: porGtinTable.qtd_por_caixa,
+      qty: porGtinTable.box_quantity,
       gtin: porGtinTable
     };
   }
