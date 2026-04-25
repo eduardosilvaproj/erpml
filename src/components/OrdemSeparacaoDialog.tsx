@@ -48,6 +48,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [novaPrevisaoData, setNovaPrevisaoData] = useState("");
   const [novaPrevisaoHora, setNovaPrevisaoHora] = useState("");
   const [responsavelNome, setResponsavelNome] = useState<string | null>(null);
+  const [showConfirmFinalizar, setShowConfirmFinalizar] = useState(false);
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
@@ -144,9 +145,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     setScan("");
   };
 
-  const finalizar = async () => {
+  const executeFinalizar = async () => {
     if (!ordem || !user || !companyId) return;
-    if (!allComplete && !confirm("Existem itens pendentes/parciais. Marcar como separada mesmo assim?")) return;
     try {
       if (recorder.status === "recording" || recorder.status === "paused") {
         const blob = await recorder.stop();
@@ -166,6 +166,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     } catch (e: any) {
       toast({ title: "Erro ao concluir", description: e.message, variant: "destructive" });
     }
+  };
+
+  const finalizar = async () => {
+    if (!ordem || !user || !companyId) return;
+    if (!allComplete) {
+      setShowConfirmFinalizar(true);
+      return;
+    }
+    await executeFinalizar();
   };
 
   const marcarComoEnviado = async () => {
@@ -560,6 +569,30 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
               <Video className="h-4 w-4 mr-1" /> Começar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfirmFinalizar} onOpenChange={setShowConfirmFinalizar}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-amber-500">⚠️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Itens Pendentes</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Existem itens pendentes/parciais nesta ordem.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-muted-foreground pt-2">Deseja marcar como separada mesmo assim?</p>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={() => { setShowConfirmFinalizar(false); executeFinalizar(); }} className="w-full py-6 text-base gap-2 bg-amber-600 hover:bg-amber-700">
+                ✅ Sim, finalizar mesmo assim
+              </Button>
+              <Button variant="outline" onClick={() => setShowConfirmFinalizar(false)} className="w-full py-6 text-base gap-2">
+                ❌ Voltar e conferir
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

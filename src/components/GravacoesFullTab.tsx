@@ -53,6 +53,7 @@ export const GravacoesFullTab = () => {
   const [player, setPlayer] = useState<{ url: string; rec: Recording } | null>(null);
   const [linkRec, setLinkRec] = useState<Recording | null>(null);
   const [linkOrderId, setLinkOrderId] = useState<string>("");
+  const [deleteRec, setDeleteRec] = useState<Recording | null>(null);
 
   const load = async () => {
     if (!companyId) return;
@@ -108,8 +109,7 @@ export const GravacoesFullTab = () => {
     window.open(data.signedUrl, "_blank");
   };
 
-  const remove = async (rec: Recording) => {
-    if (!confirm("Excluir esta gravação? Esta ação não pode ser desfeita.")) return;
+  const confirmRemove = async (rec: Recording) => {
     await supabase.storage.from("gravacoes-full").remove([rec.storage_path]);
     const { error } = await supabase.from("gravacoes_full").delete().eq("id", rec.id);
     if (error) {
@@ -117,7 +117,12 @@ export const GravacoesFullTab = () => {
       return;
     }
     toast({ title: "Gravação excluída" });
+    setDeleteRec(null);
     load();
+  };
+
+  const remove = (rec: Recording) => {
+    setDeleteRec(rec);
   };
 
   const linkToOrder = async () => {
@@ -275,6 +280,30 @@ export const GravacoesFullTab = () => {
             <Button variant="outline" onClick={() => setLinkRec(null)}>Cancelar</Button>
             <Button onClick={linkToOrder} disabled={!linkOrderId}>Vincular</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Confirmar Exclusão */}
+      <Dialog open={!!deleteRec} onOpenChange={(o) => !o && setDeleteRec(null)}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🗑️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Excluir gravação?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Esta ação não pode ser desfeita. O vídeo será removido permanentemente.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={() => deleteRec && confirmRemove(deleteRec)} variant="destructive" className="w-full py-6 text-base gap-2">
+                ❌ Sim, excluir agora
+              </Button>
+              <Button variant="outline" onClick={() => setDeleteRec(null)} className="w-full py-6 text-base gap-2">
+                Voltar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

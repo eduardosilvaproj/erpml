@@ -218,6 +218,7 @@ export const OrdensFullTab = () => {
     existingStatus: "",
     freteNumero: "",
   });
+  const [fullToDeleteId, setFullToDeleteId] = useState<string | null>(null);
 
   const handleViewOrder = (order: any) => {
     // Status que devem abrir a nova visualização de detalhes
@@ -477,17 +478,12 @@ export const OrdensFullTab = () => {
       if (error) throw error;
 
       if (existing) {
-        const confirma = window.confirm(
-          `Frete #${parsedData.shippingNumber} já existe com status "${existing.status}".\nDeseja abrir a ordem existente?`
-        );
-        if (confirma) {
-          const existingOrder = ordens?.find(o => o.frete_ml === parsedData.shippingNumber || o.numero === parsedData.shippingNumber);
-          if (existingOrder) {
-            handleViewOrder(existingOrder);
-          } else {
-            toast({ title: "Ordem não encontrada na lista", variant: "destructive" });
-          }
-        }
+        setDuplicateCheck({
+          isOpen: true,
+          existingId: existing.id,
+          existingStatus: existing.status,
+          freteNumero: parsedData.shippingNumber
+        });
         return; // Não criar nova
       }
 
@@ -743,6 +739,16 @@ export const OrdensFullTab = () => {
     setParsedData({ ...parsedData, items: newItems });
     setEditingItemIdx(null);
     toast({ title: "Produto vinculado manualmente!" });
+  };
+
+  const handleOpenExisting = () => {
+    const existingOrder = ordens?.find(o => o.frete_ml === duplicateCheck.freteNumero || o.numero === duplicateCheck.freteNumero);
+    if (existingOrder) {
+      handleViewOrder(existingOrder);
+    } else {
+      toast({ title: "Ordem não encontrada na lista", variant: "destructive" });
+    }
+    setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
   };
 
   return (
@@ -1565,16 +1571,7 @@ export const OrdensFullTab = () => {
                               size="icon" 
                               variant="ghost" 
                               className="h-8 w-8 text-destructive"
-                              onClick={async () => {
-                                if (confirm("Excluir registro de rastreamento deste pedido FULL?")) {
-                                  try {
-                                    await deleteFullOrder.mutateAsync(fo.id);
-                                    toast({ title: "Registro excluído" });
-                                  } catch (err: any) {
-                                    toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
-                                  }
-                                }
-                              }}
+                              onClick={() => setFullToDeleteId(fo.id)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -1646,6 +1643,67 @@ export const OrdensFullTab = () => {
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirmar"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Frete Existente */}
+      <Dialog open={duplicateCheck.isOpen} onOpenChange={(open) => setDuplicateCheck(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2">⚠️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Frete já existe</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Frete <span className="font-bold">#{duplicateCheck.freteNumero}</span> já existe com status <span className="font-bold text-primary">"{duplicateCheck.existingStatus}"</span>.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-muted-foreground pt-2">Deseja continuar de onde parou?</p>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={handleOpenExisting} className="w-full py-6 text-base gap-2">
+                ▶ Continuar ordem existente
+              </Button>
+              <Button variant="outline" onClick={() => setDuplicateCheck(prev => ({ ...prev, isOpen: false }))} className="w-full py-6 text-base gap-2">
+                ❌ Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!fullToDeleteId} onOpenChange={(o) => !o && setFullToDeleteId(null)}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🗑️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Excluir registro?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Deseja excluir o registro de rastreamento deste pedido FULL? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button 
+                variant="destructive" 
+                className="w-full py-6 text-base gap-2"
+                onClick={async () => {
+                  if (!fullToDeleteId) return;
+                  try {
+                    await deleteFullOrder.mutateAsync(fullToDeleteId);
+                    toast({ title: "Registro excluído" });
+                    setFullToDeleteId(null);
+                  } catch (err: any) {
+                    toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
+                  }
+                }}
+              >
+                ❌ Sim, excluir agora
+              </Button>
+              <Button variant="outline" onClick={() => setFullToDeleteId(null)} className="w-full py-6 text-base gap-2">
+                Voltar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

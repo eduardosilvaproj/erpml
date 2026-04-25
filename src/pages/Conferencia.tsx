@@ -17,7 +17,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
@@ -133,6 +133,7 @@ const Conferencia = () => {
   const [gtinScanLoading, setGtinScanLoading] = useState(false);
   const [gtinScanError, setGtinScanError] = useState<string | null>(null);
   const [gtinScanFlash, setGtinScanFlash] = useState<"success" | "error" | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Search a product directly in the DB by barcode / sku / gtin_cx, scoped by company
   const searchProductByCode = useCallback(async (code: string) => {
@@ -875,8 +876,7 @@ const Conferencia = () => {
   };
 
   const [cancelling, setCancelling] = useState(false);
-  const handleCancelConference = async () => {
-    if (!confirm("Cancelar esta conferência? Os bips serão descartados e a conferência será marcada como cancelada.")) return;
+  const executeCancelConference = async () => {
     setCancelling(true);
     try {
       if (conferenceId) {
@@ -887,11 +887,16 @@ const Conferencia = () => {
       }
       toast({ title: "Conferência cancelada" });
       reset();
+      setShowCancelConfirm(false);
     } catch (err: any) {
       toast({ title: "Erro ao cancelar", description: err.message, variant: "destructive" });
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleCancelConference = () => {
+    setShowCancelConfirm(true);
   };
 
   // Quick register: opens the mini modal (also closes any source modal that triggered it)
@@ -2355,6 +2360,29 @@ const Conferencia = () => {
               Confirmar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Modal Confirmar Cancelamento da Conferência */}
+      <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🛑</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Cancelar conferência?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Os bips serão descartados e a conferência será marcada como cancelada. Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={executeCancelConference} disabled={cancelling} variant="destructive" className="w-full py-6 text-base gap-2">
+                {cancelling ? <Loader2 className="h-4 w-4 animate-spin" /> : "🛑 Sim, cancelar conferência"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowCancelConfirm(false)} className="w-full py-6 text-base gap-2">
+                Continuar conferindo
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
