@@ -730,136 +730,115 @@ const EntradaNota = () => {
         throw invError;
       }
 
+      let itemsSaved = 0;
+      let itemsFailed = 0;
+
       for (const match of itemsToImport) {
-        let productId = match.matchedProductId;
+        try {
+          let productId = match.matchedProductId;
 
-        // Auto-create product if no match found and stock update is enabled
-        if (!productId && autoUpdateStock) {
-          try {
-            productId = await autoCreateProductFromXml(match.xmlProduct);
-          } catch (err: any) {
-            console.error("Erro ao criar produto automaticamente:", err);
-            throw new Error(`Erro ao cadastrar produto ${match.xmlProduct.description}: ${err.message}`);
-          }
-        }
-
-        let itemsSaved = 0;
-        let itemsFailed = 0;
-
-        for (const match of itemsToImport) {
-          try {
-            let productId = match.matchedProductId;
-
-            // Auto-create product if no match found and stock update is enabled
-            if (!productId && autoUpdateStock) {
-              try {
-                productId = await autoCreateProductFromXml(match.xmlProduct);
-              } catch (err: any) {
-                console.error("Erro ao criar produto automaticamente:", err);
-                itemsFailed++;
-                continue;
-              }
-            }
-
-            const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
-              invoice_id: invoice.id,
-              product_id: productId,
-              xml_code: match.xmlProduct.code,
-              xml_description: match.xmlProduct.description,
-              xml_ean: match.xmlProduct.ean || "",
-              xml_ncm: match.xmlProduct.ncm || "",
-              xml_cfop: match.xmlProduct.cfop || "",
-              xml_unit: match.xmlProduct.unit || "UN",
-              quantity: match.xmlProduct.quantity,
-              unit_value: match.xmlProduct.unitValue,
-              total_value: match.xmlProduct.totalValue,
-              match_type: productId ? (match.matchedProductId ? (match.matchType || 'manual') : "new") : "none",
-              match_confidence: match.confidence,
-              stock_updated: false,
-            }).select().single();
-
-            if (itemError) {
-              console.error("Erro ao inserir item da nota:", itemError);
+          // Auto-create product if no match found and stock update is enabled
+          if (!productId && autoUpdateStock) {
+            try {
+              productId = await autoCreateProductFromXml(match.xmlProduct);
+            } catch (err: any) {
+              console.error("Erro ao criar produto automaticamente:", err);
               itemsFailed++;
               continue;
             }
-            
-            itemsSaved++;
-
-        // Only ADD stock if product already existed (auto-created already has the qty as initial stock)
-        if (productId && match.matchedProductId && autoUpdateStock) {
-          const { data: current, error: fetchError } = await supabase
-            .from("products")
-            .select("stock_physical, cost, price")
-            .eq("id", productId)
-            .eq("company_id", companyId)
-            .single();
-
-          if (fetchError) {
-            console.error("Erro ao buscar estoque atual:", fetchError);
-            throw new Error(`Erro ao atualizar estoque do produto ${match.xmlProduct.description}`);
           }
 
-          if (current) {
-            const qty = Math.floor(match.xmlProduct.quantity);
-            const newStock = (Number(current.stock_physical) || 0) + qty;
-            const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
-            const currentCost = Number(current.cost) || 0;
-            const currentPrice = Number(current.price) || 0;
-
-            const update: Record<string, any> = { 
-              stock_physical: newStock,
-              updated_at: new Date().toISOString()
-            };
-
-            if (autoUpdateCost) {
-              const totalOldCost = (Number(current.stock_physical) || 0) * currentCost;
-              const totalNewCost = match.xmlProduct.quantity * xmlUnit;
-              const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
-              update.cost = Math.round(avgCost * 100) / 100;
-            } else if (currentCost === 0 && xmlUnit > 0) {
-              update.cost = Math.round(xmlUnit * 100) / 100;
-            }
-
-            if ((currentPrice === 0 || !currentPrice) && xmlUnit > 0) {
-              update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
-            }
-
-            const { error: updateError } = await supabase
-              .from("products")
-              .update(update as any)
-              .eq("id", productId)
-              .eq("company_id", companyId);
-
-            if (!updateError) {
-              // Somente marca como atualizado se o update no produto teve sucesso
-              await supabase
-                .from("invoice_items")
-                .update({ stock_updated: true })
-                .eq("id", insertedItem.id);
-            } else {
-              console.error("Erro ao atualizar produto:", updateError);
-              throw new Error(`Erro ao atualizar estoque/custo do produto ${match.xmlProduct.description}: ${updateError.message}`);
-            }
-          }
-        } else if (productId && !match.matchedProductId && autoUpdateStock) {
-          // Para produtos recém-criados, marcar como stock_updated: true pois o estoque inicial já foi definido
-          await supabase
-            .from("invoice_items")
-            .update({ stock_updated: true })
-            .eq("id", insertedItem.id);
-        }
-
-        // Link supplier SKU
-        if (productId && match.xmlProduct.code) {
-          const { error: skuError } = await supabase.from("product_supplier_skus").upsert({
+          const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
+            invoice_id: invoice.id,
             product_id: productId,
-            supplier_name: nfeData.issuerName,
-            supplier_sku: match.xmlProduct.code,
-            supplier_cnpj: nfeData.issuerCnpj
-          }, { onConflict: 'product_id,supplier_sku' });
+            xml_code: match.xmlProduct.code,
+            xml_description: match.xmlProduct.description,
+            xml_ean: match.xmlProduct.ean || "",
+            xml_ncm: match.xmlProduct.ncm || "",
+            xml_cfop: match.xmlProduct.cfop || "",
+            xml_unit: match.xmlProduct.unit || "UN",
+            quantity: match.xmlProduct.quantity,
+            unit_value: match.xmlProduct.unitValue,
+            total_value: match.xmlProduct.totalValue,
+            match_type: productId ? (match.matchedProductId ? (match.matchType || 'manual') : "new") : "none",
+            match_confidence: match.confidence,
+            stock_updated: false,
+          }).select().single();
+
+          if (itemError) {
+            console.error("Erro ao inserir item da nota:", itemError);
+            itemsFailed++;
+            continue;
+          }
+
+          // Only ADD stock if product already existed (auto-created already has the qty as initial stock)
+          if (productId && match.matchedProductId && autoUpdateStock) {
+            const { data: current, error: fetchError } = await supabase
+              .from("products")
+              .select("stock_physical, cost, price")
+              .eq("id", productId)
+              .eq("company_id", companyId)
+              .single();
+
+            if (!fetchError && current) {
+              const qty = Math.floor(match.xmlProduct.quantity);
+              const newStock = (Number(current.stock_physical) || 0) + qty;
+              const xmlUnit = Number(match.xmlProduct.unitValue) || 0;
+              const currentCost = Number(current.cost) || 0;
+              const currentPrice = Number(current.price) || 0;
+
+              const update: Record<string, any> = { 
+                stock_physical: newStock,
+                updated_at: new Date().toISOString()
+              };
+
+              if (autoUpdateCost) {
+                const totalOldCost = (Number(current.stock_physical) || 0) * currentCost;
+                const totalNewCost = match.xmlProduct.quantity * xmlUnit;
+                const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlUnit;
+                update.cost = Math.round(avgCost * 100) / 100;
+              } else if (currentCost === 0 && xmlUnit > 0) {
+                update.cost = Math.round(xmlUnit * 100) / 100;
+              }
+
+              if ((currentPrice === 0 || !currentPrice) && xmlUnit > 0) {
+                update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
+              }
+
+              const { error: updateError } = await supabase
+                .from("products")
+                .update(update as any)
+                .eq("id", productId)
+                .eq("company_id", companyId);
+
+              if (!updateError) {
+                await supabase
+                  .from("invoice_items")
+                  .update({ stock_updated: true })
+                  .eq("id", insertedItem.id);
+              }
+            }
+          } else if (productId && !match.matchedProductId && autoUpdateStock) {
+            await supabase
+              .from("invoice_items")
+              .update({ stock_updated: true })
+              .eq("id", insertedItem.id);
+          }
+
+          // Link supplier SKU
+          if (productId && match.xmlProduct.code) {
+            await supabase.from("product_supplier_skus").upsert({
+              product_id: productId,
+              supplier_name: nfeData.issuerName,
+              supplier_sku: match.xmlProduct.code,
+              supplier_cnpj: nfeData.issuerCnpj
+            }, { onConflict: 'product_id,supplier_sku' });
+          }
           
-          if (skuError) console.warn("Erro ao vincular SKU do fornecedor:", skuError);
+          itemsSaved++;
+        } catch (err) {
+          console.error("Erro ao processar item:", err);
+          itemsFailed++;
         }
       }
 
@@ -867,9 +846,18 @@ const EntradaNota = () => {
       await queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });
       await queryClient.invalidateQueries({ queryKey: ["products"] });
 
+      if (itemsFailed > 0) {
+        toast({
+          title: "Importação concluída com avisos",
+          description: `${itemsSaved} itens salvos. ${itemsFailed} itens sem produto vinculado — clique para revisar.`,
+          variant: "warning",
+        });
+      } else {
+        toast({ title: "Nota fiscal importada com sucesso!", description: `${itemsSaved} itens vinculados.` });
+      }
+
       setDone(true);
       clearPersistedState();
-      toast({ title: "Entrada confirmada!", description: "Estoque atualizado com sucesso." });
     } catch (err: any) {
       console.error("Erro fatal ao confirmar entrada:", err);
       toast({ title: "Erro ao confirmar", description: err.message || "Tente novamente.", variant: "destructive" });
@@ -879,6 +867,7 @@ const EntradaNota = () => {
   };
 
   const confirmarEntradaLote = async () => {
+
     setSaving(true);
     let confirmed = 0;
     let totalProducts = 0;
