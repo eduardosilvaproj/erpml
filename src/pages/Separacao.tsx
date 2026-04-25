@@ -80,6 +80,15 @@ const Separacao = () => {
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [productSearch, setProductSearch] = useState("");
   const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
+  const [blockingAlert, setBlockingAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   // Fetch user profile name
   useEffect(() => {
