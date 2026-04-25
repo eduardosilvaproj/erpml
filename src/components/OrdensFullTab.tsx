@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, AlertTriangle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
