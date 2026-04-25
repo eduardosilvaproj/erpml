@@ -305,6 +305,7 @@ function StatusBar({ currentStatus }: { currentStatus: string }) {
 
 function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string, freteId: string | null, value: string | null | undefined, onUpdate: () => void }) {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [editing, setEditing] = useState(false);
   const [data, setData] = useState("");
 
