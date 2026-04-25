@@ -123,7 +123,7 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
       .update({
         product_id: productId,
         stock_updated: true,
-        match_type: isNew ? "auto_created" : (it.match_type === "none" ? "retro_match" : it.match_type),
+        match_type: isNew ? "new" : (it.match_type === "none" ? "fuzzy" : it.match_type),
       })
       .eq("id", it.id);
   }
