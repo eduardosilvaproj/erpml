@@ -526,9 +526,9 @@ export const OrdensFullTab = () => {
     try {
       setStartingId(ordem.id);
       const { data: itens, error } = await supabase
-        .from("full_orders")
+        .from("full_order_items")
         .select("*, product:products(id, name, sku, barcode, image_url, stock_physical)")
-        .eq("ordem_id", ordem.id);
+        .eq("order_id", ordem.id);
       if (error) throw error;
 
       const produtos = (itens || [])
