@@ -145,7 +145,7 @@ const Separacao = () => {
           const bipagemState = Array.isArray(fullOrder.bipagem_state) ? (fullOrder.bipagem_state as any[]) : [];
           
           const mappedItems: SeparacaoItem[] = fullOrder.full_order_items.map((item: any) => {
-            const product = item.products;
+            const product = item.product;
             const bState = bipagemState.find(b => b.productId === item.product_id);
             
             return {
