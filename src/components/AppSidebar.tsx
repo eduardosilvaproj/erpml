@@ -156,26 +156,20 @@ function SidebarContent({
   return (
     <>
       {/* Logo */}
-      <div className="h-14 flex items-center gap-3 px-4 border-b border-border/30 shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-transparent flex items-center justify-center shrink-0 overflow-hidden">
+      <div className={`flex items-center gap-3 px-4 border-b border-border/30 shrink-0 ${compact ? 'h-16 justify-center' : 'h-14'}`}>
+        {compact ? (
           <img 
-            src="https://rmetppilvfrxosvxzhgj.supabase.co/storage/v1/object/public/message-attachments/79aef328-4901-4b95-a65f-7e536f3c613c/1777099759840_xil5ic_ChatGPT_Image_25_de_abr._de_2026__03_30_40.png" 
-            alt="Stovix" 
-            className="h-8 w-8 object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                const span = document.createElement('span');
-                span.className = 'text-base font-bold text-primary';
-                span.innerText = 'S';
-                parent.appendChild(span);
-              }
-            }}
+            src="/chatgpt-image.png" 
+            alt="S" 
+            style={{height: '32px', width: '32px', objectFit: 'contain', objectPosition: 'top center'}} 
           />
-        </div>
-        <span className="text-sm font-bold text-foreground tracking-tight truncate">Stovix</span>
+        ) : (
+          <img 
+            src="/chatgpt-image.png" 
+            alt="Stovix" 
+            style={{height: '48px', objectFit: 'contain'}} 
+          />
+        )}
       </div>
 
       {/* Nav */}
