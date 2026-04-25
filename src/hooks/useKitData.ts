@@ -23,7 +23,7 @@ export interface KitItem {
   product_id: string;
   quantity: number;
   created_at: string;
-  products?: { id: string; name: string; sku: string; stock_physical: number; stock_full: number; cost: number; price: number };
+  products?: { id: string; name: string; sku: string; ean: string | null; barcode: string | null; stock_physical: number; stock_full: number; cost: number; price: number };
 }
 
 export interface KitFormData {
