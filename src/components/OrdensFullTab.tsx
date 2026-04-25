@@ -194,6 +194,8 @@ export const OrdensFullTab = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<{
     shippingNumber: string;
+    expectedProducts?: number;
+    expectedUnits?: number;
     items: { ean: string; quantity: number; pdfName?: string; product?: any; error?: string }[];
   } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
