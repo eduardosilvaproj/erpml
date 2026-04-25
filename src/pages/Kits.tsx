@@ -585,7 +585,7 @@ const Kits = () => {
                   <CardContent className="text-sm space-y-2">
                     <p className="text-muted-foreground">{suggestion.description}</p>
                     <div className="flex gap-3">
-                      <Badge variant="outline">SKU: {suggestion.sku}</Badge>
+                      <Badge variant="outline">EAN/SKU: {suggestion.sku}</Badge>
                       <Badge variant="outline">R$ {suggestion.price.toFixed(2)}</Badge>
                     </div>
                     <div className="text-xs text-muted-foreground">
