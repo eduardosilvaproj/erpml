@@ -221,7 +221,7 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md z-10"
       >
-        <Card className="login-card-glass border-none">
+        <Card className="login-card-glass">
           <CardHeader className="text-center">
             <div className="flex justify-center logo-container">
               <img
