@@ -445,6 +445,19 @@ export const useMarcarOrdemSeparada = () => {
           }
         }
       }
+
+      // 4. Registrar no log de auditoria
+      await supabase.from("company_audit_log").insert({
+        company_id: companyId!,
+        user_id: user?.id,
+        action: "full_order_separated",
+        details: {
+          order_id: ordemId,
+          frete_ml: ordem.frete_ml,
+          items_count: bipagemItems.length,
+          timestamp: new Date().toISOString()
+        }
+      });
     },
     onSuccess: (_, ordemId) => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
