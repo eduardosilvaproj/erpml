@@ -97,7 +97,7 @@ export const useOrdemFull = (ordemId: string | null) => {
 
       const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
       const itens = (ordem as any)?.full_order_items?.map((item: any) => {
-        const product = item.products;
+        const product = item.product;
         const bState = bipagemState.find(b => b.productId === item.product_id);
         
         return {
