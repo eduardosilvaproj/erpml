@@ -308,7 +308,8 @@ export const useUpdateFullOrder = () => {
   const companyId = useCompanyId();
   return useMutation({
     mutationFn: async ({ id, status, frete_ml, ...rest }: { id?: string; frete_ml?: string; status: string; [key: string]: any }) => {
-      let query = supabase.from("full_orders").update({ status, ...rest });
+      if (!companyId) throw new Error("Empresa não identificada");
+      let query = supabase.from("full_orders").update({ status, ...rest }).eq("company_id", companyId);
       
       if (id) {
         query = query.eq("id", id);
