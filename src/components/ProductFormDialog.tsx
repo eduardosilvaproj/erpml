@@ -19,6 +19,7 @@ import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { supabase } from "@/integrations/supabase/client";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 type UnsplashPhoto = {
   id: string;
