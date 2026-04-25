@@ -121,6 +121,7 @@ export const useOrdemFull = (ordemId: string | null) => {
             name: product.name,
             sku: product.sku,
             barcode: product.barcode,
+            ean: product.ean,
             image_url: product.image_url,
             stock_physical: product.stock_physical || 0,
             stock_full: product.stock_full || 0,
