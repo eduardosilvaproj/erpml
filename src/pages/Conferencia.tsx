@@ -437,6 +437,28 @@ const Conferencia = () => {
     if (!code.trim()) return;
     setScanBuffer("");
 
+    // Se estivermos esperando o produto interno da caixa
+    if (boxMode === "scan_internal") {
+      const internalCode = code.trim().toUpperCase();
+      const found = allProducts.find(p => 
+        p.ean === internalCode || 
+        p.barcode === internalCode || 
+        p.sku?.toUpperCase() === internalCode
+      );
+
+      if (found) {
+        const qtyToLow = parseInt(tempBoxQty);
+        addScannedUnits(found, qtyToLow);
+        setLastScan({ success: true, name: `📦 Caixa de ${qtyToLow}x ${found.name}`, code: internalCode });
+        playBeep(800, 100);
+        setBoxMode("idle");
+      } else {
+        setLastScan({ success: false, name: "Produto interno não encontrado", code: internalCode });
+        playBeep(300, 200);
+      }
+      return;
+    }
+
     await barcodeSearch.handleSearch(code, (result) => {
       const { produto, qty, tipo } = result;
 
