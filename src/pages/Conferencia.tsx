@@ -1040,15 +1040,42 @@ const Conferencia = () => {
           )}
 
           {boxMode === "scan_internal" && (
-            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-                <ScanBarcode className="h-10 w-10 text-blue-600" />
+            <div className="py-6 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <ScanBarcode className="h-8 w-8 text-blue-600" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 w-full">
                 <p className="text-lg font-bold">Aguardando leitura...</p>
                 <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+                
+                <div className="mt-4 text-left space-y-2">
+                  <Label htmlFor="internal-ean">EAN do produto interno</Label>
+                  <Input
+                    id="internal-ean"
+                    placeholder="Bipe ou digite o EAN..."
+                    value={internalScanValue}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setInternalScanValue(val);
+                      if (val.length >= 8) {
+                        handleScan(val);
+                        setInternalScanValue("");
+                      }
+                    }}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleScan(internalScanValue);
+                        setInternalScanValue("");
+                      }
+                    }}
+                  />
+                </div>
               </div>
-              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
+              <Button variant="ghost" onClick={() => {
+                setBoxMode("qty");
+                setInternalScanValue("");
+              }}>
                 Voltar
               </Button>
             </div>
