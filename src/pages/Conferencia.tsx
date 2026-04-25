@@ -876,8 +876,7 @@ const Conferencia = () => {
   };
 
   const [cancelling, setCancelling] = useState(false);
-  const handleCancelConference = async () => {
-    if (!confirm("Cancelar esta conferência? Os bips serão descartados e a conferência será marcada como cancelada.")) return;
+  const executeCancelConference = async () => {
     setCancelling(true);
     try {
       if (conferenceId) {
@@ -888,11 +887,16 @@ const Conferencia = () => {
       }
       toast({ title: "Conferência cancelada" });
       reset();
+      setShowCancelConfirm(false);
     } catch (err: any) {
       toast({ title: "Erro ao cancelar", description: err.message, variant: "destructive" });
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleCancelConference = () => {
+    setShowCancelConfirm(true);
   };
 
   // Quick register: opens the mini modal (also closes any source modal that triggered it)
