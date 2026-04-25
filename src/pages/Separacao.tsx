@@ -444,7 +444,65 @@ const Separacao = () => {
     if (!orderInfo || !user) return;
     setIsFinishing(true);
     try {
-      // Update the full_orders status and metadata
+      // 1. Verificar se já foi finalizado para evitar baixa dupla
+      const { data: currentOrder } = await supabase
+        .from('full_orders')
+        .select('separado_em, status')
+        .eq('id', orderInfo.id)
+        .maybeSingle();
+
+      if (currentOrder?.separado_em || currentOrder?.status === 'aguardando_carregamento') {
+        toast({ 
+          title: "Ordem já finalizada", 
+          description: "Esta ordem já foi processada anteriormente.",
+          variant: "destructive"
+        });
+        navigate("/movimentacao-full");
+        return;
+      }
+
+      // 2. Atualizar estoque para cada item bipado
+      for (const item of items) {
+        if (item.scannedQty > 0) {
+          // Buscar estoque atual
+          const { data: product } = await supabase
+            .from('products')
+            .select('stock_physical, stock_full, name')
+            .eq('id', item.productId)
+            .eq('company_id', companyId)
+            .maybeSingle();
+
+          if (product) {
+            const currentPhysical = product.stock_physical || 0;
+            const currentFull = product.stock_full || 0;
+            const quantityBipada = item.scannedQty;
+
+            if (currentPhysical < quantityBipada) {
+              console.error(`Erro de estoque para ${product.name}: bipado ${quantityBipada}, disponível ${currentPhysical}`);
+              toast({
+                title: "Alerta de estoque",
+                description: `O produto ${product.name} ficou com estoque físico insuficiente (ajustado para 0).`,
+                variant: "destructive"
+              });
+            }
+
+            const newPhysical = Math.max(0, currentPhysical - quantityBipada);
+            const newFull = currentFull + quantityBipada;
+
+            await supabase
+              .from('products')
+              .update({
+                stock_physical: newPhysical,
+                stock_full: newFull,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', item.productId)
+              .eq('company_id', companyId);
+          }
+        }
+      }
+
+      // 3. Atualizar o status da ordem
       const previsaoCompleta = (previsaoData && previsaoHora) 
         ? new Date(`${previsaoData}T${previsaoHora}`).toISOString()
         : null;
@@ -461,7 +519,7 @@ const Separacao = () => {
 
       toast({ 
         title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, 
-        description: "Status alterado para Aguardando Carregamento." 
+        description: "Estoque atualizado e status alterado para Aguardando Carregamento." 
       });
       
       localStorage.removeItem("ordem_ativa");
