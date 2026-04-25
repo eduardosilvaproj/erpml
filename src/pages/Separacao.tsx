@@ -135,7 +135,7 @@ const Separacao = () => {
 
         if (fullOrder?.bipagem_state) {
           console.log("Restaurando estado de bipagem do Supabase...");
-          setItems(fullOrder.bipagem_state as SeparacaoItem[]);
+          setItems(fullOrder.bipagem_state as unknown as SeparacaoItem[]);
           setIsPaused(fullOrder.status === 'pausado');
           toast({ title: "🔄 Bipagem restaurada com sucesso!" });
         } else {
