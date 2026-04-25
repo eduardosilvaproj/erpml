@@ -1046,44 +1046,49 @@ const Conferencia = () => {
           )}
 
           {boxMode === "scan_internal" && (
-            <div className="py-6 flex flex-col items-center justify-center space-y-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-                <ScanBarcode className="h-8 w-8 text-blue-600" />
+            <div className="py-6 space-y-6">
+              <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                  <ScanBarcode className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-blue-900">Aguardando leitura...</p>
+                  <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+                </div>
               </div>
-              <div className="space-y-2 w-full">
-                <p className="text-lg font-bold">Aguardando leitura...</p>
-                <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
-                
-                <div className="mt-4 text-left space-y-2">
+              
+              <div className="space-y-4">
+                <div className="space-y-2 text-left">
                   <Label htmlFor="internal-ean">EAN do produto interno</Label>
-                  <Input
-                    id="internal-ean"
-                    placeholder="Bipe ou digite o EAN..."
+                  <BarcodeScannerInput
                     value={internalScanValue}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setInternalScanValue(val);
-                      if (val.length >= 8) {
-                        handleScan(val);
-                        setInternalScanValue("");
-                      }
-                    }}
+                    onChange={setInternalScanValue}
+                    onScan={handleScan}
+                    placeholder="Bipe o código do item da caixa..."
                     autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
+                    scanMode
+                    className="h-12"
+                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white"
+                  />
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button variant="outline" className="flex-1" onClick={() => setBoxMode("qty")}>
+                    Voltar
+                  </Button>
+                  <Button 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 font-bold" 
+                    onClick={() => {
+                      if (internalScanValue.trim()) {
                         handleScan(internalScanValue);
                         setInternalScanValue("");
                       }
                     }}
-                  />
+                  >
+                    Confirmar Lançamento
+                  </Button>
                 </div>
               </div>
-              <Button variant="ghost" onClick={() => {
-                setBoxMode("qty");
-                setInternalScanValue("");
-              }}>
-                Voltar
-              </Button>
             </div>
           )}
         </DialogContent>
