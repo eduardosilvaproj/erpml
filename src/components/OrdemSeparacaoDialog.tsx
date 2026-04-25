@@ -39,6 +39,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const marcarEnviada = useMarcarOrdemEnviada();
   const updateFullOrder = useUpdateFullOrder();
   const recorder = useFullRecorder();
+  const scannerRef = useRef<any>(null);
 
   const [askRecord, setAskRecord] = useState(false);
   const [pickCamera, setPickCamera] = useState(false);
@@ -54,6 +55,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
   const [internalScan, setInternalScan] = useState("");
+  const [blockingAlert, setBlockingAlert] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
 
   const ordem = data?.ordem;
   const itens = data?.itens || [];
@@ -140,6 +150,17 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         const qtyToLow = parseInt(tempBoxQty);
         const newQtd = (target.qtd_separada || 0) + qtyToLow;
         
+        if (newQtd > (target.qtd_solicitada || 0)) {
+          setBlockingAlert({
+            isOpen: true,
+            title: "⚠️ Quantidade Excedida",
+            message: `A caixa com ${qtyToLow} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+          });
+          setScan("");
+          setInternalScan("");
+          return;
+        }
+
         await updateItem.mutateAsync({
           itemId: target.id,
           qtd_separada: newQtd,
@@ -152,7 +173,13 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         setScan("");
         setInternalScan("");
       } else {
-        setLastScan({ ok: false, msg: `O produto "${internalCode}" não está nesta ordem.` });
+        setBlockingAlert({
+          isOpen: true,
+          title: "🚫 Produto Inválido",
+          message: "O produto interno da caixa não pertence a esta ordem! Verifique o item e tente novamente."
+        });
+        setScan("");
+        setInternalScan("");
       }
       return;
     }
@@ -162,17 +189,28 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     );
 
     if (!target) {
-      setTempBoxCode(code.trim());
-      setBoxMode("ask");
+      setBlockingAlert({
+        isOpen: true,
+        title: "🚫 Produto Inválido",
+        message: "Produto não pertence a esta ordem! Verifique o item e tente novamente."
+      });
+      setScan("");
       return;
     }
 
     const newQtd = (target.qtd_separada || 0) + 1;
     if (newQtd > (target.qtd_solicitada || 0)) {
-      setLastScan({ ok: false, msg: `Excesso! ${target.product?.name} (${newQtd}/${target.qtd_solicitada})` });
-    } else {
-      setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+      setBlockingAlert({
+        isOpen: true,
+        title: "⚠️ Quantidade Excedida",
+        message: `Quantidade máxima já atingida para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+      });
+      setScan("");
+      return;
     }
+
+    setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+    
     await updateItem.mutateAsync({
       itemId: target.id,
       qtd_separada: newQtd,
@@ -424,12 +462,14 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                           <div className="border border-border rounded-md p-3 space-y-2">
                             <p className="text-sm font-medium flex items-center gap-2"><ScanBarcode className="h-4 w-4" /> Bipar produto</p>
                             <BarcodeScannerInput
+                              ref={scannerRef}
                               value={scan}
                               onChange={setScan}
                               onScan={handleScan}
                               placeholder="Bipe o código..."
                               autoFocus
                               scanMode
+                              disabled={blockingAlert.isOpen}
                             />
                             {lastScan && (
                               <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
@@ -766,6 +806,32 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 ❌ Voltar e conferir
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={blockingAlert.isOpen} onOpenChange={(open) => setBlockingAlert(prev => ({ ...prev, isOpen: open }))}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8 border-4 border-destructive/20 shadow-2xl">
+          <div className="flex flex-col items-center space-y-6">
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center ${blockingAlert.title.includes('⚠️') ? 'bg-amber-100 text-amber-600' : 'bg-red-100 text-red-600'}`}>
+              <AlertTriangle className="h-12 w-12" />
+            </div>
+            
+            <div className="space-y-3">
+              <h2 className="text-2xl font-black uppercase tracking-tight">{blockingAlert.title}</h2>
+              <p className="text-muted-foreground text-lg font-medium leading-tight">
+                {blockingAlert.message}
+              </p>
+            </div>
+
+            <Button 
+              onClick={() => {
+                setBlockingAlert(prev => ({ ...prev, isOpen: false }));
+                setTimeout(() => scannerRef.current?.focus(), 150);
+              }} 
+              className="w-full h-16 text-2xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
+            >
+              OK
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
