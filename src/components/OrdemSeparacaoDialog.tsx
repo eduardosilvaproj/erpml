@@ -177,17 +177,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           return;
         }
 
+        setBoxMode("idle");
+        setScan("");
+        setInternalScan("");
         await updateItem.mutateAsync({
           itemId: target.id,
           qtd_separada: newQtd,
           qtd_solicitada: target.qtd_solicitada || 0,
           orderId: ordem?.id,
         });
-        refetch();
-        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
-        setBoxMode("idle");
-        setScan("");
-        setInternalScan("");
       } else {
         setBlockingAlert({
           isOpen: true,
