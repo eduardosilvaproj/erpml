@@ -30,6 +30,10 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
 import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/conference-recovery";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useNavigate } from "react-router-dom";
+
 
 /**
  * Verifica se o código tem formato válido de código de barras
@@ -81,8 +85,11 @@ const getConferenceItemStatus = (scannedQty: number, expectedQty: number) => {
 
 const Conferencia = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const barcodeSearch = useBarcodeSearch();
+
 
   // Restore session from localStorage
   const restored = (() => {
@@ -425,127 +432,22 @@ const Conferencia = () => {
     if (!code.trim()) return;
     setScanBuffer("");
 
-    const trimmed = code.trim();
-    const normalized = trimmed.toUpperCase();
-    // Variants to handle leading-zero differences (DUN-14 vs EAN-13)
-    const variants = new Set<string>([normalized]);
-    if (/^\d+$/.test(normalized)) {
-      if (normalized.startsWith("0")) variants.add(normalized.replace(/^0+/, ""));
-      variants.add("0" + normalized);
-    }
-    const simProducts = (window as any).__simProducts || [];
+    await barcodeSearch.handleSearch(code, (result) => {
+      const { produto, qty, tipo } = result;
 
-    const matchEan = (p: any) => {
-      const barcode = (p.barcode || "").toString().trim().toUpperCase();
-      return variants.has(barcode);
-    };
-    const matchGtinCx = (p: any) => {
-      const g = (p.gtin_cx || "").toString().trim().toUpperCase();
-      return !!g && variants.has(g);
-    };
-    const matchSku = (p: any) => {
-      const sku = (p.sku || "").toString().trim().toUpperCase();
-      const skuMl = (p.sku_ml || "").toString().trim().toUpperCase();
-      return variants.has(sku) || variants.has(skuMl);
-    };
-    const matchAltGtin = (p: any) => {
-      return p.product_alternative_gtins?.some((ag: any) => variants.has(ag.gtin.trim().toUpperCase()));
-    };
-
-    // STEP 1 — EAN unitário ou GTIN alternativo
-    let porEan = allProducts.find(matchEan) || allProducts.find(matchAltGtin) || simProducts.find(matchEan) || simProducts.find(matchAltGtin);
-    // STEP 2 — GTIN CX (caixa vinculada)
-    let porGtinCx = !porEan ? allProducts.find(matchGtinCx) : null;
-    // STEP 3 — SKU
-    let porSku = !porEan && !porGtinCx ? (allProducts.find(matchSku) || simProducts.find(matchSku)) : null;
-
-    // STEP 3.5 — Fallback no banco (caso allProducts esteja desatualizado/limitado)
-    if (!porEan && !porGtinCx && !porSku) {
-      const variantList = Array.from(variants);
-      let q = supabase.from("products").select("*");
-      if (companyId) q = q.eq("company_id", companyId);
-      const { data: dbMatches } = await q
-        .or(
-          variantList.flatMap(v => [`ean.eq.${v}`, `barcode.eq.${v}`, `gtin_cx.eq.${v}`, `sku.eq.${v}`, `sku_ml.eq.${v}`]).join(",")
-        )
-        .limit(5);
-      if (dbMatches && dbMatches.length > 0) {
-        porEan = dbMatches.find(matchEan) || null;
-        porGtinCx = !porEan ? (dbMatches.find(matchGtinCx) || null) : null;
-        porSku = !porEan && !porGtinCx ? (dbMatches.find(matchSku) || null) : null;
-        if (!porEan && !porGtinCx && !porSku) porEan = dbMatches[0];
-      }
-    }
-
-    console.log('[Conferencia] Código bipado:', trimmed, 'variantes:', Array.from(variants));
-    console.log('[Conferencia] Busca EAN:', porEan);
-    console.log('[Conferencia] Busca GTIN CX:', porGtinCx);
-    console.log('[Conferencia] Busca SKU:', porSku);
-
-    const product = porEan || porSku;
-
-    if (product) {
-      if (confirmOnScan) {
-        openConfirmPopup(product);
+      if (confirmOnScan && tipo === 'unidade') {
+        openConfirmPopup(produto);
         return;
       }
-      addScannedUnits(product, 1);
-      setLastScan({ success: true, name: product.name, code: trimmed });
+
+      addScannedUnits(produto, qty);
+      setLastScan({ success: true, name: produto.name, code: code.trim() });
       playBeep(800, 100);
       scanInputRef.current?.flash(true);
       setTimeout(() => scanInputRef.current?.focus(), 50);
-      return;
-    }
-
-    if (porGtinCx) {
-      const unitsPerBox = porGtinCx.box_quantity ? String(porGtinCx.box_quantity) : "";
-      setGtinFoundModal({
-        open: true, product: porGtinCx, code: trimmed, unitsPerBox, boxQty: "1",
-      });
-      playBeep(800, 100);
-      setTimeout(() => {
-        if (unitsPerBox) gtinFoundBoxQtyRef.current?.select();
-      }, 100);
-      return;
-    }
-
-    // STEP 4 — Não reconhecido. Diferenciar:
-    //  • 14 dígitos OU 13 dígitos começando com 1-8 → formato de CAIXA (GTIN CX)
-    //  • 8/12/13 dígitos numéricos → EAN de produto não cadastrado
-    //  • outros formatos → desconhecido (perguntar)
-    const onlyDigits = /^\d+$/.test(trimmed);
-    const firstDigit = onlyDigits ? parseInt(trimmed[0], 10) : NaN;
-    const ehFormatoGtinCx = onlyDigits && (
-      trimmed.length === 14 ||
-      (trimmed.length === 13 && firstDigit >= 1 && firstDigit <= 8)
-    );
-
-    if (ehFormatoGtinCx) {
-      // Caixa não cadastrada — abrir modal para vincular a um produto
-      setGtinModal({
-        open: true, code: trimmed, selectedProductId: "",
-        unitsPerBox: "", boxQty: "1", saveGtin: true,
-      });
-      setLastScan({ success: false, name: "Caixa não cadastrada", code: trimmed });
-      playBeep(500, 150);
-      return;
-    }
-
-    const ehEanProduto = onlyDigits && (trimmed.length === 8 || trimmed.length === 12 || trimmed.length === 13);
-    if (ehEanProduto && isValidBarcodeFormat(trimmed)) {
-      setUnregisteredModal({ open: true, code: trimmed });
-      setLastScan({ success: false, name: "Produto não cadastrado", code: trimmed });
-      playBeep(500, 150);
-      return;
-    }
-
-    // Formato desconhecido → perguntar (modal de GTIN/SKU)
-    setGtinModal({
-      open: true, code: trimmed, selectedProductId: "",
-      unitsPerBox: "", boxQty: "1", saveGtin: true,
     });
-    playBeep(400, 200);
-  }, [allProducts, addScannedUnits, confirmOnScan, openConfirmPopup, companyId]);
+  }, [barcodeSearch, confirmOnScan, openConfirmPopup, addScannedUnits]);
+
 
   const adjustConfirmQty = (newQty: number) => {
     clearConfirmTimers();
@@ -1047,6 +949,31 @@ const Conferencia = () => {
   const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
+    <>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            addScannedUnits(barcodeSearch.lastResult.produto, qty);
+            setLastScan({ 
+              success: true, 
+              name: barcodeSearch.lastResult.produto.name, 
+              code: barcodeSearch.lastCodigo 
+            });
+            playBeep(800, 100);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
       <div className="flex flex-wrap justify-end gap-2">
         <Button
@@ -2431,7 +2358,9 @@ const Conferencia = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
+
 
 export default Conferencia;

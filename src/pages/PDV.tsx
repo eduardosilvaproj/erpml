@@ -15,13 +15,18 @@ import { useCreateSale, useSalesStats, type CartItem } from "@/hooks/useSalesDat
 import { useToast } from "@/hooks/use-toast";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useProducts } from "@/hooks/useProductData";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useNavigate } from "react-router-dom";
 
 const PDV = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
+
   const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
   const [saleComplete, setSaleComplete] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState("");
@@ -31,8 +36,10 @@ const PDV = () => {
   const createSale = useCreateSale();
   const { data: stats } = useSalesStats();
   const { data: allProducts } = useProducts();
+  const barcodeSearch = useBarcodeSearch();
 
   const productsList = allProducts?.products ?? [];
+
 
   const filteredProducts = useMemo(() => {
     const active = productsList.filter((p) => p.active && p.stock_physical > 0);
@@ -90,82 +97,50 @@ const PDV = () => {
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
 
-    try {
-      const { data: products } = await supabase
-        .from("products")
-        .select("id, name, sku, barcode, ean, price, stock_physical")
-        .or(`ean.eq.${code.trim()},barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
+    await barcodeSearch.handleSearch(code, (result) => {
+      const { produto, qty } = result;
 
-      let product = products?.[0];
-
-      if (!product) {
-        // Fallback: check alternative GTINs
-        const { data: altGtinMatch } = await supabase
-          .from("product_alternative_gtins")
-          .select("product_id")
-          .eq("gtin", code.trim())
-          .maybeSingle();
-
-        if (altGtinMatch) {
-          const { data: altProduct } = await supabase
-            .from("products")
-            .select("id, name, sku, barcode, ean, price, stock_physical")
-            .eq("id", altGtinMatch.product_id)
-            .maybeSingle();
-          if (altProduct) product = altProduct;
-        }
-      }
-
-      if (!product) {
-        setLastScan({ success: false, message: `Produto "${code}" não encontrado.` });
+      if (produto.stock_physical <= 0) {
+        setLastScan({ success: false, message: `"${produto.name}" sem estoque.` });
         playBeep(200, 400);
         scanInputRef.current?.flash(false);
         setScanBuffer("");
         return;
       }
 
-      if (product.stock_physical <= 0) {
-        setLastScan({ success: false, message: `"${product.name}" sem estoque.` });
-        playBeep(200, 400);
-        scanInputRef.current?.flash(false);
-        setScanBuffer("");
-        return;
-      }
-
-      const existing = cart.find((i) => i.productId === product.id);
+      const existing = cart.find((i) => i.productId === produto.id);
       if (existing) {
-        if (existing.quantity >= product.stock_physical) {
-          setLastScan({ success: false, message: `Estoque máximo atingido (${product.stock_physical}).` });
+        if (existing.quantity + qty > produto.stock_physical) {
+          setLastScan({ success: false, message: `Estoque máximo atingido (${produto.stock_physical}).` });
           playBeep(300, 300);
         } else {
           setCart(cart.map((i) =>
-            i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
+            i.productId === produto.id ? { ...i, quantity: i.quantity + qty } : i
           ));
-          setLastScan({ success: true, message: `${product.name} — ${existing.quantity + 1}x R$ ${product.price.toFixed(2)}` });
+          setLastScan({ success: true, message: `${produto.name} — ${existing.quantity + qty}x R$ ${produto.price.toFixed(2)}` });
           playBeep(800, 100);
           scanInputRef.current?.flash(true);
         }
       } else {
         setCart([...cart, {
-          productId: product.id,
-          productName: product.name,
-          productSku: product.sku,
-          barcode: product.barcode,
-          quantity: 1,
-          unitPrice: product.price,
-          stockPhysical: product.stock_physical,
+          productId: produto.id,
+          productName: produto.name,
+          productSku: produto.sku,
+          barcode: produto.barcode,
+          quantity: qty,
+          unitPrice: produto.price,
+          stockPhysical: produto.stock_physical,
         }]);
-        setLastScan({ success: true, message: `${product.name} — R$ ${product.price.toFixed(2)}` });
+        setLastScan({ success: true, message: `${produto.name} — R$ ${produto.price.toFixed(2)}` });
         playBeep(800, 100);
         scanInputRef.current?.flash(true);
       }
-    } catch (err: any) {
-      setLastScan({ success: false, message: err.message });
-    }
+    });
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [cart]);
+  }, [cart, barcodeSearch]);
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -251,7 +226,52 @@ const PDV = () => {
 
   return (
     <div className="grid gap-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            const { produto } = barcodeSearch.lastResult;
+            addToCart({
+              id: produto.id,
+              name: produto.name,
+              sku: produto.sku,
+              barcode: produto.barcode,
+              price: produto.price,
+              stock_physical: produto.stock_physical,
+              // We need to pass the qty to addToCart or handle it here
+            });
+            // Refactor: actually better to just call the logic in handleScan
+            setCart(prev => {
+              const existing = prev.find(i => i.productId === produto.id);
+              if (existing) {
+                return prev.map(i => i.productId === produto.id ? { ...i, quantity: i.quantity + qty } : i);
+              }
+              return [...prev, {
+                productId: produto.id,
+                productName: produto.name,
+                productSku: produto.sku,
+                barcode: produto.barcode,
+                quantity: qty,
+                unitPrice: produto.price,
+                stockPhysical: produto.stock_physical,
+              }];
+            });
+            playBeep(800, 100);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
       {/* Left: Product scan + catalog + cart */}
+
       <div className="md:col-span-2 space-y-4 flex flex-col min-h-[50vh] md:min-h-0">
         {/* Stats bar */}
         <div className="grid grid-cols-2 gap-3">
