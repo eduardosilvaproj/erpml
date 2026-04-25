@@ -269,8 +269,10 @@ export const useLimparEnvioPendente = () => {
 
 export const useDeleteOrdem = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
     mutationFn: async ({ id, frete_ml }: { id: string, frete_ml?: string | null }) => {
+      if (!companyId) throw new Error("Empresa não identificada");
       // 1. Itens da ordem
       const { error: errorItens } = await supabase
         .from("ordens_full_itens")
@@ -289,7 +291,8 @@ export const useDeleteOrdem = () => {
         await supabase
           .from("full_orders")
           .delete()
-          .eq("frete_ml", frete_ml);
+          .eq("frete_ml", frete_ml)
+          .eq("company_id", companyId);
       }
 
       // 4. A própria ordem
@@ -305,7 +308,8 @@ export const useUpdateFullOrder = () => {
   const companyId = useCompanyId();
   return useMutation({
     mutationFn: async ({ id, status, frete_ml, ...rest }: { id?: string; frete_ml?: string; status: string; [key: string]: any }) => {
-      let query = supabase.from("full_orders").update({ status, ...rest });
+      if (!companyId) throw new Error("Empresa não identificada");
+      let query = supabase.from("full_orders").update({ status, ...rest }).eq("company_id", companyId);
       
       if (id) {
         query = query.eq("id", id);

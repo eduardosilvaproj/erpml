@@ -51,6 +51,7 @@ interface NovoItem {
 
 const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) => {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [isEditing, setIsEditing] = useState(false);
   const [tempDate, setTempDate] = useState(o.previsao_carregamento ? format(new Date(o.previsao_carregamento), "yyyy-MM-dd") : "");
 
@@ -59,14 +60,16 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
       const { error } = await supabase
         .from("ordens_full")
         .update({ previsao_carregamento: tempDate || null })
-        .eq("id", o.id);
+        .eq("id", o.id)
+        .eq("company_id", companyId);
       if (error) throw error;
       
       if (o.frete_ml) {
          await supabase
           .from("full_orders")
           .update({ previsao_carregamento: tempDate || null })
-          .eq("frete_ml", o.frete_ml);
+          .eq("frete_ml", o.frete_ml)
+          .eq("company_id", companyId);
       }
       
       toast({ title: "✅ Previsão atualizada" });
@@ -169,7 +172,8 @@ export const OrdensFullTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_recordings")
-        .select("pedido_id, tipo");
+        .select("pedido_id, tipo")
+        .eq("company_id", companyId!);
       if (error) throw error;
       return data;
     },

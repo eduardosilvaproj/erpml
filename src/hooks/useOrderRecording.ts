@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
 export type RecordingType = "separacao" | "carregamento";
 
@@ -13,6 +14,7 @@ interface UseOrderRecordingProps {
 
 export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOrderRecordingProps) => {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -125,7 +127,8 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
           pedido_id: pedidoId,
           tipo: uploadTipo,
           video_url: publicUrl,
-          duracao_segundos: finalDuration
+          duracao_segundos: finalDuration,
+          company_id: companyId
         });
 
       if (dbError) throw dbError;
