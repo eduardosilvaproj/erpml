@@ -496,6 +496,7 @@ const Separacao = () => {
                   <TableHead className="w-[400px]">PRODUTO</TableHead>
                   <TableHead className="text-center">NECESSÁRIO</TableHead>
                   <TableHead className="text-center">BIPADO</TableHead>
+                  <TableHead className="text-center">FALTAM</TableHead>
                   <TableHead className="text-right">STATUS</TableHead>
                 </TableRow>
               </TableHeader>
