@@ -147,7 +147,6 @@ export const useCreateOrdemFull = () => {
     }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       
-      const { data, error } = await supabase
       // 1. Insert the main order
       const { data: order, error: orderError } = await supabase
         .from("full_orders")
