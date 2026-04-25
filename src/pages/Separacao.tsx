@@ -70,11 +70,12 @@ const Separacao = () => {
   const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
 
-  // Estado para EAN não reconhecido
-  const [unrecognizedDialog, setUnrecognizedDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
-  const [caixaDialog, setCaixaDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  // Estado para fluxo de caixa (GTIN desconhecido)
+  const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
+  const [tempBoxCode, setTempBoxCode] = useState("");
+  const [tempBoxQty, setTempBoxQty] = useState("12");
+
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [qtdCaixa, setQtdCaixa] = useState("12");
   const [productSearch, setProductSearch] = useState("");
   const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
 
