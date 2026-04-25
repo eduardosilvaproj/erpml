@@ -185,62 +185,33 @@ const Separacao = () => {
 
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
-    const trimmed = code.trim().toUpperCase();
     
     if (!startTime) setStartTime(new Date());
 
-    // 1. Verificar se o código já existe na ordem
-    const itemIndex = items.findIndex(i => 
-      i.barcode === trimmed || 
-      i.sku.toUpperCase() === trimmed
-    );
+    await barcodeSearch.handleSearch(code, (result) => {
+      const { produto, qty } = result;
 
-    if (itemIndex !== -1) {
-      const item = items[itemIndex];
-      if (item.scannedQty >= item.neededQty) {
-        setLastScan({ success: false, message: `"${item.name}" já está completo.` });
-        scanInputRef.current?.flash(false);
-        return;
-      }
+      // 1. Verificar se o código já existe na ordem
+      const itemIndex = items.findIndex(i => 
+        i.productId === produto.id ||
+        i.barcode === code.trim().toUpperCase() || 
+        i.sku.toUpperCase() === code.trim().toUpperCase()
+      );
 
-      const newScannedQty = item.scannedQty + 1;
-      const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
-      
-      setItems(prev => {
-        const newItems = [...prev];
-        newItems[itemIndex] = {
-          ...item,
-          scannedQty: newScannedQty,
-          status: newStatus
-        };
-        return newItems;
-      });
+      if (itemIndex !== -1) {
+        const item = items[itemIndex];
+        if (item.scannedQty >= item.neededQty) {
+          setLastScan({ success: false, message: `"${item.name}" já está completo.` });
+          scanInputRef.current?.flash(false);
+          return;
+        }
 
-      setLastScan({ success: true, message: `✓ ${item.name} (${newScannedQty}/${item.neededQty})` });
-      scanInputRef.current?.flash(true);
-      setScanValue("");
-      return;
-    }
-
-    // 2. Se não encontrou, verificar se é um GTIN de caixa já cadastrado
-    const { data: gtinCx } = await supabase
-      .from("product_gtins")
-      .select("*, product:products(id, name, sku, barcode, image_url)")
-      .eq("gtin", trimmed)
-      .eq("tipo", "caixa")
-      .maybeSingle();
-
-    if (gtinCx && gtinCx.product) {
-      const pIdx = items.findIndex(i => i.productId === gtinCx.product_id);
-      if (pIdx !== -1) {
-        const item = items[pIdx];
-        const qtdAdicional = gtinCx.qtd_por_caixa || 1;
-        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtdAdicional);
+        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qty);
         const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
-
+        
         setItems(prev => {
           const newItems = [...prev];
-          newItems[pIdx] = {
+          newItems[itemIndex] = {
             ...item,
             scannedQty: newScannedQty,
             status: newStatus
@@ -248,18 +219,20 @@ const Separacao = () => {
           return newItems;
         });
 
-        setLastScan({ success: true, message: `📦 Caixa de "${item.name}" bipada! (+${qtdAdicional} un)` });
+        const prefix = qty > 1 ? `📦 Caixa de ` : `✓ `;
+        setLastScan({ success: true, message: `${prefix}${item.name} (${newScannedQty}/${item.neededQty})` });
         scanInputRef.current?.flash(true);
         setScanValue("");
         return;
       }
-    }
 
-    // 3. Se ainda não encontrou, abrir diálogo de "Código não reconhecido"
-    setUnrecognizedDialog({ isOpen: true, code: trimmed });
-    scanInputRef.current?.flash(false);
-    setScanValue("");
-  }, [items, startTime]);
+      // Produto não faz parte desta ordem
+      setLastScan({ success: false, message: `"${produto.name}" não faz parte desta ordem.` });
+      scanInputRef.current?.flash(false);
+      setScanValue("");
+    });
+  }, [items, startTime, barcodeSearch]);
+
 
   const handlePause = async () => {
     if (!orderInfo || !user) return;
