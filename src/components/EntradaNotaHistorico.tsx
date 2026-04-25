@@ -744,9 +744,9 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           <Button variant="outline" onClick={onClose} disabled={loading} className="sm:mr-auto">
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2">
-            {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            Confirmar exclusão
+          <Button variant="destructive" onClick={handleDelete} disabled={loading} className="gap-2 min-w-[140px]">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            {processingMsg || "Confirmar exclusão"}
           </Button>
         </DialogFooter>
       </DialogContent>
