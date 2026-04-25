@@ -153,6 +153,35 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     refetch();
   };
 
+  const confirmBox = async (target: OrdemItem, quantity: number) => {
+    const newQtd = (target.qtd_separada || 0) + quantity;
+    
+    if (newQtd > (target.qtd_solicitada || 0)) {
+      setBlockingAlert({
+        isOpen: true,
+        title: "⚠️ Quantidade Excedida",
+        message: `A caixa com ${quantity} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+      });
+      setScan("");
+      setInternalScan("");
+      return;
+    }
+
+    setBoxMode("idle");
+    setScan("");
+    setInternalScan("");
+    setKnownBoxProduct(null);
+    setLastScan({ ok: true, msg: `📦 Caixa de ${quantity}x ${target.product?.name} registrada!` });
+
+    await updateItem.mutateAsync({
+      itemId: target.id,
+      qtd_separada: newQtd,
+      qtd_solicitada: target.qtd_solicitada || 0,
+      orderId: ordem?.id,
+    });
+    refetch();
+  };
+
   const handleScan = async (code: string) => {
     if (!code.trim() || !isExec) return;
 
