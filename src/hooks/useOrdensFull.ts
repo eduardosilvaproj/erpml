@@ -138,6 +138,8 @@ export const useCreateOrdemFull = () => {
       descricao: string;
       frete_ml?: string | null;
       prazo?: string | null;
+      atribuido_para?: string | null;
+      enviarParaSeparacao?: boolean;
       itens: { product_id: string; product?: any; quantity?: number; qtd_solicitada?: number }[];
       status?: OrdemStatus;
     }) => {
