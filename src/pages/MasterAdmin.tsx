@@ -432,23 +432,43 @@ export default function MasterAdmin() {
                               >
                                 <KeyRound className="h-3 w-3 mr-1" /> Senha
                               </Button>
-                              <Button
-                                variant="default"
-                                size="sm"
-                                title="Gerar nova senha temporária e exibir na tela"
-                                disabled={setTempPassword.isPending}
-                                onClick={async () => {
-                                  if (!confirm(`Gerar nova senha temporária para ${c.email || "o dono da empresa"}?\n\nA senha atual será invalidada imediatamente.`)) return;
-                                  try {
-                                    const result = await setTempPassword.mutateAsync(c.owner_id);
-                                    setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
-                                  } catch (e: any) {
-                                    toast.error(e.message);
-                                  }
-                                }}
-                              >
-                                <Sparkles className="h-3 w-3 mr-1" /> Nova senha
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    title="Gerar nova senha temporária e exibir na tela"
+                                    disabled={setTempPassword.isPending}
+                                  >
+                                    <Sparkles className="h-3 w-3 mr-1" /> Nova senha
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Gerar Nova Senha?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Gerar nova senha temporária para <strong>{c.email || "o dono da empresa"}</strong>?
+                                      <br /><br />
+                                      A senha atual será invalidada imediatamente.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={async () => {
+                                        try {
+                                          const result = await setTempPassword.mutateAsync(c.owner_id);
+                                          setTempPasswordInfo({ email: result.email, password: result.temporaryPassword });
+                                        } catch (e: any) {
+                                          toast.error(e.message);
+                                        }
+                                      }}
+                                    >
+                                      Gerar Senha
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="outline" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" title="Excluir empresa">
