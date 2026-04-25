@@ -49,6 +49,8 @@ const Separacao = () => {
   const recorderRef = useRef<OrderRecordingSystemHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
   const updateFullOrder = useUpdateFullOrder();
+  const barcodeSearch = useBarcodeSearch();
+
   
   const { user } = useAuth();
   const [userName, setUserName] = useState<string>("Administrador"); 
