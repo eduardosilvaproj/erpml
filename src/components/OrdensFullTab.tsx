@@ -1241,8 +1241,11 @@ export const OrdensFullTab = () => {
                 </TableHeader>
                 <TableBody>
                   {ordensFiltradas.map((o) => {
+                    console.log(`Frete ${o.frete_ml} -> status: "${o.status}"`);
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
-                    const mostrarExecutar = ['pdf_carregado', 'pausado', 'separando', 'aguardando', 'em_separacao', 'separacao'].includes(o.status);
+                    
+                    // Botão Executar — aparecer se não for enviado/cancelado/aguardando_carregamento
+                    const mostrarExecutar = !['enviado', 'cancelada', 'aguardando_carregamento', 'concluida', 'separada'].includes(o.status);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && mostrarExecutar;
                     const sb = ordemStatusBadge(o.status);
                     return (
