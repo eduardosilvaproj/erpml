@@ -51,6 +51,7 @@ interface NovoItem {
 
 const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) => {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [isEditing, setIsEditing] = useState(false);
   const [tempDate, setTempDate] = useState(o.previsao_carregamento ? format(new Date(o.previsao_carregamento), "yyyy-MM-dd") : "");
 
