@@ -23,11 +23,13 @@ export function VersionUpdateBanner() {
   useEffect(() => {
     if (needRefresh && !autoUpdated) {
       setAutoUpdated(true);
-      toast.success("✓ Sistema atualizado!", { duration: 2000 });
+      toast.info("Nova versão disponível! O sistema será atualizado automaticamente em instantes.", { 
+        duration: 4000,
+      });
       // Small delay so toast is visible before reload
       setTimeout(() => {
         updateServiceWorker(true);
-      }, 2000);
+      }, 4000);
     }
   }, [needRefresh, autoUpdated, updateServiceWorker]);
 
