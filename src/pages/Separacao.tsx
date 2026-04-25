@@ -852,7 +852,9 @@ const Separacao = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
+
 
 export default Separacao;
