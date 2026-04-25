@@ -155,8 +155,8 @@ export function useDashboardData(period: PeriodFilter) {
       const newCustomers = custs.filter(c => c.created_at >= from).length;
       const prevNewCustomers = custs.filter(c => c.created_at >= prevFrom && c.created_at < from).length;
 
-      // Pending shipments (full orders in specific statuses + transfer orders in "separando" status)
-      const pendingShipments = (pendingFull || 0) + xfers.filter(t => t.status === "separando").length;
+      // Pending shipments (ONLY full orders in specific statuses as requested)
+      const pendingShipments = (pendingFull || 0);
       const sentShipments = (sentFull || 0) + xfers.filter(t => t.status === "enviado" || t.status === "recebido").length;
 
       // Stock alerts

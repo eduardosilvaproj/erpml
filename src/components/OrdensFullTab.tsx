@@ -58,7 +58,7 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
   const handleSave = async () => {
     try {
       const { error } = await supabase
-        .from("ordens_full")
+        .from("full_orders")
         .update({ previsao_carregamento: tempDate || null })
         .eq("id", o.id)
         .eq("company_id", companyId);
@@ -463,7 +463,7 @@ export const OrdensFullTab = () => {
       });
 
       // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
-      // Mas o hook useCreateOrdemFull já cria na tabela 'ordens_full'. 
+      // Mas o hook useCreateOrdemFull já cria na tabela 'full_orders'. 
       // Parece que existe uma tabela redundante 'full_orders'. 
       // O usuário quer que 'full_orders' seja usada também.
       if (companyId && freteNumero) {
@@ -527,7 +527,7 @@ export const OrdensFullTab = () => {
     try {
       setStartingId(ordem.id);
       const { data: itens, error } = await supabase
-        .from("ordens_full_itens")
+        .from("full_orders")
         .select("*, product:products(id, name, sku, barcode, image_url, stock_physical)")
         .eq("ordem_id", ordem.id);
       if (error) throw error;
