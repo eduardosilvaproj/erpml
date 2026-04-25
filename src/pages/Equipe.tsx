@@ -338,9 +338,18 @@ export default function Equipe() {
       </div>
 
       {/* Members Table */}
-      <Card>
-        <CardHeader>
+      <Card className="border-primary/20">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <CardTitle>Membros da Equipe</CardTitle>
+          {isOwner && (
+            <Button 
+              onClick={() => setInviteOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Novo Membro
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
