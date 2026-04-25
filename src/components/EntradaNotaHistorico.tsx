@@ -336,6 +336,7 @@ export function EntradaNotaHistorico() {
       </div>
 
       <DetailDialog invoiceId={detailId} onClose={() => setDetailId(null)} />
+      <DeleteDialog invoiceId={deleteId} onClose={() => setDeleteId(null)} />
     </>
   );
 }
