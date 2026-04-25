@@ -303,8 +303,12 @@ const EntradaXML = () => {
         return <Badge className="bg-emerald-500/15 text-emerald-700 border-emerald-200">Exato</Badge>;
       case "fuzzy":
         return <Badge className="bg-amber-500/15 text-amber-700 border-amber-200">Fuzzy {confidence}%</Badge>;
+      case "manual":
+        return <Badge className="bg-blue-500/15 text-blue-700 border-blue-200">Manual</Badge>;
+      case "new":
+        return <Badge className="bg-purple-500/15 text-purple-700 border-purple-200">Novo Produto</Badge>;
       case "none":
-        return <Badge variant="destructive">Novo</Badge>;
+        return <Badge variant="destructive">Sem Vínculo</Badge>;
       default:
         return <Badge variant="secondary">—</Badge>;
     }
