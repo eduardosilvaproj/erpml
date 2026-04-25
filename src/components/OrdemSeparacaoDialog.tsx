@@ -715,6 +715,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         if (!open) {
           setBoxMode("idle");
           setInternalScan("");
+          setKnownBoxProduct(null);
         }
       }}>
         <DialogContent className="sm:max-w-md">
