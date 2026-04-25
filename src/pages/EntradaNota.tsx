@@ -850,7 +850,7 @@ const EntradaNota = () => {
         toast({
           title: "Importação concluída com avisos",
           description: `${itemsSaved} itens salvos. ${itemsFailed} itens sem produto vinculado — clique para revisar.`,
-          variant: "warning",
+          variant: "default",
         });
       } else {
         toast({ title: "Nota fiscal importada com sucesso!", description: `${itemsSaved} itens vinculados.` });
