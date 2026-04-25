@@ -454,9 +454,11 @@ const Separacao = () => {
             orderNumber={orderInfo?.number}
             freteMl={orderInfo?.frete_ml}
             defaultType="separacao"
+            onRecordingChange={(isRecording, duration) => setRecordingState({ isRecording, duration })}
             trigger={
-              <Button variant="outline" size="sm" className="gap-2 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">
-                <Video className="h-4 w-4" /> 🎥 {recorderRef.current?.isRecording ? 'Gravando...' : 'Gravar Separação'}
+              <Button variant="outline" size="sm" className={`gap-2 ${recordingState.isRecording ? 'bg-red-50 text-red-700 border-red-200 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'}`}>
+                <Video className="h-4 w-4" /> 
+                {recordingState.isRecording ? `🎥 gravando ${Math.floor(recordingState.duration / 60)}:${(recordingState.duration % 60).toString().padStart(2, '0')}` : 'Gravar Separação'}
               </Button>
             }
           />
