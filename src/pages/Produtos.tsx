@@ -545,7 +545,7 @@ const Produtos = () => {
                                           onClick={() => deleteProduct.mutate(product.id)}
                                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                         >
-                                          Excluir
+                                          Remover
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
