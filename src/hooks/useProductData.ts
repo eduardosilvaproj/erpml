@@ -334,9 +334,8 @@ export function useDeleteProduct() {
       const checks = await Promise.all(
         tablesToCheck.map(async (table) => {
           try {
-            const { count, error } = await supabase
-              .from(table)
-              .select("id", { count: "exact", head: true })
+            const { count, error } = await (supabase.from(table as any) as any)
+              .select("*", { count: "exact", head: true })
               .eq("product_id", id);
             
             if (error) {
