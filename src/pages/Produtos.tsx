@@ -291,9 +291,8 @@ const Produtos = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Sem filtros de corr.</SelectItem>
-                    <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
+                    <SelectItem value="no_sku">Sem EAN / SKU</SelectItem>
                     <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
-                    <SelectItem value="no_ean">Sem EAN</SelectItem>
                   </SelectContent>
                 </Select>
 
