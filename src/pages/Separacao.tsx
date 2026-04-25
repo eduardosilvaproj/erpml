@@ -296,6 +296,25 @@ const Separacao = () => {
       setScanValue("");
     });
   }, [items, startTime, barcodeSearch, boxMode, tempBoxQty]);
+  
+  // Auto-save effect
+  useEffect(() => {
+    const autoSave = async () => {
+      if (!orderInfo || items.length === 0 || isPaused) return;
+      try {
+        await supabase.from('full_orders').update({
+          bipagem_state: items as any,
+          updated_at: new Date().toISOString()
+        }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number)
+          .eq('company_id', companyId);
+      } catch (err) {
+        console.error("Auto-save error:", err);
+      }
+    };
+    
+    const timer = setTimeout(autoSave, 1000);
+    return () => clearTimeout(timer);
+  }, [items, orderInfo, isPaused, companyId]);
 
 
   const handlePause = async () => {
