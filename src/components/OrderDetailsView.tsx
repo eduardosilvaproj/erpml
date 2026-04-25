@@ -321,7 +321,7 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
       const novaData = data;
       
       const { error: e1 } = await supabase
-        .from('ordens_full')
+        .from('full_orders')
         .update({ previsao_carregamento: novaData })
         .eq('id', orderId);
         

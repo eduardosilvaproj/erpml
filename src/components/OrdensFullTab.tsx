@@ -463,7 +463,7 @@ export const OrdensFullTab = () => {
       });
 
       // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
-      // Mas o hook useCreateOrdemFull já cria na tabela 'ordens_full'. 
+      // Mas o hook useCreateOrdemFull já cria na tabela 'full_orders'. 
       // Parece que existe uma tabela redundante 'full_orders'. 
       // O usuário quer que 'full_orders' seja usada também.
       if (companyId && freteNumero) {
