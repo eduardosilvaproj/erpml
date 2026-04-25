@@ -30,6 +30,10 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { ConferenceHistoryPanel } from "@/components/ConferenceHistoryPanel";
 import { isValidEAN13 } from "@/lib/ean13";
 import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/conference-recovery";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+import { useNavigate } from "react-router-dom";
+
 
 /**
  * Verifica se o código tem formato válido de código de barras
