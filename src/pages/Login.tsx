@@ -101,28 +101,6 @@ const ParticlesBackground = () => {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" />;
 };
 
-const TypingSlogan = () => {
-  const [text, setText] = useState("");
-  const fullText = "Controle de estoque e operação sem erro";
-  
-  useEffect(() => {
-    let i = 0;
-    const interval = setInterval(() => {
-      setText(fullText.slice(0, i));
-      i++;
-      if (i > fullText.length) {
-        clearInterval(interval);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <p className="text-sm text-muted-foreground typing-cursor min-h-[1.25rem]">
-      {text}
-    </p>
-  );
-};
 
 export default function Login() {
   const [email, setEmail] = useState("");
