@@ -949,6 +949,31 @@ const Conferencia = () => {
   const selectedGtinProduct = allProducts.find((p) => p.id === gtinModal.selectedProductId);
 
   return (
+    <>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            addScannedUnits(barcodeSearch.lastResult.produto, qty);
+            setLastScan({ 
+              success: true, 
+              name: barcodeSearch.lastResult.produto.name, 
+              code: barcodeSearch.lastCodigo 
+            });
+            playBeep(800, 100);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
       <div className="flex flex-wrap justify-end gap-2">
         <Button
