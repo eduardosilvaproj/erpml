@@ -171,9 +171,6 @@ const Separacao = () => {
     loadOrder();
   }, [navigate, toast]);
 
-  const totalUnitsNeeded = items.reduce((acc, curr) => acc + curr.neededQty, 0);
-  const totalUnitsScanned = items.reduce((acc, curr) => acc + curr.scannedQty, 0);
-  const totalProducts = items.length;
   const productsComplete = items.filter(i => i.status === "completo").length;
 
   const handleScan = useCallback(async (code: string) => {
@@ -182,43 +179,139 @@ const Separacao = () => {
     
     if (!startTime) setStartTime(new Date());
 
-    setItems(prev => {
-      const itemIndex = prev.findIndex(i => 
-        i.barcode === trimmed || 
-        i.sku.toUpperCase() === trimmed
-      );
+    // 1. Verificar se o código já existe na ordem
+    const itemIndex = items.findIndex(i => 
+      i.barcode === trimmed || 
+      i.sku.toUpperCase() === trimmed
+    );
 
-      if (itemIndex === -1) {
-        setLastScan({ success: false, message: `Produto "${trimmed}" não encontrado nesta ordem.` });
-        scanInputRef.current?.flash(false);
-        return prev;
-      }
-
-      const item = prev[itemIndex];
+    if (itemIndex !== -1) {
+      const item = items[itemIndex];
       if (item.scannedQty >= item.neededQty) {
         setLastScan({ success: false, message: `"${item.name}" já está completo.` });
         scanInputRef.current?.flash(false);
-        return prev;
+        return;
       }
 
       const newScannedQty = item.scannedQty + 1;
       const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
       
-      const newItems = [...prev];
-      newItems[itemIndex] = {
-        ...item,
-        scannedQty: newScannedQty,
-        status: newStatus
-      };
+      setItems(prev => {
+        const newItems = [...prev];
+        newItems[itemIndex] = {
+          ...item,
+          scannedQty: newScannedQty,
+          status: newStatus
+        };
+        return newItems;
+      });
 
       setLastScan({ success: true, message: `✓ ${item.name} (${newScannedQty}/${item.neededQty})` });
       scanInputRef.current?.flash(true);
-      
-      return newItems;
-    });
+      setScanValue("");
+      return;
+    }
 
+    // 2. Se não encontrou, verificar se é um GTIN de caixa já cadastrado
+    const { data: gtinCx } = await supabase
+      .from("product_gtins")
+      .select("*, product:products(id, name, sku, barcode, image_url)")
+      .eq("gtin", trimmed)
+      .eq("tipo", "caixa")
+      .maybeSingle();
+
+    if (gtinCx && gtinCx.product) {
+      const pIdx = items.findIndex(i => i.productId === gtinCx.product_id);
+      if (pIdx !== -1) {
+        const item = items[pIdx];
+        const qtdAdicional = gtinCx.qtd_por_caixa || 1;
+        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtdAdicional);
+        const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
+
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems[pIdx] = {
+            ...item,
+            scannedQty: newScannedQty,
+            status: newStatus
+          };
+          return newItems;
+        });
+
+        setLastScan({ success: true, message: `📦 Caixa de "${item.name}" bipada! (+${qtdAdicional} un)` });
+        scanInputRef.current?.flash(true);
+        setScanValue("");
+        return;
+      }
+    }
+
+    // 3. Se ainda não encontrou, abrir diálogo de "Código não reconhecido"
+    setUnrecognizedDialog({ isOpen: true, code: trimmed });
+    scanInputRef.current?.flash(false);
     setScanValue("");
-  }, [startTime]);
+  }, [items, startTime]);
+
+  const handlePause = async () => {
+    if (!orderInfo || !user) return;
+    setIsPausing(true);
+    try {
+      // Parar gravação se estiver ocorrendo
+      if (recorderRef.current?.isRecording) {
+        recorderRef.current.stopRecording();
+      }
+
+      // Salvar estado no Supabase
+      await supabase.from('full_orders').update({
+        bipagem_state: items,
+        status: 'pausado',
+        pausado_em: new Date().toISOString()
+      }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number);
+
+      setIsPaused(true);
+      toast({ 
+        title: "⏸ Bipagem pausada", 
+        description: "Estado salvo com segurança. Você pode fechar esta tela." 
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao pausar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsPausing(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    setIsPaused(false);
+    // Iniciar uma NOVA gravação
+    if (recorderRef.current) {
+      recorderRef.current.startRecording('separacao');
+      toast({ title: "🎥 Nova gravação iniciada — continuando bipagem" });
+    }
+  };
+
+  const handleSaveBoxGtin = async () => {
+    if (!selectedProduct || !companyId) return;
+
+    try {
+      const qtd = parseInt(qtdCaixa);
+      const { error } = await supabase.from("product_gtins").insert({
+        product_id: selectedProduct.id,
+        company_id: companyId,
+        gtin: caixaDialog.code,
+        tipo: 'caixa',
+        qtd_por_caixa: qtd
+      });
+
+      if (error) throw error;
+
+      toast({ title: "✅ GTIN de Caixa cadastrado!" });
+      setCaixaDialog({ isOpen: false, code: "" });
+      
+      // Bipar automaticamente após cadastrar
+      handleScan(caixaDialog.code);
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
+    }
+  };
 
   const generatePDF = useCallback(() => {
     if (!orderInfo) return;
