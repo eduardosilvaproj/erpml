@@ -191,12 +191,13 @@ const Separacao = () => {
       item.name,
       item.neededQty,
       item.scannedQty,
+      Math.max(0, item.neededQty - item.scannedQty),
       item.status === "completo" ? "✅ OK" : "❌ PENDENTE"
     ]);
 
     autoTable(doc, {
       startY: 55,
-      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'STATUS']],
+      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'FALTAM', 'STATUS']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [45, 45, 45] },
@@ -496,6 +497,7 @@ const Separacao = () => {
                   <TableHead className="w-[400px]">PRODUTO</TableHead>
                   <TableHead className="text-center">NECESSÁRIO</TableHead>
                   <TableHead className="text-center">BIPADO</TableHead>
+                  <TableHead className="text-center">FALTAM</TableHead>
                   <TableHead className="text-right">STATUS</TableHead>
                 </TableRow>
               </TableHeader>
@@ -523,6 +525,16 @@ const Separacao = () => {
                         {item.scannedQty}
                       </span>
                     </TableCell>
+                    <TableCell className="text-center">
+                      <span 
+                        className="text-lg font-bold"
+                        style={{
+                          color: (item.neededQty - item.scannedQty) <= 0 ? '#22c55e' : (item.neededQty - item.scannedQty) <= 10 ? '#f59e0b' : '#ef4444'
+                        }}
+                      >
+                        {(item.neededQty - item.scannedQty) <= 0 ? '✅ 0' : (item.neededQty - item.scannedQty)}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">
                       {getStatusBadge(item)}
                     </TableCell>
@@ -530,7 +542,7 @@ const Separacao = () => {
                 ))}
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                       Nenhum produto nesta ordem.
                     </TableCell>
                   </TableRow>
