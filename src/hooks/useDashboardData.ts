@@ -76,7 +76,14 @@ export function useDashboardData(period: PeriodFilter) {
       if (companyId) customersQuery = customersQuery.eq("company_id", companyId);
       const { data: customers } = await customersQuery;
 
-      // Fetch pending transfer orders (proxy for "pendentes de envio")
+      // Fetch pending full orders
+      const { count: pendingFull } = await supabase
+        .from('full_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .in('status', ['pausado', 'separando', 'aguardando_carregamento']);
+
+      // Fetch pending transfer orders
       let transferQuery = supabase
         .from("transfer_orders")
         .select("id, status, total_quantity");
@@ -147,8 +154,8 @@ export function useDashboardData(period: PeriodFilter) {
       const newCustomers = custs.filter(c => c.created_at >= from).length;
       const prevNewCustomers = custs.filter(c => c.created_at >= prevFrom && c.created_at < from).length;
 
-      // Pending shipments (transfer orders in "separando" or "enviado" status)
-      const pendingShipments = xfers.filter(t => t.status === "separando").length;
+      // Pending shipments (full orders in specific statuses + transfer orders in "separando" status)
+      const pendingShipments = (pendingFull || 0) + xfers.filter(t => t.status === "separando").length;
       const sentShipments = xfers.filter(t => t.status === "enviado" || t.status === "recebido").length;
 
       // Stock alerts
