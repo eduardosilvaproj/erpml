@@ -215,6 +215,41 @@ const Separacao = () => {
     
     if (!startTime) setStartTime(new Date());
 
+    // Se estivermos esperando o produto interno da caixa
+    if (boxMode === "scan_internal") {
+      const internalCode = code.trim().toUpperCase();
+      const itemIndex = items.findIndex(i => 
+        i.barcode === internalCode || 
+        i.sku.toUpperCase() === internalCode
+      );
+
+      if (itemIndex !== -1) {
+        const item = items[itemIndex];
+        const qtyToLow = parseInt(tempBoxQty);
+        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtyToLow);
+        const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
+        
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems[itemIndex] = {
+            ...item,
+            scannedQty: newScannedQty,
+            status: newStatus
+          };
+          return newItems;
+        });
+
+        setLastScan({ success: true, message: `📦 Caixa de ${qtyToLow}x ${item.name} registrada!` });
+        scanInputRef.current?.flash(true);
+        setBoxMode("idle");
+        setScanValue("");
+      } else {
+        setLastScan({ success: false, message: `O produto "${internalCode}" não está nesta ordem.` });
+        scanInputRef.current?.flash(false);
+      }
+      return;
+    }
+
     await barcodeSearch.handleSearch(code, (result) => {
       const { produto, qty } = result;
 
@@ -258,7 +293,7 @@ const Separacao = () => {
       scanInputRef.current?.flash(false);
       setScanValue("");
     });
-  }, [items, startTime, barcodeSearch]);
+  }, [items, startTime, barcodeSearch, boxMode, tempBoxQty]);
 
 
   const handlePause = async () => {
