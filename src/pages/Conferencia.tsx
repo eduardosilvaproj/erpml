@@ -123,6 +123,10 @@ const Conferencia = () => {
   const [flashId, setFlashId] = useState<string | null>(null);
 
   // GTIN CX modal (unknown box code → user must select product)
+  const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
+  const [tempBoxCode, setTempBoxCode] = useState("");
+  const [tempBoxQty, setTempBoxQty] = useState("12");
+
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
@@ -432,6 +436,28 @@ const Conferencia = () => {
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
     setScanBuffer("");
+
+    // Se estivermos esperando o produto interno da caixa
+    if (boxMode === "scan_internal") {
+      const internalCode = code.trim().toUpperCase();
+      const found = allProducts.find(p => 
+        p.ean === internalCode || 
+        p.barcode === internalCode || 
+        p.sku?.toUpperCase() === internalCode
+      );
+
+      if (found) {
+        const qtyToLow = parseInt(tempBoxQty);
+        addScannedUnits(found, qtyToLow);
+        setLastScan({ success: true, name: `📦 Caixa de ${qtyToLow}x ${found.name}`, code: internalCode });
+        playBeep(800, 100);
+        setBoxMode("idle");
+      } else {
+        setLastScan({ success: false, name: "Produto interno não encontrado", code: internalCode });
+        playBeep(300, 200);
+      }
+      return;
+    }
 
     await barcodeSearch.handleSearch(code, (result) => {
       const { produto, qty, tipo } = result;
@@ -974,10 +1000,60 @@ const Conferencia = () => {
             playBeep(800, 100);
           }
         }}
-        onRegisterGtin={() => navigate("/produtos")}
-        onRegisterProduct={() => navigate("/produtos")}
-        onLinkProduct={() => navigate("/produtos")}
+        onRegisterGtin={() => {
+          setTempBoxCode(barcodeSearch.lastCodigo);
+          setBoxMode("qty");
+        }}
+        onRegisterProduct={() => {
+          toast({ title: "🆕 Cadastro de produto não permitido aqui", description: "Para não quebrar o fluxo, use o menu lateral depois." });
+        }}
+        onLinkProduct={() => {
+          toast({ title: "🔗 Vínculo não permitido aqui", description: "Para não quebrar o fluxo, use o menu lateral depois." });
+        }}
       />
+
+      {/* Fluxo de Caixa Inline */}
+      <Dialog open={boxMode !== "idle"} onOpenChange={(open) => !open && setBoxMode("idle")}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-blue-500" />
+              Fluxo de Caixa: {tempBoxCode}
+            </DialogTitle>
+          </DialogHeader>
+
+          {boxMode === "qty" && (
+            <div className="py-6 space-y-4">
+              <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
+              <Input
+                type="number"
+                value={tempBoxQty}
+                onChange={(e) => setTempBoxQty(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
+              />
+              <Button className="w-full bg-blue-600" onClick={() => setBoxMode("scan_internal")}>
+                Próximo: Bipar item interno
+              </Button>
+            </div>
+          )}
+
+          {boxMode === "scan_internal" && (
+            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <ScanBarcode className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-bold">Aguardando leitura...</p>
+                <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
+                Voltar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     <div className="max-w-6xl mx-auto space-y-6 pb-8">
       <div className="flex flex-wrap justify-end gap-2">

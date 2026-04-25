@@ -70,11 +70,12 @@ const Separacao = () => {
   const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
 
-  // Estado para EAN não reconhecido
-  const [unrecognizedDialog, setUnrecognizedDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
-  const [caixaDialog, setCaixaDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  // Estado para fluxo de caixa (GTIN desconhecido)
+  const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
+  const [tempBoxCode, setTempBoxCode] = useState("");
+  const [tempBoxQty, setTempBoxQty] = useState("12");
+
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [qtdCaixa, setQtdCaixa] = useState("12");
   const [productSearch, setProductSearch] = useState("");
   const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
 
@@ -214,6 +215,41 @@ const Separacao = () => {
     
     if (!startTime) setStartTime(new Date());
 
+    // Se estivermos esperando o produto interno da caixa
+    if (boxMode === "scan_internal") {
+      const internalCode = code.trim().toUpperCase();
+      const itemIndex = items.findIndex(i => 
+        i.barcode === internalCode || 
+        i.sku.toUpperCase() === internalCode
+      );
+
+      if (itemIndex !== -1) {
+        const item = items[itemIndex];
+        const qtyToLow = parseInt(tempBoxQty);
+        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtyToLow);
+        const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
+        
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems[itemIndex] = {
+            ...item,
+            scannedQty: newScannedQty,
+            status: newStatus
+          };
+          return newItems;
+        });
+
+        setLastScan({ success: true, message: `📦 Caixa de ${qtyToLow}x ${item.name} registrada!` });
+        scanInputRef.current?.flash(true);
+        setBoxMode("idle");
+        setScanValue("");
+      } else {
+        setLastScan({ success: false, message: `O produto "${internalCode}" não está nesta ordem.` });
+        scanInputRef.current?.flash(false);
+      }
+      return;
+    }
+
     await barcodeSearch.handleSearch(code, (result) => {
       const { produto, qty } = result;
 
@@ -257,7 +293,7 @@ const Separacao = () => {
       scanInputRef.current?.flash(false);
       setScanValue("");
     });
-  }, [items, startTime, barcodeSearch]);
+  }, [items, startTime, barcodeSearch, boxMode, tempBoxQty]);
 
 
   const handlePause = async () => {
@@ -298,30 +334,7 @@ const Separacao = () => {
     }
   };
 
-  const handleSaveBoxGtin = async () => {
-    if (!selectedProduct || !companyId) return;
-
-    try {
-      const qtd = parseInt(qtdCaixa);
-      const { error } = await supabase.from("product_gtins").insert({
-        product_id: selectedProduct.id,
-        company_id: companyId,
-        gtin: caixaDialog.code,
-        tipo: 'caixa',
-        qtd_por_caixa: qtd
-      });
-
-      if (error) throw error;
-
-      toast({ title: "✅ GTIN de Caixa cadastrado!" });
-      setCaixaDialog({ isOpen: false, code: "" });
-      
-      // Bipar automaticamente após cadastrar
-      handleScan(caixaDialog.code);
-    } catch (err: any) {
-      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
-    }
-  };
+  // handleSaveBoxGtin removido pois o fluxo agora é inline na bipagem e não cadastra no banco como solicitado.
 
   const generatePDF = useCallback(() => {
     if (!orderInfo) return;
@@ -446,10 +459,60 @@ const Separacao = () => {
             handleScan(barcodeSearch.lastCodigo);
           }
         }}
-        onRegisterGtin={() => navigate("/produtos")}
-        onRegisterProduct={() => navigate("/produtos")}
-        onLinkProduct={() => navigate("/produtos")}
+        onRegisterGtin={() => {
+          setTempBoxCode(barcodeSearch.lastCodigo);
+          setBoxMode("qty");
+        }}
+        onRegisterProduct={() => {
+          toast({ title: "🆕 Cadastro de produto não permitido aqui", description: "Para não quebrar o fluxo, use o menu lateral depois." });
+        }}
+        onLinkProduct={() => {
+          toast({ title: "🔗 Vínculo não permitido aqui", description: "Para não quebrar o fluxo, use o menu lateral depois." });
+        }}
       />
+
+      {/* Fluxo de Caixa Inline */}
+      <Dialog open={boxMode !== "idle"} onOpenChange={(open) => !open && setBoxMode("idle")}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-blue-500" />
+              Fluxo de Caixa: {tempBoxCode}
+            </DialogTitle>
+          </DialogHeader>
+
+          {boxMode === "qty" && (
+            <div className="py-6 space-y-4">
+              <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
+              <Input
+                type="number"
+                value={tempBoxQty}
+                onChange={(e) => setTempBoxQty(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
+              />
+              <Button className="w-full bg-blue-600" onClick={() => setBoxMode("scan_internal")}>
+                Próximo: Bipar item interno
+              </Button>
+            </div>
+          )}
+
+          {boxMode === "scan_internal" && (
+            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <ScanBarcode className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-bold">Aguardando leitura...</p>
+                <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
+                Voltar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
     <div className="container mx-auto p-4 space-y-6 max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -748,136 +811,6 @@ const Separacao = () => {
           </div>
         </>
       )}
-      {/* Diálogo de Código Não Reconhecido */}
-      <Dialog open={unrecognizedDialog.isOpen} onOpenChange={(open) => setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: open })}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600">
-              <AlertCircle className="h-5 w-5" /> ⚠️ Código não encontrado: {unrecognizedDialog.code}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-6 space-y-4">
-            <p className="font-medium">Este código é de uma <span className="text-blue-600 font-bold uppercase">CAIXA FECHADA</span>?</p>
-            <div className="grid grid-cols-1 gap-2">
-              <Button 
-                variant="default" 
-                className="h-14 gap-2 bg-blue-600 hover:bg-blue-700"
-                onClick={() => {
-                  setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
-                  setCaixaDialog({ isOpen: true, code: unrecognizedDialog.code });
-                }}
-              >
-                <Box className="h-5 w-5" /> 📦 Sim, é uma caixa
-              </Button>
-              <div className="flex flex-col gap-2">
-                <Button 
-                  variant="outline" 
-                  className="h-12 gap-2"
-                  onClick={() => {
-                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
-                    toast({ title: "🏷️ Cadastrar Novo Produto", description: "Utilize o menu lateral em 'Produtos' para cadastrar." });
-                  }}
-                >
-                  <Plus className="h-4 w-4" /> ➕ Cadastrar novo
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-12 gap-2"
-                  onClick={() => {
-                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
-                    toast({ title: "🔗 Vincular a existente", description: "Utilize o menu lateral em 'Produtos' para editar o EAN." });
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" /> 🔗 Vincular a existente
-                </Button>
-              </div>
-              <Button 
-                variant="ghost" 
-                onClick={() => setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false })}
-              >
-                ❌ Cancelar
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Diálogo de Cadastro de Caixa */}
-      <Dialog open={caixaDialog.isOpen} onOpenChange={(open) => setCaixaDialog({ ...caixaDialog, isOpen: open })}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>📦 Cadastrar GTIN de Caixa</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-muted-foreground uppercase">Código</label>
-              <Input value={caixaDialog.code} readOnly className="bg-muted" />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-muted-foreground uppercase">Vincular a qual produto?</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {selectedProduct ? selectedProduct.name : "🔍 Buscar produto..."}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Busque por nome, SKU ou EAN..." 
-                      onValueChange={setProductSearch}
-                    />
-                    <CommandList>
-                      <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                      <CommandGroup>
-                        {searchResults?.products.map((p) => (
-                          <CommandItem
-                            key={p.id}
-                            value={p.name}
-                            onSelect={() => {
-                              setSelectedProduct(p);
-                              setProductSearch("");
-                            }}
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-bold">{p.name}</span>
-                              <span className="text-xs text-muted-foreground">EAN/SKU: {p.ean || p.sku}</span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-muted-foreground uppercase">Qtd por caixa</label>
-              <Input 
-                type="number" 
-                value={qtdCaixa} 
-                onChange={(e) => setQtdCaixa(e.target.value)} 
-                min="2"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCaixaDialog({ isOpen: false, code: "" })}>
-              Cancelar
-            </Button>
-            <Button 
-              className="bg-emerald-600 hover:bg-emerald-700"
-              disabled={!selectedProduct}
-              onClick={handleSaveBoxGtin}
-            >
-              💾 Salvar e bipar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
     </>
   );
