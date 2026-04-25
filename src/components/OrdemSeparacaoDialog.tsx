@@ -487,6 +487,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                               autoFocus
                               scanMode
                               disabled={blockingAlert.isOpen}
+                              inputClassName="text-gray-900"
                             />
                             {lastScan && (
                               <div className={`text-xs p-2 rounded break-words ${lastScan.ok ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-destructive/10 text-destructive"}`}>
