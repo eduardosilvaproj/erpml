@@ -110,6 +110,8 @@ export const useOrdemFull = (ordemId: string | null) => {
           image_url: product?.image_url || bState?.image_url || null,
           neededQty: item.quantity || bState?.neededQty || 0,
           scannedQty: bState?.scannedQty || 0,
+          qtd_solicitada: item.quantity || bState?.neededQty || 0,
+          qtd_separada: bState?.scannedQty || 0,
           status: bState?.status || 'pendente',
           product: product ? {
             id: product.id,
