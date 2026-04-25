@@ -317,15 +317,53 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      // Check for relations before deleting
+      const { count: salesCount } = await supabase
+        .from("sale_items")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", id);
+      
+      const { count: orderCount } = await supabase
+        .from("full_order_items")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", id);
+
+      const { count: invoiceCount } = await supabase
+        .from("invoice_items")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", id);
+
+      const hasHistory = (salesCount || 0) > 0 || (orderCount || 0) > 0 || (invoiceCount || 0) > 0;
+
+      if (hasHistory) {
+        // Deactivate instead of delete
+        const { error } = await supabase
+          .from("products")
+          .update({ active: false })
+          .eq("id", id);
+        
+        if (error) throw error;
+        return { deactivated: true };
+      } else {
+        // Safe to delete
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        if (error) throw error;
+        return { deactivated: false };
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: "Produto excluído!" });
+      if (result.deactivated) {
+        toast({ 
+          title: "Produto desativado", 
+          description: "Este produto não pode ser excluído pois possui histórico de vendas ou movimentações. Para removê-lo da listagem, ele foi desativado.",
+        });
+      } else {
+        toast({ title: "Produto excluído!" });
+      }
     },
     onError: (error: Error) => {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao excluir/desativar", description: error.message, variant: "destructive" });
     },
   });
 }
