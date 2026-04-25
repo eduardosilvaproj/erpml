@@ -86,6 +86,25 @@ export function parseNFeXml(xmlString: string): NFeData {
   const emit = getFirstElementByTagName(infNFe, "emit");
   const issuerName = emit ? getTagValue(emit, "xNome") : "";
   const issuerCnpj = emit ? getTagValue(emit, "CNPJ") : "";
+  
+  let supplier: NFeSupplier | undefined;
+  if (emit) {
+    const enderEmit = getFirstElementByTagName(emit, "enderEmit");
+    supplier = {
+      razao_social: issuerName,
+      nome_fantasia: getTagValue(emit, "xFant"),
+      cnpj: issuerCnpj,
+      ie: getTagValue(emit, "IE"),
+      telefone: enderEmit ? getTagValue(enderEmit, "fone") : undefined,
+      email: getTagValue(doc, "email"), // Email is often outside emit in some versions
+      cep: enderEmit ? getTagValue(enderEmit, "CEP") : undefined,
+      logradouro: enderEmit ? getTagValue(enderEmit, "xLgr") : undefined,
+      numero: enderEmit ? getTagValue(enderEmit, "nro") : undefined,
+      bairro: enderEmit ? getTagValue(enderEmit, "xBairro") : undefined,
+      municipio: enderEmit ? getTagValue(enderEmit, "xMun") : undefined,
+      uf: enderEmit ? getTagValue(enderEmit, "UF") : undefined,
+    };
+  }
 
   // Total
   const total = getFirstElementByTagName(infNFe, "ICMSTot");
