@@ -75,6 +75,7 @@ const Separacao = () => {
   const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
   const [tempBoxCode, setTempBoxCode] = useState("");
   const [tempBoxQty, setTempBoxQty] = useState("12");
+  const [internalScanValue, setInternalScanValue] = useState("");
 
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [productSearch, setProductSearch] = useState("");
