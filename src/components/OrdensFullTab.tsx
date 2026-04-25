@@ -401,7 +401,12 @@ export const OrdensFullTab = () => {
         };
       });
 
-      setParsedData({ shippingNumber, items: itemsWithProducts });
+      setParsedData({ 
+        shippingNumber, 
+        items: itemsWithProducts,
+        expectedProducts: totalProdutos ? parseInt(totalProdutos) : undefined,
+        expectedUnits: totalUnidades ? parseInt(totalUnidades) : undefined
+      });
       setPreviewOpen(true);
       toast({ title: "PDF lido com sucesso!", description: `${uniqueItems.length} produtos encontrados.` });
     } catch (err: any) {
