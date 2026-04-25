@@ -507,97 +507,47 @@ const EntradaNota = () => {
     setBipInput("");
     setBipAlert(null);
 
-    const normalizedDigits = normalizeDigits(code);
-    const normalizedCode = normalizeIdentifier(code);
+    await barcodeSearch.handleSearch(code, (result) => {
+      const { produto, qty } = result;
 
-    const idx = conferenceItems.findIndex(
-      (i) => {
-        const eanMatch = normalizedDigits.length > 0 && normalizeDigits(i.xmlProduct.ean) === normalizedDigits;
-        const codeMatch = normalizeIdentifier(i.xmlProduct.code) === normalizedCode;
-        // Also match against linked product's barcode/SKU from the database
-        const dbBarcodeMatch = normalizedDigits.length > 0 && i.matchedProductBarcode && normalizeDigits(i.matchedProductBarcode) === normalizedDigits;
-        const dbSkuMatch = i.matchedProductSku && normalizeIdentifier(i.matchedProductSku) === normalizedCode;
-        return eanMatch || codeMatch || dbBarcodeMatch || dbSkuMatch;
-      }
-    );
+      const idx = conferenceItems.findIndex(
+        (i) => i.matchedProductId === produto.id || 
+               (i.matchedProductBarcode && normalizeDigits(i.matchedProductBarcode) === normalizeDigits(code)) ||
+               (i.matchedProductSku && normalizeIdentifier(i.matchedProductSku) === normalizeIdentifier(code))
+      );
 
-    if (idx !== -1) {
-      setFlashIdx(idx);
-      setTimeout(() => setFlashIdx(null), 1000);
+      if (idx !== -1) {
+        setFlashIdx(idx);
+        setTimeout(() => setFlashIdx(null), 1000);
 
-      setConferenceItems((prev) => {
-        const updated = [...prev];
-        const item = { ...updated[idx] };
-        item.scannedQty += 1;
-        if (item.scannedQty === item.expectedQty) {
-          item.status = "ok";
-          setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
-          playBeep(800, 100);
-          bipRef.current?.flash(true);
-        } else if (item.scannedQty > item.expectedQty) {
-          item.status = "excess";
-          setBipAlert({ type: "warning", msg: `⚠ ${item.xmlProduct.description} — excede a quantidade esperada!` });
-          playBeep(200, 150);
-          setTimeout(() => playBeep(200, 150), 200);
-          bipRef.current?.flash(false);
-        } else {
-          item.status = "partial";
-          setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
-          playBeep(600, 100);
-          bipRef.current?.flash(true);
-        }
-        updated[idx] = item;
-        return updated;
-      });
-      setTimeout(() => bipRef.current?.focus(), 50);
-      return;
-    }
-
-    // Check GTIN CX (always, not just box mode) — strict match by company
-    // Always show selection modal for confirmation, pre-selecting matched product as suggestion
-    let preSelectedProduct = "";
-    let preSelectedQty = 1;
-    let isKnownGtin = false;
-
-    try {
-      const gtinCandidates = Array.from(new Set([code.trim(), normalizedDigits].filter(Boolean)));
-      const { data: boxProducts } = await supabase
-        .from("products")
-        .select("id, name, gtin_cx, box_quantity")
-        .eq("company_id", companyId)
-        .in("gtin_cx", gtinCandidates);
-
-      if (boxProducts && boxProducts.length > 0) {
-        isKnownGtin = true;
-        // Pre-select the exact product that is in the conference list (using idx- key)
-        for (const bp of boxProducts) {
-          const productIdx = conferenceItems.findIndex((i) => i.matchedProductId === bp.id);
-          if (productIdx !== -1) {
-            preSelectedProduct = `idx-${productIdx}`;
-            preSelectedQty = bp.box_quantity || 1;
-            break;
+        setConferenceItems((prev) => {
+          const updated = [...prev];
+          const item = { ...updated[idx] };
+          item.scannedQty += qty;
+          if (item.scannedQty >= item.expectedQty) {
+            item.status = "ok";
+            setBipAlert({ type: "success", msg: `✓ ${item.xmlProduct.description} — conferido!` });
+            playBeep(800, 100);
+            bipRef.current?.flash(true);
+          } else {
+            item.status = "partial";
+            setBipAlert({ type: "success", msg: `${item.xmlProduct.description}: ${item.scannedQty}/${item.expectedQty}` });
+            playBeep(600, 100);
+            bipRef.current?.flash(true);
           }
-        }
-        // Fallback: find first conference item index for first box product
-        if (!preSelectedProduct && boxProducts[0]) {
-          const fallbackIdx = conferenceItems.findIndex((i) => i.matchedProductId === boxProducts[0].id);
-          if (fallbackIdx !== -1) {
-            preSelectedProduct = `idx-${fallbackIdx}`;
-          }
-          preSelectedQty = boxProducts[0].box_quantity || 1;
-        }
+          updated[idx] = item;
+          return updated;
+        });
+        setTimeout(() => bipRef.current?.focus(), 50);
+        return;
       }
-    } catch { /* fall through */ }
 
-    // Open selection modal — pre-select matched product for known GTINs
-    setUnknownGtinDialog({ code });
-    setUnknownGtinProduct(preSelectedProduct);
-    setUnknownGtinQty(preSelectedQty);
-    setUnknownGtinBoxes(1);
-    setUnknownGtinSave(!isKnownGtin);
-    playBeep(isKnownGtin ? 600 : 200, isKnownGtin ? 100 : 400);
-    return;
+      setBipAlert({ type: "error", msg: `"${produto.name}" não encontrado nesta nota.` });
+      playBeep(200, 400);
+      bipRef.current?.flash(false);
+    });
   };
+
 
   const applyBoxBip = (productIdx: number, boxes: number, qtyPerBox: number) => {
     const total = boxes * qtyPerBox;
