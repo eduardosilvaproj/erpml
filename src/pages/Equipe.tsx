@@ -225,16 +225,25 @@ export default function Equipe() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Convidar Membro
+                Novo Membro
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Convidar Membro</DialogTitle>
+                <DialogTitle>Cadastrar Novo Membro</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-email">E-mail do usuário *</Label>
+                  <Label htmlFor="invite-name">Nome Completo *</Label>
+                  <Input
+                    id="invite-name"
+                    placeholder="Nome do membro"
+                    value={inviteFullName}
+                    onChange={(e) => setInviteFullName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">E-mail *</Label>
                   <Input
                     id="invite-email"
                     type="email"
@@ -243,10 +252,31 @@ export default function Equipe() {
                     onChange={(e) => setInviteEmail(e.target.value)}
                     maxLength={255}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    O usuário precisa ter uma conta cadastrada no sistema.
-                  </p>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-password">Senha *</Label>
+                    <Input
+                      id="invite-password"
+                      type="password"
+                      placeholder="******"
+                      value={invitePassword}
+                      onChange={(e) => setInvitePassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-confirm">Confirmar Senha *</Label>
+                    <Input
+                      id="invite-confirm"
+                      type="password"
+                      placeholder="******"
+                      value={inviteConfirmPassword}
+                      onChange={(e) => setInviteConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="invite-role">Nível de acesso</Label>
                   <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -266,9 +296,9 @@ export default function Equipe() {
                 <Button variant="outline" onClick={() => setInviteOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+                <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim() || !invitePassword || !inviteFullName.trim()}>
                   {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Enviar convite
+                  Cadastrar Membro
                 </Button>
               </DialogFooter>
             </DialogContent>
