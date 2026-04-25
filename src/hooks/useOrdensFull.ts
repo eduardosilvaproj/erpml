@@ -7,6 +7,7 @@ export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 
 export interface OrdemFull {
   id: string;
+  ordem_id: string; // New unique internal ID
   numero: string;
   frete_ml: string | null;
   descricao: string | null;
