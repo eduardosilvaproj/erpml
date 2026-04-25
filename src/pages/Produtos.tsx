@@ -62,6 +62,7 @@ const Produtos = () => {
     search: search || undefined,
     category_id: categoryFilter || undefined,
     supplier_id: supplierFilter || undefined,
+    status: (statusFilter as any) || "active",
     needsCorrection: (correctionFilter as any) || undefined,
     page,
     pageSize,
