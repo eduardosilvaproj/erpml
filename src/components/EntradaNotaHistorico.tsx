@@ -590,6 +590,7 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [stockAction, setStockAction] = useState<"revert" | "keep">("keep");
+  const [processingMsg, setProcessingMsg] = useState("");
 
   const { data: invoice } = useQuery({
     queryKey: ["entrada-nota-delete-info", invoiceId],
@@ -608,25 +609,31 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
   const handleDelete = async () => {
     if (!invoice || !companyId) return;
     setLoading(true);
+    setProcessingMsg("Excluindo...");
+
+    const timeout = setTimeout(() => {
+      setProcessingMsg("Aguarde, processando...");
+    }, 2000);
 
     try {
       const reverterEstoque = stockAction === "revert";
       const items = (invoice.invoice_items as any[]) || [];
 
       if (reverterEstoque) {
-        // 2. Para cada item, subtrair do estoque
+        // 1. Reverter estoque se solicitado
         for (const item of items) {
           if (item.product_id && item.stock_updated) {
-            await supabase.rpc('decrementar_estoque', {
+            const { error: rpcError } = await supabase.rpc('decrementar_estoque', {
               p_product_id: item.product_id,
               p_quantidade: Math.floor(Number(item.quantity) || 0),
               p_company_id: companyId
             });
+            if (rpcError) console.error("Erro ao decrementar estoque:", rpcError);
           }
         }
       }
 
-      // 3. Deletar conferências vinculadas
+      // 2. Deletar conferências vinculadas (se houver)
       const { data: conferences } = await supabase
         .from('conferences')
         .select('id')
@@ -638,21 +645,25 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
         await supabase.from('conferences').delete().eq('invoice_id', invoice.id);
       }
 
-      // 4. Deletar itens da nota
-      await supabase
+      // 3. Deletar itens da nota
+      const { error: itemsError } = await supabase
         .from('invoice_items')
         .delete()
         .eq('invoice_id', invoice.id);
+      
+      if (itemsError) throw new Error(`Erro ao deletar itens: ${itemsError.message}`);
 
-      // 5. Deletar a nota
-      await supabase
+      // 4. Deletar a nota
+      const { error: invError } = await supabase
         .from('invoices')
         .delete()
         .eq('id', invoice.id);
 
+      if (invError) throw new Error(`Erro ao deletar nota: ${invError.message}`);
+
       toast({
-        title: reverterEstoque ? "✅ Nota deletada e estoque revertido" : "✅ Nota deletada — estoque mantido",
-        variant: "default",
+        title: "Nota excluída com sucesso",
+        description: reverterEstoque ? "Estoque revertido." : "Estoque mantido.",
       });
 
       queryClient.invalidateQueries({ queryKey: ["entrada-nota-historico"] });
@@ -660,12 +671,14 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       onClose();
     } catch (e: any) {
       toast({
-        title: "Erro ao deletar",
+        title: "Erro ao excluir",
         description: e.message,
         variant: "destructive",
       });
     } finally {
+      clearTimeout(timeout);
       setLoading(false);
+      setProcessingMsg("");
     }
   };
 
