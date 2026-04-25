@@ -221,6 +221,53 @@ const Separacao = () => {
 
   const productsComplete = items.filter(i => i.status === "completo").length;
 
+  const processScanResult = useCallback((produto: any, qty: number, code: string) => {
+    // 1. Verificar se o código já existe na ordem
+    const itemIndex = items.findIndex(i => 
+      i.productId === produto.id ||
+      i.barcode === code.trim().toUpperCase() || 
+      i.sku.toUpperCase() === code.trim().toUpperCase()
+    );
+
+    if (itemIndex !== -1) {
+      const item = items[itemIndex];
+      if (item.scannedQty >= item.neededQty) {
+        setBlockingAlert({
+          isOpen: true,
+          title: "Produto já completo!",
+          message: `${item.name} já atingiu a quantidade necessária. Verifique o item.`
+        });
+        setScanValue("");
+        scanInputRef.current?.flash(false);
+        return;
+      }
+
+      const newScannedQty = Math.min(item.neededQty, item.scannedQty + qty);
+      const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
+      
+      setItems(prev => {
+        const newItems = [...prev];
+        newItems[itemIndex] = {
+          ...item,
+          scannedQty: newScannedQty,
+          status: newStatus
+        };
+        return newItems;
+      });
+
+      const prefix = qty > 1 ? `📦 Caixa de ` : `✓ `;
+      setLastScan({ success: true, message: `${prefix}${item.name} (${newScannedQty}/${item.neededQty})` });
+      scanInputRef.current?.flash(true);
+      setScanValue("");
+      return;
+    }
+
+    // Produto não faz parte desta ordem
+    setLastScan({ success: false, message: `"${produto.name}" não faz parte desta ordem.` });
+    scanInputRef.current?.flash(false);
+    setScanValue("");
+  }, [items]);
+
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
     
@@ -263,54 +310,9 @@ const Separacao = () => {
     }
 
     await barcodeSearch.handleSearch(code, (result) => {
-      const { produto, qty } = result;
-
-      // 1. Verificar se o código já existe na ordem
-      const itemIndex = items.findIndex(i => 
-        i.productId === produto.id ||
-        i.barcode === code.trim().toUpperCase() || 
-        i.sku.toUpperCase() === code.trim().toUpperCase()
-      );
-
-      if (itemIndex !== -1) {
-        const item = items[itemIndex];
-        if (item.scannedQty >= item.neededQty) {
-          setBlockingAlert({
-            isOpen: true,
-            title: "Produto já completo!",
-            message: `${item.name} já atingiu a quantidade necessária. Verifique o item.`
-          });
-          setScanValue("");
-          scanInputRef.current?.flash(false);
-          return;
-        }
-
-        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qty);
-        const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
-        
-        setItems(prev => {
-          const newItems = [...prev];
-          newItems[itemIndex] = {
-            ...item,
-            scannedQty: newScannedQty,
-            status: newStatus
-          };
-          return newItems;
-        });
-
-        const prefix = qty > 1 ? `📦 Caixa de ` : `✓ `;
-        setLastScan({ success: true, message: `${prefix}${item.name} (${newScannedQty}/${item.neededQty})` });
-        scanInputRef.current?.flash(true);
-        setScanValue("");
-        return;
-      }
-
-      // Produto não faz parte desta ordem
-      setLastScan({ success: false, message: `"${produto.name}" não faz parte desta ordem.` });
-      scanInputRef.current?.flash(false);
-      setScanValue("");
+      processScanResult(result.produto, result.qty, code);
     });
-  }, [items, startTime, barcodeSearch, boxMode, tempBoxQty]);
+  }, [items, startTime, barcodeSearch, boxMode, tempBoxQty, processScanResult]);
   
   // Auto-save effect
   useEffect(() => {
