@@ -136,22 +136,9 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
 
 
 
-  const gerarSkuInterno = async () => {
-    setIsGeneratingSku(true);
-    try {
-      const { count, error } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) throw error;
-      const nextNum = (count || 0) + 1;
-      const newSku = `SKU-${String(nextNum).padStart(5, '0')}`;
-      form.setValue("sku", newSku);
-    } catch (err: any) {
-      console.error("Erro ao gerar SKU:", err);
-      toast({ title: "Erro ao gerar SKU", description: err.message, variant: "destructive" });
-    } finally {
-      setIsGeneratingSku(false);
+  const sincronizarSkuEan = (ean: string) => {
+    if (ean) {
+      form.setValue("sku", ean);
     }
   };
 
