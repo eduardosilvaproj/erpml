@@ -807,7 +807,10 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             </div>
 
             <Button 
-              onClick={() => setBlockingAlert(prev => ({ ...prev, isOpen: false }))} 
+              onClick={() => {
+                setBlockingAlert(prev => ({ ...prev, isOpen: false }));
+                setTimeout(() => scannerRef.current?.focus(), 150);
+              }} 
               className="w-full h-16 text-2xl font-black bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/20"
             >
               OK
