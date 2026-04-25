@@ -274,7 +274,12 @@ const Separacao = () => {
       if (itemIndex !== -1) {
         const item = items[itemIndex];
         if (item.scannedQty >= item.neededQty) {
-          setLastScan({ success: false, message: `"${item.name}" já está completo.` });
+          setBlockingAlert({
+            isOpen: true,
+            title: "Produto já completo!",
+            message: `${item.name} já atingiu a quantidade necessária. Verifique o item.`
+          });
+          setScanValue("");
           scanInputRef.current?.flash(false);
           return;
         }
