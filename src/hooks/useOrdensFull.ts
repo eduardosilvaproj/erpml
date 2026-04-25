@@ -252,8 +252,9 @@ export const useUpdateItemQuantity = () => {
       const status = qtd_separada >= qtd_solicitada ? 'completo' : (qtd_separada > 0 ? 'parcial' : 'pendente');
       
       if (idx !== -1) {
+        const currentState = (bipagemState[idx] as any) || {};
         bipagemState[idx] = {
-          ...bipagemState[idx],
+          ...currentState,
           scannedQty: qtd_separada,
           status
         };
