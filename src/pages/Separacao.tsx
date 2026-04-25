@@ -137,6 +137,7 @@ const Separacao = () => {
           .from("full_orders")
           .select("bipagem_state, status")
           .eq("frete_ml", ordem.frete_ml)
+          .eq("company_id", companyId)
           .maybeSingle();
 
         if (fullOrder?.bipagem_state) {
