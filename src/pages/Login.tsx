@@ -246,32 +246,17 @@ export default function Login() {
         <Card className="login-card-glass border-none">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-6">
-              <div className="relative group">
-                <div className="absolute -inset-0.5 bg-primary/20 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-                <div className="relative h-[130px] w-full flex items-center justify-center overflow-hidden">
-                  <img 
-                    src="https://rmetppilvfrxosvxzhgj.supabase.co/storage/v1/object/public/message-attachments/79aef328-4901-4b95-a65f-7e536f3c613c/1777099759840_xil5ic_ChatGPT_Image_25_de_abr._de_2026__03_30_40.png" 
-                    alt="Stovix Logo" 
-                    className="h-[130px] w-auto object-contain animate-pulse-glow"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const parent = target.parentElement;
-                      if (parent) {
-                        const container = document.createElement('div');
-                        container.className = 'flex flex-col items-center';
-                        container.innerHTML = `
-                          <div class="w-20 h-20 bg-gradient-to-br from-[#1a2332] to-[#0d1117] border-2 border-[#22c55e] rounded-2xl flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(34,197,94,0.4)] text-[#22c55e] font-black text-4xl">S</div>
-                          <div class="text-2xl font-extrabold text-white tracking-tighter">Stovi<span class="text-[#22c55e]">x</span></div>
-                        `;
-                        parent.appendChild(container);
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+              <img
+                src="/chatgpt-image.png"
+                alt="Stovix"
+                style={{
+                  height: '140px',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 0 15px rgba(34,197,94,0.5))',
+                  animation: 'pulse-glow 3s ease-in-out infinite'
+                }}
+              />
             </div>
-            <CardTitle className="text-3xl font-bold text-white mb-2 tracking-tight">Stovix</CardTitle>
             <TypingSlogan />
           </CardHeader>
           <form onSubmit={handleLogin} noValidate>
