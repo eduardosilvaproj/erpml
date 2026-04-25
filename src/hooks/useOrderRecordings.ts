@@ -20,9 +20,10 @@ export interface OrderRecording {
 export const useOrderRecordings = (pedidoId: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   const { data: recordings, isLoading } = useQuery({
-    queryKey: ["order-recordings", pedidoId],
+    queryKey: ["order-recordings", pedidoId, companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_recordings")
@@ -33,6 +34,7 @@ export const useOrderRecordings = (pedidoId: string) => {
           )
         `)
         .eq("pedido_id", pedidoId)
+        .eq("company_id", companyId!)
         .order("criado_em", { ascending: false });
 
       if (error) throw error;
