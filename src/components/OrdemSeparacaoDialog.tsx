@@ -741,15 +741,9 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                     onScan={handleScan}
                     onChange={(val) => {
                       setInternalScan(val);
-                      // Se for um EAN (8-14 dígitos), tentamos processar automaticamente
                       if (val.length >= 8 && val.length <= 14 && /^\d+$/.test(val)) {
-                        // Usamos um pequeno timeout para garantir que o usuário terminou de bipar
-                        // (scanners USB enviam caracteres rapidamente)
-                        const timeoutId = setTimeout(() => {
-                          handleScan(val);
-                          setInternalScan("");
-                        }, 100);
-                        return () => clearTimeout(timeoutId);
+                        handleScan(val);
+                        setInternalScan("");
                       }
                     }}
                     placeholder="Bipe o código do item da caixa..."
