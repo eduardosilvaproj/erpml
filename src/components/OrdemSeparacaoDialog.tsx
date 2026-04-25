@@ -138,12 +138,13 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
       if (target) {
         const qtyToLow = parseInt(tempBoxQty);
-        const newQtd = target.qtd_separada + qtyToLow;
+        const newQtd = (target.qtd_separada || 0) + qtyToLow;
         
         await updateItem.mutateAsync({
           itemId: target.id,
           qtd_separada: newQtd,
-          qtd_solicitada: target.qtd_solicitada,
+          qtd_solicitada: target.qtd_solicitada || 0,
+          orderId: ordem?.id,
         });
         refetch();
         setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
