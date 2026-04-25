@@ -993,6 +993,25 @@ const EntradaNota = () => {
 
   // ========== RENDER ==========
   return (
+    <>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            handleBip(barcodeSearch.lastCodigo);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
     <div className="max-w-5xl mx-auto space-y-6 pb-8">
       {/* Header */}
       <div className="flex items-center justify-between">
