@@ -194,37 +194,15 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
         </Dialog>
       </div>
 
-      {/* Floating Preview Window */}
+      {/* Floating Preview Window - Draggable */}
       {isRecording && stream && (
-        <div className={`fixed bottom-4 right-4 z-50 transition-all duration-300 ${isPreviewMinimized ? 'w-16 h-16' : 'w-64 aspect-video'}`}>
-          <Card className="overflow-hidden border-2 border-primary shadow-2xl relative">
-            <div className="absolute top-1 right-1 z-10 flex gap-1">
-              <Button 
-                size="icon" 
-                variant="secondary" 
-                className="h-6 w-6 rounded-full opacity-70 hover:opacity-100"
-                onClick={() => setIsPreviewMinimized(!isPreviewMinimized)}
-              >
-                {isPreviewMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
-              </Button>
-            </div>
-            
-            {!isPreviewMinimized && (
-              <VideoPreview stream={stream} />
-            )}
-            
-            {isPreviewMinimized && (
-              <div className="w-full h-full bg-primary flex items-center justify-center">
-                <Video className="text-primary-foreground h-6 w-6 animate-pulse" />
-              </div>
-            )}
-            
-            <div className="absolute bottom-1 left-2 flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-destructive animate-ping" />
-              <span className="text-[10px] font-bold text-primary-foreground drop-shadow-md">{formatDuration(duration)}</span>
-            </div>
-          </Card>
-        </div>
+        <DraggablePreview 
+          stream={stream} 
+          duration={duration} 
+          formatDuration={formatDuration}
+          isPreviewMinimized={isPreviewMinimized}
+          setIsPreviewMinimized={setIsPreviewMinimized}
+        />
       )}
     </>
   );
