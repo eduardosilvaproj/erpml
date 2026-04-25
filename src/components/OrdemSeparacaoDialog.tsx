@@ -171,17 +171,28 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     );
 
     if (!target) {
-      setTempBoxCode(code.trim());
-      setBoxMode("ask");
+      setBlockingAlert({
+        isOpen: true,
+        title: "🚫 Produto Inválido",
+        message: "Produto não pertence a esta ordem! Verifique o item e tente novamente."
+      });
+      setScan("");
       return;
     }
 
     const newQtd = (target.qtd_separada || 0) + 1;
     if (newQtd > (target.qtd_solicitada || 0)) {
-      setLastScan({ ok: false, msg: `Excesso! ${target.product?.name} (${newQtd}/${target.qtd_solicitada})` });
-    } else {
-      setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+      setBlockingAlert({
+        isOpen: true,
+        title: "⚠️ Quantidade Excedida",
+        message: `Quantidade máxima já atingida para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
+      });
+      setScan("");
+      return;
     }
+
+    setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
+    
     await updateItem.mutateAsync({
       itemId: target.id,
       qtd_separada: newQtd,
