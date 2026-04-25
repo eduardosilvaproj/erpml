@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import logoUrl from "@/assets/logo-erp.png";
+const logoUrl = "https://rmetppilvfrxosvxzhgj.supabase.co/storage/v1/object/public/message-attachments/79aef328-4901-4b95-a65f-7e536f3c613c/1777099759840_xil5ic_ChatGPT_Image_25_de_abr._de_2026__03_30_40.png";
 
 interface MLReportData {
   periodLabel: string;
