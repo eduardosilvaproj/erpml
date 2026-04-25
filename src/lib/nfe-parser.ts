@@ -213,86 +213,50 @@ export function matchProducts(
   dbProducts: { 
     id: string; name: string; barcode: string | null; ean?: string | null; sku: string; 
     gtin_cx?: string | null; box_quantity?: number | null;
-    product_alternative_gtins?: { gtin: string }[];
+    product_gtins?: { gtin: string; tipo?: string; box_quantity?: number }[];
   }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
     const normalizedXmlBarcode = normalizeBarcode(xp.ean);
-    const normalizedXmlCode = normalizeIdentifier(xp.code);
 
-    // 1. Exact match by EAN (primary)
+    // Regra Fundamental: Match PRIORITARIAMENTE por EAN
     if (normalizedXmlBarcode) {
-      const exactMatch = dbProducts.find((dp) => 
+      // 1. Match exato por EAN ou Barcode
+      let match = dbProducts.find((dp) => 
         normalizeBarcode(dp.ean) === normalizedXmlBarcode || 
-        normalizeBarcode(dp.barcode) === normalizedXmlBarcode ||
-        dp.product_alternative_gtins?.some(ag => normalizeBarcode(ag.gtin) === normalizedXmlBarcode)
+        normalizeBarcode(dp.barcode) === normalizedXmlBarcode
       );
-      if (exactMatch) {
+
+      // 2. Fallback 1: Match por GTIN de Caixa (gtin_cx)
+      if (!match) {
+        match = dbProducts.find((dp) => normalizeBarcode(dp.gtin_cx) === normalizedXmlBarcode);
+      }
+
+      // 3. Fallback 2: Match por GTINs alternativos (product_gtins)
+      if (!match) {
+        match = dbProducts.find((dp) => 
+          dp.product_gtins?.some(pg => normalizeBarcode(pg.gtin) === normalizedXmlBarcode)
+        );
+      }
+
+      if (match) {
         return {
           xmlProduct: xp,
-          matchedProductId: exactMatch.id,
-          matchedProductName: exactMatch.name,
-          matchedProductBarcode: exactMatch.barcode,
-          matchedProductEan: exactMatch.ean ?? null,
-          matchedProductSku: exactMatch.sku,
-          matchedProductGtinCx: exactMatch.gtin_cx ?? null,
-          matchedProductBoxQty: exactMatch.box_quantity ?? null,
+          matchedProductId: match.id,
+          matchedProductName: match.name,
+          matchedProductBarcode: match.barcode,
+          matchedProductEan: match.ean ?? null,
+          matchedProductSku: match.sku,
+          matchedProductGtinCx: match.gtin_cx ?? null,
+          matchedProductBoxQty: match.box_quantity ?? null,
           matchType: "exact" as const,
           confidence: 100,
         };
       }
     }
 
-    // 2. Exact match by code = SKU
-    const skuMatch = dbProducts.find(
-      (dp) => normalizeIdentifier(dp.sku) === normalizedXmlCode
-    );
-    if (skuMatch) {
-      return {
-        xmlProduct: xp,
-        matchedProductId: skuMatch.id,
-        matchedProductName: skuMatch.name,
-        matchedProductBarcode: skuMatch.barcode,
-        matchedProductEan: skuMatch.ean ?? null,
-        matchedProductSku: skuMatch.sku,
-        matchedProductGtinCx: skuMatch.gtin_cx ?? null,
-        matchedProductBoxQty: skuMatch.box_quantity ?? null,
-        matchType: "exact" as const,
-        confidence: 100,
-      };
-    }
-
-    // 3. Fuzzy match by description/name
-    let bestMatch: typeof dbProducts[number] | null = null;
-    let bestScore = 0;
-    const xmlSearchText = getProductSearchText(xp);
-    for (const dp of dbProducts) {
-      const score = Math.max(
-        stringSimilarity(xmlSearchText, dp.name),
-        normalizedXmlCode ? stringSimilarity(normalizedXmlCode, normalizeIdentifier(dp.sku)) : 0
-      );
-      if (score > bestScore) {
-        bestScore = score;
-        bestMatch = dp;
-      }
-    }
-
-    if (bestMatch && bestScore >= 0.55) {
-      return {
-        xmlProduct: xp,
-        matchedProductId: bestMatch.id,
-        matchedProductName: bestMatch.name,
-        matchedProductBarcode: bestMatch.barcode,
-        matchedProductEan: bestMatch.ean ?? null,
-        matchedProductSku: bestMatch.sku,
-        matchedProductGtinCx: bestMatch.gtin_cx ?? null,
-        matchedProductBoxQty: bestMatch.box_quantity ?? null,
-        matchType: "fuzzy" as const,
-        confidence: Math.round(bestScore * 100),
-      };
-    }
-
-    // 4. No match - new product
+    // NUNCA usar nome, descrição ou SKU como match automático
+    // Se não encontrou por EAN/GTIN, trata como novo produto para evitar erros de estoque
     return {
       xmlProduct: xp,
       matchedProductId: null,

@@ -91,7 +91,7 @@ const EntradaXML = () => {
     // Parse each file
     const { data: dbProducts } = await supabase
       .from("products")
-      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_alternative_gtins(gtin)");
+      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_gtins(gtin, tipo, box_quantity)");
 
     for (const qf of newQueued) {
       setQueuedFiles((prev) =>

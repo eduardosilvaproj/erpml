@@ -23,7 +23,7 @@ export interface KitItem {
   product_id: string;
   quantity: number;
   created_at: string;
-  products?: { id: string; name: string; sku: string; stock_physical: number; stock_full: number; cost: number; price: number };
+  products?: { id: string; name: string; sku: string; ean: string | null; barcode: string | null; stock_physical: number; stock_full: number; cost: number; price: number };
 }
 
 export interface KitFormData {
@@ -43,7 +43,7 @@ export function useKits() {
     queryFn: async () => {
       let query = supabase
         .from("product_kits")
-        .select("*, kit_items(*, products(id, name, sku, stock_physical, stock_full, cost, price))")
+        .select("*, kit_items(*, products(id, name, sku, ean, barcode, stock_physical, stock_full, cost, price))")
         .order("created_at", { ascending: false });
 
       if (companyId) {
@@ -167,7 +167,7 @@ export function useDeductKitStock() {
       // Get kit items
       const { data: kitItems, error } = await supabase
         .from("kit_items")
-        .select("product_id, quantity, products(id, name, stock_physical, stock_full)")
+        .select("product_id, quantity, products(id, name, ean, barcode, stock_physical, stock_full)")
         .eq("kit_id", kitId);
 
       if (error) throw error;

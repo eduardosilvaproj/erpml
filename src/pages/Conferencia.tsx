@@ -151,45 +151,43 @@ const Conferencia = () => {
     let q = supabase.from("products").select("*").limit(1);
     if (companyId) q = q.eq("company_id", companyId);
 
-    // 1. Try EAN first (Unit Product)
-    const { data: byEan } = await q.eq("ean", trimmed).maybeSingle();
-    if (byEan) return byEan;
+    // 1. PRIORIDADE: EAN/Barcode Unitário (Unidade)
+    const { data: porEan } = await supabase
+      .from("products")
+      .select("*")
+      .eq("company_id", companyId)
+      .or(`ean.eq."${trimmed}",barcode.eq."${trimmed}"`)
+      .maybeSingle();
+    if (porEan) return porEan;
 
-    // 2. Try GTIN CX (Known Box)
-    let q3 = supabase.from("products").select("*").limit(1);
-    if (companyId) q3 = q3.eq("company_id", companyId);
-    const { data: byGtin } = await q3.eq("gtin_cx", trimmed).maybeSingle();
-    if (byGtin) return byGtin;
+    // 2. FALLBACK 1: GTIN de Caixa (gtin_cx)
+    const { data: porGtinCx } = await supabase
+      .from("products")
+      .select("*")
+      .eq("company_id", companyId)
+      .eq("gtin_cx", trimmed)
+      .maybeSingle();
+    if (porGtinCx) return porGtinCx;
 
-    // 3. Try SKU
-    let q2 = supabase.from("products").select("*").limit(1);
-    if (companyId) q2 = q2.eq("company_id", companyId);
-    const { data: bySku } = await q2.eq("sku", trimmed).maybeSingle();
-    if (bySku) return bySku;
-
-    // 4. Try barcode field
-    let qB = supabase.from("products").select("*").limit(1);
-    if (companyId) qB = qB.eq("company_id", companyId);
-    const { data: byBarcode } = await qB.eq("barcode", trimmed).maybeSingle();
-    if (byBarcode) return byBarcode;
-
-    // Try Alternative GTINs table
-    const { data: byAltGtin } = await supabase
-      .from("product_alternative_gtins")
+    // 3. FALLBACK 2: GTINs extras (product_gtins)
+    const { data: porAltGtin } = await supabase
+      .from("product_gtins")
       .select("product_id")
       .eq("company_id", companyId!)
       .eq("gtin", trimmed)
       .maybeSingle();
 
-    if (byAltGtin) {
+    if (porAltGtin) {
       const { data: altProduct } = await supabase
         .from("products")
         .select("*")
-        .eq("id", byAltGtin.product_id)
+        .eq("id", porAltGtin.product_id)
         .maybeSingle();
       if (altProduct) return altProduct;
     }
 
+    // NUNCA usar SKU ou Nome como match automático em conferência
+    // pois pode gerar erro de estoque. Se não achou por EAN, trata como não encontrado.
     return null;
   }, [companyId]);
 
