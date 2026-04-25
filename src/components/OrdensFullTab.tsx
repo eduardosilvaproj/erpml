@@ -714,38 +714,13 @@ export const OrdensFullTab = () => {
         await updateStatus.mutateAsync({ id: orderToDelete.id, status: "cancelada" });
         toast({ title: "Ordem cancelada com sucesso" });
       } else {
-        // Excluir permanentemente
-        // 1. Itens da ordem
-        const { error: errorItens } = await supabase
-          .from("ordens_full_itens")
-          .delete()
-          .eq("ordem_id", orderToDelete.id);
-        
-        if (errorItens) throw errorItens;
+        // Excluir permanentemente usando o hook que já remove em cascata
+        await deleteOrdem.mutateAsync({ 
+          id: orderToDelete.id, 
+          frete_ml: orderToDelete.frete_ml 
+        });
 
-        // 2. Gravações vinculadas
-        await supabase
-          .from("order_recordings")
-          .delete()
-          .eq("pedido_id", orderToDelete.id);
-
-        // 3. Registro na tabela full_orders (se houver frete_ml)
-        if (orderToDelete.frete_ml) {
-          await supabase
-            .from("full_orders")
-            .delete()
-            .eq("frete_ml", orderToDelete.frete_ml);
-        }
-
-        // 4. A própria ordem
-        const { error: errorOrdem } = await supabase
-          .from("ordens_full")
-          .delete()
-          .eq("id", orderToDelete.id);
-
-        if (errorOrdem) throw errorOrdem;
-
-        toast({ title: "Ordem e registros vinculados excluídos com sucesso" });
+        toast({ title: "✅ Ordem e todos os registros vinculados removidos 100%" });
         refetchOrdens();
         refetchRecordings();
       }
