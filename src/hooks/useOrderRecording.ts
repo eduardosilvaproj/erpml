@@ -127,7 +127,8 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
           pedido_id: pedidoId,
           tipo: uploadTipo,
           video_url: publicUrl,
-          duracao_segundos: finalDuration
+          duracao_segundos: finalDuration,
+          company_id: companyId
         });
 
       if (dbError) throw dbError;
