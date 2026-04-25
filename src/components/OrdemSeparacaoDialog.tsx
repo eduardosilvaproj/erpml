@@ -194,31 +194,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
       if (target) {
         const qtyToLow = parseInt(tempBoxQty);
-        const newQtd = (target.qtd_separada || 0) + qtyToLow;
-        
-        if (newQtd > (target.qtd_solicitada || 0)) {
-          setBlockingAlert({
-            isOpen: true,
-            title: "⚠️ Quantidade Excedida",
-            message: `A caixa com ${qtyToLow} unidades excede a quantidade restante para este produto! (${target.qtd_separada} de ${target.qtd_solicitada} bipados)`
-          });
-          setScan("");
-          setInternalScan("");
-          return;
-        }
-
-        setBoxMode("idle");
-        setScan("");
-        setInternalScan("");
-        setLastScan({ ok: true, msg: `📦 Caixa de ${qtyToLow}x ${target.product?.name} registrada!` });
-
-        await updateItem.mutateAsync({
-          itemId: target.id,
-          qtd_separada: newQtd,
-          qtd_solicitada: target.qtd_solicitada || 0,
-          orderId: ordem?.id,
-        });
-        refetch();
+        await confirmBox(target, qtyToLow);
       } else {
         setBlockingAlert({
           isOpen: true,
