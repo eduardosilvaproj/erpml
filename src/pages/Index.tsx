@@ -120,6 +120,81 @@ const Index = () => {
         ))}
       </div>
 
+      {/* Bipagem Rápida */}
+      <Card className="bg-primary/5 border-primary/20 shadow-sm">
+        <CardHeader className="py-3 px-4">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ScanBarcode className="h-4 w-4 text-primary" />
+            Bipar Produto (EAN/SKU)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="py-0 px-4 pb-4">
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <BarcodeScannerInput
+                value={barcodeInput}
+                onChange={setBarcodeInput}
+                onScan={(code) => {
+                  barcodeSearch.handleSearch(code, (result) => {
+                    toast({ title: `Produto encontrado: ${result.produto.name}` });
+                    // Optionally navigate or open edit
+                    navigate(`/produtos?search=${code}`);
+                  });
+                }}
+                placeholder="Escaneie ou digite o código do item..."
+                inputClassName="h-10 text-sm font-mono"
+                showCameraButton
+              />
+            </div>
+            <Button 
+              size="sm" 
+              className="h-10 px-4"
+              onClick={() => barcodeSearch.handleSearch(barcodeInput, (result) => {
+                toast({ title: `Produto encontrado: ${result.produto.name}` });
+                navigate(`/produtos?search=${barcodeInput}`);
+              })}
+              disabled={!barcodeInput.trim()}
+            >
+              Bipar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          navigate(`/produtos?search=${barcodeSearch.lastCodigo}`);
+        }}
+        onRegisterGtin={() => {
+          setNewProductBarcode(barcodeSearch.lastCodigo);
+          setShowNewProduct(true);
+        }}
+        onRegisterProduct={() => {
+          setNewProductBarcode(barcodeSearch.lastCodigo);
+          setShowNewProduct(true);
+        }}
+        onLinkProduct={() => {
+          navigate("/produtos");
+        }}
+      />
+
+      <ProductFormDialog 
+        open={showNewProduct} 
+        onOpenChange={setShowNewProduct} 
+        product={newProductBarcode ? { barcode: newProductBarcode } as any : null}
+        onSuccess={() => {
+          setNewProductBarcode(null);
+          setBarcodeInput("");
+        }}
+      />
+
       {isLoading ? (
         <div className="space-y-6">
           <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
