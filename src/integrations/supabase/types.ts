@@ -2717,6 +2717,14 @@ export type Database = {
     }
     Functions: {
       concluir_ordem_full: { Args: { _ordem_id: string }; Returns: undefined }
+      decrementar_estoque: {
+        Args: {
+          p_company_id: string
+          p_product_id: string
+          p_quantidade: number
+        }
+        Returns: undefined
+      }
       dedupe_conference_items: {
         Args: { conf_id: string }
         Returns: {
