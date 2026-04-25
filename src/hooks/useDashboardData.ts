@@ -94,15 +94,15 @@ export function useDashboardData(period: PeriodFilter) {
       // Fetch overdue payments
       const { data: payments } = await supabase
         .from("invoice_payments")
-        .select("id, status, due_date, amount")
-        .eq("company_id", companyId);
+        .select("id, status, due_date, amount, invoices!inner(company_id)")
+        .eq("invoices.company_id", companyId);
 
       const sales = currentSales || [];
       const prev = prevSales || [];
       const prods = products || [];
       const custs = customers || [];
       const xfers = transfers || [];
-      const pmts = payments || [];
+      const pmts = (payments || []) as any[];
 
       // --- KPI Calculations ---
 
