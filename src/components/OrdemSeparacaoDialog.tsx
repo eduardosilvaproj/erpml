@@ -145,9 +145,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     setScan("");
   };
 
-  const finalizar = async () => {
+  const executeFinalizar = async () => {
     if (!ordem || !user || !companyId) return;
-    if (!allComplete && !confirm("Existem itens pendentes/parciais. Marcar como separada mesmo assim?")) return;
     try {
       if (recorder.status === "recording" || recorder.status === "paused") {
         const blob = await recorder.stop();
@@ -167,6 +166,15 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     } catch (e: any) {
       toast({ title: "Erro ao concluir", description: e.message, variant: "destructive" });
     }
+  };
+
+  const finalizar = async () => {
+    if (!ordem || !user || !companyId) return;
+    if (!allComplete) {
+      setShowConfirmFinalizar(true);
+      return;
+    }
+    await executeFinalizar();
   };
 
   const marcarComoEnviado = async () => {
