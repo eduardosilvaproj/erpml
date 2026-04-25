@@ -525,6 +525,7 @@ export const OrdensFullTab = () => {
         frete_ml: ordem.frete_ml,
         descricao: ordem.descricao,
         produtos,
+        autoStartRecording: true
       }));
 
       // Marca como em_separacao se ainda estiver aguardando

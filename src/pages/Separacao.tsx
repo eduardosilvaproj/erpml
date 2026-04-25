@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { 
   ScanBarcode, Package, Loader2, CheckCircle2, AlertCircle, 
   ArrowLeft, RefreshCcw, History, Search, Box, FileText, Printer, CheckSquare,
-  Clock, Calendar, User, Video, ExternalLink
+  Clock, Calendar, User, Video, ExternalLink, Pause, Play, X, ChevronDown, Plus
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { jsPDF } from "jspdf";
@@ -18,11 +18,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { OrderRecordingSystem } from "@/components/OrderRecordingSystem";
+import { useProducts } from "@/hooks/useProductData";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { OrderRecordingSystem, type OrderRecordingSystemHandle } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface SeparacaoItem {
   productId: string;
@@ -40,6 +43,7 @@ const Separacao = () => {
   const navigate = useNavigate();
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const recorderRef = useRef<OrderRecordingSystemHandle>(null);
   const updateStatus = useUpdateOrdemStatus();
   const updateFullOrder = useUpdateFullOrder();
   
@@ -54,9 +58,20 @@ const Separacao = () => {
   const [scanValue, setScanValue] = useState("");
   const [lastScan, setLastScan] = useState<{ success: boolean; message: string } | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
+  const [recordingState, setRecordingState] = useState({ isRecording: false, duration: 0 });
   
   const [previsaoData, setPrevisaoData] = useState<string>(format(new Date(), "yyyy-MM-dd"));
   const [previsaoHora, setPrevisaoHora] = useState<string>("14:00");
+
+  // Estado para EAN não reconhecido
+  const [unrecognizedDialog, setUnrecognizedDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  const [caixaDialog, setCaixaDialog] = useState<{ isOpen: boolean; code: string }>({ isOpen: false, code: "" });
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [qtdCaixa, setQtdCaixa] = useState("12");
+  const [productSearch, setProductSearch] = useState("");
+  const { data: searchResults } = useProducts({ search: productSearch, pageSize: 5 });
 
   // Fetch user profile name
   useEffect(() => {
@@ -90,43 +105,77 @@ const Separacao = () => {
     return `${hours}:${minutes}:${seconds}`;
   }, [startTime, endTime]);
 
-  // Load order from localStorage
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("ordem_ativa");
-      if (!raw) {
-        toast({ title: "Nenhuma ordem de separação ativa", variant: "destructive" });
-        navigate("/movimentacao-full");
-        return;
-      }
-      const ordem = JSON.parse(raw);
-      setOrderInfo({
-        id: ordem.id,
-        number: ordem.numero,
-        frete_ml: ordem.frete_ml,
-        description: ordem.descricao
-      });
-      
-      const mappedItems: SeparacaoItem[] = ordem.produtos.map((p: any) => ({
-        productId: p.product_id,
-        name: p.name,
-        sku: p.sku,
-        barcode: p.barcode,
-        image_url: p.image_url,
-        neededQty: p.qtd_solicitada,
-        scannedQty: 0,
-        status: "pendente"
-      }));
-      setItems(mappedItems);
-    } catch (err) {
-      console.error("Erro ao carregar ordem:", err);
-      navigate("/movimentacao-full");
-    }
-  }, [navigate, toast]);
-
   const totalUnitsNeeded = items.reduce((acc, curr) => acc + curr.neededQty, 0);
   const totalUnitsScanned = items.reduce((acc, curr) => acc + curr.scannedQty, 0);
   const totalProducts = items.length;
+
+  // Load order from localStorage or Supabase
+  useEffect(() => {
+    const loadOrder = async () => {
+      try {
+        const raw = localStorage.getItem("ordem_ativa");
+        if (!raw) {
+          toast({ title: "Nenhuma ordem de separação ativa", variant: "destructive" });
+          navigate("/movimentacao-full");
+          return;
+        }
+        const ordem = JSON.parse(raw);
+        setOrderInfo({
+          id: ordem.id,
+          number: ordem.numero,
+          frete_ml: ordem.frete_ml,
+          description: ordem.descricao
+        });
+
+        // 1. Tentar restaurar estado do Supabase
+        const { data: fullOrder } = await supabase
+          .from("full_orders")
+          .select("bipagem_state, status")
+          .eq("frete_ml", ordem.frete_ml)
+          .maybeSingle();
+
+        if (fullOrder?.bipagem_state) {
+          console.log("Restaurando estado de bipagem do Supabase...");
+          setItems(fullOrder.bipagem_state as unknown as SeparacaoItem[]);
+          setIsPaused(fullOrder.status === 'pausado');
+          toast({ title: "🔄 Bipagem restaurada com sucesso!" });
+        } else {
+          const mappedItems: SeparacaoItem[] = ordem.produtos.map((p: any) => ({
+            productId: p.product_id,
+            name: p.name,
+            sku: p.sku,
+            barcode: p.barcode,
+            image_url: p.image_url,
+            neededQty: p.qtd_solicitada,
+            scannedQty: 0,
+            status: "pendente"
+          }));
+          setItems(mappedItems);
+        }
+
+        // 2. Gravação Automática
+        if (ordem.autoStartRecording) {
+          setTimeout(() => {
+            if (recorderRef.current && !recorderRef.current.isRecording) {
+              recorderRef.current.startRecording('separacao');
+              toast({ title: "🎥 Gravação iniciada automaticamente" });
+              
+              // Limpar flag para não reiniciar ao dar refresh
+              const updatedOrdem = { ...ordem };
+              delete updatedOrdem.autoStartRecording;
+              localStorage.setItem("ordem_ativa", JSON.stringify(updatedOrdem));
+            }
+          }, 1000);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar ordem:", err);
+        navigate("/movimentacao-full");
+      }
+    };
+
+    loadOrder();
+  }, [navigate, toast]);
+
   const productsComplete = items.filter(i => i.status === "completo").length;
 
   const handleScan = useCallback(async (code: string) => {
@@ -135,43 +184,139 @@ const Separacao = () => {
     
     if (!startTime) setStartTime(new Date());
 
-    setItems(prev => {
-      const itemIndex = prev.findIndex(i => 
-        i.barcode === trimmed || 
-        i.sku.toUpperCase() === trimmed
-      );
+    // 1. Verificar se o código já existe na ordem
+    const itemIndex = items.findIndex(i => 
+      i.barcode === trimmed || 
+      i.sku.toUpperCase() === trimmed
+    );
 
-      if (itemIndex === -1) {
-        setLastScan({ success: false, message: `Produto "${trimmed}" não encontrado nesta ordem.` });
-        scanInputRef.current?.flash(false);
-        return prev;
-      }
-
-      const item = prev[itemIndex];
+    if (itemIndex !== -1) {
+      const item = items[itemIndex];
       if (item.scannedQty >= item.neededQty) {
         setLastScan({ success: false, message: `"${item.name}" já está completo.` });
         scanInputRef.current?.flash(false);
-        return prev;
+        return;
       }
 
       const newScannedQty = item.scannedQty + 1;
       const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
       
-      const newItems = [...prev];
-      newItems[itemIndex] = {
-        ...item,
-        scannedQty: newScannedQty,
-        status: newStatus
-      };
+      setItems(prev => {
+        const newItems = [...prev];
+        newItems[itemIndex] = {
+          ...item,
+          scannedQty: newScannedQty,
+          status: newStatus
+        };
+        return newItems;
+      });
 
       setLastScan({ success: true, message: `✓ ${item.name} (${newScannedQty}/${item.neededQty})` });
       scanInputRef.current?.flash(true);
-      
-      return newItems;
-    });
+      setScanValue("");
+      return;
+    }
 
+    // 2. Se não encontrou, verificar se é um GTIN de caixa já cadastrado
+    const { data: gtinCx } = await supabase
+      .from("product_gtins")
+      .select("*, product:products(id, name, sku, barcode, image_url)")
+      .eq("gtin", trimmed)
+      .eq("tipo", "caixa")
+      .maybeSingle();
+
+    if (gtinCx && gtinCx.product) {
+      const pIdx = items.findIndex(i => i.productId === gtinCx.product_id);
+      if (pIdx !== -1) {
+        const item = items[pIdx];
+        const qtdAdicional = gtinCx.qtd_por_caixa || 1;
+        const newScannedQty = Math.min(item.neededQty, item.scannedQty + qtdAdicional);
+        const newStatus = newScannedQty === item.neededQty ? "completo" : "parcial";
+
+        setItems(prev => {
+          const newItems = [...prev];
+          newItems[pIdx] = {
+            ...item,
+            scannedQty: newScannedQty,
+            status: newStatus
+          };
+          return newItems;
+        });
+
+        setLastScan({ success: true, message: `📦 Caixa de "${item.name}" bipada! (+${qtdAdicional} un)` });
+        scanInputRef.current?.flash(true);
+        setScanValue("");
+        return;
+      }
+    }
+
+    // 3. Se ainda não encontrou, abrir diálogo de "Código não reconhecido"
+    setUnrecognizedDialog({ isOpen: true, code: trimmed });
+    scanInputRef.current?.flash(false);
     setScanValue("");
-  }, [startTime]);
+  }, [items, startTime]);
+
+  const handlePause = async () => {
+    if (!orderInfo || !user) return;
+    setIsPausing(true);
+    try {
+      // Parar gravação se estiver ocorrendo
+      if (recorderRef.current?.isRecording) {
+        recorderRef.current.stopRecording();
+      }
+
+      // Salvar estado no Supabase
+      await supabase.from('full_orders').update({
+        bipagem_state: items as any,
+        status: 'pausado',
+        pausado_em: new Date().toISOString()
+      }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number);
+
+      setIsPaused(true);
+      toast({ 
+        title: "⏸ Bipagem pausada", 
+        description: "Estado salvo com segurança. Você pode fechar esta tela." 
+      });
+    } catch (err: any) {
+      toast({ title: "Erro ao pausar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsPausing(false);
+    }
+  };
+
+  const handleContinue = async () => {
+    setIsPaused(false);
+    // Iniciar uma NOVA gravação
+    if (recorderRef.current) {
+      recorderRef.current.startRecording('separacao');
+      toast({ title: "🎥 Nova gravação iniciada — continuando bipagem" });
+    }
+  };
+
+  const handleSaveBoxGtin = async () => {
+    if (!selectedProduct || !companyId) return;
+
+    try {
+      const qtd = parseInt(qtdCaixa);
+      const { error } = await supabase.from("product_gtins").insert({
+        product_id: selectedProduct.id,
+        company_id: companyId,
+        gtin: caixaDialog.code,
+        tipo: 'caixa',
+        qtd_por_caixa: qtd
+      });
+
+      if (error) throw error;
+
+      toast({ title: "✅ GTIN de Caixa cadastrado!" });
+      setCaixaDialog({ isOpen: false, code: "" });
+      
+      // Bipar automaticamente após cadastrar
+      handleScan(caixaDialog.code);
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
+    }
+  };
 
   const generatePDF = useCallback(() => {
     if (!orderInfo) return;
@@ -293,14 +438,27 @@ const Separacao = () => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {isPaused ? (
+            <Button variant="default" size="sm" onClick={handleContinue} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Play className="h-4 w-4" /> Continuar Bipagem
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPausing} className="gap-2 text-amber-700 border-amber-200 hover:bg-amber-50">
+              {isPausing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />} Pausar
+            </Button>
+          )}
+
           <OrderRecordingSystem 
+            ref={recorderRef}
             pedidoId={orderInfo?.id || ""} 
             orderNumber={orderInfo?.number}
             freteMl={orderInfo?.frete_ml}
             defaultType="separacao"
+            onRecordingChange={(isRecording, duration) => setRecordingState({ isRecording, duration })}
             trigger={
-              <Button variant="outline" size="sm" className="gap-2 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">
-                <Video className="h-4 w-4" /> 🎥 Gravar Separação
+              <Button variant="outline" size="sm" className={`gap-2 ${recordingState.isRecording ? 'bg-red-50 text-red-700 border-red-200 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'}`}>
+                <Video className="h-4 w-4" /> 
+                {recordingState.isRecording ? `🎥 gravando ${Math.floor(recordingState.duration / 60)}:${(recordingState.duration % 60).toString().padStart(2, '0')}` : 'Gravar Separação'}
               </Button>
             }
           />
@@ -566,6 +724,136 @@ const Separacao = () => {
           </div>
         </>
       )}
+      {/* Diálogo de Código Não Reconhecido */}
+      <Dialog open={unrecognizedDialog.isOpen} onOpenChange={(open) => setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: open })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="h-5 w-5" /> ⚠️ Código não encontrado: {unrecognizedDialog.code}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <p className="font-medium">Este código é de uma <span className="text-blue-600 font-bold uppercase">CAIXA FECHADA</span>?</p>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                variant="default" 
+                className="h-14 gap-2 bg-blue-600 hover:bg-blue-700"
+                onClick={() => {
+                  setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
+                  setCaixaDialog({ isOpen: true, code: unrecognizedDialog.code });
+                }}
+              >
+                <Box className="h-5 w-5" /> 📦 Sim, é uma caixa
+              </Button>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="h-12 gap-2"
+                  onClick={() => {
+                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
+                    toast({ title: "🏷️ Cadastrar Novo Produto", description: "Utilize o menu lateral em 'Produtos' para cadastrar." });
+                  }}
+                >
+                  <Plus className="h-4 w-4" /> ➕ Cadastrar novo
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-12 gap-2"
+                  onClick={() => {
+                    setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false });
+                    toast({ title: "🔗 Vincular a existente", description: "Utilize o menu lateral em 'Produtos' para editar o EAN." });
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4" /> 🔗 Vincular a existente
+                </Button>
+              </div>
+              <Button 
+                variant="ghost" 
+                onClick={() => setUnrecognizedDialog({ ...unrecognizedDialog, isOpen: false })}
+              >
+                ❌ Cancelar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de Cadastro de Caixa */}
+      <Dialog open={caixaDialog.isOpen} onOpenChange={(open) => setCaixaDialog({ ...caixaDialog, isOpen: open })}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>📦 Cadastrar GTIN de Caixa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground uppercase">Código</label>
+              <Input value={caixaDialog.code} readOnly className="bg-muted" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground uppercase">Vincular a qual produto?</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    {selectedProduct ? selectedProduct.name : "🔍 Buscar produto..."}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Busque por nome, SKU ou EAN..." 
+                      onValueChange={setProductSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {searchResults?.products.map((p) => (
+                          <CommandItem
+                            key={p.id}
+                            value={p.name}
+                            onSelect={() => {
+                              setSelectedProduct(p);
+                              setProductSearch("");
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-bold">{p.name}</span>
+                              <span className="text-xs text-muted-foreground">SKU: {p.sku} | EAN: {p.ean}</span>
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-muted-foreground uppercase">Qtd por caixa</label>
+              <Input 
+                type="number" 
+                value={qtdCaixa} 
+                onChange={(e) => setQtdCaixa(e.target.value)} 
+                min="2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCaixaDialog({ isOpen: false, code: "" })}>
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700"
+              disabled={!selectedProduct}
+              onClick={handleSaveBoxGtin}
+            >
+              💾 Salvar e bipar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

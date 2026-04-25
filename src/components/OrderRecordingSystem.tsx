@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Video, VideoOff, History, Play, Trash2, X, Maximize2, Minimize2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,13 @@ import { useOrderRecordings, OrderRecording } from "@/hooks/useOrderRecordings";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export interface OrderRecordingSystemHandle {
+  startRecording: (type: RecordingType) => void;
+  stopRecording: () => void;
+  isRecording: boolean;
+  duration: number;
+}
+
 interface OrderRecordingSystemProps {
   pedidoId: string;
   orderNumber?: string;
@@ -22,23 +29,23 @@ interface OrderRecordingSystemProps {
   trigger?: React.ReactNode;
   defaultType?: RecordingType;
   onFinished?: (url: string) => void;
+  onRecordingChange?: (isRecording: boolean, duration: number) => void;
   viewOnly?: boolean;
 }
 
-export function OrderRecordingSystem({ 
+export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, OrderRecordingSystemProps>(({ 
   pedidoId, 
   orderNumber, 
   freteMl, 
   trigger, 
   defaultType = "carregamento", 
   onFinished,
+  onRecordingChange,
   viewOnly = false
-}: OrderRecordingSystemProps) {
+}, ref) => {
 
   const [activeType, setActiveType] = useState<RecordingType>(defaultType);
 
-
-  
   const { 
     isRecording, 
     duration, 
@@ -53,6 +60,23 @@ export function OrderRecordingSystem({
     onFinished
   });
 
+  useEffect(() => {
+    if (onRecordingChange) {
+      onRecordingChange(isRecording, duration);
+    }
+  }, [isRecording, duration, onRecordingChange]);
+
+  useImperativeHandle(ref, () => ({
+    startRecording: (type: RecordingType) => {
+      setActiveType(type);
+      startRecording(type);
+    },
+    stopRecording: () => {
+      stopRecording();
+    },
+    isRecording,
+    duration
+  }));
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
@@ -204,7 +228,9 @@ export function OrderRecordingSystem({
       )}
     </>
   );
-}
+});
+
+OrderRecordingSystem.displayName = "OrderRecordingSystem";
 
 function VideoPreview({ stream }: { stream: MediaStream }) {
   const videoRef = useRef<HTMLVideoElement>(null);
