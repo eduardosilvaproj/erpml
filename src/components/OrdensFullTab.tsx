@@ -157,7 +157,8 @@ export const OrdensFullTab = () => {
         .from("full_orders")
         .select(`
           *,
-          responsavel:profiles!full_orders_separado_por_fkey(full_name)
+          responsavel:profiles!full_orders_separado_por_fkey(full_name),
+          full_order_items(*, product:products(*))
         `)
         .eq("company_id", companyId!)
         .not("frete_ml", "is", null)
@@ -572,7 +573,7 @@ export const OrdensFullTab = () => {
       
       const { data: latestOrdem, error } = await supabase
         .from("full_orders")
-        .select("bipagem_state, status")
+        .select("*, full_order_items(*, product:products(*))")
         .eq("id", ordem.id)
         .single();
         

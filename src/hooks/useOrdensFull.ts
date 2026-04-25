@@ -65,7 +65,7 @@ export const useOrdensFull = () => {
     queryFn: async (): Promise<OrdemFull[]> => {
       const { data, error } = await supabase
         .from("full_orders")
-        .select(`*`)
+        .select(`*, full_order_items(*, product:products(*))`)
         .eq("company_id", companyId!)
         .not("frete_ml", "is", null)
         .neq("frete_ml", "")
@@ -90,36 +90,38 @@ export const useOrdemFull = (ordemId: string | null) => {
     queryFn: async () => {
       const { data: ordem, error } = await supabase
         .from("full_orders")
-        .select(`*`)
+        .select(`*, full_order_items(*, product:products(*))`)
         .eq("id", ordemId!)
         .maybeSingle();
       if (error) throw error;
 
-      const itens = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as any[]).map((i, idx) => ({
-        id: String(idx),
-        ordem_id: ordemId!,
-        productId: i.productId,
-        name: i.name,
-        sku: i.sku,
-        barcode: i.barcode,
-        image_url: i.image_url,
-        neededQty: i.neededQty,
-        scannedQty: i.scannedQty,
-        status: i.status,
-        // Compatibility
-        product_id: i.productId,
-        qtd_solicitada: i.neededQty,
-        qtd_separada: i.scannedQty,
-        product: {
-          id: i.productId,
-          name: i.name,
-          sku: i.sku,
-          barcode: i.barcode,
-          image_url: i.image_url,
-          stock_physical: 0,
-          stock_full: 0
-        }
-      })) : [];
+      const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
+      const itens = (ordem as any)?.full_order_items?.map((item: any) => {
+        const product = item.product;
+        const bState = bipagemState.find(b => b.productId === item.product_id);
+        
+        return {
+          id: item.id,
+          ordem_id: ordemId!,
+          productId: item.product_id,
+          name: product?.name || bState?.name || 'Produto',
+          sku: product?.sku || bState?.sku || '',
+          barcode: product?.barcode || bState?.barcode || '',
+          image_url: product?.image_url || bState?.image_url || null,
+          neededQty: item.quantity || bState?.neededQty || 0,
+          scannedQty: bState?.scannedQty || 0,
+          status: bState?.status || 'pendente',
+          product: product ? {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            barcode: product.barcode,
+            image_url: product.image_url,
+            stock_physical: product.stock_physical || 0,
+            stock_full: product.stock_full || 0
+          } : null
+        };
+      }) || [];
 
       return { 
         ordem: (ordem ? {
