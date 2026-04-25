@@ -283,7 +283,7 @@ const Index = () => {
         </>
       ) : null}
 
-      <ProductFormDialog open={showNewProduct} onOpenChange={setShowNewProduct} />
+      {/* Original dialog removed because it's now wrapped in the barcode logic above */}
     </div>
   );
 };
