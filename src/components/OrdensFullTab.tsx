@@ -351,7 +351,8 @@ export const OrdensFullTab = () => {
       const { data: altGtins } = await supabase
         .from("product_alternative_gtins")
         .select("product_id, gtin")
-        .in("gtin", eans);
+        .in("gtin", eans)
+        .eq("company_id", companyId);
       
       const altProductIds = altGtins?.map(ag => ag.product_id) || [];
       
@@ -365,11 +366,13 @@ export const OrdensFullTab = () => {
       const { data: products } = await supabase
         .from("products")
         .select("id, name, sku, barcode, ean, image_url, stock_physical, product_alternative_gtins(gtin)")
+        .eq("company_id", companyId)
         .or(orConditions.join(","));
 
       const { data: kits } = await supabase
         .from("product_kits")
         .select("id, name, sku, ean")
+        .eq("company_id", companyId)
         .or(`ean.in.(${eans.join(",")}),sku.in.(${eans.join(",")})`);
 
       const itemsWithProducts = uniqueItems.map(item => {
