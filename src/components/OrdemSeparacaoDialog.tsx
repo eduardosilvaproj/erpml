@@ -611,7 +611,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={boxMode !== "idle"} onOpenChange={(open) => !open && setBoxMode("idle")}>
+      <Dialog open={boxMode !== "idle"} onOpenChange={(open) => {
+        if (!open) {
+          setBoxMode("idle");
+          setInternalScan("");
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
