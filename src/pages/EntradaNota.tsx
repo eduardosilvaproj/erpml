@@ -676,7 +676,7 @@ const EntradaNota = () => {
 
     if (createErr) {
       console.error("Erro ao criar produto auto:", createErr);
-      return null;
+      throw createErr;
     }
     return created?.id ?? null;
   };
