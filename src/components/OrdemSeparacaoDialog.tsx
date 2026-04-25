@@ -109,6 +109,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     }
   }, [boxMode]);
 
+  useEffect(() => {
+    if (boxMode === "idle" && isExec && !isLoadingPhase) {
+      setTimeout(() => scannerRef.current?.focus(), 150);
+    }
+  }, [boxMode, isExec, isLoadingPhase]);
+
   const progress = useMemo(() => {
     const total = itens.reduce((s, i) => s + i.qtd_solicitada, 0);
     const sep = itens.reduce((s, i) => s + Math.min(i.qtd_separada, i.qtd_solicitada), 0);
