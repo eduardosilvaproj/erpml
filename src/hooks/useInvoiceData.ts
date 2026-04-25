@@ -178,7 +178,8 @@ export function useImportInvoice() {
           productId = newProduct.id;
         }
 
-        await supabase.from("invoice_items").insert({
+        // 2. Inserir o item da nota (inicialmente com stock_updated: false)
+        const { data: insertedItem, error: itemError } = await supabase.from("invoice_items").insert({
           invoice_id: invoice.id,
           product_id: productId,
           xml_code: match.xmlProduct.code,
@@ -192,26 +193,30 @@ export function useImportInvoice() {
           total_value: match.xmlProduct.totalValue,
           match_type: productId ? match.matchType : "none",
           match_confidence: match.confidence,
-          stock_updated: !!productId,
-        });
+          stock_updated: false, // Será atualizado logo abaixo se o estoque for atualizado
+        }).select().single();
+
+        if (itemError) throw itemError;
 
         if (productId) {
           const { data: current } = await supabase
             .from("products")
             .select("stock_physical, cost, barcode, ean, name, description, price, min_stock, ean_pending")
             .eq("id", productId)
+            .eq("company_id", companyId)
             .single();
 
           if (current) {
             const xmlP = match.xmlProduct;
-            const newStock = current.stock_physical + Math.floor(xmlP.quantity);
-            const totalOldCost = current.stock_physical * current.cost;
+            const newStock = (current.stock_physical || 0) + Math.floor(xmlP.quantity);
+            const totalOldCost = (current.stock_physical || 0) * (current.cost || 0);
             const totalNewCost = xmlP.quantity * xmlP.unitValue;
             const avgCost = newStock > 0 ? (totalOldCost + totalNewCost) / newStock : xmlP.unitValue;
 
             const updates: Record<string, any> = {
               stock_physical: newStock,
               cost: Math.round(avgCost * 100) / 100,
+              updated_at: new Date().toISOString()
             };
 
             if ((!current.barcode || !current.ean) && (xmlP.ean || match.newEan)) {
@@ -225,17 +230,26 @@ export function useImportInvoice() {
             if (!current.description || current.description.length < 5) {
               updates.description = `NCM: ${xmlP.ncm || "—"} | Unidade: ${xmlP.unit || "UN"}`;
             }
-            if (current.price === 0 && xmlP.unitValue > 0) {
+            if ((current.price === 0 || !current.price) && xmlP.unitValue > 0) {
               updates.price = Math.round(xmlP.unitValue * 1.5 * 100) / 100;
             }
-            if (current.min_stock === 0) {
+            if (current.min_stock === 0 || current.min_stock === null) {
               updates.min_stock = 1;
             }
 
-            await supabase
+            const { error: prodUpdateError } = await supabase
               .from("products")
               .update(updates as any)
-              .eq("id", productId);
+              .eq("id", productId)
+              .eq("company_id", companyId);
+
+            if (!prodUpdateError) {
+              // Somente marca como atualizado se o update no produto teve sucesso
+              await supabase
+                .from("invoice_items")
+                .update({ stock_updated: true })
+                .eq("id", insertedItem.id);
+            }
           }
         }
 
