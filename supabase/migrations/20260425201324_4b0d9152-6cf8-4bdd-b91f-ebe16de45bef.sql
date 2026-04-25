@@ -1,0 +1,1 @@
+ALTER TABLE public.product_gtins RENAME COLUMN qtd_por_caixa TO box_quantity;

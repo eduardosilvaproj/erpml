@@ -1499,30 +1499,30 @@ export type Database = {
       }
       product_gtins: {
         Row: {
+          box_quantity: number | null
           company_id: string | null
           created_at: string
           gtin: string
           id: string
           product_id: string
-          qtd_por_caixa: number | null
           tipo: string
         }
         Insert: {
+          box_quantity?: number | null
           company_id?: string | null
           created_at?: string
           gtin: string
           id?: string
           product_id: string
-          qtd_por_caixa?: number | null
           tipo?: string
         }
         Update: {
+          box_quantity?: number | null
           company_id?: string | null
           created_at?: string
           gtin?: string
           id?: string
           product_id?: string
-          qtd_por_caixa?: number | null
           tipo?: string
         }
         Relationships: [
