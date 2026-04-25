@@ -139,6 +139,7 @@ export function EntradaNotaHistorico() {
   const [search, setSearch] = useState("");
   const [period, setPeriod] = useState<Period>("all");
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [reprocessingAll, setReprocessingAll] = useState(false);
 
   const { data: invoices = [], isLoading } = useQuery({
