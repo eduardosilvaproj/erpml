@@ -700,6 +700,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             <div className="py-6 space-y-4">
               <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
               <Input
+                ref={qtyInputRef}
                 type="number"
                 value={tempBoxQty}
                 onChange={(e) => setTempBoxQty(e.target.value)}
@@ -728,11 +729,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 <div className="space-y-2">
                   <Label>Campo de Bipagem</Label>
                   <BarcodeScannerInput
+                    ref={internalScannerRef}
                     value={internalScan}
                     onScan={handleScan}
                     onChange={(val) => {
                       setInternalScan(val);
-                      if (val.length >= 8) {
+                      if (val.length === 13) {
                         handleScan(val);
                         setInternalScan("");
                       }
