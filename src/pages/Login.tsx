@@ -245,19 +245,18 @@ export default function Login() {
       >
         <Card className="login-card-glass border-none">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center">
               <img
                 src="/chatgpt-image.png"
                 alt="Stovix"
                 style={{
-                  height: '140px',
+                  height: '180px',
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 15px rgba(34,197,94,0.5))',
+                  filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
                   animation: 'pulse-glow 3s ease-in-out infinite'
                 }}
               />
             </div>
-            <TypingSlogan />
           </CardHeader>
           <form onSubmit={handleLogin} noValidate>
             <CardContent className="space-y-4">
