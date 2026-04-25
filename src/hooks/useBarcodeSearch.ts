@@ -3,6 +3,8 @@ import { useState } from "react";
 import { buscarPorCodigo, BarcodeSearchResult } from "@/lib/barcode-search";
 import { useToast } from "@/hooks/use-toast";
 
+import { useCompanyId } from "@/hooks/useCompanyId";
+
 export function useBarcodeSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [notFoundOpen, setNotFoundOpen] = useState(false);
@@ -10,6 +12,7 @@ export function useBarcodeSearch() {
   const [lastCodigo, setLastCodigo] = useState("");
   const [lastResult, setLastResult] = useState<BarcodeSearchResult | null>(null);
   const { toast } = useToast();
+  const companyId = useCompanyId();
 
   const handleSearch = async (codigo: string, onProductFound: (result: BarcodeSearchResult) => void) => {
     if (!codigo) return;
@@ -18,7 +21,8 @@ export function useBarcodeSearch() {
     setLastCodigo(codigo);
     
     try {
-      const result = await buscarPorCodigo(codigo);
+      const result = await buscarPorCodigo(codigo, companyId || undefined);
+
       
       if (!result) {
         setNotFoundOpen(true);
