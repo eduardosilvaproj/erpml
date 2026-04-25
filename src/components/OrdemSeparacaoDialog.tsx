@@ -207,7 +207,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       const { error: e1 } = await supabase
         .from('full_orders')
         .update({ previsao_carregamento: novaData })
-        .eq('frete_ml', ordem.frete_ml);
+        .eq('frete_ml', ordem.frete_ml)
+        .eq('company_id', companyId);
       const { error: e2 } = await supabase
         .from('ordens_full')
         .update({ previsao_carregamento: novaData })
