@@ -325,18 +325,18 @@ export const useLimparEnvioPendente = () => {
 
 export const ordemStatusBadge = (s: OrdemStatus) => {
   const map: Record<OrdemStatus, { label: string; cls: string }> = {
-    pdf_carregado: { label: "PDF Carregado", cls: "bg-blue-100 text-blue-700" },
-    separando: { label: "Separando", cls: "bg-amber-100 text-amber-700" },
-    aguardando_carregamento: { label: "🚛 Aguardando coleta", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 font-bold" },
+    pdf_carregado: { label: "🔵 PDF Carregado", cls: "bg-blue-100 text-blue-700 border-blue-200" },
+    separando: { label: "🟡 Em Separação", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+    aguardando_carregamento: { label: "🟣 Aguard. Coleta", cls: "bg-purple-100 text-purple-700 border-purple-200" },
     carregando: { label: "Carregando", cls: "bg-blue-500 text-white animate-pulse" },
-    enviado: { label: "Enviado", cls: "bg-emerald-100 text-emerald-700" },
+    enviado: { label: "🟢 Enviado", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     rascunho: { label: "Rascunho", cls: "bg-muted text-muted-foreground" },
     aguardando: { label: "Aguardando", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" },
-    em_separacao: { label: "Em separação", cls: "bg-blue-500/15 text-blue-600 dark:text-blue-400 animate-pulse" },
-    separada: { label: "🚛 Aguardando coleta", cls: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 font-bold" },
+    em_separacao: { label: "🟡 Em Separação", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+    separada: { label: "🟣 Aguard. Coleta", cls: "bg-purple-100 text-purple-700 border-purple-200" },
     concluida: { label: "Concluída", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
-    cancelada: { label: "Cancelada", cls: "bg-destructive/15 text-destructive" },
-    pausado: { label: "Pausado", cls: "bg-amber-100 text-amber-700" },
+    cancelada: { label: "🔴 Cancelada", cls: "bg-destructive/15 text-destructive border-destructive/20" },
+    pausado: { label: "🟠 Pausado", cls: "bg-orange-100 text-orange-700 border-orange-200" },
   };
   return map[s] || { label: s, cls: "bg-gray-100" };
 };
