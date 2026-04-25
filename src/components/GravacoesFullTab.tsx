@@ -53,6 +53,7 @@ export const GravacoesFullTab = () => {
   const [player, setPlayer] = useState<{ url: string; rec: Recording } | null>(null);
   const [linkRec, setLinkRec] = useState<Recording | null>(null);
   const [linkOrderId, setLinkOrderId] = useState<string>("");
+  const [deleteRec, setDeleteRec] = useState<Recording | null>(null);
 
   const load = async () => {
     if (!companyId) return;
