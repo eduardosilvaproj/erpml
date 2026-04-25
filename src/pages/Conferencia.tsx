@@ -996,6 +996,7 @@ const Conferencia = () => {
         codigo={barcodeSearch.lastCodigo}
         produto={barcodeSearch.lastResult?.produto}
         boxQty={barcodeSearch.lastResult?.qty}
+        isFullMode={conferenceType === "full"}
         onConfirmBox={(qty) => {
           if (barcodeSearch.lastResult) {
             addScannedUnits(barcodeSearch.lastResult.produto, qty);
