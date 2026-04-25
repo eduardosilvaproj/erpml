@@ -1300,7 +1300,7 @@ export const OrdensFullTab = () => {
 
                         <TableCell className="text-right">
                           <div className="flex justify-end items-center gap-2">
-                            {o.status === 'pdf_carregado' && podeExecutar && (
+                            {podeExecutar && !['pausado', 'separando', 'em_separacao'].includes(o.status) && (
                               <Button size="sm" variant="default" disabled={startingId === o.id} onClick={() => handleStartSeparation(o)}>
                                 <Play className="h-3 w-3 mr-1" /> {startingId === o.id ? "..." : "Executar"}
                               </Button>
