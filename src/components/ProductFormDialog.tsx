@@ -152,10 +152,6 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       selectedFileRef.current = null;
       setPhotoSource(product?.image_url ? "unsplash" : null);
       setIsSkuLocked(true);
-      
-      if (!product) {
-        gerarSkuInterno();
-      }
     }
   }, [open, product]);
 
