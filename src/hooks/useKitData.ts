@@ -40,6 +40,7 @@ export function useKits() {
 
   return useQuery({
     queryKey: ["kits", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       let query = supabase
         .from("product_kits")
