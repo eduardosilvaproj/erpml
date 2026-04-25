@@ -261,11 +261,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   };
 
   const ajustarQtd = async (item: OrdemItem, delta: number) => {
-    const newQtd = Math.max(0, item.qtd_separada + delta);
+    const newQtd = Math.max(0, (item.qtd_separada || 0) + delta);
     await updateItem.mutateAsync({
       itemId: item.id,
       qtd_separada: newQtd,
-      qtd_solicitada: item.qtd_solicitada,
+      qtd_solicitada: item.qtd_solicitada || 0,
+      orderId: ordem?.id,
     });
     refetch();
   };
