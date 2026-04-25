@@ -40,6 +40,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateFullOrder = useUpdateFullOrder();
   const recorder = useFullRecorder();
   const scannerRef = useRef<any>(null);
+  const internalScannerRef = useRef<any>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
 
   const [askRecord, setAskRecord] = useState(false);
   const [pickCamera, setPickCamera] = useState(false);
