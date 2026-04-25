@@ -740,6 +740,16 @@ export const OrdensFullTab = () => {
     toast({ title: "Produto vinculado manualmente!" });
   };
 
+  const handleOpenExisting = () => {
+    const existingOrder = ordens?.find(o => o.frete_ml === duplicateCheck.freteNumero || o.numero === duplicateCheck.freteNumero);
+    if (existingOrder) {
+      handleViewOrder(existingOrder);
+    } else {
+      toast({ title: "Ordem não encontrada na lista", variant: "destructive" });
+    }
+    setDuplicateCheck(prev => ({ ...prev, isOpen: false }));
+  };
+
   return (
     <div className="space-y-6">
       {/* ETAPA 1 — Carregar Pedido ML */}
