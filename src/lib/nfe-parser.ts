@@ -13,6 +13,21 @@ export interface NFeProduct {
   additionalInfo?: string; // infAdProd
 }
 
+export interface NFeSupplier {
+  razao_social: string;
+  nome_fantasia?: string;
+  cnpj: string;
+  ie?: string;
+  telefone?: string;
+  email?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+}
+
 export interface NFeData {
   number: string;       // nNF
   series: string;       // serie
@@ -21,6 +36,7 @@ export interface NFeData {
   totalValue: number;   // vNF
   issueDate: string;    // dhEmi
   products: NFeProduct[];
+  supplier?: NFeSupplier;
 }
 
 function getFirstElementByTagName(element: Element | Document, tagName: string): Element | null {
