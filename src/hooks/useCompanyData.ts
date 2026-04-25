@@ -102,7 +102,7 @@ export function useMyCompany() {
 
       // Fetch company, plan, and member count in parallel
       const [companyRes, countRes, plansRes] = await Promise.all([
-        supabase.from("companies").select("*").eq("id", membership.company_id).single(),
+        supabase.from("companies").select("*").eq("id", membership.company_id).maybeSingle(),
         supabase.from("company_members").select("*", { count: "exact", head: true }).eq("company_id", membership.company_id).eq("is_active", true),
         supabase.from("plans").select("*"),
       ]);
