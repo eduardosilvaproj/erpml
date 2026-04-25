@@ -1681,9 +1681,9 @@ export const OrdensFullTab = () => {
           <div className="flex flex-col items-center space-y-4">
             <div className="text-6xl mb-2">⚠️</div>
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-center">Frete já existe</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-center">Duplicidade Detectada</DialogTitle>
               <DialogDescription className="text-base text-center pt-2">
-                Frete <span className="font-bold">#{duplicateCheck.freteNumero}</span> já existe com status <span className="font-bold text-primary">"{duplicateCheck.existingStatus}"</span>.
+                Sua empresa já tem este frete como <span className="font-bold text-primary">"{duplicateCheck.existingStatus}"</span>.
               </DialogDescription>
             </DialogHeader>
             <p className="text-muted-foreground pt-2">Deseja continuar de onde parou?</p>
