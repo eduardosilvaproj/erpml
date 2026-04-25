@@ -65,7 +65,7 @@ export const useOrdensFull = () => {
     queryFn: async (): Promise<OrdemFull[]> => {
       const { data, error } = await supabase
         .from("full_orders")
-        .select(`*`)
+        .select(`*, full_order_items(*, products(*))`)
         .eq("company_id", companyId!)
         .not("frete_ml", "is", null)
         .neq("frete_ml", "")
