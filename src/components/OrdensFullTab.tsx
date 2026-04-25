@@ -1265,44 +1265,49 @@ export const OrdensFullTab = () => {
                               </Button>
                             )}
                             
-                            {(o.status === 'aguardando_carregamento' || o.status === 'separada' || o.status === 'carregando') ? (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm" className="gap-2">
-                                    Ações <ChevronDown className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56">
-                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
-                                    <Eye className="h-4 w-4 mr-2" /> Ver detalhes
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
-                                    <Calendar className="h-4 w-4 mr-2" /> Editar previsão de coleta
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleViewOrder(o)}>
-                                    <Truck className="h-4 w-4 mr-2" /> Iniciar carregamento
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => window.print()}>
-                                    <Printer className="h-4 w-4 mr-2" /> Imprimir relatório
-                                  </DropdownMenuItem>
-                                  {canManageOrders && (
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleCancel(o)}>
-                                      <Trash2 className="h-4 w-4 mr-2" /> Excluir/Cancelar
+                            const mostrarDetalhes = ['aguardando_carregamento', 'enviado', 'cancelada', 'separada', 'concluida', 'carregando'].includes(o.status);
+                            if (mostrarDetalhes) {
+                              return (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                      Ações <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-56">
+                                    <DropdownMenuItem onClick={() => handleViewOrder(o)}>
+                                      <Eye className="h-4 w-4 mr-2" /> Ver detalhes
                                     </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            ) : (
-                              <Button size="icon" variant="ghost" title="Ver" onClick={() => handleViewOrder(o)}>
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-
-                            {canManageOrders && (o.status !== 'aguardando_carregamento' && o.status !== 'separada' && o.status !== 'carregando') && (
-                              <Button size="icon" variant="ghost" title="Excluir/Cancelar" className="text-destructive" onClick={() => handleCancel(o)}>
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
+                                    <DropdownMenuItem onClick={() => handleViewOrder(o)}>
+                                      <Calendar className="h-4 w-4 mr-2" /> Editar previsão de coleta
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleViewOrder(o)}>
+                                      <Truck className="h-4 w-4 mr-2" /> Iniciar carregamento
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => window.print()}>
+                                      <Printer className="h-4 w-4 mr-2" /> Imprimir relatório
+                                    </DropdownMenuItem>
+                                    {canManageOrders && (
+                                      <DropdownMenuItem className="text-destructive" onClick={() => handleCancel(o)}>
+                                        <Trash2 className="h-4 w-4 mr-2" /> Excluir/Cancelar
+                                      </DropdownMenuItem>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              );
+                            }
+                            return (
+                              <>
+                                <Button size="icon" variant="ghost" title="Ver" onClick={() => handleViewOrder(o)}>
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                                {canManageOrders && o.status !== 'concluida' && (
+                                  <Button size="icon" variant="ghost" title="Excluir/Cancelar" className="text-destructive" onClick={() => handleCancel(o)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </>
+                            );
                           </div>
                         </TableCell>
                       </TableRow>
