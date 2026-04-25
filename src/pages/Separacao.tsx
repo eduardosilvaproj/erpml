@@ -405,6 +405,25 @@ const Separacao = () => {
   };
 
   return (
+    <>
+      <BarcodeSearchDialogs
+        notFoundOpen={barcodeSearch.notFoundOpen}
+        setNotFoundOpen={barcodeSearch.setNotFoundOpen}
+        boxDetectedOpen={barcodeSearch.boxDetectedOpen}
+        setBoxDetectedOpen={barcodeSearch.setBoxDetectedOpen}
+        codigo={barcodeSearch.lastCodigo}
+        produto={barcodeSearch.lastResult?.produto}
+        boxQty={barcodeSearch.lastResult?.qty}
+        onConfirmBox={(qty) => {
+          if (barcodeSearch.lastResult) {
+            handleScan(barcodeSearch.lastCodigo);
+          }
+        }}
+        onRegisterGtin={() => navigate("/produtos")}
+        onRegisterProduct={() => navigate("/produtos")}
+        onLinkProduct={() => navigate("/produtos")}
+      />
+
     <div className="container mx-auto p-4 space-y-6 max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
