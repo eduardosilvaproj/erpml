@@ -269,8 +269,10 @@ export const useLimparEnvioPendente = () => {
 
 export const useDeleteOrdem = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
     mutationFn: async ({ id, frete_ml }: { id: string, frete_ml?: string | null }) => {
+      if (!companyId) throw new Error("Empresa não identificada");
       // 1. Itens da ordem
       const { error: errorItens } = await supabase
         .from("ordens_full_itens")
