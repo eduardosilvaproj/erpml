@@ -81,6 +81,7 @@ function generateRandomSku(): string {
 
 export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: ProductFormDialogProps) {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const { data: categories } = useCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
