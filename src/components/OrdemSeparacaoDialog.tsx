@@ -670,27 +670,56 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 </div>
               </div>
               
-              <div className="space-y-3">
-                <Input
-                  autoFocus
-                  placeholder="Bipe ou digite o EAN do produto dentro da caixa"
-                  value={internalScan}
-                  onChange={(e) => setInternalScan(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && internalScan.trim()) {
-                      handleScan(internalScan);
-                      setInternalScan("");
-                    }
-                  }}
-                  className="h-12 text-lg text-center font-mono border-2 focus:border-blue-500"
-                />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Campo de Bipagem</Label>
+                  <BarcodeScannerInput
+                    value={internalScan}
+                    onChange={setInternalScan}
+                    onScan={handleScan}
+                    placeholder="Bipe o código do item da caixa..."
+                    autoFocus
+                    scanMode
+                    className="h-12"
+                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white"
+                  />
+                </div>
                 
-                <div className="flex gap-2">
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-bold text-muted-foreground uppercase">Ou selecione um item da ordem:</p>
+                  <div className="grid grid-cols-1 gap-2 max-h-[200px] overflow-y-auto pr-1">
+                    {itens.filter(i => (i.qtd_solicitada || 0) - (i.qtd_separada || 0) > 0).map(item => (
+                      <Button
+                        key={item.id}
+                        variant="outline"
+                        className="justify-start h-auto py-3 px-4 gap-3 text-left hover:bg-blue-50 hover:border-blue-200"
+                        onClick={() => {
+                          handleScan(item.product?.barcode || item.product?.sku || item.sku);
+                        }}
+                      >
+                        {item.product?.image_url ? (
+                          <img src={item.product.image_url} alt="" className="h-10 w-10 rounded object-cover" />
+                        ) : (
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center"><Box className="h-5 w-5 opacity-20" /></div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold truncate">{item.product?.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{item.product?.sku}</p>
+                        </div>
+                        <div className="text-xs font-black bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                          Faltam: {(item.qtd_solicitada || 0) - (item.qtd_separada || 0)}
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
                   <Button variant="outline" className="flex-1" onClick={() => setBoxMode("qty")}>
                     Voltar
                   </Button>
                   <Button 
-                    className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 font-bold" 
                     onClick={() => {
                       if (internalScan.trim()) {
                         handleScan(internalScan);
@@ -698,7 +727,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                       }
                     }}
                   >
-                    Confirmar Item
+                    Confirmar Lançamento
                   </Button>
                 </div>
               </div>
