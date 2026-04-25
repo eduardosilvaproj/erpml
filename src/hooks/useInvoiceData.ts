@@ -61,10 +61,45 @@ export function useImportInvoice() {
       matches,
       createNewProducts,
     }: {
-      nfeData: { number: string; series: string; issuerName: string; issuerCnpj: string; totalValue: number };
+      nfeData: { 
+        number: string; 
+        series: string; 
+        issuerName: string; 
+        issuerCnpj: string; 
+        totalValue: number;
+        supplier?: NFeSupplier;
+      };
       matches: MatchResult[];
       createNewProducts: boolean;
     }) => {
+      let supplierId: string | null = null;
+
+      // 1. Cadastrar ou atualizar fornecedor automaticamente
+      if (nfeData.supplier) {
+        const { data: existing } = await supabase
+          .from('suppliers')
+          .select('id, razao_social')
+          .eq('cnpj', nfeData.supplier.cnpj)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase.from('suppliers').update({
+            ...nfeData.supplier,
+            updated_at: new Date().toISOString()
+          } as any).eq('id', existing.id);
+          supplierId = existing.id;
+        } else {
+          const { data: novo } = await supabase.from('suppliers').insert({
+            ...nfeData.supplier,
+            company_id: companyId,
+            origem: 'nota_fiscal',
+            created_at: new Date().toISOString()
+          } as any).select().single();
+          if (novo) supplierId = novo.id;
+        }
+      }
+
       const { data: invoice, error: invError } = await supabase
         .from("invoices")
         .insert({
@@ -76,6 +111,7 @@ export function useImportInvoice() {
           status: "aguardando_conferencia",
           items_count: matches.length,
           company_id: companyId,
+          supplier_id: supplierId, // Vincular fornecedor à nota
         })
         .select()
         .single();
