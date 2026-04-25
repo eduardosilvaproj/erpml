@@ -670,7 +670,7 @@ const Separacao = () => {
                         )}
                         <div className="flex flex-col">
                           <span className="font-bold text-sm leading-tight">{item.name}</span>
-                          <span className="text-xs text-muted-foreground font-mono">SKU: {item.sku}</span>
+                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.barcode || item.sku}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -816,7 +816,7 @@ const Separacao = () => {
                           >
                             <div className="flex flex-col">
                               <span className="font-bold">{p.name}</span>
-                              <span className="text-xs text-muted-foreground">SKU: {p.sku} | EAN: {p.ean}</span>
+                              <span className="text-xs text-muted-foreground">EAN/SKU: {p.ean || p.sku}</span>
                             </div>
                           </CommandItem>
                         ))}

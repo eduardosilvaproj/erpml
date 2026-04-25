@@ -136,22 +136,9 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
 
 
 
-  const gerarSkuInterno = async () => {
-    setIsGeneratingSku(true);
-    try {
-      const { count, error } = await supabase
-        .from('products')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) throw error;
-      const nextNum = (count || 0) + 1;
-      const newSku = `SKU-${String(nextNum).padStart(5, '0')}`;
-      form.setValue("sku", newSku);
-    } catch (err: any) {
-      console.error("Erro ao gerar SKU:", err);
-      toast({ title: "Erro ao gerar SKU", description: err.message, variant: "destructive" });
-    } finally {
-      setIsGeneratingSku(false);
+  const sincronizarSkuEan = (ean: string) => {
+    if (ean) {
+      form.setValue("sku", ean);
     }
   };
 
@@ -165,10 +152,6 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       selectedFileRef.current = null;
       setPhotoSource(product?.image_url ? "unsplash" : null);
       setIsSkuLocked(true);
-      
-      if (!product) {
-        gerarSkuInterno();
-      }
     }
   }, [open, product]);
 
@@ -519,13 +502,13 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="sku" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>SKU Interno *</FormLabel>
+                      <FormLabel>SKU Interno (= EAN)</FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
                           <div className="relative flex-1">
                             <Input 
                               {...field} 
-                              placeholder="SKU-00001" 
+                              placeholder="Será igual ao EAN" 
                               readOnly={isSkuLocked}
                               className={isSkuLocked ? "pr-10 bg-muted/50 cursor-not-allowed" : ""}
                             />
@@ -546,20 +529,13 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                         >
                           {isSkuLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                         </Button>
-                        {!product && (
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="icon" 
-                            className="shrink-0"
-                            title="Regerar SKU" 
-                            onClick={gerarSkuInterno}
-                            disabled={isGeneratingSku}
-                          >
-                            <RefreshCw className={`h-4 w-4 ${isGeneratingSku ? 'animate-spin' : ''}`} />
-                          </Button>
-                        )}
                       </div>
+                      {!form.getValues("ean") && (
+                        <p className="text-[10px] text-amber-500 flex items-center gap-1 mt-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          ⚠️ Cadastre o EAN para gerar o SKU
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -572,18 +548,26 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                             value={field.value || ""}
                             onChange={(v) => {
                               field.onChange(v);
-                              form.setValue("barcode", v); // Mantém sincronizado por enquanto
+                              form.setValue("barcode", v);
+                              sincronizarSkuEan(v);
                             }}
                             onScan={(code) => { 
                               field.onChange(code); 
                               form.setValue("barcode", code);
+                              sincronizarSkuEan(code);
                               toast({ title: "✓ EAN lido!", description: code }); 
                             }}
                             placeholder="7891234567890"
                             showCameraButton
                           />
                         </FormControl>
-                        <Button type="button" variant="outline" size="icon" title="Gerar EAN-13" onClick={() => { const ean = generateEAN13(); field.onChange(ean); form.setValue("barcode", ean); toast({ title: "EAN-13 gerado!", description: ean }); }}>
+                        <Button type="button" variant="outline" size="icon" title="Gerar EAN-13" onClick={() => { 
+                          const ean = generateEAN13(); 
+                          field.onChange(ean); 
+                          form.setValue("barcode", ean); 
+                          sincronizarSkuEan(ean);
+                          toast({ title: "EAN-13 gerado!", description: ean }); 
+                        }}>
                           <Wand2 className="h-4 w-4" />
                         </Button>
                       </div>

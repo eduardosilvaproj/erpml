@@ -11,17 +11,17 @@ export interface BarcodeSearchResult {
 export async function buscarPorCodigo(codigo: string, companyId?: string): Promise<BarcodeSearchResult | null> {
   if (!codigo) return null;
 
-  // 1. Buscar como EAN principal do produto
-  let queryEan = supabase
+  // 1. Buscar como EAN ou SKU (são idênticos agora)
+  let queryEanSku = supabase
     .from('products')
     .select('*, product_gtins(*)')
-    .eq('ean', codigo);
+    .or(`ean.eq.${codigo},sku.eq.${codigo}`);
   
-  if (companyId) queryEan = queryEan.eq('company_id', companyId);
-  const { data: porEan } = await queryEan.maybeSingle();
+  if (companyId) queryEanSku = queryEanSku.eq('company_id', companyId);
+  const { data: porEanSku } = await queryEanSku.maybeSingle();
   
-  if (porEan) {
-    return { produto: porEan, tipo: 'unidade', qty: 1 };
+  if (porEanSku) {
+    return { produto: porEanSku, tipo: 'unidade', qty: 1 };
   }
 
   // 2. Buscar como GTIN de caixa
@@ -42,30 +42,15 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
     };
   }
 
-  // 3. Buscar como SKU interno
-  let querySku = supabase
-    .from('products')
-    .select('*')
-    .eq('sku', codigo);
-  
-  if (companyId) querySku = querySku.eq('company_id', companyId);
-  const { data: porSku } = await querySku.maybeSingle();
-  
-  if (porSku) {
-    return { produto: porSku, tipo: 'unidade', qty: 1 };
-  }
-
-  // 4. Buscar em SKUs de fornecedores
+  // 3. Buscar em SKUs de fornecedores
   let querySupplier = supabase
     .from('product_supplier_skus')
     .select('*, product:products(*)')
     .eq('supplier_sku', codigo);
   
-  // Note: product_supplier_skus table might not have company_id directly, but the linked product does
   const { data: porSkuFornecedor } = await querySupplier.maybeSingle();
   
   if (porSkuFornecedor && porSkuFornecedor.product) {
-    // If companyId is provided, filter by it on the linked product
     if (companyId && porSkuFornecedor.product.company_id !== companyId) {
       // Not for this company
     } else {
@@ -77,6 +62,5 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
     }
   }
 
-  // 5. Não encontrado
   return null;
 }

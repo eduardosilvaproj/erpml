@@ -988,7 +988,7 @@ export const OrdensFullTab = () => {
                           {p.image_url && <img src={p.image_url} className="h-8 w-8 rounded object-cover" />}
                           <div>
                             <p className="text-xs font-bold line-clamp-1">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground">SKU: {p.sku} | EAN: {p.ean}</p>
+                            <p className="text-[10px] text-muted-foreground">EAN/SKU: {p.ean || p.sku}</p>
                           </div>
                         </div>
                         <Check className="h-4 w-4 text-emerald-500" />

@@ -291,9 +291,8 @@ const Produtos = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Sem filtros de corr.</SelectItem>
-                    <SelectItem value="no_sku">Sem SKU Interno</SelectItem>
+                    <SelectItem value="no_sku">Sem EAN / SKU</SelectItem>
                     <SelectItem value="no_supplier">Sem Fornecedor</SelectItem>
-                    <SelectItem value="no_ean">Sem EAN</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -360,7 +359,7 @@ const Produtos = () => {
                           </TableHead>
                           <TableHead className="w-[50px]">Foto</TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("sku")}>
-                            SKU / Fornecedores{sortIndicator("sku")}
+                            EAN / SKU{sortIndicator("sku")}
                           </TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                             Nome{sortIndicator("name")}
@@ -405,7 +404,7 @@ const Produtos = () => {
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <span className="font-mono text-xs font-bold text-foreground">
-                                    SKU: {product.sku}
+                                    {product.ean || product.sku}
                                   </span>
                                   {product.product_supplier_skus && product.product_supplier_skus.length > 0 && (
                                     <span className="text-[10px] text-muted-foreground truncate max-w-[150px]" title={product.product_supplier_skus.map(s => `${s.supplier_name}: ${s.supplier_sku}`).join("\n")}>
