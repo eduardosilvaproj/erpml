@@ -85,8 +85,11 @@ const getConferenceItemStatus = (scannedQty: number, expectedQty: number) => {
 
 const Conferencia = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const companyId = useCompanyId();
   const scanInputRef = useRef<BarcodeScannerInputHandle>(null);
+  const barcodeSearch = useBarcodeSearch();
+
 
   // Restore session from localStorage
   const restored = (() => {
