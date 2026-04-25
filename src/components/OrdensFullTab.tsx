@@ -348,11 +348,10 @@ export const OrdensFullTab = () => {
 
       // Link items with products in database
       const eans = uniqueItems.map(i => i.ean);
-      const skus = uniqueItems.filter(i => i.sku).map(i => i.sku as string);
       
-      // First, find product IDs from alternative GTINs
+      // First, find product IDs from alternative GTINs (product_gtins)
       const { data: altGtins } = await supabase
-        .from("product_alternative_gtins")
+        .from("product_gtins")
         .select("product_id, gtin")
         .in("gtin", eans)
         .eq("company_id", companyId);
@@ -361,14 +360,14 @@ export const OrdensFullTab = () => {
       
       let orConditions = [
         `ean.in.(${eans.join(",")})`,
-        `barcode.in.(${eans.join(",")})`
+        `barcode.in.(${eans.join(",")})`,
+        `gtin_cx.in.(${eans.join(",")})`
       ];
-      if (skus.length > 0) orConditions.push(`sku.in.(${skus.join(",")})`);
       if (altProductIds.length > 0) orConditions.push(`id.in.(${altProductIds.join(",")})`);
       
       const { data: products } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, ean, image_url, stock_physical, product_alternative_gtins(gtin)")
+        .select("id, name, sku, barcode, ean, gtin_cx, image_url, stock_physical, product_gtins(gtin)")
         .eq("company_id", companyId)
         .or(orConditions.join(","));
 
@@ -376,18 +375,27 @@ export const OrdensFullTab = () => {
         .from("product_kits")
         .select("id, name, sku, ean")
         .eq("company_id", companyId)
-        .or(`ean.in.(${eans.join(",")}),sku.in.(${eans.join(",")})`);
+        .or(`ean.in.(${eans.join(",")})`); // Apenas EAN para Kits também
 
       const itemsWithProducts = uniqueItems.map(item => {
+        // Regra: EAN (Unit) -> GTIN CX (Box) -> Product GTINs (Alternative)
         let product = products?.find(p => 
           p.ean === item.ean || 
-          p.barcode === item.ean || 
-          (item.sku && p.sku === item.sku) ||
-          (p as any).product_alternative_gtins?.some((ag: any) => ag.gtin === item.ean)
+          p.barcode === item.ean
         );
 
         if (!product) {
-          const kit = kits?.find(k => k.ean === item.ean || k.sku === item.ean);
+          product = products?.find(p => p.gtin_cx === item.ean);
+        }
+
+        if (!product) {
+          product = products?.find(p => 
+            (p as any).product_gtins?.some((pg: any) => pg.gtin === item.ean)
+          );
+        }
+
+        if (!product) {
+          const kit = kits?.find(k => k.ean === item.ean);
           if (kit) {
             product = {
               ...kit,
