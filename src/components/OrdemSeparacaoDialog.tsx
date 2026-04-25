@@ -167,8 +167,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       return;
     }
 
-    const newQtd = target.qtd_separada + 1;
-    if (newQtd > target.qtd_solicitada) {
+    const newQtd = (target.qtd_separada || 0) + 1;
+    if (newQtd > (target.qtd_solicitada || 0)) {
       setLastScan({ ok: false, msg: `Excesso! ${target.product?.name} (${newQtd}/${target.qtd_solicitada})` });
     } else {
       setLastScan({ ok: true, msg: `${target.product?.name} — ${newQtd}/${target.qtd_solicitada}` });
@@ -176,7 +176,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     await updateItem.mutateAsync({
       itemId: target.id,
       qtd_separada: newQtd,
-      qtd_solicitada: target.qtd_solicitada,
+      qtd_solicitada: target.qtd_solicitada || 0,
+      orderId: ordem?.id,
     });
     refetch();
     setScan("");
