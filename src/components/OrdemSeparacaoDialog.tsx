@@ -609,6 +609,65 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={boxMode !== "idle"} onOpenChange={(open) => !open && setBoxMode("idle")}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-blue-500" />
+              Fluxo de Caixa: {tempBoxCode}
+            </DialogTitle>
+          </DialogHeader>
+
+          {boxMode === "ask" && (
+            <div className="py-6 space-y-4 text-center">
+              <p className="font-medium text-lg">Este código é de uma CAIXA?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="default" className="h-14 bg-blue-600 hover:bg-blue-700" onClick={() => setBoxMode("qty")}>
+                  Sim, é uma caixa
+                </Button>
+                <Button variant="outline" className="h-14" onClick={() => {
+                  setBoxMode("idle");
+                  setLastScan({ ok: false, msg: `Produto "${tempBoxCode}" não está nesta ordem` });
+                }}>
+                  Não, cancelar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {boxMode === "qty" && (
+            <div className="py-6 space-y-4">
+              <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
+              <Input
+                type="number"
+                value={tempBoxQty}
+                onChange={(e) => setTempBoxQty(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
+              />
+              <Button className="w-full bg-blue-600" onClick={() => setBoxMode("scan_internal")}>
+                Próximo: Bipar item interno
+              </Button>
+            </div>
+          )}
+
+          {boxMode === "scan_internal" && (
+            <div className="py-10 flex flex-col items-center justify-center space-y-6 text-center">
+              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <ScanBarcode className="h-10 w-10 text-blue-600" />
+              </div>
+              <div className="space-y-2">
+                <p className="text-lg font-bold">Aguardando leitura...</p>
+                <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
+              </div>
+              <Button variant="ghost" onClick={() => setBoxMode("qty")}>
+                Voltar
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showConfirmFinalizar} onOpenChange={setShowConfirmFinalizar}>
         <DialogContent className="sm:max-w-[425px] text-center p-8">
           <div className="flex flex-col items-center space-y-4">
