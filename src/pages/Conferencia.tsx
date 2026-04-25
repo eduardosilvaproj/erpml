@@ -232,7 +232,10 @@ const Conferencia = () => {
       const t = setTimeout(() => gtinScanInputRef.current?.focus(), 150);
       return () => clearTimeout(t);
     }
-  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId]);
+    if (boxMode !== "scan_internal") {
+      setInternalScanValue("");
+    }
+  }, [gtinModal.open, gtinSelectMode, gtinModal.selectedProductId, boxMode]);
 
   // GTIN CX FOUND modal (already linked product → just confirm box qty)
   const [gtinFoundModal, setGtinFoundModal] = useState<{
