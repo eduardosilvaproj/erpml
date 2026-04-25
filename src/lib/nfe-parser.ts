@@ -90,13 +90,15 @@ export function parseNFeXml(xmlString: string): NFeData {
   let supplier: NFeSupplier | undefined;
   if (emit) {
     const enderEmit = getFirstElementByTagName(emit, "enderEmit");
+    const emailEl = getFirstElementByTagName(doc.documentElement, "email");
+    
     supplier = {
       razao_social: issuerName,
       nome_fantasia: getTagValue(emit, "xFant"),
       cnpj: issuerCnpj,
       ie: getTagValue(emit, "IE"),
       telefone: enderEmit ? getTagValue(enderEmit, "fone") : undefined,
-      email: getTagValue(doc, "email"), // Email is often outside emit in some versions
+      email: emailEl?.textContent?.trim(),
       cep: enderEmit ? getTagValue(enderEmit, "CEP") : undefined,
       logradouro: enderEmit ? getTagValue(enderEmit, "xLgr") : undefined,
       numero: enderEmit ? getTagValue(enderEmit, "nro") : undefined,
