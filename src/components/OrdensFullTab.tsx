@@ -569,7 +569,45 @@ export const OrdensFullTab = () => {
     }
   };
 
-  // Form state
+  const handleContinueSeparation = async (ordem: OrdemFull) => {
+    try {
+      setStartingId(ordem.id);
+      
+      const { data: latestOrdem, error } = await supabase
+        .from("full_orders")
+        .select("bipagem_state, status")
+        .eq("id", ordem.id)
+        .single();
+        
+      if (error) throw error;
+      
+      const bipagemState = latestOrdem?.bipagem_state;
+      const itensBipados = Array.isArray(bipagemState) 
+        ? bipagemState.reduce((sum: number, item: any) => sum + (item.scannedQty || 0), 0)
+        : 0;
+
+      localStorage.setItem("ordem_ativa", JSON.stringify({
+        id: ordem.id,
+        numero: ordem.numero,
+        frete_ml: ordem.frete_ml,
+        descricao: ordem.descricao,
+        bipagem_state: bipagemState,
+        autoStartRecording: true
+      }));
+
+      toast({ 
+        title: `⏯ Continuando separação — ${itensBipados} itens já bipados restaurados`,
+      });
+      
+      navigate("/separacao");
+    } catch (e: any) {
+      toast({ title: "Erro ao continuar separação", description: e.message, variant: "destructive" });
+    } finally {
+      setStartingId(null);
+    }
+  };
+
+
   const [descricao, setDescricao] = useState("");
   const [prazo, setPrazo] = useState("");
   const [atribuidoPara, setAtribuidoPara] = useState<string>("any");
