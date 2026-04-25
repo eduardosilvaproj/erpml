@@ -19,6 +19,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useQueryClient } from "@tanstack/react-query";
 import { parseNFeXml, matchProducts, type NFeData, type MatchResult, type NFeProduct } from "@/lib/nfe-parser";
