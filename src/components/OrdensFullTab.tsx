@@ -1204,7 +1204,8 @@ export const OrdensFullTab = () => {
                 <TableBody>
                   {ordensFiltradas.map((o) => {
                     const responsavel = members?.find((m) => m.user_id === o.atribuido_para);
-                    const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && (o.status === "aguardando" || o.status === "em_separacao");
+                    const mostrarExecutar = ['pdf_carregado', 'pausado', 'separando', 'aguardando', 'em_separacao', 'separacao'].includes(o.status);
+                    const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null) && mostrarExecutar;
                     const sb = ordemStatusBadge(o.status);
                     return (
                       <TableRow key={o.id}>
