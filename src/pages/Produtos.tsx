@@ -534,9 +534,9 @@ const Produtos = () => {
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+                                        <AlertDialogTitle>Remover produto?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Tem certeza que deseja excluir "{product.name}"? Esta ação não pode ser desfeita.
+                                          Tem certeza que deseja remover "{product.name}"? Se houver histórico de vendas, ele será desativado. Caso contrário, será excluído permanentemente.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
