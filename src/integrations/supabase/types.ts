@@ -825,6 +825,7 @@ export type Database = {
           number: string
           series: string | null
           status: string
+          supplier_id: string | null
           total_value: number
           xml_data: string | null
         }
@@ -839,6 +840,7 @@ export type Database = {
           number: string
           series?: string | null
           status?: string
+          supplier_id?: string | null
           total_value?: number
           xml_data?: string | null
         }
@@ -853,6 +855,7 @@ export type Database = {
           number?: string
           series?: string | null
           status?: string
+          supplier_id?: string | null
           total_value?: number
           xml_data?: string | null
         }
@@ -862,6 +865,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
