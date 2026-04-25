@@ -294,7 +294,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => handleEmailChange(e.target.value)}
                   onBlur={() => handleBlur("email")}
-                  className={`bg-white/5 border-white/10 text-white focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${
+                  className={`bg-white/5 border-white/10 text-white transition-all duration-300 ${
                     errors.email ? "border-destructive focus-visible:ring-destructive" : ""
                   }`}
                   autoComplete="email"
