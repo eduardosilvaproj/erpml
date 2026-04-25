@@ -60,6 +60,12 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
     onFinished
   });
 
+  useEffect(() => {
+    if (onRecordingChange) {
+      onRecordingChange(isRecording, duration);
+    }
+  }, [isRecording, duration, onRecordingChange]);
+
   useImperativeHandle(ref, () => ({
     startRecording: (type: RecordingType) => {
       setActiveType(type);
