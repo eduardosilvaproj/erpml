@@ -681,6 +681,13 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                     value={internalScan}
                     onChange={setInternalScan}
                     onScan={handleScan}
+                    onChange={(val) => {
+                      setInternalScan(val);
+                      if (val.length >= 8) {
+                        handleScan(val);
+                        setInternalScan("");
+                      }
+                    }}
                     placeholder="Bipe o código do item da caixa..."
                     autoFocus
                     scanMode
