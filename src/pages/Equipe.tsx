@@ -35,6 +35,9 @@ export default function Equipe() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteFullName, setInviteFullName] = useState("");
+  const [invitePassword, setInvitePassword] = useState("");
+  const [inviteConfirmPassword, setInviteConfirmPassword] = useState("");
   const [inviteRole, setInviteRole] = useState("member");
   const [invitePerms, setInvitePerms] = useState<Permissions>({ ...moduleDefaults });
   const [inviting, setInviting] = useState(false);
@@ -72,11 +75,33 @@ export default function Equipe() {
 
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !company?.id) return;
+    
+    if (invitePassword && invitePassword !== inviteConfirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
     setInviting(true);
     try {
-      await callEdgeFunction("invite", { email: inviteEmail.trim(), role: inviteRole });
-      toast.success("Membro adicionado com sucesso!");
+      if (invitePassword) {
+        // Direct creation
+        await callEdgeFunction("create-member", { 
+          email: inviteEmail.trim(), 
+          role: inviteRole,
+          fullName: inviteFullName.trim(),
+          password: invitePassword
+        });
+        toast.success("Membro criado com sucesso!");
+      } else {
+        // Standard invite (keeping support for just in case, or for existing users)
+        await callEdgeFunction("invite", { email: inviteEmail.trim(), role: inviteRole });
+        toast.success("Membro convidado com sucesso!");
+      }
+      
       setInviteEmail("");
+      setInviteFullName("");
+      setInvitePassword("");
+      setInviteConfirmPassword("");
       setInviteRole("member");
       setInvitePerms({ ...moduleDefaults });
       setInviteOpen(false);
@@ -200,16 +225,25 @@ export default function Equipe() {
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
-                Convidar Membro
+                Novo Membro
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Convidar Membro</DialogTitle>
+                <DialogTitle>Cadastrar Novo Membro</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="invite-email">E-mail do usuário *</Label>
+                  <Label htmlFor="invite-name">Nome Completo *</Label>
+                  <Input
+                    id="invite-name"
+                    placeholder="Nome do membro"
+                    value={inviteFullName}
+                    onChange={(e) => setInviteFullName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="invite-email">E-mail *</Label>
                   <Input
                     id="invite-email"
                     type="email"
@@ -218,10 +252,31 @@ export default function Equipe() {
                     onChange={(e) => setInviteEmail(e.target.value)}
                     maxLength={255}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    O usuário precisa ter uma conta cadastrada no sistema.
-                  </p>
                 </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-password">Senha *</Label>
+                    <Input
+                      id="invite-password"
+                      type="password"
+                      placeholder="******"
+                      value={invitePassword}
+                      onChange={(e) => setInvitePassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="invite-confirm">Confirmar Senha *</Label>
+                    <Input
+                      id="invite-confirm"
+                      type="password"
+                      placeholder="******"
+                      value={inviteConfirmPassword}
+                      onChange={(e) => setInviteConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="invite-role">Nível de acesso</Label>
                   <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -241,9 +296,9 @@ export default function Equipe() {
                 <Button variant="outline" onClick={() => setInviteOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim()}>
+                <Button onClick={handleInvite} disabled={inviting || !inviteEmail.trim() || !invitePassword || !inviteFullName.trim()}>
                   {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Enviar convite
+                  Cadastrar Membro
                 </Button>
               </DialogFooter>
             </DialogContent>

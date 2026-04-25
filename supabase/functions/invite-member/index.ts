@@ -151,7 +151,85 @@ Deno.serve(async (req) => {
       );
     }
 
-    // === REMOVE ===
+    // === CREATE MEMBER DIRECTLY ===
+    if (action === "create-member") {
+      const { email, role, fullName, password } = body;
+
+      if (!email || !email.includes("@")) {
+        return new Response(
+          JSON.stringify({ error: "E-mail inválido" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!password || password.length < 6) {
+        return new Response(
+          JSON.stringify({ error: "A senha deve ter pelo menos 6 caracteres" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const validRoles = ["member", "manager"];
+      const memberRole = validRoles.includes(role) ? role : "member";
+
+      // 1. Create user in Auth
+      const { data: userData, error: createError } = await adminClient.auth.admin.createUser({
+        email: email.trim().toLowerCase(),
+        password: password,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: { full_name: fullName },
+      });
+
+      if (createError) {
+        return new Response(
+          JSON.stringify({ error: createError.message }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const newUser = userData.user;
+
+      // 2. Add to company_members
+      const { error: memberError } = await adminClient
+        .from("company_members")
+        .insert({
+          company_id: companyId,
+          user_id: newUser.id,
+          role: memberRole,
+          is_active: true,
+        });
+
+      if (memberError) {
+        // Cleanup: remove created user if member insertion fails
+        await adminClient.auth.admin.deleteUser(newUser.id);
+        return new Response(
+          JSON.stringify({ error: "Erro ao associar usuário à empresa" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // 3. Update profile if needed (triggers usually handle this, but let's be explicit if we have a name)
+      if (fullName) {
+        await adminClient
+          .from("profiles")
+          .update({ full_name: fullName })
+          .eq("id", newUser.id);
+      }
+
+      // Audit log
+      await adminClient.from("company_audit_log").insert({
+        company_id: companyId,
+        user_id: callerId,
+        action: "member_created",
+        details: { email: email.trim().toLowerCase(), role: memberRole, user_id: newUser.id },
+      });
+
+      return new Response(
+        JSON.stringify({ success: true, message: "Membro criado e adicionado com sucesso" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (action === "remove") {
       const { memberId } = body;
 
