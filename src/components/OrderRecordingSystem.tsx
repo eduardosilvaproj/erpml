@@ -19,6 +19,7 @@ export interface OrderRecordingSystemHandle {
   startRecording: (type: RecordingType) => void;
   stopRecording: () => void;
   isRecording: boolean;
+  duration: number;
 }
 
 interface OrderRecordingSystemProps {
@@ -43,8 +44,6 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
 
   const [activeType, setActiveType] = useState<RecordingType>(defaultType);
 
-
-  
   const { 
     isRecording, 
     duration, 
@@ -59,6 +58,17 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
     onFinished
   });
 
+  useImperativeHandle(ref, () => ({
+    startRecording: (type: RecordingType) => {
+      setActiveType(type);
+      startRecording(type);
+    },
+    stopRecording: () => {
+      stopRecording();
+    },
+    isRecording,
+    duration
+  }));
 
   const { recordings, isLoading, deleteRecording } = useOrderRecordings(pedidoId);
   const [isPreviewMinimized, setIsPreviewMinimized] = useState(false);
@@ -210,7 +220,9 @@ export const OrderRecordingSystem = forwardRef<OrderRecordingSystemHandle, Order
       )}
     </>
   );
-}
+});
+
+OrderRecordingSystem.displayName = "OrderRecordingSystem";
 
 function VideoPreview({ stream }: { stream: MediaStream }) {
   const videoRef = useRef<HTMLVideoElement>(null);
