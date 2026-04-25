@@ -573,7 +573,7 @@ export const OrdensFullTab = () => {
       
       const { data: latestOrdem, error } = await supabase
         .from("full_orders")
-        .select("*, full_order_items(*, products(*))")
+        .select("*, full_order_items(*, product:products(*))")
         .eq("id", ordem.id)
         .single();
         
