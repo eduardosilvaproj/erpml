@@ -309,7 +309,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => handlePasswordChange(e.target.value)}
                   onBlur={() => handleBlur("password")}
-                  className={`bg-white/5 border-white/10 text-white focus:border-primary/50 focus:ring-primary/20 transition-all duration-300 ${
+                  className={`bg-white/5 border-white/10 text-white transition-all duration-300 ${
                     errors.password ? "border-destructive focus-visible:ring-destructive" : ""
                   }`}
                   autoComplete="current-password"
