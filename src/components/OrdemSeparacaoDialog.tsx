@@ -40,6 +40,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
   const updateFullOrder = useUpdateFullOrder();
   const recorder = useFullRecorder();
   const scannerRef = useRef<any>(null);
+  const internalScannerRef = useRef<any>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
 
   const [askRecord, setAskRecord] = useState(false);
   const [pickCamera, setPickCamera] = useState(false);
@@ -98,6 +100,20 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       setNovaPrevisaoHora(format(d, "HH:mm"));
     }
   }, [ordemId, ordem?.previsao_carregamento]);
+
+  useEffect(() => {
+    if (boxMode === "qty") {
+      setTimeout(() => qtyInputRef.current?.focus(), 150);
+    } else if (boxMode === "scan_internal") {
+      setTimeout(() => internalScannerRef.current?.focus(), 150);
+    }
+  }, [boxMode]);
+
+  useEffect(() => {
+    if (boxMode === "idle" && isExec && !isLoadingPhase) {
+      setTimeout(() => scannerRef.current?.focus(), 150);
+    }
+  }, [boxMode, isExec, isLoadingPhase]);
 
   const progress = useMemo(() => {
     const total = itens.reduce((s, i) => s + i.qtd_solicitada, 0);
@@ -690,6 +706,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
             <div className="py-6 space-y-4">
               <p className="text-sm font-medium">Quantos itens tem nesta caixa?</p>
               <Input
+                ref={qtyInputRef}
                 type="number"
                 value={tempBoxQty}
                 onChange={(e) => setTempBoxQty(e.target.value)}
@@ -718,11 +735,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                 <div className="space-y-2">
                   <Label>Campo de Bipagem</Label>
                   <BarcodeScannerInput
+                    ref={internalScannerRef}
                     value={internalScan}
                     onScan={handleScan}
                     onChange={(val) => {
                       setInternalScan(val);
-                      if (val.length >= 8) {
+                      if (val.length === 13) {
                         handleScan(val);
                         setInternalScan("");
                       }
