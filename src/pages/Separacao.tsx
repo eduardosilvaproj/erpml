@@ -191,12 +191,13 @@ const Separacao = () => {
       item.name,
       item.neededQty,
       item.scannedQty,
+      Math.max(0, item.neededQty - item.scannedQty),
       item.status === "completo" ? "✅ OK" : "❌ PENDENTE"
     ]);
 
     autoTable(doc, {
       startY: 55,
-      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'STATUS']],
+      head: [['#', 'EAN/SKU', 'NOME', 'NECESSÁRIO', 'SEPARADO', 'FALTAM', 'STATUS']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [45, 45, 45] },
