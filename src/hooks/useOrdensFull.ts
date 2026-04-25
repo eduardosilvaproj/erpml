@@ -284,33 +284,42 @@ export const useDeleteOrdem = () => {
   return useMutation({
     mutationFn: async ({ id, frete_ml }: { id: string, frete_ml?: string | null }) => {
       if (!companyId) throw new Error("Empresa não identificada");
-      // 1. Itens da ordem
+      
+      // 1. Gravações vinculadas
+      await supabase
+        .from("order_recordings")
+        .delete()
+        .or(`pedido_id.eq.${id},pedido_id.eq.${frete_ml || ''}`);
+
+      // 2. Itens da ordem (tabela principal)
       const { error: errorItens } = await supabase
         .from("ordens_full_itens")
         .delete()
         .eq("ordem_id", id);
       if (errorItens) throw errorItens;
 
-      // 2. Gravações vinculadas
-      await supabase
-        .from("order_recordings")
+      // 3. Registro na tabela full_orders (se houver frete_ml ou link via id interno)
+      let deleteQuery = supabase
+        .from("full_orders")
         .delete()
-        .eq("pedido_id", id);
-
-      // 3. Registro na tabela full_orders (se houver frete_ml)
+        .eq("company_id", companyId);
+        
       if (frete_ml) {
-        await supabase
-          .from("full_orders")
-          .delete()
-          .eq("frete_ml", frete_ml)
-          .eq("company_id", companyId);
+        deleteQuery = deleteQuery.eq("frete_ml", frete_ml);
+      } else {
+        deleteQuery = deleteQuery.eq("ordem_id", id);
       }
+      
+      await deleteQuery;
 
       // 4. A própria ordem
       const { error } = await supabase.from("ordens_full").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ordens-full"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ordens-full"] });
+      qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
+    },
   });
 };
 
