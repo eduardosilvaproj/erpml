@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { 
   useOrdemFull, 
   useMarcarOrdemEnviada, 
@@ -304,6 +305,7 @@ function StatusBar({ currentStatus }: { currentStatus: string }) {
 
 function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string, freteId: string | null, value: string | null | undefined, onUpdate: () => void }) {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [editing, setEditing] = useState(false);
   const [data, setData] = useState("");
 
@@ -327,7 +329,8 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
         await supabase
           .from('full_orders')
           .update({ previsao_carregamento: novaData })
-          .eq('frete_ml', freteId);
+          .eq('frete_ml', freteId)
+          .eq('company_id', companyId);
       }
 
       if (e1) throw e1;
