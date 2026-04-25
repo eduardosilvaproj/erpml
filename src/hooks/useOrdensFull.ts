@@ -67,6 +67,8 @@ export const useOrdensFull = () => {
         .from("full_orders")
         .select(`*`)
         .eq("company_id", companyId!)
+        .not("frete_ml", "is", null)
+        .neq("frete_ml", "")
         .order("created_at", { ascending: false });
       if (error) throw error;
       
