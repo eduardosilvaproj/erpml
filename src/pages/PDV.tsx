@@ -97,82 +97,50 @@ const PDV = () => {
   const handleScan = useCallback(async (code: string) => {
     if (!code.trim()) return;
 
-    try {
-      const { data: products } = await supabase
-        .from("products")
-        .select("id, name, sku, barcode, ean, price, stock_physical")
-        .or(`ean.eq.${code.trim()},barcode.eq.${code.trim()},sku.eq.${code.trim()}`);
+    await barcodeSearch.handleSearch(code, (result) => {
+      const { produto, qty } = result;
 
-      let product = products?.[0];
-
-      if (!product) {
-        // Fallback: check alternative GTINs
-        const { data: altGtinMatch } = await supabase
-          .from("product_alternative_gtins")
-          .select("product_id")
-          .eq("gtin", code.trim())
-          .maybeSingle();
-
-        if (altGtinMatch) {
-          const { data: altProduct } = await supabase
-            .from("products")
-            .select("id, name, sku, barcode, ean, price, stock_physical")
-            .eq("id", altGtinMatch.product_id)
-            .maybeSingle();
-          if (altProduct) product = altProduct;
-        }
-      }
-
-      if (!product) {
-        setLastScan({ success: false, message: `Produto "${code}" não encontrado.` });
+      if (produto.stock_physical <= 0) {
+        setLastScan({ success: false, message: `"${produto.name}" sem estoque.` });
         playBeep(200, 400);
         scanInputRef.current?.flash(false);
         setScanBuffer("");
         return;
       }
 
-      if (product.stock_physical <= 0) {
-        setLastScan({ success: false, message: `"${product.name}" sem estoque.` });
-        playBeep(200, 400);
-        scanInputRef.current?.flash(false);
-        setScanBuffer("");
-        return;
-      }
-
-      const existing = cart.find((i) => i.productId === product.id);
+      const existing = cart.find((i) => i.productId === produto.id);
       if (existing) {
-        if (existing.quantity >= product.stock_physical) {
-          setLastScan({ success: false, message: `Estoque máximo atingido (${product.stock_physical}).` });
+        if (existing.quantity + qty > produto.stock_physical) {
+          setLastScan({ success: false, message: `Estoque máximo atingido (${produto.stock_physical}).` });
           playBeep(300, 300);
         } else {
           setCart(cart.map((i) =>
-            i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i
+            i.productId === produto.id ? { ...i, quantity: i.quantity + qty } : i
           ));
-          setLastScan({ success: true, message: `${product.name} — ${existing.quantity + 1}x R$ ${product.price.toFixed(2)}` });
+          setLastScan({ success: true, message: `${produto.name} — ${existing.quantity + qty}x R$ ${produto.price.toFixed(2)}` });
           playBeep(800, 100);
           scanInputRef.current?.flash(true);
         }
       } else {
         setCart([...cart, {
-          productId: product.id,
-          productName: product.name,
-          productSku: product.sku,
-          barcode: product.barcode,
-          quantity: 1,
-          unitPrice: product.price,
-          stockPhysical: product.stock_physical,
+          productId: produto.id,
+          productName: produto.name,
+          productSku: produto.sku,
+          barcode: produto.barcode,
+          quantity: qty,
+          unitPrice: produto.price,
+          stockPhysical: produto.stock_physical,
         }]);
-        setLastScan({ success: true, message: `${product.name} — R$ ${product.price.toFixed(2)}` });
+        setLastScan({ success: true, message: `${produto.name} — R$ ${produto.price.toFixed(2)}` });
         playBeep(800, 100);
         scanInputRef.current?.flash(true);
       }
-    } catch (err: any) {
-      setLastScan({ success: false, message: err.message });
-    }
+    });
 
     setScanBuffer("");
     setTimeout(() => scanInputRef.current?.focus(), 50);
-  }, [cart]);
+  }, [cart, barcodeSearch]);
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
