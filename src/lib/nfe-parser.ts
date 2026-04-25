@@ -13,6 +13,21 @@ export interface NFeProduct {
   additionalInfo?: string; // infAdProd
 }
 
+export interface NFeSupplier {
+  razao_social: string;
+  nome_fantasia?: string;
+  cnpj: string;
+  ie?: string;
+  telefone?: string;
+  email?: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+}
+
 export interface NFeData {
   number: string;       // nNF
   series: string;       // serie
@@ -21,6 +36,7 @@ export interface NFeData {
   totalValue: number;   // vNF
   issueDate: string;    // dhEmi
   products: NFeProduct[];
+  supplier?: NFeSupplier;
 }
 
 function getFirstElementByTagName(element: Element | Document, tagName: string): Element | null {
@@ -70,6 +86,27 @@ export function parseNFeXml(xmlString: string): NFeData {
   const emit = getFirstElementByTagName(infNFe, "emit");
   const issuerName = emit ? getTagValue(emit, "xNome") : "";
   const issuerCnpj = emit ? getTagValue(emit, "CNPJ") : "";
+  
+  let supplier: NFeSupplier | undefined;
+  if (emit) {
+    const enderEmit = getFirstElementByTagName(emit, "enderEmit");
+    const emailEl = getFirstElementByTagName(doc.documentElement, "email");
+    
+    supplier = {
+      razao_social: issuerName,
+      nome_fantasia: getTagValue(emit, "xFant"),
+      cnpj: issuerCnpj,
+      ie: getTagValue(emit, "IE"),
+      telefone: enderEmit ? getTagValue(enderEmit, "fone") : undefined,
+      email: emailEl?.textContent?.trim(),
+      cep: enderEmit ? getTagValue(enderEmit, "CEP") : undefined,
+      logradouro: enderEmit ? getTagValue(enderEmit, "xLgr") : undefined,
+      numero: enderEmit ? getTagValue(enderEmit, "nro") : undefined,
+      bairro: enderEmit ? getTagValue(enderEmit, "xBairro") : undefined,
+      municipio: enderEmit ? getTagValue(enderEmit, "xMun") : undefined,
+      uf: enderEmit ? getTagValue(enderEmit, "UF") : undefined,
+    };
+  }
 
   // Total
   const total = getFirstElementByTagName(infNFe, "ICMSTot");
@@ -108,7 +145,7 @@ export function parseNFeXml(xmlString: string): NFeData {
     throw new Error("Nenhum produto encontrado no XML.");
   }
 
-  return { number, series, issuerName, issuerCnpj, totalValue, issueDate, products };
+  return { number, series, issuerName, issuerCnpj, totalValue, issueDate, products, supplier };
 }
 
 function normalizeText(value: string): string {

@@ -248,6 +248,7 @@ const EntradaXML = () => {
             issuerName: qf.nfeData.issuerName,
             issuerCnpj: qf.nfeData.issuerCnpj,
             totalValue: qf.nfeData.totalValue,
+            supplier: qf.nfeData.supplier,
           },
           matches: updatedMatches,
           createNewProducts,
