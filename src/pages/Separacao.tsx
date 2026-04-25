@@ -437,14 +437,25 @@ const Separacao = () => {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {isPaused ? (
+            <Button variant="default" size="sm" onClick={handleContinue} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+              <Play className="h-4 w-4" /> Continuar Bipagem
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPausing} className="gap-2 text-amber-700 border-amber-200 hover:bg-amber-50">
+              {isPausing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />} Pausar
+            </Button>
+          )}
+
           <OrderRecordingSystem 
+            ref={recorderRef}
             pedidoId={orderInfo?.id || ""} 
             orderNumber={orderInfo?.number}
             freteMl={orderInfo?.frete_ml}
             defaultType="separacao"
             trigger={
               <Button variant="outline" size="sm" className="gap-2 bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100">
-                <Video className="h-4 w-4" /> 🎥 Gravar Separação
+                <Video className="h-4 w-4" /> 🎥 {recorderRef.current?.isRecording ? 'Gravando...' : 'Gravar Separação'}
               </Button>
             }
           />
