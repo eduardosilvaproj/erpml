@@ -157,8 +157,23 @@ function SidebarContent({
     <>
       {/* Logo */}
       <div className="h-14 flex items-center gap-3 px-4 border-b border-border/30 shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-          <span className="text-base font-bold text-primary">E</span>
+        <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+          <img 
+            src="/src/assets/logo-erp.png" 
+            alt="Stovix" 
+            className="h-8 w-8 object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                const span = document.createElement('span');
+                span.className = 'text-base font-bold text-primary';
+                span.innerText = 'S';
+                parent.appendChild(span);
+              }
+            }}
+          />
         </div>
         <span className="text-sm font-bold text-foreground tracking-tight truncate">Stovix</span>
       </div>
