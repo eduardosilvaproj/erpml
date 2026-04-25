@@ -248,20 +248,23 @@ export default function Login() {
             <div className="flex justify-center mb-6">
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-primary/20 rounded-2xl blur opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-                <div className="relative h-[120px] w-[120px] rounded-2xl bg-[#161b22]/80 flex items-center justify-center overflow-hidden border border-primary/20">
+                <div className="relative h-[130px] w-full flex items-center justify-center overflow-hidden">
                   <img 
-                    src="/src/assets/logo-erp.png" 
-                    alt="Stovix" 
-                    className="h-[100px] w-[100px] object-contain animate-pulse-glow"
+                    src="https://rmetppilvfrxosvxzhgj.supabase.co/storage/v1/object/public/message-attachments/79aef328-4901-4b95-a65f-7e536f3c613c/1777099759840_xil5ic_ChatGPT_Image_25_de_abr._de_2026__03_30_40.png" 
+                    alt="Stovix Logo" 
+                    className="h-[130px] w-auto object-contain animate-pulse-glow"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement;
                       if (parent) {
-                        const span = document.createElement('span');
-                        span.className = 'text-4xl font-bold text-primary animate-pulse-glow';
-                        span.innerText = 'S';
-                        parent.appendChild(span);
+                        const container = document.createElement('div');
+                        container.className = 'flex flex-col items-center';
+                        container.innerHTML = `
+                          <div class="w-20 h-20 bg-gradient-to-br from-[#1a2332] to-[#0d1117] border-2 border-[#22c55e] rounded-2xl flex items-center justify-center mb-3 shadow-[0_0_30px_rgba(34,197,94,0.4)] text-[#22c55e] font-black text-4xl">S</div>
+                          <div class="text-2xl font-extrabold text-white tracking-tighter">Stovi<span class="text-[#22c55e]">x</span></div>
+                        `;
+                        parent.appendChild(container);
                       }
                     }}
                   />
