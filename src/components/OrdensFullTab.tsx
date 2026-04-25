@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, AlertTriangle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
@@ -194,6 +194,8 @@ export const OrdensFullTab = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedData, setParsedData] = useState<{
     shippingNumber: string;
+    expectedProducts?: number;
+    expectedUnits?: number;
     items: { ean: string; quantity: number; pdfName?: string; product?: any; error?: string }[];
   } | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -275,13 +277,16 @@ export const OrdensFullTab = () => {
                           fullText.match(/(?:Frete|Envio|Transferência)\s*(?:#|nº)?\s*(\d{8,12})/i);
       const shippingNumber = shippingMatch ? shippingMatch[1] : "Não identificado";
 
+      const totalProdutos = fullText.match(/Produtos do envio:\s*(\d+)/)?.[1];
+      const totalUnidades = fullText.match(/Total de unidades:\s*(\d+)/)?.[1];
+
       // Nova lógica de parser completa e segura para Mercado Livre PDF
       const parseMercadoLivrePDF = (text: string) => {
         const blocks = text.split('SUPERMERCADO');
         const products = [];
         
         for (const block of blocks) {
-          const eanMatch = block.match(/\b(7\d{12})\b/);
+          const eanMatch = block.match(/Código universal:[\s\n]*(\d{12,14})/);
           if (!eanMatch) continue;
           const ean = eanMatch[1];
           
@@ -396,7 +401,12 @@ export const OrdensFullTab = () => {
         };
       });
 
-      setParsedData({ shippingNumber, items: itemsWithProducts });
+      setParsedData({ 
+        shippingNumber, 
+        items: itemsWithProducts,
+        expectedProducts: totalProdutos ? parseInt(totalProdutos) : undefined,
+        expectedUnits: totalUnidades ? parseInt(totalUnidades) : undefined
+      });
       setPreviewOpen(true);
       toast({ title: "PDF lido com sucesso!", description: `${uniqueItems.length} produtos encontrados.` });
     } catch (err: any) {
@@ -790,8 +800,14 @@ export const OrdensFullTab = () => {
                   Frete #{parsedData?.shippingNumber}
                 </p>
                 <p className="text-sm text-muted-foreground font-medium">
-                  {parsedData?.items.length} produtos · {parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades
+                  {parsedData?.expectedProducts || parsedData?.items.length} produtos · {parsedData?.expectedUnits || parsedData?.items.reduce((acc, curr) => acc + curr.quantity, 0)} unidades
                 </p>
+                {parsedData && parsedData.expectedProducts && parsedData.expectedProducts > parsedData.items.length && (
+                  <p className="text-xs font-bold text-amber-600 flex items-center gap-1 mt-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    ⚠️ Parser encontrou {parsedData.items.length}/{parsedData.expectedProducts} produtos
+                  </p>
+                )}
               </div>
             </DialogHeader>
           </div>
