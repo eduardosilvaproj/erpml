@@ -442,27 +442,18 @@ const Separacao = () => {
     if (!orderInfo || !user) return;
     setIsFinishing(true);
     try {
-      // 1. Update the ordens_full status
-      await updateStatus.mutateAsync({ 
-        id: orderInfo.id, 
-        status: "concluida",
-        extra: {
-          concluida_em: new Date().toISOString(),
-          separado_em: new Date().toISOString(),
-          separado_por: user.id
-        }
-      });
-      
-      // 2. Update the full_orders status and forecast as requested
+      // Update the full_orders status and metadata
       const previsaoCompleta = (previsaoData && previsaoHora) 
         ? new Date(`${previsaoData}T${previsaoHora}`).toISOString()
         : null;
 
       await updateFullOrder.mutateAsync({
+        id: orderInfo.id,
         frete_ml: orderInfo.frete_ml || orderInfo.number,
         status: 'aguardando_carregamento',
         separado_em: new Date().toISOString(),
         separado_por: user.id,
+        updated_at: new Date().toISOString(),
         previsao_carregamento: previsaoCompleta
       });
 

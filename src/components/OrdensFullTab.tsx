@@ -640,7 +640,7 @@ export const OrdensFullTab = () => {
       abertas: list.filter((o) => o.status !== "concluida" && o.status !== "cancelada" && o.status !== "enviado").length,
       aguardando: list.filter((o) => o.status === "aguardando").length,
       em_separacao: list.filter((o) => o.status === "em_separacao").length,
-      concluidas_hoje: list.filter((o) => (o.status === "concluida" || o.status === "enviado") && o.concluida_em && new Date(o.concluida_em).toDateString() === today).length,
+      concluidas_hoje: list.filter((o) => (o.status === "concluida" || o.status === "enviado" || o.status === "aguardando_carregamento") && o.separado_em && new Date(o.separado_em).toDateString() === today).length,
     };
   }, [ordens]);
 
@@ -654,7 +654,7 @@ export const OrdensFullTab = () => {
         list = list.filter(o => o.status !== 'concluida' && o.status !== 'cancelada' && o.status !== 'enviado');
       } else if (filtroStatus === 'concluidas_hoje') {
         const today = new Date().toDateString();
-        list = list.filter(o => (o.status === 'concluida' || o.status === 'enviado') && o.concluida_em && new Date(o.concluida_em).toDateString() === today);
+        list = list.filter(o => (o.status === 'concluida' || o.status === 'enviado' || o.status === 'aguardando_carregamento') && o.separado_em && new Date(o.separado_em).toDateString() === today);
       } else if (filtroStatus === 'enviado') {
         list = list.filter(o => o.status === 'enviado' || o.status === 'concluida');
       } else {

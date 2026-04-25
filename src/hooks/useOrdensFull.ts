@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type OrdemStatus = "pdf_carregado" | "separando" | "aguardando_carregamento" | "carregando" | "enviado" | "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "cancelada" | "pausado";
 export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
@@ -27,7 +28,6 @@ export interface OrdemFull {
   atribuido_para?: string | null;
   atribuido?: { full_name: string | null } | null;
   separado_por_profile?: { full_name: string | null } | null;
-  concluida_em?: string | null;
   prazo?: string | null;
 }
 
@@ -365,11 +365,17 @@ export const useConcluirOrdem = () => {
 
 export const useMarcarOrdemSeparada = () => {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (ordemId: string) => {
       const { error } = await supabase
         .from("full_orders")
-        .update({ status: "separada" })
+        .update({ 
+          status: "aguardando_carregamento",
+          separado_em: new Date().toISOString(),
+          separado_por: user?.id,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", ordemId);
       if (error) throw error;
     },
