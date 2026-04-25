@@ -461,22 +461,9 @@ export const OrdensFullTab = () => {
           product_id: i.product.id,
           qtd_solicitada: i.quantity
         })),
-        enviarParaSeparacao: true
+        enviarParaSeparacao: true,
+        status: "pdf_carregado"
       });
-
-      // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
-      // Mas o hook useCreateOrdemFull já cria na tabela 'full_orders'. 
-      // Parece que existe uma tabela redundante 'full_orders'. 
-      // O usuário quer que 'full_orders' seja usada também.
-      if (companyId && freteNumero) {
-        await supabase.from("full_orders").insert({
-          company_id: companyId,
-          frete_ml: freteNumero,
-          ordem_id: (newOrder as any).ordem_id, // Usar o novo ID interno
-          pdf_frete_id: freteNumero,
-          status: "pdf_carregado"
-        } as any);
-      }
 
       toast({ title: "Ordem criada e enviada para separação!" });
       setPreviewOpen(false);
