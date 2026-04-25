@@ -33,43 +33,45 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     --popover: 214 32% 26%;
     --popover-foreground: 210 40% 98%;
 
-    /* Primary: #2563EB */
-    --primary: 217 91% 60%;
+    /* Primary: #2ecc40 */
+    --primary: 127 63% 49%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 28% 22%;
+    /* Secondary: #1a2332 */
+    --secondary: 218 32% 15%;
     --secondary-foreground: 210 40% 98%;
 
     /* Muted text: #94A3B8 */
     --muted: 215 28% 20%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 215 28% 24%;
+    /* Accent: #27ae60 */
+    --accent: 145 63% 42%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --success: 142 71% 45%;
+    --success: 127 63% 49%;
     --success-foreground: 0 0% 100%;
 
     /* Borders: clearly visible ~#4B5C73 */
     --border: 214 20% 37%;
     --input: 214 22% 28%;
-    --ring: 217 91% 60%;
+    --ring: 127 63% 49%;
 
     --radius: 0.75rem;
 
     /* Sidebar: darkest layer #0B1220 */
     --sidebar-background: 222 55% 8%;
     --sidebar-foreground: 215 20% 68%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary: 128 65% 29%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 38% 16%;
+    --sidebar-accent: 145 63% 42%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 30% 16%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 127 63% 49%;
 
     /* Strong shadows for depth */
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
@@ -77,8 +79,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     --shadow-md: 0 6px 18px -2px hsl(0 0% 0% / 0.45), 0 3px 8px -3px hsl(0 0% 0% / 0.35);
     --shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.5), 0 6px 12px -5px hsl(0 0% 0% / 0.4);
     --shadow-xl: 0 20px 40px -5px hsl(0 0% 0% / 0.55), 0 10px 20px -8px hsl(0 0% 0% / 0.4);
-    --shadow-primary: 0 4px 20px -2px hsl(217 91% 60% / 0.35);
-    --shadow-glow: 0 0 24px -4px hsl(217 91% 60% / 0.15);
+    --shadow-primary: 0 4px 20px -2px hsl(127 63% 49% / 0.35);
+    --shadow-glow: 0 0 24px -4px hsl(127 63% 49% / 0.15);
   }
 }
 

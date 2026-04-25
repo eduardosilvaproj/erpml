@@ -115,7 +115,7 @@ export default function BoasVindas() {
         </motion.div>
 
         <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">
-          Bem-vindo ao ERP System! 🎉
+          Bem-vindo ao Stovix! 🎉
         </h1>
 
         {company && (

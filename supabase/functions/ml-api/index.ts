@@ -662,7 +662,7 @@ Deno.serve(async (req) => {
           headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; ErpML/1.0)",
+            "User-Agent": "Mozilla/5.0 (compatible; Stovix/1.0)",
           },
         });
         const itemPayload = await itemResponse.json().catch(() => null);

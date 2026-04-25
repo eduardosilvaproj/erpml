@@ -157,10 +157,25 @@ function SidebarContent({
     <>
       {/* Logo */}
       <div className="h-14 flex items-center gap-3 px-4 border-b border-border/30 shrink-0">
-        <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
-          <span className="text-base font-bold text-primary">E</span>
+        <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+          <img 
+            src="/src/assets/logo-erp.png" 
+            alt="Stovix" 
+            className="h-8 w-8 object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+              const parent = target.parentElement;
+              if (parent) {
+                const span = document.createElement('span');
+                span.className = 'text-base font-bold text-primary';
+                span.innerText = 'S';
+                parent.appendChild(span);
+              }
+            }}
+          />
         </div>
-        <span className="text-sm font-bold text-foreground tracking-tight truncate">ERP System</span>
+        <span className="text-sm font-bold text-foreground tracking-tight truncate">Stovix</span>
       </div>
 
       {/* Nav */}
@@ -172,7 +187,7 @@ function SidebarContent({
               onClick={() => { setOpenGroup(null); go("/"); }}
               className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                 isActive("/")
-                  ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                  ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
                   : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
@@ -196,7 +211,7 @@ function SidebarContent({
                     onClick={() => toggleGroup(group.label)}
                     className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                       isOpen || groupActive
-                        ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                        ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
                         : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                     }`}
                   >
@@ -222,11 +237,11 @@ function SidebarContent({
                             onClick={() => go(sub.url)}
                             className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-[13px] font-medium transition-all duration-100 bg-slate-800/50 ${
                               subActive
-                                ? "text-blue-400 font-semibold"
-                                : "text-muted-foreground hover:text-blue-300"
+                                ? "text-primary font-semibold"
+                                : "text-muted-foreground hover:text-primary"
                             }`}
                           >
-                            <sub.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${subActive ? "text-blue-400" : ""}`} strokeWidth={1.75} />
+                            <sub.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
                             <span className="truncate">{sub.label}</span>
                           </button>
                         </TooltipTrigger>
@@ -247,7 +262,7 @@ function SidebarContent({
               onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
               className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                 isActive("/ia-hub") || isActive("/ia-")
-                  ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                  ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
                   : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
               }`}
             >
@@ -268,7 +283,7 @@ function SidebarContent({
                   onClick={() => { setOpenGroup(null); go("/admin"); }}
                   className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                     isActive("/admin")
-                      ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                      ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
                       : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                   }`}
                 >
@@ -284,7 +299,7 @@ function SidebarContent({
                   onClick={() => { setOpenGroup(null); go("/master-admin"); }}
                   className={`relative w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                     isActive("/master-admin")
-                      ? "bg-blue-600/30 border-l-[3px] border-blue-400 text-foreground"
+                      ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
                       : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
                   }`}
                 >

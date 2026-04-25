@@ -10,7 +10,7 @@ const MAX_MESSAGES = 50;
 const MAX_MESSAGE_LENGTH = 4000;
 const ALLOWED_ROLES = new Set(["user", "assistant"]);
 
-const SYSTEM_PROMPT = `Você é a Ana, assistente de suporte do ERP System — um sistema de gestão para e-commerce e Mercado Livre.
+const SYSTEM_PROMPT = `Você é a Ana, assistente de suporte do Stovix — um sistema de gestão para e-commerce e Mercado Livre.
 
 Sua personalidade:
 - Simpática, paciente e acolhedora, como uma colega de trabalho que adora ajudar

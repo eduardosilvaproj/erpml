@@ -125,7 +125,27 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-foreground">Entrar</CardTitle>
+          <div className="flex justify-center mb-6">
+            <div className="h-[120px] w-[120px] rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden">
+              <img 
+                src="/src/assets/logo-erp.png" 
+                alt="Stovix" 
+                className="h-[100px] w-[100px] object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const parent = target.parentElement;
+                  if (parent) {
+                    const span = document.createElement('span');
+                    span.className = 'text-4xl font-bold text-primary';
+                    span.innerText = 'S';
+                    parent.appendChild(span);
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-foreground">Stovix</CardTitle>
           <CardDescription>Acesse sua conta para continuar</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin} noValidate>
