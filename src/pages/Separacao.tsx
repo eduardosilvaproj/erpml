@@ -20,6 +20,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
 import { useProducts } from "@/hooks/useProductData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
+
 import { OrderRecordingSystem, type OrderRecordingSystemHandle } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
