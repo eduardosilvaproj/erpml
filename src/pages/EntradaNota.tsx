@@ -2281,7 +2281,9 @@ const EntradaNota = () => {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
+
 
 export default EntradaNota;
