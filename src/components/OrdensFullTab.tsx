@@ -60,14 +60,16 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
       const { error } = await supabase
         .from("ordens_full")
         .update({ previsao_carregamento: tempDate || null })
-        .eq("id", o.id);
+        .eq("id", o.id)
+        .eq("company_id", companyId);
       if (error) throw error;
       
       if (o.frete_ml) {
          await supabase
           .from("full_orders")
           .update({ previsao_carregamento: tempDate || null })
-          .eq("frete_ml", o.frete_ml);
+          .eq("frete_ml", o.frete_ml)
+          .eq("company_id", companyId);
       }
       
       toast({ title: "✅ Previsão atualizada" });
