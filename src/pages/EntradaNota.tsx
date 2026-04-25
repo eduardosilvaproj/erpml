@@ -976,6 +976,12 @@ const EntradaNota = () => {
 
               if (updateError) {
                 console.error(`Erro ao atualizar estoque para ${match.xmlProduct.description}:`, updateError);
+              } else {
+                // Somente marca como atualizado se o update no produto teve sucesso
+                await supabase
+                  .from("invoice_items")
+                  .update({ stock_updated: true })
+                  .eq("id", insertedItem.id);
               }
             }
           }
