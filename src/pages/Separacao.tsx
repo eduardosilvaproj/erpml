@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
+import { useProducts } from "@/hooks/useProductData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { OrderRecordingSystem, type OrderRecordingSystemHandle } from "@/components/OrderRecordingSystem";
 import { useAuth } from "@/contexts/AuthContext";
