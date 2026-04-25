@@ -140,8 +140,33 @@ const Separacao = () => {
           .eq("company_id", companyId)
           .maybeSingle();
 
-        if (fullOrder?.bipagem_state) {
-          console.log("Restaurando estado de bipagem do Supabase...");
+        if (fullOrder?.full_order_items && fullOrder.full_order_items.length > 0) {
+          console.log("Carregando itens da tabela relacional...");
+          const bipagemState = Array.isArray(fullOrder.bipagem_state) ? (fullOrder.bipagem_state as any[]) : [];
+          
+          const mappedItems: SeparacaoItem[] = fullOrder.full_order_items.map((item: any) => {
+            const product = item.products;
+            const bState = bipagemState.find(b => b.productId === item.product_id);
+            
+            return {
+              productId: item.product_id,
+              name: product?.name || bState?.name || 'Produto',
+              sku: product?.sku || bState?.sku || '',
+              barcode: product?.barcode || bState?.barcode || '',
+              image_url: product?.image_url || bState?.image_url || null,
+              neededQty: item.quantity || bState?.neededQty || 0,
+              scannedQty: bState?.scannedQty || 0,
+              status: bState?.status || 'pendente'
+            };
+          });
+          
+          setItems(mappedItems);
+          setIsPaused(fullOrder.status === 'pausado');
+          if (bipagemState.length > 0) {
+            toast({ title: "🔄 Bipagem restaurada com sucesso!" });
+          }
+        } else if (fullOrder?.bipagem_state) {
+          console.log("Restaurando estado de bipagem do Supabase (legado)...");
           setItems(fullOrder.bipagem_state as unknown as SeparacaoItem[]);
           setIsPaused(fullOrder.status === 'pausado');
           toast({ title: "🔄 Bipagem restaurada com sucesso!" });
