@@ -360,7 +360,7 @@ const Produtos = () => {
                           </TableHead>
                           <TableHead className="w-[50px]">Foto</TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("sku")}>
-                            SKU / Fornecedores{sortIndicator("sku")}
+                            EAN / SKU{sortIndicator("sku")}
                           </TableHead>
                           <TableHead className="cursor-pointer" onClick={() => handleSort("name")}>
                             Nome{sortIndicator("name")}
