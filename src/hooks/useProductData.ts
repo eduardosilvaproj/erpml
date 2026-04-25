@@ -100,6 +100,14 @@ export function useProducts(filters?: {
           query = query.eq("company_id", companyId);
         }
       }
+      
+      const statusFilter = filters?.status || "active";
+      if (statusFilter === "active") {
+        query = query.eq("active", true);
+      } else if (statusFilter === "inactive") {
+        query = query.eq("active", false);
+      }
+
       if (filters?.category_id) {
         query = query.eq("category_id", filters.category_id);
       }
