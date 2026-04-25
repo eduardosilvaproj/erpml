@@ -72,12 +72,7 @@ const Produtos = () => {
   const deleteProduct = useDeleteProduct();
   const deleteSupplier = useDeleteSupplier();
 
-  // Filter by status client-side
-  const filteredProducts = (data?.products || []).filter((p) => {
-    if (statusFilter === "active") return p.active;
-    if (statusFilter === "inactive") return !p.active;
-    return true;
-  });
+  const filteredProducts = data?.products || [];
 
   const handleBatchEnrich = useCallback(async () => {
     setEnriching(true);
