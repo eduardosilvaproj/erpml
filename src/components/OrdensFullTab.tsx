@@ -429,7 +429,25 @@ export const OrdensFullTab = () => {
     const freteNumero = forcedNumero || parsedData.shippingNumber;
 
     try {
-      await createOrdem.mutateAsync({
+      // 1. Verificar duplicidade apenas dentro da mesma empresa
+      const { data: existing } = await supabase
+        .from('full_orders')
+        .select('id, status')
+        .eq('frete_ml', freteNumero)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (existing && !forcedNumero) {
+        setDuplicateCheck({
+          isOpen: true,
+          existingId: existing.id,
+          existingStatus: existing.status,
+          freteNumero: freteNumero
+        });
+        return;
+      }
+
+      const newOrder = await createOrdem.mutateAsync({
         descricao: `Frete #${freteNumero}`,
         frete_ml: freteNumero,
         prazo: null,
@@ -441,14 +459,18 @@ export const OrdensFullTab = () => {
         enviarParaSeparacao: true
       });
 
-      // Registrar na tabela full_orders para rastreamento
+      // 2. Registrar na tabela full_orders para rastreamento (já atualizado com ordem_id no banco via hook se necessário)
+      // Mas o hook useCreateOrdemFull já cria na tabela 'ordens_full'. 
+      // Parece que existe uma tabela redundante 'full_orders'. 
+      // O usuário quer que 'full_orders' seja usada também.
       if (companyId && freteNumero) {
         await supabase.from("full_orders").insert({
           company_id: companyId,
           frete_ml: freteNumero,
+          ordem_id: (newOrder as any).ordem_id, // Usar o novo ID interno
           pdf_frete_id: freteNumero,
           status: "separacao"
-        });
+        } as any);
       }
 
       toast({ title: "Ordem criada e enviada para separação!" });
