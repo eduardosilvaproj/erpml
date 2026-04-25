@@ -334,30 +334,7 @@ const Separacao = () => {
     }
   };
 
-  const handleSaveBoxGtin = async () => {
-    if (!selectedProduct || !companyId) return;
-
-    try {
-      const qtd = parseInt(qtdCaixa);
-      const { error } = await supabase.from("product_gtins").insert({
-        product_id: selectedProduct.id,
-        company_id: companyId,
-        gtin: caixaDialog.code,
-        tipo: 'caixa',
-        qtd_por_caixa: qtd
-      });
-
-      if (error) throw error;
-
-      toast({ title: "✅ GTIN de Caixa cadastrado!" });
-      setCaixaDialog({ isOpen: false, code: "" });
-      
-      // Bipar automaticamente após cadastrar
-      handleScan(caixaDialog.code);
-    } catch (err: any) {
-      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
-    }
-  };
+  // handleSaveBoxGtin removido pois o fluxo agora é inline na bipagem e não cadastra no banco como solicitado.
 
   const generatePDF = useCallback(() => {
     if (!orderInfo) return;
