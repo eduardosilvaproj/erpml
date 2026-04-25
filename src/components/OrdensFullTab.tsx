@@ -172,7 +172,8 @@ export const OrdensFullTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("order_recordings")
-        .select("pedido_id, tipo");
+        .select("pedido_id, tipo")
+        .eq("company_id", companyId!);
       if (error) throw error;
       return data;
     },
