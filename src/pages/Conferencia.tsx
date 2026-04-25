@@ -451,11 +451,11 @@ const Conferencia = () => {
 
       if (found) {
         const qtyToLow = parseInt(tempBoxQty);
+        setBoxMode("idle");
+        setInternalScanValue("");
         addScannedUnits(found, qtyToLow);
         setLastScan({ success: true, name: `📦 Caixa de ${qtyToLow}x ${found.name}`, code: internalCode });
         playBeep(800, 100);
-        setBoxMode("idle");
-        setInternalScanValue("");
       } else {
         setLastScan({ success: false, name: "Produto não encontrado para esse EAN", code: internalCode });
         playBeep(300, 200);
