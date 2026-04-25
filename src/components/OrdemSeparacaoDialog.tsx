@@ -571,6 +571,30 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showConfirmFinalizar} onOpenChange={setShowConfirmFinalizar}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-amber-500">⚠️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Itens Pendentes</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Existem itens pendentes/parciais nesta ordem.
+              </DialogDescription>
+            </DialogHeader>
+            <p className="text-muted-foreground pt-2">Deseja marcar como separada mesmo assim?</p>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={() => { setShowConfirmFinalizar(false); executeFinalizar(); }} className="w-full py-6 text-base gap-2 bg-amber-600 hover:bg-amber-700">
+                ✅ Sim, finalizar mesmo assim
+              </Button>
+              <Button variant="outline" onClick={() => setShowConfirmFinalizar(false)} className="w-full py-6 text-base gap-2">
+                ❌ Voltar e conferir
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
