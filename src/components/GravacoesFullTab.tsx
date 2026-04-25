@@ -282,6 +282,30 @@ export const GravacoesFullTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Confirmar Exclusão */}
+      <Dialog open={!!deleteRec} onOpenChange={(o) => !o && setDeleteRec(null)}>
+        <DialogContent className="sm:max-w-[425px] text-center p-8">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-6xl mb-2 text-destructive">🗑️</div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center">Excluir gravação?</DialogTitle>
+              <DialogDescription className="text-base text-center pt-2">
+                Esta ação não pode ser desfeita. O vídeo será removido permanentemente.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="flex flex-col w-full gap-3 pt-4">
+              <Button onClick={() => deleteRec && confirmRemove(deleteRec)} variant="destructive" className="w-full py-6 text-base gap-2">
+                ❌ Sim, excluir agora
+              </Button>
+              <Button variant="outline" onClick={() => setDeleteRec(null)} className="w-full py-6 text-base gap-2">
+                Voltar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
