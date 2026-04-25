@@ -607,7 +607,7 @@ export default function LandingPage() {
             </button>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ERP Mercado Livre — Todos os direitos reservados
+            © 2026 Stovix — Controle de Estoque e Operação sem Erro — Todos os direitos reservados
           </p>
         </div>
       </footer>
