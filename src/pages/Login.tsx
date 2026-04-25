@@ -363,7 +363,7 @@ export default function Login() {
               </Button>
               <div className="flex justify-between w-full text-sm">
                 <Link to="/signup" className="text-primary hover:text-primary/80 transition-colors">Criar conta</Link>
-                <Link to="/forgot-password" alt="Esqueci a senha" className="text-muted-foreground hover:text-white transition-colors">Esqueci a senha</Link>
+                <Link to="/forgot-password" className="text-muted-foreground hover:text-white transition-colors">Esqueci a senha</Link>
               </div>
             </CardFooter>
           </form>
