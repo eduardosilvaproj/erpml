@@ -394,8 +394,10 @@ const Produtos = () => {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir {selectedIds.size} produto(s)?</AlertDialogTitle>
-                    <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    <AlertDialogTitle>Remover {selectedIds.size} produto(s)?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Os produtos sem histórico serão excluídos permanentemente. Produtos com histórico de vendas serão apenas desativados.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
