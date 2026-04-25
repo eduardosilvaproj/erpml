@@ -145,7 +145,7 @@ export function parseNFeXml(xmlString: string): NFeData {
     throw new Error("Nenhum produto encontrado no XML.");
   }
 
-  return { number, series, issuerName, issuerCnpj, totalValue, issueDate, products };
+  return { number, series, issuerName, issuerCnpj, totalValue, issueDate, products, supplier };
 }
 
 function normalizeText(value: string): string {
