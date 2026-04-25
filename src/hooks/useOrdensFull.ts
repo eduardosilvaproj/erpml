@@ -364,11 +364,17 @@ export const useConcluirOrdem = () => {
 
 export const useMarcarOrdemSeparada = () => {
   const qc = useQueryClient();
+  const { user } = useAuth();
   return useMutation({
     mutationFn: async (ordemId: string) => {
       const { error } = await supabase
         .from("full_orders")
-        .update({ status: "separada" })
+        .update({ 
+          status: "aguardando_carregamento",
+          separado_em: new Date().toISOString(),
+          separado_por: user?.id,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", ordemId);
       if (error) throw error;
     },
