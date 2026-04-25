@@ -270,18 +270,21 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
           <div className="p-6 space-y-6">
             <DialogHeader>
-              <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <span className="text-2xl font-black">Frete #{ordem?.frete_ml || ordem?.numero}</span>
-                <div className="flex gap-2">
-                  {ordem && <Badge variant="outline" className={`${ordemStatusBadge(ordem.status).cls} px-3 py-1 text-xs font-bold uppercase`}>
-                    {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status).label}
-                  </Badge>}
-                  {recorder.status === "recording" && (
-                    <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse">
-                      <Circle className="h-2 w-2 mr-1 fill-current" /> REC {formatDuration(recorder.seconds)}
-                    </Badge>
-                  )}
+              <DialogTitle className="flex flex-col gap-1">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <span className="text-2xl font-black text-primary">Frete #{ordem?.frete_ml || "—"}</span>
+                  <div className="flex gap-2">
+                    {ordem && <Badge variant="outline" className={`${ordemStatusBadge(ordem.status).cls} px-3 py-1 text-xs font-bold uppercase`}>
+                      {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status).label}
+                    </Badge>}
+                    {recorder.status === "recording" && (
+                      <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse">
+                        <Circle className="h-2 w-2 mr-1 fill-current" /> REC {formatDuration(recorder.seconds)}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
+                <span className="text-xs font-mono text-muted-foreground uppercase">ID Interno: {(ordem as any)?.ordem_id || ordem?.numero}</span>
               </DialogTitle>
               <DialogDescription className="text-base space-y-4">
                 <div className="flex flex-col gap-4 py-4 border-y border-dashed mt-4">
