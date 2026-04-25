@@ -123,6 +123,10 @@ const Conferencia = () => {
   const [flashId, setFlashId] = useState<string | null>(null);
 
   // GTIN CX modal (unknown box code → user must select product)
+  const [boxMode, setBoxMode] = useState<"idle" | "qty" | "scan_internal">("idle");
+  const [tempBoxCode, setTempBoxCode] = useState("");
+  const [tempBoxQty, setTempBoxQty] = useState("12");
+
   const [gtinModal, setGtinModal] = useState<GtinModalState>({
     open: false, code: "", selectedProductId: "", unitsPerBox: "", boxQty: "1", saveGtin: true
   });
