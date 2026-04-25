@@ -227,8 +227,8 @@ export default function Login() {
               <img
                 src="/chatgpt-image.png"
                 alt="Stovix"
+                className="h-24 md:h-40 w-auto transition-all duration-300"
                 style={{
-                  height: '160px',
                   objectFit: 'contain',
                   filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
                   animation: 'pulse-glow 3s ease-in-out infinite'
