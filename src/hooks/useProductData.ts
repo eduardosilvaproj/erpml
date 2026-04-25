@@ -62,6 +62,7 @@ export function useProducts(filters?: {
   search?: string;
   category_id?: string;
   supplier_id?: string;
+  status?: "active" | "inactive" | "all";
   page?: number;
   pageSize?: number;
   sortBy?: string;
@@ -99,6 +100,14 @@ export function useProducts(filters?: {
           query = query.eq("company_id", companyId);
         }
       }
+      
+      const statusFilter = filters?.status || "active";
+      if (statusFilter === "active") {
+        query = query.eq("active", true);
+      } else if (statusFilter === "inactive") {
+        query = query.eq("active", false);
+      }
+
       if (filters?.category_id) {
         query = query.eq("category_id", filters.category_id);
       }
@@ -143,7 +152,7 @@ export function useProducts(filters?: {
  */
 export function useAllProducts(opts?: { activeOnly?: boolean }) {
   const companyId = useCompanyId();
-  const activeOnly = opts?.activeOnly ?? false;
+  const activeOnly = opts?.activeOnly ?? true;
 
   return useQuery({
     queryKey: ["products-all", companyId, activeOnly],
@@ -308,15 +317,70 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      // Tabelas para verificar histórico
+      const tablesToCheck = [
+        "sale_items",
+        "full_order_items",
+        "invoice_items",
+        "ml_order_items",
+        "transfer_items",
+        "conference_items",
+        "store_orders" // Verificando pedidos vinculados também
+      ];
+      
+      let hasHistory = false;
+
+      // Executa as verificações em paralelo para performance
+      const checks = await Promise.all(
+        tablesToCheck.map(async (table) => {
+          try {
+            const { count, error } = await (supabase.from(table as any) as any)
+              .select("*", { count: "exact", head: true })
+              .eq("product_id", id);
+            
+            if (error) {
+              // Se a tabela não existir ou outro erro, apenas ignora
+              console.warn(`Erro ao verificar histórico na tabela ${table}:`, error);
+              return 0;
+            }
+            return count || 0;
+          } catch (e) {
+            return 0;
+          }
+        })
+      );
+
+      hasHistory = checks.some(count => count > 0);
+
+      if (hasHistory) {
+        // Desativa em vez de excluir
+        const { error } = await supabase
+          .from("products")
+          .update({ active: false })
+          .eq("id", id);
+        
+        if (error) throw error;
+        return { deactivated: true };
+      } else {
+        // Tenta excluir (se houver outras FKs não mapeadas, o erro do banco será pego pelo onError)
+        const { error } = await supabase.from("products").delete().eq("id", id);
+        if (error) throw error;
+        return { deactivated: false };
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: "Produto excluído!" });
+      if (result.deactivated) {
+        toast({ 
+          title: "Produto desativado", 
+          description: "Este produto não pode ser excluído pois possui histórico de vendas ou movimentações. Para preservá-lo no histórico, ele foi desativado.",
+        });
+      } else {
+        toast({ title: "Produto excluído!" });
+      }
     },
     onError: (error: Error) => {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      toast({ title: "Erro ao excluir/desativar", description: error.message, variant: "destructive" });
     },
   });
 }

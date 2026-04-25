@@ -40,7 +40,7 @@ const Produtos = () => {
     }
   }, [location.search]);
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("active");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [correctionFilter, setCorrectionFilter] = useState<string>("");
   const [page, setPage] = useState(1);
@@ -62,6 +62,7 @@ const Produtos = () => {
     search: search || undefined,
     category_id: categoryFilter || undefined,
     supplier_id: supplierFilter || undefined,
+    status: (statusFilter as any) || "active",
     needsCorrection: (correctionFilter as any) || undefined,
     page,
     pageSize,
@@ -71,12 +72,7 @@ const Produtos = () => {
   const deleteProduct = useDeleteProduct();
   const deleteSupplier = useDeleteSupplier();
 
-  // Filter by status client-side
-  const filteredProducts = (data?.products || []).filter((p) => {
-    if (statusFilter === "active") return p.active;
-    if (statusFilter === "inactive") return !p.active;
-    return true;
-  });
+  const filteredProducts = data?.products || [];
 
   const handleBatchEnrich = useCallback(async () => {
     setEnriching(true);
@@ -393,13 +389,15 @@ const Produtos = () => {
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" /> Excluir selecionados
+                    <Trash2 className="mr-2 h-4 w-4" /> Remover selecionados
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir {selectedIds.size} produto(s)?</AlertDialogTitle>
-                    <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    <AlertDialogTitle>Remover {selectedIds.size} produto(s)?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Os produtos sem histórico serão excluídos permanentemente. Produtos com histórico de vendas serão apenas desativados.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -536,9 +534,9 @@ const Produtos = () => {
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
                                       <AlertDialogHeader>
-                                        <AlertDialogTitle>Excluir produto?</AlertDialogTitle>
+                                        <AlertDialogTitle>Remover produto?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                          Tem certeza que deseja excluir "{product.name}"? Esta ação não pode ser desfeita.
+                                          Tem certeza que deseja remover "{product.name}"? Se houver histórico de vendas, ele será desativado. Caso contrário, será excluído permanentemente.
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
@@ -547,7 +545,7 @@ const Produtos = () => {
                                           onClick={() => deleteProduct.mutate(product.id)}
                                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                         >
-                                          Excluir
+                                          Remover
                                         </AlertDialogAction>
                                       </AlertDialogFooter>
                                     </AlertDialogContent>
