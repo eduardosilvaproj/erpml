@@ -19,6 +19,9 @@ import { enrichProduct } from "@/lib/enrich-product";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
+import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
+import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 
 const Produtos = () => {
   const { toast } = useToast();
