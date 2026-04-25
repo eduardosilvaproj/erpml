@@ -102,6 +102,13 @@ export const useOrdemFull = (ordemId: string | null) => {
   });
 };
 
+const gerarOrdemId = (companyId: string) => {
+  const timestamp = Date.now().toString(36).toUpperCase(); // ex: LK3H2A
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase(); // ex: X7K2
+  const companyPrefix = companyId.substring(0, 4).toUpperCase(); // ex: 948B
+  return `ORD-${companyPrefix}-${timestamp}-${random}`;
+};
+
 export const useCreateOrdemFull = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
@@ -122,12 +129,15 @@ export const useCreateOrdemFull = () => {
       const totalProdutos = params.itens.length;
       const totalItens = params.itens.reduce((s, i) => s + i.qtd_solicitada, 0);
 
+      const ordemIdInterno = gerarOrdemId(companyId);
+
       const { data: ordem, error } = await supabase
         .from("ordens_full")
         .insert({
+          ordem_id: ordemIdInterno,
           descricao: params.descricao,
           frete_ml: params.frete_ml,
-          numero: params.frete_ml ? params.frete_ml : undefined, // If frete_ml is provided, use it as the number
+          numero: ordemIdInterno, // Use internal ID as the number
           prazo: params.prazo,
           atribuido_para: params.atribuido_para,
           status: params.enviarParaSeparacao ? "aguardando" : "rascunho",
