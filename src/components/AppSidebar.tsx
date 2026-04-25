@@ -116,7 +116,7 @@ export function AppSidebar() {
             signOut={signOut}
             isAdmin={!!isAdmin}
             pendingCount={pendingCount}
-            compact={false}
+            compact={isCollapsed}
           />
         </aside>
       </>
