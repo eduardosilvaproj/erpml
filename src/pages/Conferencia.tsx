@@ -33,6 +33,7 @@ import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/confer
 import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
 import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 import { useNavigate } from "react-router-dom";
+import { stockService } from "@/services/stock";
 
 
 /**
