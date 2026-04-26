@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { productsService } from "@/services/products";
-import { useCompanyId } from "@/hooks/useCompanyId";
 
 export type Product = {
   id: string;
@@ -75,83 +74,10 @@ export function useProducts(filters?: {
   return useQuery({
     queryKey: ["products", filters, companyId],
     enabled: !!companyId,
-    queryFn: async () => {
-      let query;
-      
-      if (filters?.search && companyId) {
-        // Use the RPC for searching across products and supplier SKUs
-        query = supabase
-          .rpc("search_products_with_suppliers", {
-            search_term: filters.search,
-            p_company_id: companyId
-          })
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)");
-        
-        if (filters?.needsCorrection === "no_sku") {
-          query = query.or("sku.is.null,sku.eq.''");
-        } else if (filters?.needsCorrection === "no_ean") {
-          query = query.eq("ean_pending", true);
-        }
-
-      } else {
-        query = supabase
-          .from("products")
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)", { count: "exact" });
-
-        if (companyId) {
-          query = query.eq("company_id", companyId);
-        }
-      }
-      
-      const statusFilter = filters?.status || "active";
-      if (statusFilter === "active") {
-        query = query.eq("active", true);
-      } else if (statusFilter === "inactive") {
-        query = query.eq("active", false);
-      }
-
-      if (filters?.category_id) {
-        query = query.eq("category_id", filters.category_id);
-      }
-
-      if (filters?.needsCorrection === "no_sku") {
-        query = query.or("sku.is.null,sku.eq.''");
-      } else if (filters?.needsCorrection === "no_ean") {
-        query = query.eq("ean_pending", true);
-      }
-
-      const sortBy = filters?.sortBy || "created_at";
-      const sortOrder = filters?.sortOrder === "asc" ? true : false;
-      query = query.order(sortBy, { ascending: sortOrder });
-
-      const page = filters?.page || 1;
-      const pageSize = filters?.pageSize || 10;
-      const from = (page - 1) * pageSize;
-      query = query.range(from, from + pageSize - 1);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-
-      let filtered = data as unknown as Product[];
-      if (filters?.supplier_id) {
-        filtered = filtered.filter((p) =>
-          p.product_suppliers?.some((ps) => ps.supplier_id === filters.supplier_id)
-        );
-      }
-      if (filters?.needsCorrection === "no_supplier") {
-        filtered = filtered.filter((p) => !p.product_supplier_skus || p.product_supplier_skus.length === 0);
-      }
-
-      return { products: filtered, total: count || 0 };
-    },
+    queryFn: () => productsService.fetchProducts(filters, companyId),
   });
 }
 
-/**
- * Carrega TODOS os produtos da empresa, paginando em lotes de 1000
- * para contornar o limite padrão do Supabase. Use em telas como
- * Conferência e Balanço de Estoque, onde é necessário a base completa.
- */
 export function useAllProducts(opts?: { activeOnly?: boolean }) {
   const companyId = useCompanyId();
   const activeOnly = opts?.activeOnly ?? true;
@@ -159,31 +85,7 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
   return useQuery({
     queryKey: ["products-all", companyId, activeOnly],
     enabled: !!companyId,
-    queryFn: async () => {
-      const PAGE = 1000;
-      let all: Product[] = [];
-      let page = 0;
-      // Loop seguro até esvaziar
-      while (true) {
-        let q = supabase
-          .from("products")
-          .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)")
-          .eq("company_id", companyId!)
-          .order("name", { ascending: true })
-          .range(page * PAGE, (page + 1) * PAGE - 1);
-        if (activeOnly) q = q.eq("active", true);
-
-        const { data, error } = await q;
-        if (error) throw error;
-        const batch = (data ?? []) as unknown as Product[];
-        all = all.concat(batch);
-        if (batch.length < PAGE) break;
-        page++;
-        // Salvaguarda contra loops anômalos (>200k produtos)
-        if (page > 200) break;
-      }
-      return { products: all, total: all.length };
-    },
+    queryFn: () => productsService.fetchAllProducts(companyId!, activeOnly),
   });
 }
 
@@ -193,57 +95,7 @@ export function useCreateProduct() {
   const companyId = useCompanyId();
 
   return useMutation({
-    mutationFn: async (data: ProductFormData) => {
-      const { supplier_ids, supplier_skus, ...productData } = data;
-      const insertData = {
-        ...productData,
-        barcode: productData.barcode || null,
-        ean: productData.ean || productData.barcode || null,
-        description: productData.description || null,
-        category_id: productData.category_id || null,
-        weight: productData.weight ?? null,
-        width: productData.width ?? null,
-        height: productData.height ?? null,
-        depth: productData.depth ?? null,
-        sku_ml: productData.sku_ml || null,
-        id_ml: productData.id_ml || null,
-        min_stock: productData.min_stock ?? 0,
-        company_id: companyId,
-        image_url: productData.image_url || null,
-        gtin_cx: productData.gtin_cx || null,
-        box_quantity: productData.box_quantity ?? null,
-      };
-
-      const { data: product, error } = await supabase
-        .from("products")
-        .insert(insertData)
-        .select()
-        .maybeSingle();
-      if (error) throw error;
-
-      if (supplier_ids.length > 0) {
-        const supplierLinks = supplier_ids.map((sid, i) => ({
-          product_id: product.id,
-          supplier_id: sid,
-          cost: data.cost,
-          is_primary: i === 0,
-        }));
-        const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
-        if (linkError) throw linkError;
-      }
-      
-      if (supplier_skus && supplier_skus.length > 0) {
-        const skusToInsert = supplier_skus.map(s => ({
-          product_id: product.id,
-          supplier_name: s.supplier_name,
-          supplier_sku: s.supplier_sku
-        }));
-        const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert);
-        if (skuError) throw skuError;
-      }
-
-      return product;
-    },
+    mutationFn: (data: ProductFormData) => productsService.createProduct(data, companyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Produto criado com sucesso!" });
@@ -259,50 +111,7 @@ export function useUpdateProduct() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: ProductFormData }) => {
-      const { supplier_ids, supplier_skus, ...productData } = data;
-      const updateData = {
-        ...productData,
-        barcode: productData.barcode || null,
-        ean: productData.ean || productData.barcode || null,
-        description: productData.description || null,
-        category_id: productData.category_id || null,
-        weight: productData.weight ?? null,
-        width: productData.width ?? null,
-        height: productData.height ?? null,
-        depth: productData.depth ?? null,
-        sku_ml: productData.sku_ml || null,
-        id_ml: productData.id_ml || null,
-        min_stock: productData.min_stock ?? 0,
-        image_url: productData.image_url || null,
-        gtin_cx: productData.gtin_cx || null,
-        box_quantity: productData.box_quantity ?? null,
-      };
-
-      const { error } = await supabase.from("products").update(updateData).eq("id", id);
-      if (error) throw error;
-
-      await supabase.from("product_suppliers").delete().eq("product_id", id);
-      if (supplier_ids.length > 0) {
-        const supplierLinks = supplier_ids.map((sid, i) => ({
-          product_id: id,
-          supplier_id: sid,
-          cost: data.cost,
-          is_primary: i === 0,
-        }));
-        await supabase.from("product_suppliers").insert(supplierLinks);
-      }
-
-      await supabase.from("product_supplier_skus").delete().eq("product_id", id);
-      if (supplier_skus && supplier_skus.length > 0) {
-        const skusToInsert = supplier_skus.map(s => ({
-          product_id: id,
-          supplier_name: s.supplier_name,
-          supplier_sku: s.supplier_sku
-        }));
-        await supabase.from("product_supplier_skus").insert(skusToInsert);
-      }
-    },
+    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => productsService.updateProduct(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Produto atualizado!" });
@@ -318,58 +127,7 @@ export function useDeleteProduct() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      // Tabelas para verificar histórico
-      const tablesToCheck = [
-        "sale_items",
-        "full_order_items",
-        "invoice_items",
-        "ml_order_items",
-        "transfer_items",
-        "conference_items",
-        "store_orders" // Verificando pedidos vinculados também
-      ];
-      
-      let hasHistory = false;
-
-      // Executa as verificações em paralelo para performance
-      const checks = await Promise.all(
-        tablesToCheck.map(async (table) => {
-          try {
-            const { count, error } = await (supabase.from(table as any) as any)
-              .select("*", { count: "exact", head: true })
-              .eq("product_id", id);
-            
-            if (error) {
-              // Se a tabela não existir ou outro erro, apenas ignora
-              console.warn(`Erro ao verificar histórico na tabela ${table}:`, error);
-              return 0;
-            }
-            return count || 0;
-          } catch (e) {
-            return 0;
-          }
-        })
-      );
-
-      hasHistory = checks.some(count => count > 0);
-
-      if (hasHistory) {
-        // Desativa em vez de excluir
-        const { error } = await supabase
-          .from("products")
-          .update({ active: false })
-          .eq("id", id);
-        
-        if (error) throw error;
-        return { deactivated: true };
-      } else {
-        // Tenta excluir (se houver outras FKs não mapeadas, o erro do banco será pego pelo onError)
-        const { error } = await supabase.from("products").delete().eq("id", id);
-        if (error) throw error;
-        return { deactivated: false };
-      }
-    },
+    mutationFn: (id: string) => productsService.deleteProduct(id),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       if (result.deactivated) {
@@ -393,15 +151,7 @@ export function useCategories() {
   return useQuery({
     queryKey: ["categories", companyId],
     enabled: !!companyId,
-    queryFn: async () => {
-      let query = supabase.from("categories").select("*").order("name");
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => productsService.fetchCategories(companyId),
   });
 }
 
@@ -411,15 +161,7 @@ export function useSuppliers() {
   return useQuery({
     queryKey: ["suppliers", companyId],
     enabled: !!companyId,
-    queryFn: async () => {
-      let query = supabase.from("suppliers").select("*").eq("active", true).order("name");
-      if (companyId) {
-        query = query.eq("company_id", companyId);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
-    },
+    queryFn: () => productsService.fetchSuppliers(companyId),
   });
 }
 
@@ -429,11 +171,8 @@ export function useCreateSupplier() {
   const companyId = useCompanyId();
 
   return useMutation({
-    mutationFn: async (data: { name: string; cnpj?: string; email?: string; phone?: string; address?: string }) => {
-      const { data: supplier, error } = await supabase.from("suppliers").insert({ ...data, company_id: companyId }).select().maybeSingle();
-      if (error) throw error;
-      return supplier;
-    },
+    mutationFn: (data: { name: string; cnpj?: string; email?: string; phone?: string; address?: string }) => 
+      productsService.createSupplier(data, companyId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast({ title: "Fornecedor criado!" });
@@ -449,10 +188,7 @@ export function useDeleteSupplier() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("suppliers").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: (id: string) => productsService.deleteSupplier(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast({ title: "Fornecedor excluído!" });
