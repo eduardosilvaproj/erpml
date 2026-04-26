@@ -117,6 +117,14 @@ export const ordersService = {
     return order as OrdemFull;
   },
 
+  async updateOrdem(id: string, updates: any) {
+    const { error } = await supabase
+      .from("full_orders")
+      .update(updates)
+      .eq("id", id);
+    if (error) throw error;
+  },
+
   async updateOrdemStatus(id: string, status: OrdemStatus, extra?: Record<string, any>) {
     const { error } = await supabase
       .from("full_orders")
