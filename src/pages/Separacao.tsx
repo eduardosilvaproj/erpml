@@ -441,88 +441,16 @@ const Separacao = () => {
   };
 
   const handleFinalizarSeparacao = async () => {
-    if (!orderInfo || !user) return;
+    if (!orderInfo || !user || !companyId) return;
     setIsFinishing(true);
     try {
-      // 1. Verificar se já foi finalizado para evitar baixa dupla
-      const { data: currentOrder } = await supabase
-        .from('full_orders')
-        .select('separado_em, status')
-        .eq('id', orderInfo.id)
-        .maybeSingle();
-
-      if (currentOrder?.separado_em || currentOrder?.status === 'aguardando_carregamento') {
-        toast({ 
-          title: "Ordem já finalizada", 
-          description: "Esta ordem já foi processada anteriormente.",
-          variant: "destructive"
-        });
-        navigate("/movimentacao-full");
-        return;
-      }
-
-      // 2. Atualizar estoque para cada item bipado
-      for (const item of items) {
-        if (item.scannedQty > 0) {
-          // Buscar estoque atual
-          const { data: product } = await supabase
-            .from('products')
-            .select('stock_physical, stock_full, name')
-            .eq('id', item.productId)
-            .eq('company_id', companyId)
-            .maybeSingle();
-
-          if (product) {
-            const currentPhysical = product.stock_physical || 0;
-            const currentFull = product.stock_full || 0;
-            const quantityBipada = item.scannedQty;
-
-            if (currentPhysical < quantityBipada) {
-              console.error(`Erro de estoque para ${product.name}: bipado ${quantityBipada}, disponível ${currentPhysical}`);
-              toast({
-                title: "Alerta de estoque",
-                description: `O produto ${product.name} ficou com estoque físico insuficiente (ajustado para 0).`,
-                variant: "destructive"
-              });
-            }
-
-            const newPhysical = Math.max(0, currentPhysical - quantityBipada);
-            const newFull = currentFull + quantityBipada;
-
-            await supabase
-              .from('products')
-              .update({
-                stock_physical: newPhysical,
-                stock_full: newFull,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', item.productId)
-              .eq('company_id', companyId);
-          }
-        }
-      }
-
-      // 3. Atualizar o status da ordem
-      const previsaoCompleta = (previsaoData && previsaoHora) 
-        ? new Date(`${previsaoData}T${previsaoHora}`).toISOString()
-        : null;
-
-      await updateFullOrder.mutateAsync({
-        id: orderInfo.id,
-        frete_ml: orderInfo.frete_ml || orderInfo.number,
-        status: 'aguardando_carregamento',
-        separado_em: new Date().toISOString(),
-        separado_por: user.id,
-        updated_at: new Date().toISOString(),
-        previsao_carregamento: previsaoCompleta
-      });
+      await ordersService.finalizarSeparacao(orderInfo.id, companyId, user.id);
 
       toast({ 
-        title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, 
-        description: "Estoque atualizado e status alterado para Aguardando Carregamento." 
+        title: "✅ Separação concluída!", 
+        description: "Estoque atualizado e ordem pronta para carregamento." 
       });
       
-      localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
       toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" });
