@@ -193,7 +193,7 @@ export function useImportInvoice() {
           total_value: match.xmlProduct.totalValue,
           match_type: productId ? (match.matchType || 'manual') : "none",
           match_confidence: match.confidence,
-          stock_updated: match.matchType === "none" && !!productId, // For new products, it's already set during creation
+          stock_updated: false,
         }).select().maybeSingle();
 
         if (itemError) throw itemError;
