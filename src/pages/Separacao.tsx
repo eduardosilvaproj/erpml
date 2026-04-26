@@ -164,7 +164,7 @@ const Separacao = () => {
               productId: item.product_id,
               name: product?.name || bState?.name || 'Produto',
               sku: product?.sku || bState?.sku || '',
-              barcode: product?.barcode || bState?.barcode || '',
+              ean: product?.ean || product?.barcode || bState?.ean || bState?.barcode || '',
               image_url: product?.image_url || bState?.image_url || null,
               neededQty: item.quantity || bState?.neededQty || 0,
               scannedQty: bState?.scannedQty || 0,
