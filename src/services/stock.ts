@@ -161,13 +161,44 @@ export const stockService = {
         .eq("id", item.productId)
         .maybeSingle();
       if (current) {
+        const oldPhysical = current.stock_physical || 0;
+        const oldFull = current.stock_full || 0;
+        const newPhysical = oldPhysical - item.quantity;
+        const newFull = oldFull + item.quantity;
+
         await supabase
           .from("products")
           .update({
-            stock_physical: (current.stock_physical || 0) - item.quantity,
-            stock_full: (current.stock_full || 0) + item.quantity,
+            stock_physical: newPhysical,
+            stock_full: newFull,
           })
           .eq("id", item.productId);
+
+        await this.logMovement({
+          productId: item.productId,
+          companyId: companyId || '',
+          type: 'transferencia',
+          quantity: item.quantity,
+          oldStock: oldPhysical,
+          newStock: newPhysical,
+          stockType: 'physical',
+          referenceId: order.id,
+          referenceType: 'transfer',
+          notes: `Transferência para Full - Saída do Físico (Ordem ${orderNumber})`
+        });
+
+        await this.logMovement({
+          productId: item.productId,
+          companyId: companyId || '',
+          type: 'transferencia',
+          quantity: item.quantity,
+          oldStock: oldFull,
+          newStock: newFull,
+          stockType: 'full',
+          referenceId: order.id,
+          referenceType: 'transfer',
+          notes: `Transferência para Full - Entrada no Full (Ordem ${orderNumber})`
+        });
       }
     }
 
