@@ -19,6 +19,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { productsService } from "@/services/products";
+import { invoicesService } from "@/services/invoices";
+import { stockService } from "@/services/stock";
 import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
 import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 
@@ -598,26 +601,26 @@ const EntradaNota = () => {
       toast({ title: "Preencha nome e SKU", variant: "destructive" });
       return;
     }
-    const { data: product, error } = await supabase.from("products").insert({
-      name: newProductData.name,
-      sku: newProductData.sku,
-      barcode: newProductData.ean || null,
-      price: parseFloat(newProductData.price) || 0,
-      cost: 0,
-      stock_physical: 0,
-      min_stock: 1,
-      active: true,
-      company_id: companyId,
-    }).select().maybeSingle();
-
-    if (error) {
+    try {
+      const product = await productsService.createProduct({
+        name: newProductData.name,
+        sku: newProductData.sku,
+        barcode: newProductData.ean || null,
+        price: parseFloat(newProductData.price) || 0,
+        cost: 0,
+        stock_physical: 0,
+        min_stock: 1,
+        active: true,
+      }, companyId);
+      
+      if (!product) throw new Error("Erro ao criar produto");
+      
+      toast({ title: "Produto cadastrado!" });
+      setNewProductDialog(false);
+      setNewProductData({ name: "", ean: "", sku: "", price: "" });
+    } catch (error: any) {
       toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
-      return;
     }
-
-    toast({ title: "Produto cadastrado!" });
-    setNewProductDialog(false);
-    setNewProductData({ name: "", ean: "", sku: "", price: "" });
   };
 
   // ========== STEP 5: CONFIRM ==========
@@ -629,24 +632,9 @@ const EntradaNota = () => {
     const qty = Math.floor(xmlProduct.quantity);
 
     // Double-check: maybe product exists with same EAN/SKU in this company (race-safe)
-    if (ean) {
-    // 1. Try EAN (Master Key)
-    const { data: byEan } = await supabase
-      .from("products")
-      .select("id")
-      .eq("company_id", companyId)
-      .eq("ean", ean)
-      .maybeSingle();
-    if (byEan?.id) return byEan.id;
-
-    // 2. Try Barcode (Legacy)
-    const { data: byBarcode } = await supabase
-      .from("products")
-      .select("id")
-      .eq("company_id", companyId)
-      .eq("barcode", ean)
-      .maybeSingle();
-    if (byBarcode?.id) return byBarcode.id;
+    if (ean && companyId) {
+      const existing = await productsService.findProductByEanOrSku({ ean, companyId });
+      if (existing?.id) return existing.id;
     }
     const { data: bySku } = await supabase
       .from("products")

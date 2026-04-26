@@ -14,8 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { ordersService } from "@/services/orders";
+import { productsService } from "@/services/products";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { useUpdateOrdemStatus, useUpdateFullOrder } from "@/hooks/useOrdensFull";
 import { useProducts } from "@/hooks/useProductData";
@@ -319,11 +321,10 @@ const Separacao = () => {
     const autoSave = async () => {
       if (!orderInfo || items.length === 0 || isPaused) return;
       try {
-        await supabase.from('full_orders').update({
+        await ordersService.updateOrdem(orderInfo.id, {
           bipagem_state: items as any,
           updated_at: new Date().toISOString()
-        }).eq('id', orderInfo.id)
-          .eq('company_id', companyId);
+        });
       } catch (err) {
         console.error("Auto-save error:", err);
       }
@@ -344,12 +345,11 @@ const Separacao = () => {
       }
 
       // Salvar estado no Supabase
-      await supabase.from('full_orders').update({
+      await ordersService.updateOrdem(orderInfo.id, {
         bipagem_state: items as any,
         status: 'pausado',
         pausado_em: new Date().toISOString()
-      }).eq('id', orderInfo.id)
-        .eq('company_id', companyId);
+      });
 
       setIsPaused(true);
       toast({ 
@@ -441,88 +441,16 @@ const Separacao = () => {
   };
 
   const handleFinalizarSeparacao = async () => {
-    if (!orderInfo || !user) return;
+    if (!orderInfo || !user || !companyId) return;
     setIsFinishing(true);
     try {
-      // 1. Verificar se já foi finalizado para evitar baixa dupla
-      const { data: currentOrder } = await supabase
-        .from('full_orders')
-        .select('separado_em, status')
-        .eq('id', orderInfo.id)
-        .maybeSingle();
-
-      if (currentOrder?.separado_em || currentOrder?.status === 'aguardando_carregamento') {
-        toast({ 
-          title: "Ordem já finalizada", 
-          description: "Esta ordem já foi processada anteriormente.",
-          variant: "destructive"
-        });
-        navigate("/movimentacao-full");
-        return;
-      }
-
-      // 2. Atualizar estoque para cada item bipado
-      for (const item of items) {
-        if (item.scannedQty > 0) {
-          // Buscar estoque atual
-          const { data: product } = await supabase
-            .from('products')
-            .select('stock_physical, stock_full, name')
-            .eq('id', item.productId)
-            .eq('company_id', companyId)
-            .maybeSingle();
-
-          if (product) {
-            const currentPhysical = product.stock_physical || 0;
-            const currentFull = product.stock_full || 0;
-            const quantityBipada = item.scannedQty;
-
-            if (currentPhysical < quantityBipada) {
-              console.error(`Erro de estoque para ${product.name}: bipado ${quantityBipada}, disponível ${currentPhysical}`);
-              toast({
-                title: "Alerta de estoque",
-                description: `O produto ${product.name} ficou com estoque físico insuficiente (ajustado para 0).`,
-                variant: "destructive"
-              });
-            }
-
-            const newPhysical = Math.max(0, currentPhysical - quantityBipada);
-            const newFull = currentFull + quantityBipada;
-
-            await supabase
-              .from('products')
-              .update({
-                stock_physical: newPhysical,
-                stock_full: newFull,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', item.productId)
-              .eq('company_id', companyId);
-          }
-        }
-      }
-
-      // 3. Atualizar o status da ordem
-      const previsaoCompleta = (previsaoData && previsaoHora) 
-        ? new Date(`${previsaoData}T${previsaoHora}`).toISOString()
-        : null;
-
-      await updateFullOrder.mutateAsync({
-        id: orderInfo.id,
-        frete_ml: orderInfo.frete_ml || orderInfo.number,
-        status: 'aguardando_carregamento',
-        separado_em: new Date().toISOString(),
-        separado_por: user.id,
-        updated_at: new Date().toISOString(),
-        previsao_carregamento: previsaoCompleta
-      });
+      await ordersService.finalizarSeparacao(orderInfo.id, companyId, user.id);
 
       toast({ 
-        title: `✅ Pedido ML — Frete #${orderInfo.frete_ml || orderInfo.number} concluído`, 
-        description: "Estoque atualizado e status alterado para Aguardando Carregamento." 
+        title: "✅ Separação concluída!", 
+        description: "Estoque atualizado e ordem pronta para carregamento." 
       });
       
-      localStorage.removeItem("ordem_ativa");
       navigate("/movimentacao-full");
     } catch (err: any) {
       toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" });
