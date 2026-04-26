@@ -1,6 +1,35 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const stockService = {
+  async logMovement(params: {
+    productId: string;
+    companyId: string;
+    type: 'entrada' | 'saida' | 'ajuste' | 'transferencia';
+    quantity: number;
+    oldStock: number;
+    newStock: number;
+    stockType: 'physical' | 'full';
+    referenceId?: string;
+    referenceType?: 'order' | 'invoice' | 'transfer' | 'manual';
+    notes?: string;
+  }) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    await supabase.from("stock_movement_logs").insert({
+      product_id: params.productId,
+      company_id: params.companyId,
+      user_id: user?.id,
+      type: params.type,
+      quantity: params.quantity,
+      old_stock: params.oldStock,
+      new_stock: params.newStock,
+      stock_type: params.stockType,
+      reference_id: params.referenceId,
+      reference_type: params.referenceType,
+      notes: params.notes
+    });
+  },
+
   async darBaixa(productId: string, quantity: number, companyId: string) {
     const { data: product, error: fetchError } = await supabase
       .from("products")
@@ -10,17 +39,30 @@ export const stockService = {
       .single();
     
     if (fetchError) throw fetchError;
-    if ((product.stock_physical || 0) < quantity) {
+    const oldStock = product.stock_physical || 0;
+    if (oldStock < quantity) {
       throw new Error("Estoque insuficiente");
     }
 
+    const newStock = oldStock - quantity;
     const { error: updateError } = await supabase
       .from("products")
-      .update({ stock_physical: (product.stock_physical || 0) - quantity })
+      .update({ stock_physical: newStock })
       .eq("id", productId)
       .eq("company_id", companyId);
     
     if (updateError) throw updateError;
+
+    await this.logMovement({
+      productId,
+      companyId,
+      type: 'saida',
+      quantity,
+      oldStock,
+      newStock,
+      stockType: 'physical',
+      notes: 'Baixa manual de estoque'
+    });
   },
 
   async creditarFull(productId: string, quantity: number, companyId: string) {
@@ -33,13 +75,26 @@ export const stockService = {
     
     if (fetchError) throw fetchError;
 
+    const oldStock = product.stock_full || 0;
+    const newStock = oldStock + quantity;
     const { error: updateError } = await supabase
       .from("products")
-      .update({ stock_full: (product.stock_full || 0) + quantity })
+      .update({ stock_full: newStock })
       .eq("id", productId)
       .eq("company_id", companyId);
     
     if (updateError) throw updateError;
+
+    await this.logMovement({
+      productId,
+      companyId,
+      type: 'entrada',
+      quantity,
+      oldStock,
+      newStock,
+      stockType: 'full',
+      notes: 'Crédito manual Full'
+    });
   },
 
   async fetchTransferOrders(companyId: string | null) {
