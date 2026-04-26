@@ -676,10 +676,12 @@ const Conferencia = () => {
     try {
       for (const sp of scannedProducts) {
         if (sp.scannedQty !== sp.systemQty) {
-          await supabase
-            .from("products")
-            .update({ stock_physical: sp.scannedQty })
-            .eq("id", sp.productId);
+          await stockService.ajustarFisico(
+            sp.productId, 
+            sp.scannedQty, 
+            companyId || '', 
+            `Ajuste via Conferência: ${conferenceName || 'Sem nome'}`
+          );
         }
       }
       toast({ title: "Estoque ajustado!", description: `${results.divergent.length} produtos atualizados.` });
