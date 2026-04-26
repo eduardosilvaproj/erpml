@@ -250,15 +250,46 @@ export const ordersService = {
         .maybeSingle();
 
       if (product) {
+        const oldPhysical = product.stock_physical || 0;
+        const oldFull = product.stock_full || 0;
+        const newPhysical = oldPhysical - qty;
+        const newFull = oldFull + qty;
+
         await supabase
           .from("products")
           .update({
-            stock_physical: (product.stock_physical || 0) - qty,
-            stock_full: (product.stock_full || 0) + qty,
+            stock_physical: newPhysical,
+            stock_full: newFull,
             updated_at: new Date().toISOString()
           })
           .eq("id", productId)
           .eq("company_id", companyId);
+
+        await stockService.logMovement({
+          productId,
+          companyId,
+          type: 'saida',
+          quantity: qty,
+          oldStock: oldPhysical,
+          newStock: newPhysical,
+          stockType: 'physical',
+          referenceId: ordemId,
+          referenceType: 'order',
+          notes: `Separação Full - Saída do Físico (Ordem ${ordem.frete_ml || ordem.numero || ordem.id})`
+        });
+
+        await stockService.logMovement({
+          productId,
+          companyId,
+          type: 'entrada',
+          quantity: qty,
+          oldStock: oldFull,
+          newStock: newFull,
+          stockType: 'full',
+          referenceId: ordemId,
+          referenceType: 'order',
+          notes: `Separação Full - Entrada no Full (Ordem ${ordem.frete_ml || ordem.numero || ordem.id})`
+        });
       }
     }
 
