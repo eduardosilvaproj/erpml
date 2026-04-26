@@ -321,11 +321,10 @@ const Separacao = () => {
     const autoSave = async () => {
       if (!orderInfo || items.length === 0 || isPaused) return;
       try {
-        await supabase.from('full_orders').update({
+        await ordersService.updateOrdem(orderInfo.id, {
           bipagem_state: items as any,
           updated_at: new Date().toISOString()
-        }).eq('id', orderInfo.id)
-          .eq('company_id', companyId);
+        });
       } catch (err) {
         console.error("Auto-save error:", err);
       }
