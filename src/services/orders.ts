@@ -22,6 +22,10 @@ export const ordersService = {
     })) as OrdemFull[];
   },
 
+  async buscarOrdem(ordemId: string) {
+    return this.fetchOrdemFull(ordemId);
+  },
+
   async fetchOrdemFull(ordemId: string) {
     const { data: ordem, error } = await supabase
       .from("full_orders")
