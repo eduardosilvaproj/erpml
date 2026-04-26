@@ -187,7 +187,7 @@ const Separacao = () => {
             productId: p.product_id,
             name: p.name,
             sku: p.sku,
-            barcode: p.barcode,
+            ean: p.ean || p.barcode,
             image_url: p.image_url,
             neededQty: p.qtd_solicitada,
             scannedQty: 0,
