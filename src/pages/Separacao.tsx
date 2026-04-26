@@ -345,12 +345,11 @@ const Separacao = () => {
       }
 
       // Salvar estado no Supabase
-      await supabase.from('full_orders').update({
+      await ordersService.updateOrdem(orderInfo.id, {
         bipagem_state: items as any,
         status: 'pausado',
         pausado_em: new Date().toISOString()
-      }).eq('id', orderInfo.id)
-        .eq('company_id', companyId);
+      });
 
       setIsPaused(true);
       toast({ 
