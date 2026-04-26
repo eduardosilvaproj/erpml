@@ -82,6 +82,9 @@ export const useCreateOrdemFull = () => {
     mutationFn: (params: {
       descricao: string;
       frete_ml?: string | null;
+      prazo?: string | null;
+      atribuido_para?: string | null;
+      enviarParaSeparacao?: boolean;
       itens: { product_id: string; product?: any; quantity?: number; qtd_solicitada?: number }[];
       status?: OrdemStatus;
     }) => {
@@ -120,7 +123,7 @@ export const useDeleteOrdem = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id }: { id: string }) => ordersService.deleteOrdem(id),
+    mutationFn: ({ id }: { id: string; frete_ml?: string | null }) => ordersService.deleteOrdem(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
       qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
@@ -220,6 +223,16 @@ export const ordemStatusBadge = (s: OrdemStatus) => {
     concluida: { label: "Concluída", cls: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" },
     cancelada: { label: "🔴 Cancelada", cls: "bg-destructive/15 text-destructive border-destructive/20" },
     pausado: { label: "🟠 Pausado", cls: "bg-orange-100 text-orange-700 border-orange-200" },
+  };
+  return map[s] || { label: s, cls: "bg-gray-100 text-gray-700" };
+};
+
+export const itemStatusBadge = (s: ItemStatus) => {
+  const map: Record<ItemStatus, { label: string; cls: string }> = {
+    pendente: { label: "Pendente", cls: "bg-muted text-muted-foreground" },
+    parcial: { label: "Parcial", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+    completo: { label: "Completo", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+    excesso: { label: "Excesso", cls: "bg-destructive/10 text-destructive border-destructive/20" },
   };
   return map[s] || { label: s, cls: "bg-gray-100 text-gray-700" };
 };
