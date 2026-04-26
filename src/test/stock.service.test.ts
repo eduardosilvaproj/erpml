@@ -57,7 +57,6 @@ describe('stockService', () => {
       fromMock.mockReturnValue({
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockProduct, error: null }),
       } as any);
 
