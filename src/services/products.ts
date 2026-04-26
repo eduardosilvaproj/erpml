@@ -96,8 +96,8 @@ export const productsService = {
     return { products: all, total: all.length };
   },
 
-  async createProduct(data: ProductFormData, companyId: string | null) {
-    const { supplier_ids, supplier_skus, ...productData } = data;
+  async createProduct(data: any, companyId: string | null) {
+    const { supplier_ids = [], supplier_skus = [], ...productData } = data;
     const insertData = {
       ...productData,
       barcode: productData.barcode || null,
@@ -125,10 +125,10 @@ export const productsService = {
     if (error) throw error;
 
     if (supplier_ids.length > 0) {
-      const supplierLinks = supplier_ids.map((sid, i) => ({
+      const supplierLinks = supplier_ids.map((sid: string, i: number) => ({
         product_id: product.id,
         supplier_id: sid,
-        cost: data.cost,
+        cost: data.cost || 0,
         is_primary: i === 0,
       }));
       const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
@@ -136,7 +136,7 @@ export const productsService = {
     }
     
     if (supplier_skus && supplier_skus.length > 0) {
-      const skusToInsert = supplier_skus.map(s => ({
+      const skusToInsert = supplier_skus.map((s: any) => ({
         product_id: product.id,
         supplier_name: s.supplier_name,
         supplier_sku: s.supplier_sku
