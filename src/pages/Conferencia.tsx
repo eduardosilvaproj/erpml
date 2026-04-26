@@ -712,7 +712,7 @@ const Conferencia = () => {
             status: "em_andamento",
           } as any)
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
         setConferenceId((data as any).id);
       } catch (err: any) {
@@ -730,7 +730,7 @@ const Conferencia = () => {
         .from("conferences")
         .select("type, section_name, nome, tipo")
         .eq("id", confId)
-        .single();
+        .maybeSingle();
 
       if (confRow) {
         setConferenceType((confRow as any).type || "full");
@@ -796,7 +796,7 @@ const Conferencia = () => {
             status: "em_andamento",
           } as any)
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
         confId = (data as any).id;
         setConferenceId(confId);
@@ -967,7 +967,7 @@ const Conferencia = () => {
           active: true,
         } as any)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       await refetchProducts();
       const newProduct = data as any;

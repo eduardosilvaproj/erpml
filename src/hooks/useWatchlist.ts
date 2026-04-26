@@ -66,7 +66,7 @@ export function useAddToWatchlist() {
           notes: item.notes || null,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;

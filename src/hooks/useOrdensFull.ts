@@ -177,7 +177,7 @@ export const useCreateOrdemFull = () => {
           })) as any
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (orderError) throw orderError;
 
@@ -234,7 +234,7 @@ export const useUpdateItemQuantity = () => {
           .from('full_order_items')
           .select('order_id')
           .eq('id', itemId)
-          .single();
+          .maybeSingle();
         targetOrderId = itemData?.order_id;
       }
       
@@ -244,7 +244,7 @@ export const useUpdateItemQuantity = () => {
         .from('full_orders')
         .select('id, bipagem_state, full_order_items(id, product_id)')
         .eq('id', targetOrderId)
-        .single();
+        .maybeSingle();
         
       if (!order) throw new Error("Ordem não encontrada");
       
@@ -381,7 +381,7 @@ export const useMarcarOrdemSeparada = () => {
         .from("full_orders")
         .select(`*`)
         .eq("id", ordemId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
       
@@ -424,7 +424,7 @@ export const useMarcarOrdemSeparada = () => {
           .select("stock_physical, stock_full")
           .eq("id", productId)
           .eq("company_id", companyId!)
-          .single();
+          .maybeSingle();
 
         if (prodError) {
           console.error(`Erro ao buscar produto ${productId}:`, prodError);

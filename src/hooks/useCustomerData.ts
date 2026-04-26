@@ -104,7 +104,7 @@ export function useCreateCustomer() {
           company_id: companyId,
         })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return customer;
     },

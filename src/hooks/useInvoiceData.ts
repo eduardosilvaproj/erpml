@@ -95,7 +95,7 @@ export function useImportInvoice() {
             company_id: companyId,
             origem: 'nota_fiscal',
             created_at: new Date().toISOString()
-          } as any).select().single();
+          } as any).select().maybeSingle();
           if (novo) supplierId = novo.id;
         }
       }
@@ -114,7 +114,7 @@ export function useImportInvoice() {
           supplier_id: supplierId, // Vincular fornecedor à nota
         })
         .select()
-        .single();
+        .maybeSingle();
       if (invError) throw invError;
 
       for (const match of matches) {
@@ -173,7 +173,7 @@ export function useImportInvoice() {
               company_id: companyId,
             })
             .select()
-            .single();
+            .maybeSingle();
           if (prodError) throw prodError;
           productId = newProduct.id;
         }
@@ -194,7 +194,7 @@ export function useImportInvoice() {
           match_type: productId ? (match.matchType || 'manual') : "none",
           match_confidence: match.confidence,
           stock_updated: match.matchType === "none" && !!productId, // For new products, it's already set during creation
-        }).select().single();
+        }).select().maybeSingle();
 
         if (itemError) throw itemError;
 
@@ -204,7 +204,7 @@ export function useImportInvoice() {
             .select("stock_physical, cost, barcode, ean, name, description, price, min_stock, ean_pending")
             .eq("id", productId)
             .eq("company_id", companyId)
-            .single();
+            .maybeSingle();
 
           if (current) {
             const xmlP = match.xmlProduct;

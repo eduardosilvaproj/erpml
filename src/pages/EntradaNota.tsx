@@ -608,7 +608,7 @@ const EntradaNota = () => {
       min_stock: 1,
       active: true,
       company_id: companyId,
-    }).select().single();
+    }).select().maybeSingle();
 
     if (error) {
       toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
@@ -672,7 +672,7 @@ const EntradaNota = () => {
         company_id: companyId,
       })
       .select("id")
-      .single();
+      .maybeSingle();
 
     if (createErr) {
       console.error("Erro ao criar produto auto:", createErr);
@@ -719,7 +719,7 @@ const EntradaNota = () => {
           company_id: companyId,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (invError) {
         if (invError.code === "23505") {
@@ -763,7 +763,7 @@ const EntradaNota = () => {
             match_type: productId ? (match.matchedProductId ? (match.matchType || 'manual') : "new") : "none",
             match_confidence: match.confidence,
             stock_updated: false,
-          }).select().single();
+          }).select().maybeSingle();
 
           if (itemError) {
             console.error("Erro ao inserir item da nota:", itemError);
@@ -778,7 +778,7 @@ const EntradaNota = () => {
               .select("stock_physical, cost, price")
               .eq("id", productId)
               .eq("company_id", companyId)
-              .single();
+              .maybeSingle();
 
             if (!fetchError && current) {
               const qty = Math.floor(match.xmlProduct.quantity);
@@ -901,7 +901,7 @@ const EntradaNota = () => {
             company_id: companyId,
           })
           .select()
-          .single();
+          .maybeSingle();
 
         if (invError) continue;
 
@@ -936,7 +936,7 @@ const EntradaNota = () => {
               match_type: productId ? (wasMatched ? (match.matchType || 'manual') : "new") : "none",
               match_confidence: match.confidence,
               stock_updated: !wasMatched && !!productId && autoUpdateStock,
-            }).select().single();
+            }).select().maybeSingle();
 
             if (itemError) {
               console.error(`Erro ao inserir item ${match.xmlProduct.description} no lote:`, itemError);
@@ -950,7 +950,7 @@ const EntradaNota = () => {
                 .from("products")
                 .select("stock_physical, cost, price")
                 .eq("id", productId)
-                .single();
+                .maybeSingle();
 
               if (!fetchError && current) {
                 const qty = Math.floor(match.xmlProduct.quantity);

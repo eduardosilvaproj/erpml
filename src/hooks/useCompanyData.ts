@@ -228,7 +228,7 @@ export function useCreateCompany() {
           owner_id: session.user.id,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

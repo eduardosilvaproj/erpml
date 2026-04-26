@@ -75,7 +75,7 @@ export function useCreateKit() {
           company_id: companyId,
         })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
 
       if (items.length > 0) {
@@ -232,7 +232,7 @@ export function useBulkCreateKits() {
           .from("product_kits")
           .insert({ ...kitData, description: kitData.description || null, company_id: companyId })
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
 
         if (items.length > 0) {

@@ -111,7 +111,7 @@ export function useCreateSale() {
           company_id: companyId,
         })
         .select()
-        .single();
+        .maybeSingle();
       if (saleError) throw saleError;
 
       const saleItems = items.map((item) => ({
@@ -130,7 +130,7 @@ export function useCreateSale() {
           .from("products")
           .select("stock_physical")
           .eq("id", item.productId)
-          .single();
+          .maybeSingle();
         if (current) {
           await supabase
             .from("products")

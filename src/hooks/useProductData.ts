@@ -217,7 +217,7 @@ export function useCreateProduct() {
         .from("products")
         .insert(insertData)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
 
       if (supplier_ids.length > 0) {
@@ -429,7 +429,7 @@ export function useCreateSupplier() {
 
   return useMutation({
     mutationFn: async (data: { name: string; cnpj?: string; email?: string; phone?: string; address?: string }) => {
-      const { data: supplier, error } = await supabase.from("suppliers").insert({ ...data, company_id: companyId }).select().single();
+      const { data: supplier, error } = await supabase.from("suppliers").insert({ ...data, company_id: companyId }).select().maybeSingle();
       if (error) throw error;
       return supplier;
     },

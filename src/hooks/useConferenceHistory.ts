@@ -100,7 +100,7 @@ export function useConferenceDetail(conferenceId: string | null) {
         .from("conferences")
         .select("*")
         .eq("id", conferenceId!)
-        .single();
+        .maybeSingle();
       if (error) throw error;
 
       const allItems = await fetchConferenceItemsRaw<ConferenceItemRow>(conferenceId!, "*");
@@ -135,7 +135,7 @@ export function useCreateConference() {
           atualizado_por: user?.id,
         } as any)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data as unknown as ConferenceRow;
     },
