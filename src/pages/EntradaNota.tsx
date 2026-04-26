@@ -601,26 +601,26 @@ const EntradaNota = () => {
       toast({ title: "Preencha nome e SKU", variant: "destructive" });
       return;
     }
-    const { data: product, error } = await supabase.from("products").insert({
-      name: newProductData.name,
-      sku: newProductData.sku,
-      barcode: newProductData.ean || null,
-      price: parseFloat(newProductData.price) || 0,
-      cost: 0,
-      stock_physical: 0,
-      min_stock: 1,
-      active: true,
-      company_id: companyId,
-    }).select().maybeSingle();
-
-    if (error) {
+    try {
+      const product = await productsService.createProduct({
+        name: newProductData.name,
+        sku: newProductData.sku,
+        barcode: newProductData.ean || null,
+        price: parseFloat(newProductData.price) || 0,
+        cost: 0,
+        stock_physical: 0,
+        min_stock: 1,
+        active: true,
+      }, companyId);
+      
+      if (!product) throw new Error("Erro ao criar produto");
+      
+      toast({ title: "Produto cadastrado!" });
+      setNewProductDialog(false);
+      setNewProductData({ name: "", ean: "", sku: "", price: "" });
+    } catch (error: any) {
       toast({ title: "Erro ao cadastrar", description: error.message, variant: "destructive" });
-      return;
     }
-
-    toast({ title: "Produto cadastrado!" });
-    setNewProductDialog(false);
-    setNewProductData({ name: "", ean: "", sku: "", price: "" });
   };
 
   // ========== STEP 5: CONFIRM ==========
