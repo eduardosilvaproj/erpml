@@ -238,6 +238,20 @@ export const productsService = {
     }
   },
 
+  async findProductByEanOrSku(params: { ean?: string; sku?: string; companyId: string }) {
+    let query = supabase.from("products").select("id").eq("company_id", params.companyId);
+    if (params.ean) {
+      query = query.or(`ean.eq.${params.ean},barcode.eq.${params.ean}`);
+    } else if (params.sku) {
+      query = query.eq("sku", params.sku);
+    } else {
+      return null;
+    }
+    const { data, error } = await query.maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async buscarPorEan(ean: string, companyId: string) {
     const { data, error } = await supabase
       .from("products")
