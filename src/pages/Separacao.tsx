@@ -277,7 +277,7 @@ const Separacao = () => {
     if (boxMode === "scan_internal") {
       const internalCode = code.trim().toUpperCase();
       const itemIndex = items.findIndex(i => 
-        i.barcode === internalCode || 
+        i.ean === internalCode || 
         i.sku.toUpperCase() === internalCode
       );
 
