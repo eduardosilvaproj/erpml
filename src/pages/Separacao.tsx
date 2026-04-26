@@ -35,7 +35,7 @@ interface SeparacaoItem {
   productId: string;
   name: string;
   sku: string;
-  barcode: string | null;
+  ean: string | null;
   image_url: string | null;
   neededQty: number;
   scannedQty: number;
@@ -164,7 +164,7 @@ const Separacao = () => {
               productId: item.product_id,
               name: product?.name || bState?.name || 'Produto',
               sku: product?.sku || bState?.sku || '',
-              barcode: product?.barcode || bState?.barcode || '',
+              ean: product?.ean || product?.barcode || bState?.ean || bState?.barcode || '',
               image_url: product?.image_url || bState?.image_url || null,
               neededQty: item.quantity || bState?.neededQty || 0,
               scannedQty: bState?.scannedQty || 0,
@@ -187,7 +187,7 @@ const Separacao = () => {
             productId: p.product_id,
             name: p.name,
             sku: p.sku,
-            barcode: p.barcode,
+            ean: p.ean || p.barcode,
             image_url: p.image_url,
             neededQty: p.qtd_solicitada,
             scannedQty: 0,
@@ -225,7 +225,7 @@ const Separacao = () => {
     // 1. Verificar se o código já existe na ordem
     const itemIndex = items.findIndex(i => 
       i.productId === produto.id ||
-      i.barcode === code.trim().toUpperCase() || 
+      i.ean === code.trim().toUpperCase() || 
       i.sku.toUpperCase() === code.trim().toUpperCase()
     );
 
@@ -277,7 +277,7 @@ const Separacao = () => {
     if (boxMode === "scan_internal") {
       const internalCode = code.trim().toUpperCase();
       const itemIndex = items.findIndex(i => 
-        i.barcode === internalCode || 
+        i.ean === internalCode || 
         i.sku.toUpperCase() === internalCode
       );
 
@@ -322,7 +322,7 @@ const Separacao = () => {
         await supabase.from('full_orders').update({
           bipagem_state: items as any,
           updated_at: new Date().toISOString()
-        }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number)
+        }).eq('id', orderInfo.id)
           .eq('company_id', companyId);
       } catch (err) {
         console.error("Auto-save error:", err);
@@ -348,7 +348,7 @@ const Separacao = () => {
         bipagem_state: items as any,
         status: 'pausado',
         pausado_em: new Date().toISOString()
-      }).eq('frete_ml', orderInfo.frete_ml || orderInfo.number)
+      }).eq('id', orderInfo.id)
         .eq('company_id', companyId);
 
       setIsPaused(true);
@@ -388,7 +388,7 @@ const Separacao = () => {
 
     const tableData = items.map((item, index) => [
       index + 1,
-      item.barcode || item.sku,
+      item.ean || item.sku,
       item.name,
       item.neededQty,
       item.scannedQty,
@@ -883,7 +883,7 @@ const Separacao = () => {
                         )}
                         <div className="flex flex-col">
                           <span className="font-bold text-sm leading-tight">{item.name}</span>
-                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.barcode || item.sku}</span>
+                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.ean || item.sku}</span>
                         </div>
                       </div>
                     </TableCell>

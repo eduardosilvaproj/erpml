@@ -160,7 +160,7 @@ async function createSubscription(
     .select("*")
     .eq("slug", planSlug)
     .eq("is_active", true)
-    .single();
+    .maybeSingle();
 
   if (!plan || plan.price <= 0) {
     return new Response(JSON.stringify({ error: "Plano inválido" }), {
@@ -271,7 +271,7 @@ async function createPayment(
     .select("*")
     .eq("slug", planSlug)
     .eq("is_active", true)
-    .single();
+    .maybeSingle();
 
   if (!plan || plan.price <= 0) {
     return new Response(JSON.stringify({ error: "Plano inválido" }), {
@@ -362,7 +362,7 @@ async function cancelSubscription(
     .from("companies")
     .select("owner_id")
     .eq("id", companyId)
-    .single();
+    .maybeSingle();
 
   if (!company || company.owner_id !== userId) {
     return new Response(JSON.stringify({ error: "Apenas o proprietário pode cancelar a assinatura" }), {
@@ -415,7 +415,7 @@ async function cancelSubscription(
     .from("plans")
     .select("id")
     .eq("slug", "free")
-    .single();
+    .maybeSingle();
 
   if (freePlan) {
     await supabaseAdmin

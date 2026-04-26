@@ -66,7 +66,7 @@ export function useCreateTransferOrder() {
           .from("products")
           .select("stock_physical")
           .eq("id", item.productId)
-          .single();
+          .maybeSingle();
         if (!product || product.stock_physical < item.quantity) {
           throw new Error(`Estoque insuficiente para "${item.productName}". Disponível: ${product?.stock_physical ?? 0}, Solicitado: ${item.quantity}`);
         }
@@ -85,7 +85,7 @@ export function useCreateTransferOrder() {
           notes: notes || null,
         })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
 
       const transferItems = items.map((i) => ({
@@ -101,7 +101,7 @@ export function useCreateTransferOrder() {
           .from("products")
           .select("stock_physical, stock_full")
           .eq("id", item.productId)
-          .single();
+          .maybeSingle();
         if (current) {
           await supabase
             .from("products")

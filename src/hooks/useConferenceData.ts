@@ -107,7 +107,7 @@ export function useStartConference() {
         .from("conferences")
         .insert({ invoice_id: invoiceId, status: "em_andamento", company_id: companyId })
         .select()
-        .single();
+        .maybeSingle();
       if (confErr) throw confErr;
 
       const confItems = items.map((item) => ({
@@ -199,7 +199,7 @@ export function useFinishConference() {
         .from("conferences")
         .select("invoice_id")
         .eq("id", conferenceId)
-        .single();
+        .maybeSingle();
 
       if (conf) {
         await supabase

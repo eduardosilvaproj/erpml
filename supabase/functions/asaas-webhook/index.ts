@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
           .from("subscriptions")
           .select("plan_id")
           .eq("id", sub.id)
-          .single();
+          .maybeSingle();
 
         if (subscription) {
           await supabase
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
           .from("plans")
           .select("id")
           .eq("slug", "free")
-          .single();
+          .maybeSingle();
 
         if (freePlan) {
           await supabase

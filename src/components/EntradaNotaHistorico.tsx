@@ -101,14 +101,14 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
           price: 0, stock_physical: qty, min_stock: 0, active: true,
           company_id: companyId,
         })
-        .select("id").single();
+        .select("id").maybeSingle();
       if (ce || !createdProd) { skipped++; continue; }
       productId = createdProd.id;
       isNew = true;
       created++;
     } else if (!it.stock_updated) {
       const { data: prod } = await supabase
-        .from("products").select("stock_physical, cost").eq("id", productId).single();
+        .from("products").select("stock_physical, cost").eq("id", productId).maybeSingle();
       const current = Number(prod?.stock_physical || 0);
       const currentCost = Number(prod?.cost || 0);
       const xmlUnit = Number(it.unit_value) || 0;
@@ -415,14 +415,14 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
               price: 0, stock_physical: qty, min_stock: 0, active: true,
               company_id: companyId,
             })
-            .select("id").single();
+            .select("id").maybeSingle();
           if (ce || !createdProd) { skipped++; continue; }
           productId = createdProd.id;
           isNew = true;
           created++;
         } else if (!it.stock_updated) {
           const { data: prod } = await supabase
-            .from("products").select("stock_physical, cost").eq("id", productId).single();
+            .from("products").select("stock_physical, cost").eq("id", productId).maybeSingle();
           const current = Number(prod?.stock_physical || 0);
           const currentCost = Number(prod?.cost || 0);
           const xmlUnit = Number(it.unit_value) || 0;

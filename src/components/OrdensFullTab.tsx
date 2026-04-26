@@ -583,7 +583,7 @@ export const OrdensFullTab = () => {
         .from("full_orders")
         .select("*, full_order_items(*, product:products(*))")
         .eq("id", ordem.id)
-        .single();
+        .maybeSingle();
         
       if (error) throw error;
       

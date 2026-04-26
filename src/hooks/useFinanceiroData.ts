@@ -67,7 +67,7 @@ export function useUpdatePayment() {
         .update(updates)
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

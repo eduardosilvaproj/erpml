@@ -117,7 +117,7 @@ const CorrecaoSKU = () => {
               .from("products")
               .select("id")
               .or(`barcode.eq.${ean},ean.eq.${ean}`)
-              .single();
+              .maybeSingle();
 
             if (product) {
               const { error } = await supabase

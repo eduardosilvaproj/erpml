@@ -108,7 +108,7 @@ export function useUpsertStore() {
           .update(payload)
           .eq("id", existing.id)
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
         return data;
       } else {
@@ -116,7 +116,7 @@ export function useUpsertStore() {
           .from("seller_stores")
           .insert(payload)
           .select()
-          .single();
+          .maybeSingle();
         if (error) throw error;
         return data;
       }
@@ -159,7 +159,7 @@ export function useUpsertStoreProduct() {
         .from("store_products")
         .upsert(product, { onConflict: "store_id,product_id" })
         .select()
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },

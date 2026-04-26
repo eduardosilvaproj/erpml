@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
           status: "active",
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (companyError) {
         return new Response(

@@ -1097,7 +1097,7 @@ Deno.serve(async (req) => {
               .from("ml_orders")
               .insert(orderRow)
               .select("id")
-              .single();
+              .maybeSingle();
             localOrderId = ins?.id;
             inserted++;
           }
