@@ -388,7 +388,7 @@ const Separacao = () => {
 
     const tableData = items.map((item, index) => [
       index + 1,
-      item.barcode || item.sku,
+      item.ean || item.sku,
       item.name,
       item.neededQty,
       item.scannedQty,
@@ -883,7 +883,7 @@ const Separacao = () => {
                         )}
                         <div className="flex flex-col">
                           <span className="font-bold text-sm leading-tight">{item.name}</span>
-                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.barcode || item.sku}</span>
+                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.ean || item.sku}</span>
                         </div>
                       </div>
                     </TableCell>
