@@ -2062,6 +2062,76 @@ export type Database = {
           },
         ]
       }
+      stock_movement_logs: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          new_stock: number
+          notes: string | null
+          old_stock: number
+          product_id: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          stock_type: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          new_stock: number
+          notes?: string | null
+          old_stock: number
+          product_id?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_type: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          new_stock?: number
+          notes?: string | null
+          old_stock?: number
+          product_id?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          stock_type?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movement_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movement_logs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movement_logs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_search_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       store_orders: {
         Row: {
           asaas_bank_slip_url: string | null

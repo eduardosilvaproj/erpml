@@ -33,6 +33,7 @@ import { fetchConferenceItemsGrouped, fetchConferenceTotals } from "@/lib/confer
 import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
 import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 import { useNavigate } from "react-router-dom";
+import { stockService } from "@/services/stock";
 
 
 /**
@@ -675,10 +676,12 @@ const Conferencia = () => {
     try {
       for (const sp of scannedProducts) {
         if (sp.scannedQty !== sp.systemQty) {
-          await supabase
-            .from("products")
-            .update({ stock_physical: sp.scannedQty })
-            .eq("id", sp.productId);
+          await stockService.ajustarFisico(
+            sp.productId, 
+            sp.scannedQty, 
+            companyId || '', 
+            `Ajuste via Conferência: ${conferenceName || 'Sem nome'}`
+          );
         }
       }
       toast({ title: "Estoque ajustado!", description: `${results.divergent.length} produtos atualizados.` });

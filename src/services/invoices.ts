@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { MatchResult, NFeSupplier } from "@/lib/nfe-parser";
 import { enrichProduct } from "@/lib/enrich-product";
+import { stockService } from "./stock";
 
 export const invoicesService = {
   async fetchInvoices(companyId: string | null) {
@@ -213,6 +214,19 @@ export const invoicesService = {
               .from("invoice_items")
               .update({ stock_updated: true })
               .eq("id", insertedItem.id);
+
+            await stockService.logMovement({
+              productId,
+              companyId: companyId || '',
+              type: 'entrada',
+              quantity: Math.floor(xmlP.quantity),
+              oldStock: current.stock_physical || 0,
+              newStock,
+              stockType: 'physical',
+              referenceId: invoice.id,
+              referenceType: 'invoice',
+              notes: `Entrada via NF-e ${nfeData.number}`
+            });
           }
         }
       }
