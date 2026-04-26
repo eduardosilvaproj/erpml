@@ -97,6 +97,37 @@ export const stockService = {
     });
   },
 
+  async ajustarFisico(productId: string, newQuantity: number, companyId: string, notes?: string) {
+    const { data: product, error: fetchError } = await supabase
+      .from("products")
+      .select("stock_physical")
+      .eq("id", productId)
+      .eq("company_id", companyId)
+      .single();
+    
+    if (fetchError) throw fetchError;
+
+    const oldStock = product.stock_physical || 0;
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ stock_physical: newQuantity })
+      .eq("id", productId)
+      .eq("company_id", companyId);
+    
+    if (updateError) throw updateError;
+
+    await this.logMovement({
+      productId,
+      companyId,
+      type: 'ajuste',
+      quantity: newQuantity - oldStock,
+      oldStock,
+      newStock: newQuantity,
+      stockType: 'physical',
+      notes: notes || 'Ajuste de estoque'
+    });
+  },
+
   async fetchTransferOrders(companyId: string | null) {
     let query = supabase
       .from("transfer_orders")
