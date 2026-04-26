@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { ordersService } from "@/services/orders";
 
 export type RecordingType = "separacao" | "carregamento";
 
@@ -27,7 +28,6 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
   const streamRef = useRef<MediaStream | null>(null);
   const tipoRef = useRef(tipo);
 
-  // Sync tipoRef with the latest tipo prop
   useEffect(() => {
     tipoRef.current = tipo;
   }, [tipo]);
@@ -59,10 +59,8 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
 
       mediaRecorder.onstop = async () => {
         const videoBlob = new Blob(chunksRef.current, { type: "video/webm" });
-        // Use the current value of the ref to avoid closure issues
         await uploadVideo(videoBlob, durationRef.current, tipoRef.current);
         
-        // Stop all tracks
         mediaStream.getTracks().forEach(track => track.stop());
         setStream(null);
       };
@@ -109,8 +107,7 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
     const filePath = `${folder}/${fileName}`;
 
     try {
-      // 1. Upload to Storage
-      const { data: storageData, error: storageError } = await supabase.storage
+      const { error: storageError } = await supabase.storage
         .from("order_recordings")
         .upload(filePath, blob);
 
@@ -120,18 +117,13 @@ export const useOrderRecording = ({ pedidoId, tipo, freteMl, onFinished }: UseOr
         .from("order_recordings")
         .getPublicUrl(filePath);
 
-      // 2. Save to Database
-      const { error: dbError } = await supabase
-        .from("order_recordings")
-        .insert({
-          pedido_id: pedidoId,
-          tipo: uploadTipo,
-          video_url: publicUrl,
-          duracao_segundos: finalDuration,
-          company_id: companyId
-        });
-
-      if (dbError) throw dbError;
+      await ordersService.saveRecording({
+        pedidoId,
+        tipo: uploadTipo,
+        video_url: publicUrl,
+        duracao_segundos: finalDuration,
+        companyId
+      });
 
       toast({
         title: "Gravação salva!",
