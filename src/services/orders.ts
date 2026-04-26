@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { OrdemFull, OrdemStatus, OrdemItem } from "@/hooks/useOrdensFull";
+import { stockService } from "./stock";
 
 export const ordersService = {
   async fetchOrdensFull(companyId: string) {
