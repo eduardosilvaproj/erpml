@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { MatchResult, NFeSupplier } from "@/lib/nfe-parser";
 import { enrichProduct } from "@/lib/enrich-product";
+import { stockService } from "./stock";
 
 export const invoicesService = {
   async fetchInvoices(companyId: string | null) {
