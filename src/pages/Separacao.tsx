@@ -225,7 +225,7 @@ const Separacao = () => {
     // 1. Verificar se o código já existe na ordem
     const itemIndex = items.findIndex(i => 
       i.productId === produto.id ||
-      i.barcode === code.trim().toUpperCase() || 
+      i.ean === code.trim().toUpperCase() || 
       i.sku.toUpperCase() === code.trim().toUpperCase()
     );
 
