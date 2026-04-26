@@ -32,7 +32,6 @@ describe('stockService', () => {
       const fromMock = vi.mocked(supabase.from);
       const selectMock = vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
         single: vi.fn().mockResolvedValue({ data: mockProduct, error: null }),
       });
       
