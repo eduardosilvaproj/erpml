@@ -35,7 +35,7 @@ interface SeparacaoItem {
   productId: string;
   name: string;
   sku: string;
-  barcode: string | null;
+  ean: string | null;
   image_url: string | null;
   neededQty: number;
   scannedQty: number;
