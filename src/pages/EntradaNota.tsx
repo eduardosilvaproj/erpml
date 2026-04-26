@@ -19,6 +19,9 @@ import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/component
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { productsService } from "@/services/products";
+import { invoicesService } from "@/services/invoices";
+import { stockService } from "@/services/stock";
 import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
 import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs";
 
