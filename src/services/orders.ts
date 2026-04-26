@@ -171,6 +171,7 @@ export const ordersService = {
       .eq('id', targetOrderId);
         
     if (error) throw error;
+    return { orderId: targetOrderId };
   },
 
   async deleteOrdem(id: string) {
