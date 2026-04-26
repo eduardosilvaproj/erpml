@@ -153,7 +153,7 @@ async function handleOrderNotification(
       .from("ml_orders")
       .insert(orderRow)
       .select("id")
-      .single();
+      .maybeSingle();
     if (!ins?.id) return;
     localOrderId = ins.id;
   }
