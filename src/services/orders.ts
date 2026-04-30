@@ -113,8 +113,7 @@ export const ordersService = {
     const itemsToInsert = params.itens.map(i => ({
       order_id: order.id,
       product_id: i.product_id,
-      quantity: i.quantity || i.qtd_solicitada || 0,
-      company_id: params.companyId
+      quantity: i.quantity || i.qtd_solicitada || 0
     }));
 
     if (itemsToInsert.length > 0) {

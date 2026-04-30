@@ -131,7 +131,7 @@ export const productsService = {
         cost: data.cost || 0,
         is_primary: i === 0,
       }));
-      const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks.map(l => ({ ...l, company_id: companyId })));
+      const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
       if (linkError) throw linkError;
     }
     
