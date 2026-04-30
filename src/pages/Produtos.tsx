@@ -27,12 +27,13 @@ import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs"
 const Produtos = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const companyId = useCompanyId();
   const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const barcodeSearch = useBarcodeSearch();
   const [barcodeInput, setBarcodeInput] = useState("");
-  
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const correction = params.get("correction");
