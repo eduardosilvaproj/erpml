@@ -154,7 +154,8 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
     }
   }
 
-  await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id);
+  const { error: invErr } = await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id).eq("company_id", companyId);
+  if (invErr) console.error("Erro ao atualizar status da nota:", invErr.message);
   return { created, updated, skipped, pendingCount: pending.length };
 }
 
@@ -493,7 +494,8 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
         }
       }
 
-      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id).eq("company_id", companyId);
+      const { error: invErr } = await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id).eq("company_id", companyId);
+      if (invErr) console.error("Erro ao atualizar status da nota:", invErr.message);
       toast({
         title: "Reprocessamento concluído",
         description: `${created} criado(s), ${updated} atualizado(s)${skipped ? `, ${skipped} ignorado(s)` : ""}.`,
@@ -693,8 +695,10 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       
       if (conferences && conferences.length > 0) {
         const confIds = conferences.map(c => c.id);
-        await supabase.from('conference_items').delete().in('conference_id', confIds).eq('company_id', companyId!);
-        await supabase.from('conferences').delete().eq('invoice_id', invoice.id).eq('company_id', companyId!);
+        const { error: delCiErr } = await supabase.from('conference_items').delete().in('conference_id', confIds).eq('company_id', companyId!);
+        if (delCiErr) throw delCiErr;
+        const { error: delConfErr } = await supabase.from('conferences').delete().eq('invoice_id', invoice.id).eq('company_id', companyId!);
+        if (delConfErr) throw delConfErr;
       }
 
       // 3. Deletar pagamentos da nota (se houver)
