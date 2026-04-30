@@ -119,7 +119,7 @@ export const productsService = {
 
     const { data: product, error } = await supabase
       .from("products")
-      .insert(insertData)
+      .insert({ ...insertData, company_id: companyId })
       .select()
       .maybeSingle();
     if (error) throw error;

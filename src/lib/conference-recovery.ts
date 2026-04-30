@@ -61,8 +61,13 @@ export const buildConferenceItemIdentity = ({ productId, sku, barcode, name }: C
  * Sempre use esta função para os contadores — nunca calcule no cliente
  * a partir de uma lista paginada.
  */
-export const fetchConferenceTotals = async (conferenceId: string): Promise<ConferenceTotals> => {
-  const { data, error } = await supabase.rpc("get_conference_totals" as any, { conf_id: conferenceId });
+export const fetchConferenceTotals = async (conferenceId: string, companyId?: string | null): Promise<ConferenceTotals> => {
+  let q = supabase.rpc("get_conference_totals" as any, { conf_id: conferenceId });
+  // RLS should handle it, but if explicit filter is needed:
+  // if (companyId) q = q.eq("company_id", companyId); 
+  // RPC calls usually don't support .eq unless they return a table.
+  
+  const { data, error } = await q;
   if (error) throw error;
   const row = Array.isArray(data) ? data[0] : data;
   return {
@@ -79,11 +84,18 @@ export const fetchConferenceTotals = async (conferenceId: string): Promise<Confe
 export const fetchConferenceItemsRaw = async <T = any>(
   conferenceId: string,
   select = "*",
+  companyId?: string | null
 ): Promise<T[]> => {
-  const { data, error } = await supabase
+  let query = supabase
     .from("conference_items")
     .select(select)
     .eq("conference_id", conferenceId);
+  
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as T[];
 };
@@ -95,6 +107,7 @@ export const fetchConferenceItemsRaw = async <T = any>(
 export const fetchConferenceItemsGrouped = async (
   conferenceId: string,
   productImagesById?: Map<string, string | null>,
+  companyId?: string | null
 ): Promise<RestoredScannedProduct[]> => {
   const { data, error } = await supabase.rpc("get_conference_items_grouped" as any, { conf_id: conferenceId });
   if (error) throw error;

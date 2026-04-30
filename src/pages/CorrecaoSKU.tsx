@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -13,26 +14,31 @@ import { Input } from "@/components/ui/input";
 const CorrecaoSKU = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["sku-correction-stats"],
+    queryKey: ["sku-correction-stats", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
       const { count: noSkuCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
+        .eq("company_id", companyId)
         .or('sku.is.null,sku.eq.""');
 
       const { data: allProducts } = await supabase
         .from("products")
-        .select("id");
+        .select("id")
+        .eq("company_id", companyId);
       
       const { data: withSupplier } = await supabase
         .from("product_supplier_skus")
-        .select("product_id");
+        .select("product_id")
+        .eq("company_id", companyId);
       
       const withSupplierIds = new Set(withSupplier?.map(s => s.product_id) || []);
       const noSupplierCount = (allProducts?.length || 0) - withSupplierIds.size;
@@ -50,6 +56,7 @@ const CorrecaoSKU = () => {
       const { data: products, error } = await supabase
         .from("products")
         .select("id, name")
+        .eq("company_id", companyId)
         .or('sku.is.null,sku.eq.""')
         .order("name", { ascending: true });
 
@@ -63,7 +70,8 @@ const CorrecaoSKU = () => {
         const { error: updateError } = await supabase
           .from("products")
           .update({ sku: newSku } as any)
-          .eq("id", products[i].id);
+          .eq("id", products[i].id)
+          .eq("company_id", companyId);
         
         if (!updateError) count++;
       }
@@ -100,7 +108,6 @@ const CorrecaoSKU = () => {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       
-      // Skip header if it exists (EAN, NOME_FORNECEDOR, SKU_FORNECEDOR)
       const dataLines = lines[0].includes("EAN") ? lines.slice(1) : lines;
       
       let processed = 0;
@@ -112,10 +119,10 @@ const CorrecaoSKU = () => {
         
         if (ean && supplierName && supplierSku) {
           try {
-            // Find product by barcode or ean
             const { data: product } = await supabase
               .from("products")
               .select("id")
+              .eq("company_id", companyId)
               .or(`barcode.eq.${ean},ean.eq.${ean}`)
               .maybeSingle();
 
@@ -125,7 +132,8 @@ const CorrecaoSKU = () => {
                 .insert({
                   product_id: product.id,
                   supplier_name: supplierName,
-                  supplier_sku: supplierSku
+                  supplier_sku: supplierSku,
+                  company_id: companyId
                 } as any);
               
               if (!error) successCount++;
@@ -296,7 +304,6 @@ const CorrecaoSKU = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* This is just a preview of the first few products that need correction */}
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Use os filtros na tela de Produtos para revisar detalhadamente.

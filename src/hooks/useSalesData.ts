@@ -130,12 +130,14 @@ export function useCreateSale() {
           .from("products")
           .select("stock_physical")
           .eq("id", item.productId)
+          .eq("company_id", companyId)
           .maybeSingle();
         if (current) {
           await supabase
             .from("products")
             .update({ stock_physical: Math.max(0, current.stock_physical - item.quantity) })
-            .eq("id", item.productId);
+            .eq("id", item.productId)
+            .eq("company_id", companyId);
         }
       }
 

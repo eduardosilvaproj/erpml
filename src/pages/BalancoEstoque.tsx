@@ -134,8 +134,6 @@ const BalancoEstoque = () => {
     setIsCounting(true);
     const initial: Record<string, number | null> = {};
     
-    // In partial mode, we might want to start with a blank list or just the filtered ones
-    // But for now, let's keep the product list as the base
     products.forEach((p) => { initial[p.id] = null; });
     
     setCounts(initial);
@@ -157,14 +155,9 @@ const BalancoEstoque = () => {
     setShowOnlyCounted(false);
   };
 
-  // Toggle: also zero-out items that were NOT counted/bipped during this balance
   const [zeroUnscanned, setZeroUnscanned] = useState(false);
 
-  // Items that will be zeroed:
-  // - explicitly counted as 0
-  // - (if zeroUnscanned) not counted at all AND currently have stock > 0
   const itemsToZero = useMemo(() => {
-    // Use allProductsRaw when zeroing to ensure we catch everything regardless of filters
     const baseList = zeroUnscanned ? allProductsRaw : products;
     return baseList.filter((p) => {
       const c = counts[p.id];
@@ -175,11 +168,7 @@ const BalancoEstoque = () => {
     });
   }, [allProductsRaw, products, counts, zeroUnscanned]);
 
-  // Apply adjustments: update stock_physical for counted items.
-  // If zeroUnscanned is enabled, also zero out items that were not bipped.
   const applyAdjustments = async () => {
-    // Important: Use allProductsRaw here to ensure items counted under different 
-    // filters are still processed, and zeroing respects the full catalog if enabled.
     const updates = allProductsRaw
       .map((p) => {
         const counted = counts[p.id];
@@ -189,8 +178,6 @@ const BalancoEstoque = () => {
           return (counted as number) !== p.stock_physical ? { p, newQty: counted as number } : null;
         }
         
-        // Lock: only zero out automatically if it's a full balance AND the option is enabled.
-        // In partial balance, we NEVER zero out automatically.
         if (zeroUnscanned && balanceType === "full" && p.stock_physical > 0) {
           return { p, newQty: 0 };
         }
@@ -209,7 +196,8 @@ const BalancoEstoque = () => {
       const { error } = await supabase
         .from("products")
         .update({ stock_physical: newQty })
-        .eq("id", p.id);
+        .eq("id", p.id)
+        .eq("company_id", companyId);
       if (error) fail++; else ok++;
     }
     setApplying(false);

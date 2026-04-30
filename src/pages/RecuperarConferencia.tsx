@@ -55,7 +55,8 @@ const RecuperarConferencia = () => {
         const { count: totalRows } = await supabase
           .from("conference_items")
           .select("id", { count: "exact", head: true })
-          .eq("conference_id", c.id);
+          .eq("conference_id", c.id)
+          .eq("company_id", companyId);
 
         let distinct = 0;
         try {
@@ -93,7 +94,6 @@ const RecuperarConferencia = () => {
 
   useEffect(() => {
     loadRecoverable();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   const filtered = useMemo(() => {
@@ -115,8 +115,8 @@ const RecuperarConferencia = () => {
     setRestoring(row.id);
     try {
       const [scannedProducts, totals] = await Promise.all([
-        fetchConferenceItemsGrouped(row.id),
-        fetchConferenceTotals(row.id),
+        fetchConferenceItemsGrouped(row.id, undefined, companyId),
+        fetchConferenceTotals(row.id, companyId),
       ]);
 
       const session = {

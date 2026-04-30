@@ -933,11 +933,12 @@ const EntradaNota = () => {
 
             // Only ADD to existing stock; auto-created already has the qty as initial stock
             if (productId && wasMatched && autoUpdateStock) {
-              const { data: current, error: fetchError } = await supabase
-                .from("products")
-                .select("stock_physical, cost, price")
-                .eq("id", productId)
-                .maybeSingle();
+                const { data: current, error: fetchError } = await supabase
+                  .from("products")
+                  .select("stock_physical, cost, price")
+                  .eq("id", productId)
+                  .eq("company_id", companyId)
+                  .maybeSingle();
 
               if (!fetchError && current) {
                 const qty = Math.floor(match.xmlProduct.quantity);

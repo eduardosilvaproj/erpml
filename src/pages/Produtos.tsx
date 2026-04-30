@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2, AlertTriangle, Barcode, Camera, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,12 +27,13 @@ import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs"
 const Produtos = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const companyId = useCompanyId();
   const location = useLocation();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const barcodeSearch = useBarcodeSearch();
   const [barcodeInput, setBarcodeInput] = useState("");
-  
+
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const correction = params.get("correction");
@@ -80,6 +82,7 @@ const Produtos = () => {
       const { data: allProducts, error } = await supabase
         .from("products")
         .select("id, name, barcode, description, weight, width, height, depth, price")
+        .eq("company_id", companyId)
         .eq("active", true)
         .order("created_at", { ascending: false });
 
@@ -111,7 +114,7 @@ const Produtos = () => {
           if (enriched.depth_cm != null && prod.depth == null) updates.depth = enriched.depth_cm;
           if (enriched.suggested_price_brl != null && prod.price === 0) updates.price = enriched.suggested_price_brl;
           if (Object.keys(updates).length > 0) {
-            await supabase.from("products").update(updates as any).eq("id", prod.id);
+            await supabase.from("products").update(updates as any).eq("id", prod.id).eq("company_id", companyId);
             successCount++;
           }
         } catch { /* skip */ }
@@ -188,7 +191,8 @@ const Produtos = () => {
       const { error } = await supabase
         .from("products")
         .update({ barcode: ean, ean: ean, ean_pending: false } as any)
-        .eq("id", productId);
+        .eq("id", productId)
+        .eq("company_id", companyId);
 
       if (error) throw error;
       

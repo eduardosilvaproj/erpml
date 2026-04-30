@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import {
   Warehouse, Package, ArrowRightLeft, AlertTriangle, Search, Loader2,
@@ -24,6 +25,7 @@ import { formatNumber, formatDifference } from "@/lib/formatters";
 const Estoque = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
@@ -95,7 +97,7 @@ const Estoque = () => {
         ? { stock_physical: newStock }
         : { stock_full: newStock };
 
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
       if (error) {
         toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
       } else {
@@ -109,7 +111,7 @@ const Estoque = () => {
       if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
       if (Object.keys(updateData).length === 0) return;
 
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
       if (error) {
         toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
       } else {

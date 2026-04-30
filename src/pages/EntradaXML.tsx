@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import {
   FileText, Upload, CheckCircle, AlertTriangle, Loader2, X, Package,
   ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp, Trash2, Files,
@@ -43,6 +44,7 @@ interface ImportResult {
 
 const EntradaXML = () => {
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<ImportStep>("upload");
   const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
@@ -91,7 +93,8 @@ const EntradaXML = () => {
     // Parse each file
     const { data: dbProducts } = await supabase
       .from("products")
-      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_gtins(gtin, tipo, box_quantity)");
+      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_gtins(gtin, tipo, box_quantity)")
+      .eq("company_id", companyId);
 
     for (const qf of newQueued) {
       setQueuedFiles((prev) =>
@@ -118,7 +121,7 @@ const EntradaXML = () => {
         );
       }
     }
-  }, [toast]);
+  }, [toast, companyId]);
 
   const removeFile = (id: string) => {
     setQueuedFiles((prev) => prev.filter((f) => f.id !== id));

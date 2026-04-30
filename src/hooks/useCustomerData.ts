@@ -121,6 +121,7 @@ export function useCreateCustomer() {
 
 export function useUpdateCustomer() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
@@ -132,7 +133,7 @@ export function useUpdateCustomer() {
         cpf: data.cpf || null,
         address: data.address || null,
         notes: data.notes || null,
-      }).eq("id", id);
+      }).eq("id", id).eq("company_id", companyId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -147,11 +148,12 @@ export function useUpdateCustomer() {
 
 export function useDeleteCustomer() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").delete().eq("id", id);
+      const { error } = await supabase.from("customers").delete().eq("id", id).eq("company_id", companyId);
       if (error) throw error;
     },
     onSuccess: () => {
