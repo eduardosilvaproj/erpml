@@ -120,7 +120,7 @@ export function useStartConference() {
         status: "pendente",
       }));
 
-      const { error: ciErr } = await supabase.from("conference_items").insert(confItems);
+      const { error: ciErr } = await supabase.from("conference_items").insert(confItems.map(item => ({ ...item, company_id: companyId })));
       if (ciErr) throw ciErr;
 
       return conf;
@@ -171,7 +171,8 @@ export function useScanItem() {
       const { error: updateErr } = await supabase
         .from("conference_items")
         .update({ scanned_quantity: newQty, status: newStatus })
-        .eq("id", target.id);
+        .eq("id", target.id)
+        .eq("company_id", companyId);
       if (updateErr) throw updateErr;
 
       return { itemId: target.id, newQty, expected: target.expected_quantity, status: newStatus, productName: target.invoice_items?.xml_description };
@@ -196,19 +197,22 @@ export function useFinishConference() {
       await supabase
         .from("conferences")
         .update({ status: finalStatus, finished_at: new Date().toISOString() })
-        .eq("id", conferenceId);
+        .eq("id", conferenceId)
+        .eq("company_id", companyId);
 
       const { data: conf } = await supabase
         .from("conferences")
         .select("invoice_id")
         .eq("id", conferenceId)
+        .eq("company_id", companyId)
         .maybeSingle();
 
       if (conf) {
         await supabase
           .from("invoices")
           .update({ status: finalStatus })
-          .eq("id", conf.invoice_id);
+          .eq("id", conf.invoice_id)
+          .eq("company_id", companyId);
       }
 
       return { status: finalStatus, allOk };

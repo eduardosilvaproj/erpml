@@ -810,7 +810,8 @@ const Conferencia = () => {
       const { data: existingRows, error: existingErr } = await supabase
         .from("conference_items")
         .select("id, product_id, sku, ean, nome_produto")
-        .eq("conference_id", confId!);
+        .eq("conference_id", confId!)
+        .eq("company_id", companyId!);
       if (existingErr) throw existingErr;
 
       const existingByKey = new Map(
@@ -837,11 +838,12 @@ const Conferencia = () => {
           status: getConferenceItemStatus(p.scannedQty, p.systemQty),
           tipo_contagem: p.boxInfo ? "caixa" : "unidade",
           detalhes_caixa: p.boxInfo ?? null,
+          company_id: companyId,
         };
 
         const existing = existingByKey.get(key);
         if (existing) {
-          const { error } = await supabase.from("conference_items").update(payload as any).eq("id", existing.id);
+          const { error } = await supabase.from("conference_items").update(payload as any).eq("id", existing.id).eq("company_id", companyId);
           if (error) throw error;
           return;
         }
@@ -856,7 +858,8 @@ const Conferencia = () => {
           const { error } = await supabase
             .from("conference_items")
             .update({ scanned_quantity: 0, status: "pendente", detalhes_caixa: null } as any)
-            .eq("id", row.id);
+            .eq("id", row.id)
+            .eq("company_id", companyId);
           if (error) throw error;
         });
 
@@ -1823,7 +1826,7 @@ const Conferencia = () => {
                   }
                   if (unitsNum > 0 && unitsNum !== product.box_quantity) {
                     try {
-                      await supabase.from("products").update({ box_quantity: unitsNum }).eq("id", product.id);
+                      await supabase.from("products").update({ box_quantity: unitsNum }).eq("id", product.id).eq("company_id", companyId);
                       refetchProducts();
                     } catch {}
                   }
