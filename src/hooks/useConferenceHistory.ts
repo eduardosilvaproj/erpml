@@ -92,14 +92,16 @@ export function useConferenceHistory(filters?: {
 
 /** Busca uma conferência + itens. */
 export function useConferenceDetail(conferenceId: string | null) {
+  const companyId = useCompanyId();
   return useQuery({
-    queryKey: ["conference-detail", conferenceId],
-    enabled: !!conferenceId,
+    queryKey: ["conference-detail", conferenceId, companyId],
+    enabled: !!conferenceId && !!companyId,
     queryFn: async () => {
       const { data: conf, error } = await supabase
         .from("conferences")
         .select("*")
         .eq("id", conferenceId!)
+        .eq("company_id", companyId!)
         .maybeSingle();
       if (error) throw error;
 
@@ -151,6 +153,7 @@ export function useCreateConference() {
 /** Salva uma bipagem (cria ou incrementa item). */
 export function useSaveScan() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { user } = useAuth();
 
   return useMutation({
@@ -170,6 +173,7 @@ export function useSaveScan() {
           .select("*")
           .eq("conference_id", conferenceId)
           .eq("product_id", product.id)
+          .eq("company_id", companyId!)
           .maybeSingle();
         existing = data;
       }
@@ -193,10 +197,12 @@ export function useSaveScan() {
             detalhes_caixa,
             atualizado_por: user?.id,
           } as any)
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .eq("company_id", companyId!);
         if (error) throw error;
       } else {
         const { error } = await supabase.from("conference_items").insert({
+          company_id: companyId,
           conference_id: conferenceId,
           product_id: product.id ?? null,
           nome_produto: product.nome ?? null,
@@ -216,7 +222,8 @@ export function useSaveScan() {
       await supabase
         .from("conferences")
         .update({ atualizado_por: user?.id, updated_at: new Date().toISOString() } as any)
-        .eq("id", conferenceId);
+        .eq("id", conferenceId)
+        .eq("company_id", companyId!);
 
       return true;
     },
@@ -230,6 +237,7 @@ export function useSaveScan() {
 /** Pausar / retomar / cancelar / concluir conferência. */
 export function useUpdateConferenceStatus() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -239,7 +247,7 @@ export function useUpdateConferenceStatus() {
       if (input.status === "concluida" || input.status === "conferida" || input.status === "divergente") {
         patch.finished_at = new Date().toISOString();
       }
-      const { error } = await supabase.from("conferences").update(patch).eq("id", input.id);
+      const { error } = await supabase.from("conferences").update(patch).eq("id", input.id).eq("company_id", companyId!);
       if (error) throw error;
       return true;
     },
