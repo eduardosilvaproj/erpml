@@ -138,6 +138,7 @@ export function useStartConference() {
 
 export function useScanItem() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
 
   return useMutation({
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
@@ -185,6 +186,7 @@ export function useScanItem() {
 
 export function useFinishConference() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
