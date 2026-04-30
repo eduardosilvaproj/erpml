@@ -211,7 +211,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
     // 1. PRIORIDADE: EAN/Barcode Unitário (Unidade)
     const target = itens.find((i) =>
-      i.product?.ean === codeTrimmed || i.product?.barcode === codeTrimmed
+      i.product?.ean === codeTrimmed || i.product?.barcode === codeTrimmed || i.product?.sku === codeTrimmed
     );
 
     if (target) {
