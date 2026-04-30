@@ -94,7 +94,6 @@ const RecuperarConferencia = () => {
 
   useEffect(() => {
     loadRecoverable();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId]);
 
   const filtered = useMemo(() => {
