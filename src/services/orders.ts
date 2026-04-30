@@ -23,15 +23,16 @@ export const ordersService = {
     })) as OrdemFull[];
   },
 
-  async buscarOrdem(ordemId: string) {
-    return this.fetchOrdemFull(ordemId);
+  async buscarOrdem(ordemId: string, companyId: string) {
+    return this.fetchOrdemFull(ordemId, companyId);
   },
 
-  async fetchOrdemFull(ordemId: string) {
+  async fetchOrdemFull(ordemId: string, companyId: string) {
     const { data: ordem, error } = await supabase
       .from("full_orders")
       .select(`*, full_order_items(*, product:products(*))`)
       .eq("id", ordemId)
+      .eq("company_id", companyId)
       .maybeSingle();
     
     if (error) throw error;
