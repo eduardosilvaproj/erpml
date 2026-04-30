@@ -508,6 +508,7 @@ export const OrdensFullTab = () => {
         .from('full_orders')
         .select('id, status')
         .eq('frete_ml', parsedData.shippingNumber)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false }) // Pegar a mais recente
         .limit(1)
         .maybeSingle();
@@ -583,6 +584,7 @@ export const OrdensFullTab = () => {
         .from("full_orders")
         .select("*, full_order_items(*, product:products(*))")
         .eq("id", ordem.id)
+        .eq("company_id", companyId)
         .maybeSingle();
         
       if (error) throw error;
