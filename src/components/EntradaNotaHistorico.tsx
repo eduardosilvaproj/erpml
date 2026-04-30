@@ -114,11 +114,12 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
       const xmlUnit = Number(it.unit_value) || 0;
       const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
       if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
-      await supabase.from("products").update(updatePayload).eq("id", productId);
+      const { error: prodUpdateErr } = await supabase.from("products").update(updatePayload).eq("id", productId);
+      if (prodUpdateErr) { skipped++; continue; }
       updated++;
     }
 
-    await supabase
+    const { error: itemUpdateErr } = await supabase
       .from("invoice_items")
       .update({
         product_id: productId,
@@ -126,6 +127,10 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
         match_type: isNew ? "new" : (it.match_type === "none" ? "fuzzy" : it.match_type),
       })
       .eq("id", it.id);
+    
+    if (itemUpdateErr) {
+       // Opcional: tratar erro de marcação aqui se necessário
+    }
   }
 
   await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id);
@@ -428,11 +433,12 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           const xmlUnit = Number(it.unit_value) || 0;
           const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
           if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
-          await supabase.from("products").update(updatePayload).eq("id", productId);
+          const { error: prodUpdateErr } = await supabase.from("products").update(updatePayload).eq("id", productId);
+          if (prodUpdateErr) { skipped++; continue; }
           updated++;
         }
 
-        await supabase
+        const { error: itemUpdateErr } = await supabase
           .from("invoice_items")
           .update({
             product_id: productId,

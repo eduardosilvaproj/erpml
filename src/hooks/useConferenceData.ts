@@ -148,7 +148,7 @@ export function useScanItem() {
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
         const prod = ci.invoice_items?.products;
         if (!prod) return false;
-        return prod.barcode === barcode || prod.sku === barcode;
+        return prod.ean === barcode || prod.barcode === barcode || prod.sku === barcode;
       });
 
       const matchByCode = !matched

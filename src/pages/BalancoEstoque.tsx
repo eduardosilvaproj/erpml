@@ -73,6 +73,7 @@ const BalancoEstoque = () => {
         (p) =>
           p.name?.toLowerCase().includes(s) ||
           p.sku?.toLowerCase().includes(s) ||
+          p.ean?.toLowerCase().includes(s) ||
           p.barcode?.toLowerCase().includes(s)
       );
     }
@@ -234,7 +235,7 @@ const BalancoEstoque = () => {
 
     // Find product by barcode, sku, or sku_ml in ALL products
     const product = allProductsRaw.find(
-      (p) => p.barcode === trimmed || p.sku === trimmed || p.sku_ml === trimmed
+      (p) => p.ean === trimmed || p.barcode === trimmed || p.sku === trimmed || p.sku_ml === trimmed
     );
 
     if (!product) {
