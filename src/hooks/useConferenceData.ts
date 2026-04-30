@@ -100,8 +100,7 @@ export function useStartConference() {
       const { data: items, error: itemsErr } = await supabase
         .from("invoice_items")
         .select("*")
-        .eq("invoice_id", invoiceId)
-        .eq("company_id", companyId);
+        .eq("invoice_id", invoiceId);
       if (itemsErr) throw itemsErr;
 
       const { data: conf, error: confErr } = await supabase
@@ -120,7 +119,7 @@ export function useStartConference() {
         status: "pendente",
       }));
 
-      const { error: ciErr } = await supabase.from("conference_items").insert(confItems.map(item => ({ ...item, company_id: companyId })));
+      const { error: ciErr } = await supabase.from("conference_items").insert(confItems);
       if (ciErr) throw ciErr;
 
       return conf;
@@ -169,8 +168,7 @@ export function useScanItem() {
       const { error: updateErr } = await supabase
         .from("conference_items")
         .update({ scanned_quantity: newQty, status: newStatus })
-        .eq("id", target.id)
-        .eq("company_id", companyId); // Assuming we can use companyId hook value or pass it
+        .eq("id", target.id);
       if (updateErr) throw updateErr;
 
       return { itemId: target.id, newQty, expected: target.expected_quantity, status: newStatus, productName: target.invoice_items?.xml_description };
@@ -195,22 +193,19 @@ export function useFinishConference() {
       await supabase
         .from("conferences")
         .update({ status: finalStatus, finished_at: new Date().toISOString() })
-        .eq("id", conferenceId)
-        .eq("company_id", companyId);
+        .eq("id", conferenceId);
 
       const { data: conf } = await supabase
         .from("conferences")
         .select("invoice_id")
         .eq("id", conferenceId)
-        .eq("company_id", companyId)
         .maybeSingle();
 
       if (conf) {
         await supabase
           .from("invoices")
           .update({ status: finalStatus })
-            .eq("id", conf.invoice_id)
-            .eq("company_id", companyId);
+          .eq("id", conf.invoice_id);
       }
 
       return { status: finalStatus, allOk };

@@ -559,7 +559,8 @@ const Conferencia = () => {
         await supabase
           .from("products")
           .update({ gtin_cx: gtinModal.code, box_quantity: units })
-          .eq("id", product.id);
+          .eq("id", product.id)
+          .eq("company_id", companyId);
         refetchProducts();
         toast({ title: `GTIN CX salvo no produto ${product.name}!` });
       } catch (err: any) {
@@ -733,6 +734,7 @@ const Conferencia = () => {
         .from("conferences")
         .select("type, section_name, nome, tipo")
         .eq("id", confId)
+        .eq("company_id", companyId)
         .maybeSingle();
 
       if (confRow) {
@@ -868,7 +870,8 @@ const Conferencia = () => {
           type: conferenceType,
           section_name: conferenceType === "partial" ? sectionName : null
         } as any)
-        .eq("id", confId!);
+        .eq("id", confId!)
+        .eq("company_id", companyId);
 
       return confId!;
     } catch (err: any) {
@@ -917,7 +920,8 @@ const Conferencia = () => {
         await supabase
           .from("conferences")
           .update({ status: "cancelada", finished_at: new Date().toISOString() } as any)
-          .eq("id", conferenceId);
+          .eq("id", conferenceId)
+          .eq("company_id", companyId);
       }
       toast({ title: "Conferência cancelada" });
       reset();

@@ -171,7 +171,7 @@ export const productsService = {
     const { error } = await supabase.from("products").update(updateData).eq("id", id).eq("company_id", companyId);
     if (error) throw error;
 
-    await supabase.from("product_suppliers").delete().eq("product_id", id).eq("company_id", companyId);
+    await supabase.from("product_suppliers").delete().eq("product_id", id);
     if (supplier_ids.length > 0) {
       const supplierLinks = supplier_ids.map((sid, i) => ({
         product_id: id,
@@ -179,17 +179,17 @@ export const productsService = {
         cost: data.cost,
         is_primary: i === 0,
       }));
-      await supabase.from("product_suppliers").insert(supplierLinks.map(l => ({ ...l, company_id: companyId })));
+      await supabase.from("product_suppliers").insert(supplierLinks);
     }
 
-    await supabase.from("product_supplier_skus").delete().eq("product_id", id).eq("company_id", companyId);
+    await supabase.from("product_supplier_skus").delete().eq("product_id", id);
     if (supplier_skus && supplier_skus.length > 0) {
       const skusToInsert = supplier_skus.map(s => ({
         product_id: id,
         supplier_name: s.supplier_name,
         supplier_sku: s.supplier_sku
       }));
-      await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
+      await supabase.from("product_supplier_skus").insert(skusToInsert);
     }
   },
 
