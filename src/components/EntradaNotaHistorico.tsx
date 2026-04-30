@@ -695,8 +695,10 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       
       if (conferences && conferences.length > 0) {
         const confIds = conferences.map(c => c.id);
-        await supabase.from('conference_items').delete().in('conference_id', confIds).eq('company_id', companyId!);
-        await supabase.from('conferences').delete().eq('invoice_id', invoice.id).eq('company_id', companyId!);
+        const { error: delCiErr } = await supabase.from('conference_items').delete().in('conference_id', confIds).eq('company_id', companyId!);
+        if (delCiErr) throw delCiErr;
+        const { error: delConfErr } = await supabase.from('conferences').delete().eq('invoice_id', invoice.id).eq('company_id', companyId!);
+        if (delConfErr) throw delConfErr;
       }
 
       // 3. Deletar pagamentos da nota (se houver)
