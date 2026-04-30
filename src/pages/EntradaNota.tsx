@@ -636,6 +636,7 @@ const EntradaNota = () => {
       const existing = await productsService.findProductByEanOrSku({ ean, companyId });
       if (existing?.id) return existing.id;
     }
+    
     const existingBySku = await productsService.findProductByEanOrSku({ sku, companyId });
     if (existingBySku?.id) return existingBySku.id;
 
@@ -659,15 +660,6 @@ const EntradaNota = () => {
       console.error("Erro ao criar produto automático:", err);
       return null;
     }
-      })
-      .select("id")
-      .maybeSingle();
-
-    if (createErr) {
-      console.error("Erro ao criar produto auto:", createErr);
-      throw createErr;
-    }
-    return created?.id ?? null;
   };
 
   const confirmarEntrada = async () => {
