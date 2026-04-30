@@ -121,6 +121,7 @@ export function useCreateCustomer() {
 
 export function useUpdateCustomer() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
@@ -147,6 +148,7 @@ export function useUpdateCustomer() {
 
 export function useDeleteCustomer() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({

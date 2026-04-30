@@ -102,6 +102,7 @@ export function useCreateKit() {
 
 export function useUpdateKit() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
@@ -139,6 +140,7 @@ export function useUpdateKit() {
 
 export function useDeleteKit() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
@@ -162,6 +164,7 @@ export function useDeleteKit() {
  */
 export function useDeductKitStock() {
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
   const { toast } = useToast();
 
   return useMutation({
