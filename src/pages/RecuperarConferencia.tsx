@@ -116,8 +116,8 @@ const RecuperarConferencia = () => {
     setRestoring(row.id);
     try {
       const [scannedProducts, totals] = await Promise.all([
-        fetchConferenceItemsGrouped(row.id),
-        fetchConferenceTotals(row.id),
+        fetchConferenceItemsGrouped(row.id, undefined, companyId),
+        fetchConferenceTotals(row.id, companyId),
       ]);
 
       const session = {

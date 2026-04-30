@@ -22,6 +22,7 @@ const CorrecaoSKU = () => {
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["sku-correction-stats"],
     queryFn: async () => {
+      if (!companyId) return { noSkuCount: 0, noSupplierCount: 0 };
       const { count: noSkuCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
