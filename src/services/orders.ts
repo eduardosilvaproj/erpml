@@ -225,6 +225,7 @@ export const ordersService = {
       .maybeSingle();
 
     if (fetchError) throw fetchError;
+    if (!ordem) throw new Error("Ordem não encontrada");
     if (ordem.separado_em) return;
 
     const bipagemItems = Array.isArray(ordem.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
