@@ -36,9 +36,10 @@ export const stockService = {
       .select("stock_physical")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
     const oldStock = product.stock_physical || 0;
     if (oldStock < quantity) {
       throw new Error("Estoque insuficiente");
@@ -71,9 +72,10 @@ export const stockService = {
       .select("stock_full")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
 
     const oldStock = product.stock_full || 0;
     const newStock = oldStock + quantity;
@@ -103,9 +105,10 @@ export const stockService = {
       .select("stock_physical")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
 
     const oldStock = product.stock_physical || 0;
     const { error: updateError } = await supabase
