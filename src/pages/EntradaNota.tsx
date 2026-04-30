@@ -636,19 +636,14 @@ const EntradaNota = () => {
       const existing = await productsService.findProductByEanOrSku({ ean, companyId });
       if (existing?.id) return existing.id;
     }
-    const { data: bySku } = await supabase
-      .from("products")
-      .select("id")
-      .eq("company_id", companyId)
-      .eq("sku", sku)
-      .maybeSingle();
-    if (bySku?.id) return bySku.id;
+    const existingBySku = await productsService.findProductByEanOrSku({ sku, companyId });
+    if (existingBySku?.id) return existingBySku.id;
 
     const xmlUnit = Number(xmlProduct.unitValue) || 0;
     const suggestedPrice = xmlUnit > 0 ? Math.round(xmlUnit * 1.5 * 100) / 100 : 0;
-    const { data: created, error: createErr } = await supabase
-      .from("products")
-      .insert({
+    
+    try {
+      const created = await productsService.createProduct({
         name: xmlProduct.description.slice(0, 200),
         sku,
         barcode: ean || null,
@@ -657,7 +652,13 @@ const EntradaNota = () => {
         stock_physical: qty,
         min_stock: 0,
         active: true,
-        company_id: companyId,
+      }, companyId);
+      
+      return created?.id || null;
+    } catch (err) {
+      console.error("Erro ao criar produto automático:", err);
+      return null;
+    }
       })
       .select("id")
       .maybeSingle();
