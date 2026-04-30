@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Package, Plus, Search, Pencil, Trash2, ChevronLeft, ChevronRight, Loader2, Truck, Sparkles, Upload, Download, Settings2, AlertTriangle, Barcode, Camera, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";

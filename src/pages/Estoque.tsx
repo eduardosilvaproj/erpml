@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import {
   Warehouse, Package, ArrowRightLeft, AlertTriangle, Search, Loader2,

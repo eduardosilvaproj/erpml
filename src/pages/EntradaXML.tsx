@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import {
   FileText, Upload, CheckCircle, AlertTriangle, Loader2, X, Package,
   ArrowRight, Check, XCircle, HelpCircle, ChevronDown, ChevronUp, Trash2, Files,
