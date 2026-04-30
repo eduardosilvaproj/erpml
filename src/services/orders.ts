@@ -222,6 +222,7 @@ export const ordersService = {
       .from("full_orders")
       .select(`*`)
       .eq("id", ordemId)
+      .eq("company_id", companyId)
       .maybeSingle();
 
     if (fetchError) throw fetchError;
@@ -238,7 +239,8 @@ export const ordersService = {
         separado_por: userId,
         updated_at: new Date().toISOString()
       })
-      .eq("id", ordemId);
+      .eq("id", ordemId)
+      .eq("company_id", companyId);
 
     if (updateOrderError) throw updateOrderError;
 

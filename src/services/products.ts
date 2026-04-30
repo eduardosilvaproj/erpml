@@ -141,7 +141,7 @@ export const productsService = {
         supplier_name: s.supplier_name,
         supplier_sku: s.supplier_sku
       }));
-      const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert);
+      const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
       if (skuError) throw skuError;
     }
 

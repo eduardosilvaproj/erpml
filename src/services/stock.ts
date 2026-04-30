@@ -159,6 +159,7 @@ export const stockService = {
         .from("products")
         .select("stock_physical")
         .eq("id", item.productId)
+        .eq("company_id", companyId)
         .maybeSingle();
       if (!product || product.stock_physical < item.quantity) {
         throw new Error(`Estoque insuficiente para "${item.productName}". Disponível: ${product?.stock_physical ?? 0}, Solicitado: ${item.quantity}`);
@@ -193,6 +194,7 @@ export const stockService = {
         .from("products")
         .select("stock_physical, stock_full")
         .eq("id", item.productId)
+        .eq("company_id", companyId)
         .maybeSingle();
       if (current) {
         const oldPhysical = current.stock_physical || 0;
@@ -206,7 +208,8 @@ export const stockService = {
             stock_physical: newPhysical,
             stock_full: newFull,
           })
-          .eq("id", item.productId);
+          .eq("id", item.productId)
+          .eq("company_id", companyId);
 
         await this.logMovement({
           productId: item.productId,
