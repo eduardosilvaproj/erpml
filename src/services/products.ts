@@ -148,7 +148,7 @@ export const productsService = {
     return product;
   },
 
-  async updateProduct(id: string, data: ProductFormData) {
+  async updateProduct(id: string, data: ProductFormData, companyId: string) {
     const { supplier_ids, supplier_skus, ...productData } = data;
     const updateData = {
       ...productData,
@@ -168,7 +168,7 @@ export const productsService = {
       box_quantity: productData.box_quantity ?? null,
     };
 
-    const { error } = await supabase.from("products").update(updateData).eq("id", id);
+    const { error } = await supabase.from("products").update(updateData).eq("id", id).eq("company_id", companyId);
     if (error) throw error;
 
     await supabase.from("product_suppliers").delete().eq("product_id", id);
@@ -193,7 +193,7 @@ export const productsService = {
     }
   },
 
-  async deleteProduct(id: string) {
+  async deleteProduct(id: string, companyId: string) {
     const tablesToCheck = [
       "sale_items",
       "full_order_items",
@@ -211,7 +211,8 @@ export const productsService = {
         try {
           const { count, error } = await (supabase.from(table as any) as any)
             .select("*", { count: "exact", head: true })
-            .eq("product_id", id);
+            .eq("product_id", id)
+            .eq("company_id", companyId);
           
           if (error) return 0;
           return count || 0;
@@ -227,12 +228,13 @@ export const productsService = {
       const { error } = await supabase
         .from("products")
         .update({ active: false })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", companyId);
       
       if (error) throw error;
       return { deactivated: true };
     } else {
-      const { error } = await supabase.from("products").delete().eq("id", id);
+      const { error } = await supabase.from("products").delete().eq("id", id).eq("company_id", companyId);
       if (error) throw error;
       return { deactivated: false };
     }
@@ -270,9 +272,10 @@ export const productsService = {
       .select("stock_physical")
       .eq("id", id)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
 
     const newStock = (product.stock_physical || 0) + delta;
     
@@ -316,8 +319,8 @@ export const productsService = {
     return supplier;
   },
 
-  async deleteSupplier(id: string) {
-    const { error } = await supabase.from("suppliers").delete().eq("id", id);
+  async deleteSupplier(id: string, companyId: string) {
+    const { error } = await supabase.from("suppliers").delete().eq("id", id).eq("company_id", companyId);
     if (error) throw error;
   }
 };
