@@ -25,6 +25,7 @@ import { formatNumber, formatDifference } from "@/lib/formatters";
 const Estoque = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
