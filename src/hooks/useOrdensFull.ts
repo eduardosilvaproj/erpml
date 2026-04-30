@@ -68,10 +68,11 @@ export const useOrdensFull = () => {
 };
 
 export const useOrdemFull = (ordemId: string | null) => {
+  const companyId = useCompanyId();
   return useQuery({
-    queryKey: ["ordem-full", ordemId],
-    enabled: !!ordemId,
-    queryFn: () => ordersService.fetchOrdemFull(ordemId!),
+    queryKey: ["ordem-full", ordemId, companyId],
+    enabled: !!ordemId && !!companyId,
+    queryFn: () => ordersService.fetchOrdemFull(ordemId!, companyId!),
   });
 };
 
@@ -97,9 +98,12 @@ export const useCreateOrdemFull = () => {
 
 export const useUpdateOrdemStatus = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, any> }) => 
-      ordersService.updateOrdemStatus(id, status, extra),
+    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, any> }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.updateOrdemStatus(id, status, companyId, extra);
+    },
     onSuccess: (_, v) => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
       qc.invalidateQueries({ queryKey: ["ordem-full", v.id] });
@@ -109,9 +113,12 @@ export const useUpdateOrdemStatus = () => {
 
 export const useUpdateItemQuantity = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
-    mutationFn: (params: { itemId: string; qtd_separada: number; qtd_solicitada: number; orderId?: string }) => 
-      ordersService.updateItemQuantity(params),
+    mutationFn: (params: { itemId: string; qtd_separada: number; qtd_solicitada: number; orderId?: string }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.updateItemQuantity(params, companyId);
+    },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["ordem-full"] });
       if (data?.orderId) qc.invalidateQueries({ queryKey: ["ordem-full", data.orderId] });
@@ -123,7 +130,10 @@ export const useDeleteOrdem = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id }: { id: string; frete_ml?: string | null }) => ordersService.deleteOrdem(id),
+    mutationFn: ({ id }: { id: string; frete_ml?: string | null }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.deleteOrdem(id, companyId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
       qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
@@ -135,8 +145,10 @@ export const useUpdateFullOrder = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: any }) => 
-      ordersService.updateOrdemStatus(id, status as OrdemStatus, rest),
+    mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: any }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.updateOrdemStatus(id, status as OrdemStatus, companyId, rest);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
       qc.invalidateQueries({ queryKey: ["ordens-full", companyId] });
@@ -148,7 +160,10 @@ export const useDeleteFullOrder = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: (id: string) => ordersService.deleteOrdem(id),
+    mutationFn: (id: string) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.deleteOrdem(id, companyId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
       qc.invalidateQueries({ queryKey: ["ordens-full", companyId] });
@@ -158,8 +173,12 @@ export const useDeleteFullOrder = () => {
 
 export const useMarcarOrdemEnviada = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
-    mutationFn: (ordemId: string) => ordersService.updateOrdemStatus(ordemId, "enviado"),
+    mutationFn: (ordemId: string) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.updateOrdemStatus(ordemId, "enviado", companyId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
     },
@@ -168,8 +187,12 @@ export const useMarcarOrdemEnviada = () => {
 
 export const useConcluirOrdem = () => {
   const qc = useQueryClient();
+  const companyId = useCompanyId();
   return useMutation({
-    mutationFn: (ordemId: string) => ordersService.updateOrdemStatus(ordemId, "concluida"),
+    mutationFn: (ordemId: string) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return ordersService.updateOrdemStatus(ordemId, "concluida", companyId);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
     },
