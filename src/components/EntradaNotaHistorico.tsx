@@ -492,7 +492,7 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
         }
       }
 
-      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id);
+      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id).eq("company_id", companyId);
       toast({
         title: "Reprocessamento concluído",
         description: `${created} criado(s), ${updated} atualizado(s)${skipped ? `, ${skipped} ignorado(s)` : ""}.`,
@@ -687,12 +687,13 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       const { data: conferences } = await supabase
         .from('conferences')
         .select('id')
-        .eq('invoice_id', invoice.id);
+        .eq('invoice_id', invoice.id)
+        .eq('company_id', companyId!);
       
       if (conferences && conferences.length > 0) {
         const confIds = conferences.map(c => c.id);
-        await supabase.from('conference_items').delete().in('conference_id', confIds);
-        await supabase.from('conferences').delete().eq('invoice_id', invoice.id);
+        await supabase.from('conference_items').delete().in('conference_id', confIds).eq('company_id', companyId!);
+        await supabase.from('conferences').delete().eq('invoice_id', invoice.id).eq('company_id', companyId!);
       }
 
       // 3. Deletar pagamentos da nota (se houver)
@@ -713,7 +714,8 @@ function DeleteDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
       const { error: invError } = await supabase
         .from('invoices')
         .delete()
-        .eq('id', invoice.id);
+        .eq('id', invoice.id)
+        .eq('company_id', companyId!);
 
       if (invError) throw new Error(`Erro ao deletar nota: ${invError.message}`);
 
