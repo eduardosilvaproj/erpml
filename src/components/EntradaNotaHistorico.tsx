@@ -102,10 +102,23 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
           company_id: companyId,
         })
         .select("id").maybeSingle();
+      
       if (ce || !createdProd) { skipped++; continue; }
       productId = createdProd.id;
       isNew = true;
-      created++;
+
+      // Marcar item como processado (novo produto já nasce com estoque)
+      const { error: itemUpdateErr } = await supabase
+        .from("invoice_items")
+        .update({
+          product_id: productId,
+          stock_updated: true,
+          match_type: "new",
+        })
+        .eq("id", it.id);
+      
+      if (!itemUpdateErr) created++;
+      else skipped++;
     } else if (!it.stock_updated) {
       const { data: prod } = await supabase
         .from("products").select("stock_physical, cost").eq("id", productId).maybeSingle();
@@ -122,21 +135,21 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
         .update(updatePayload)
         .eq("id", productId)
         .eq("company_id", companyId);
+      
       if (prodUpdateErr) { skipped++; continue; }
-      updated++;
-    }
 
-    const { error: itemUpdateErr } = await supabase
-      .from("invoice_items")
-      .update({
-        product_id: productId,
-        stock_updated: true,
-        match_type: isNew ? "new" : (it.match_type === "none" ? "fuzzy" : it.match_type),
-      })
-      .eq("id", it.id);
-    
-    if (itemUpdateErr) {
-       // Opcional: tratar erro de marcação aqui se necessário
+      // Só marca como processado se salvou estoque com sucesso
+      const { error: itemUpdateErr } = await supabase
+        .from("invoice_items")
+        .update({
+          product_id: productId,
+          stock_updated: true,
+          match_type: (it.match_type === "none" ? "fuzzy" : it.match_type),
+        })
+        .eq("id", it.id);
+      
+      if (!itemUpdateErr) updated++;
+      else skipped++;
     }
   }
 
@@ -428,10 +441,23 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
               company_id: companyId,
             })
             .select("id").maybeSingle();
+
           if (ce || !createdProd) { skipped++; continue; }
           productId = createdProd.id;
           isNew = true;
-          created++;
+
+          // Marcar item como processado (novo produto já nasce com estoque)
+          const { error: itemUpdateErr } = await supabase
+            .from("invoice_items")
+            .update({
+              product_id: productId,
+              stock_updated: true,
+              match_type: "new",
+            })
+            .eq("id", it.id);
+          
+          if (!itemUpdateErr) created++;
+          else skipped++;
         } else if (!it.stock_updated) {
           const { data: prod } = await supabase
             .from("products").select("stock_physical, cost").eq("id", productId).maybeSingle();
@@ -448,18 +474,22 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
             .update(updatePayload)
             .eq("id", productId)
             .eq("company_id", companyId);
+          
           if (prodUpdateErr) { skipped++; continue; }
-          updated++;
-        }
 
-        const { error: itemUpdateErr } = await supabase
-          .from("invoice_items")
-          .update({
-            product_id: productId,
-            stock_updated: true,
-            match_type: isNew ? "new" : (it.match_type === "none" ? "fuzzy" : it.match_type),
-          })
-          .eq("id", it.id);
+          // Só marca como processado se salvou estoque com sucesso
+          const { error: itemUpdateErr } = await supabase
+            .from("invoice_items")
+            .update({
+              product_id: productId,
+              stock_updated: true,
+              match_type: (it.match_type === "none" ? "fuzzy" : it.match_type),
+            })
+            .eq("id", it.id);
+          
+          if (!itemUpdateErr) updated++;
+          else skipped++;
+        }
       }
 
       await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id);
