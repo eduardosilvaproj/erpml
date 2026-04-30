@@ -14,15 +14,16 @@ import { Input } from "@/components/ui/input";
 const CorrecaoSKU = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const companyId = useCompanyId();
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
-    queryKey: ["sku-correction-stats"],
+    queryKey: ["sku-correction-stats", companyId],
+    enabled: !!companyId,
     queryFn: async () => {
-      if (!companyId) return { noSkuCount: 0, noSupplierCount: 0 };
       const { count: noSkuCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
@@ -107,7 +108,6 @@ const CorrecaoSKU = () => {
       const text = e.target?.result as string;
       const lines = text.split("\n").filter(line => line.trim());
       
-      // Skip header if it exists (EAN, NOME_FORNECEDOR, SKU_FORNECEDOR)
       const dataLines = lines[0].includes("EAN") ? lines.slice(1) : lines;
       
       let processed = 0;
@@ -119,7 +119,6 @@ const CorrecaoSKU = () => {
         
         if (ean && supplierName && supplierSku) {
           try {
-            // Find product by barcode or ean
             const { data: product } = await supabase
               .from("products")
               .select("id")
@@ -305,7 +304,6 @@ const CorrecaoSKU = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* This is just a preview of the first few products that need correction */}
               <TableRow>
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                   Use os filtros na tela de Produtos para revisar detalhadamente.
