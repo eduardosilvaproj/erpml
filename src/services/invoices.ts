@@ -142,6 +142,7 @@ export const invoicesService = {
             company_id: companyId,
           })
           .select()
+          .eq('company_id', companyId)
           .maybeSingle();
         if (prodError) throw prodError;
         productId = newProduct.id;
