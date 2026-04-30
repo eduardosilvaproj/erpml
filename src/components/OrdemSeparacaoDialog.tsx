@@ -339,17 +339,12 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     if (!ordem?.frete_ml) return;
     try {
       const novaData = new Date(`${novaPrevisaoData}T${novaPrevisaoHora}:00`).toISOString();
-      const { error: e1 } = await supabase
-        .from('full_orders')
-        .update({ previsao_carregamento: novaData })
-        .eq('frete_ml', ordem.frete_ml)
-        .eq('company_id', companyId);
       const { error: e2 } = await supabase
         .from('full_orders')
         .update({ previsao_carregamento: novaData })
         .eq('id', ordem.id)
         .eq('company_id', companyId);
-      if (e1 || e2) throw e1 || e2;
+      if (e2) throw e2;
       toast({ title: '✅ Previsão atualizada' });
       setEditingPrevisao(false);
       refetch();

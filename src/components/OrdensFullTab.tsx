@@ -64,11 +64,11 @@ const PrevisaoColetaCell = ({ o, onUpdate }: { o: any, onUpdate: () => void }) =
         .eq("company_id", companyId);
       if (error) throw error;
       
-      if (o.frete_ml) {
+      if (o.id) {
          await supabase
           .from("full_orders")
           .update({ previsao_carregamento: tempDate || null })
-          .eq("frete_ml", o.frete_ml)
+          .eq("id", o.id)
           .eq("company_id", companyId);
       }
       
