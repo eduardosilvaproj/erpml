@@ -198,12 +198,13 @@ export function useUpdateCompany() {
       // Add audit log
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase.from("company_audit_log").insert({
+        const { error: auditErr } = await supabase.from("company_audit_log").insert({
           company_id: id,
           user_id: session.user.id,
           action: "company_updated",
           details: updates as any,
         });
+        if (auditErr) console.error("Erro no audit log:", auditErr.message);
       }
     },
     onSuccess: () => {
@@ -233,19 +234,21 @@ export function useCreateCompany() {
       if (error) throw error;
 
       // Add owner as member
-      await supabase.from("company_members").insert({
+      const { error: memberErr } = await supabase.from("company_members").insert({
         company_id: company.id,
         user_id: session.user.id,
         role: "owner",
       });
+      if (memberErr) console.error("Erro ao adicionar membro:", memberErr.message);
 
       // Add audit log
-      await supabase.from("company_audit_log").insert({
+      const { error: auditErr } = await supabase.from("company_audit_log").insert({
         company_id: company.id,
         user_id: session.user.id,
         action: "company_created",
         details: { name: data.name },
       });
+      if (auditErr) console.error("Erro no audit log:", auditErr.message);
 
       return company;
     },

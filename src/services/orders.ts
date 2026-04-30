@@ -117,7 +117,8 @@ export const ordersService = {
     }));
 
     if (itemsToInsert.length > 0) {
-      await supabase.from("full_order_items").insert(itemsToInsert);
+      const { error: itemsErr } = await supabase.from("full_order_items").insert(itemsToInsert);
+      if (itemsErr) throw itemsErr;
     }
 
     return order as OrdemFull;
@@ -301,7 +302,7 @@ export const ordersService = {
       }
     }
 
-    await supabase.from("company_audit_log").insert({
+    const { error: auditErr } = await supabase.from("company_audit_log").insert({
       company_id: companyId,
       user_id: userId,
       action: "full_order_separated",
@@ -312,5 +313,6 @@ export const ordersService = {
         timestamp: new Date().toISOString()
       }
     });
+    if (auditErr) console.error("Erro no audit log:", auditErr.message);
   }
 };

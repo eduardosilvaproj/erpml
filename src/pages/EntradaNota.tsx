@@ -2313,11 +2313,16 @@ const EntradaNota = () => {
               // Save GTIN CX if checkbox checked, code is non-empty, and product has a DB ID
               const actualProductId = unknownGtinProduct.startsWith("idx-") ? selectedItem?.matchedProductId : unknownGtinProduct;
               if (unknownGtinSave && unknownGtinDialog.code && actualProductId) {
-                await supabase.from("products").update({
+                const { error } = await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
                 }).eq("id", actualProductId).eq('company_id', companyId);
-                toast({ title: `GTIN CX salvo no produto ${productName}!` });
+                
+                if (error) {
+                  toast({ title: "Erro ao salvar GTIN", description: error.message, variant: "destructive" });
+                } else {
+                  toast({ title: `GTIN CX salvo no produto ${productName}!` });
+                }
               }
 
               // Add scanned units

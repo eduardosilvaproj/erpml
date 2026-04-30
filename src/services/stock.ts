@@ -15,7 +15,7 @@ export const stockService = {
   }) {
     const { data: { user } } = await supabase.auth.getUser();
     
-    await supabase.from("stock_movement_logs").insert({
+    const { error: logErr } = await supabase.from("stock_movement_logs").insert({
       product_id: params.productId,
       company_id: params.companyId,
       user_id: user?.id,
@@ -28,6 +28,7 @@ export const stockService = {
       reference_type: params.referenceType,
       notes: params.notes
     });
+    if (logErr) console.error("Erro ao registrar log de estoque:", logErr.message);
   },
 
   async darBaixa(productId: string, quantity: number, companyId: string) {
@@ -187,7 +188,8 @@ export const stockService = {
       product_id: i.productId,
       quantity: i.quantity,
     }));
-    await supabase.from("transfer_items").insert(transferItems);
+    const { error: tiErr } = await supabase.from("transfer_items").insert(transferItems);
+    if (tiErr) throw tiErr;
 
     for (const item of items) {
       const { data: current } = await supabase
