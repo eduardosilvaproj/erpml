@@ -123,23 +123,25 @@ export const ordersService = {
     return order as OrdemFull;
   },
 
-  async updateOrdem(id: string, updates: any) {
+  async updateOrdem(id: string, updates: any, companyId: string) {
     const { error } = await supabase
       .from("full_orders")
       .update(updates)
-      .eq("id", id);
+      .eq("id", id)
+      .eq("company_id", companyId);
     if (error) throw error;
   },
 
-  async updateOrdemStatus(id: string, status: OrdemStatus, extra?: Record<string, any>) {
+  async updateOrdemStatus(id: string, status: OrdemStatus, companyId: string, extra?: Record<string, any>) {
     const { error } = await supabase
       .from("full_orders")
       .update({ status, ...(extra || {}) })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("company_id", companyId);
     if (error) throw error;
   },
 
-  async updateItemQuantity(params: { itemId: string; qtd_separada: number; qtd_solicitada: number; orderId?: string }) {
+  async updateItemQuantity(params: { itemId: string; qtd_separada: number; qtd_solicitada: number; orderId?: string }, companyId: string) {
     let targetOrderId = params.orderId;
     
     if (!targetOrderId) {
@@ -157,6 +159,7 @@ export const ordersService = {
       .from('full_orders')
       .select('id, bipagem_state, full_order_items(id, product_id)')
       .eq('id', targetOrderId)
+      .eq('company_id', companyId)
       .maybeSingle();
         
     if (!order) throw new Error("Ordem não encontrada");
@@ -182,14 +185,15 @@ export const ordersService = {
     const { error } = await supabase
       .from('full_orders')
       .update({ bipagem_state: bipagemState })
-      .eq('id', targetOrderId);
+      .eq('id', targetOrderId)
+      .eq('company_id', companyId);
         
     if (error) throw error;
     return { orderId: targetOrderId };
   },
 
-  async deleteOrdem(id: string) {
-    const { error } = await supabase.from("full_orders").delete().eq("id", id);
+  async deleteOrdem(id: string, companyId: string) {
+    const { error } = await supabase.from("full_orders").delete().eq("id", id).eq("company_id", companyId);
     if (error) throw error;
   },
 
