@@ -15,6 +15,7 @@ export interface ConferenceItem {
   status: string;
   invoice_items?: {
     xml_code: string;
+    xml_ean?: string | null;
     xml_description: string;
     quantity: number;
     unit_value: number;
@@ -43,7 +44,7 @@ export function useConferences(filters?: { status?: string; dateFrom?: string; d
     queryFn: async () => {
       let query = supabase
         .from("conferences")
-        .select("*, invoices(id, number, series, issuer_name, items_count), conference_items(*, invoice_items(xml_code, xml_description, quantity, unit_value, products(id, name, sku, barcode, ean)))")
+        .select("*, invoices(id, number, series, issuer_name, items_count), conference_items(*, invoice_items(xml_code, xml_ean, xml_description, quantity, unit_value, products(id, name, sku, barcode, ean)))")
         .order("created_at", { ascending: false });
 
       if (companyId) {
@@ -142,7 +143,7 @@ export function useScanItem() {
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
       const confItems = await fetchConferenceItemsRaw<ConferenceItem>(
         conferenceId,
-        "*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode, ean))",
+        "*, invoice_items(xml_code, xml_ean, xml_description, products(id, name, sku, barcode, ean))",
       );
 
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
@@ -152,7 +153,9 @@ export function useScanItem() {
       });
 
       const matchByCode = !matched
-        ? (confItems as unknown as ConferenceItem[]).find((ci) => ci.invoice_items?.xml_code === barcode)
+        ? (confItems as unknown as ConferenceItem[]).find((ci) => 
+            ci.invoice_items?.xml_ean === barcode || ci.invoice_items?.xml_code === barcode
+          )
         : null;
 
       const target = matched || matchByCode;
