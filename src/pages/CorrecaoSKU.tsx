@@ -24,15 +24,18 @@ const CorrecaoSKU = () => {
       const { count: noSkuCount } = await supabase
         .from("products")
         .select("*", { count: "exact", head: true })
+        .eq("company_id", companyId)
         .or('sku.is.null,sku.eq.""');
 
       const { data: allProducts } = await supabase
         .from("products")
-        .select("id");
+        .select("id")
+        .eq("company_id", companyId);
       
       const { data: withSupplier } = await supabase
         .from("product_supplier_skus")
-        .select("product_id");
+        .select("product_id")
+        .eq("company_id", companyId);
       
       const withSupplierIds = new Set(withSupplier?.map(s => s.product_id) || []);
       const noSupplierCount = (allProducts?.length || 0) - withSupplierIds.size;
@@ -50,6 +53,7 @@ const CorrecaoSKU = () => {
       const { data: products, error } = await supabase
         .from("products")
         .select("id, name")
+        .eq("company_id", companyId)
         .or('sku.is.null,sku.eq.""')
         .order("name", { ascending: true });
 
@@ -63,7 +67,8 @@ const CorrecaoSKU = () => {
         const { error: updateError } = await supabase
           .from("products")
           .update({ sku: newSku } as any)
-          .eq("id", products[i].id);
+          .eq("id", products[i].id)
+          .eq("company_id", companyId);
         
         if (!updateError) count++;
       }
@@ -116,6 +121,7 @@ const CorrecaoSKU = () => {
             const { data: product } = await supabase
               .from("products")
               .select("id")
+              .eq("company_id", companyId)
               .or(`barcode.eq.${ean},ean.eq.${ean}`)
               .maybeSingle();
 
@@ -125,7 +131,8 @@ const CorrecaoSKU = () => {
                 .insert({
                   product_id: product.id,
                   supplier_name: supplierName,
-                  supplier_sku: supplierSku
+                  supplier_sku: supplierSku,
+                  company_id: companyId
                 } as any);
               
               if (!error) successCount++;

@@ -80,6 +80,7 @@ const Produtos = () => {
       const { data: allProducts, error } = await supabase
         .from("products")
         .select("id, name, barcode, description, weight, width, height, depth, price")
+        .eq("company_id", companyId)
         .eq("active", true)
         .order("created_at", { ascending: false });
 
@@ -111,7 +112,7 @@ const Produtos = () => {
           if (enriched.depth_cm != null && prod.depth == null) updates.depth = enriched.depth_cm;
           if (enriched.suggested_price_brl != null && prod.price === 0) updates.price = enriched.suggested_price_brl;
           if (Object.keys(updates).length > 0) {
-            await supabase.from("products").update(updates as any).eq("id", prod.id);
+            await supabase.from("products").update(updates as any).eq("id", prod.id).eq("company_id", companyId);
             successCount++;
           }
         } catch { /* skip */ }
@@ -188,7 +189,8 @@ const Produtos = () => {
       const { error } = await supabase
         .from("products")
         .update({ barcode: ean, ean: ean, ean_pending: false } as any)
-        .eq("id", productId);
+        .eq("id", productId)
+        .eq("company_id", companyId);
 
       if (error) throw error;
       
