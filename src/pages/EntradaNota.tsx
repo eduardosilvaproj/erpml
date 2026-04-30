@@ -2316,7 +2316,7 @@ const EntradaNota = () => {
                 await supabase.from("products").update({
                   gtin_cx: unknownGtinDialog.code,
                   box_quantity: unknownGtinQty,
-                }).eq("id", actualProductId);
+                }).eq("id", actualProductId).eq('company_id', companyId);
                 toast({ title: `GTIN CX salvo no produto ${productName}!` });
               }
 

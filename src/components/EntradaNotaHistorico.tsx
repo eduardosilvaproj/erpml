@@ -48,6 +48,7 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
     .from("invoices")
     .select("*, invoice_items(*)")
     .eq("id", invoiceId)
+    .eq('company_id', companyId)
     .maybeSingle();
   if (!inv) return { created: 0, updated: 0, skipped: 0 };
 

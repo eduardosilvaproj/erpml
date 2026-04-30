@@ -457,7 +457,7 @@ export const OrdensFullTab = () => {
         
         if (itemsCount === 0 && (existing.status === 'rascunho' || existing.status === 'aguardando' || existing.status === 'em_separacao')) {
           console.log("Limpando rascunho zerado anterior para o frete", freteNumero);
-          await supabase.from('full_orders').delete().eq('id', existing.id);
+          await supabase.from('full_orders').delete().eq('id', existing.id).eq('company_id', companyId);
         } else {
           setDuplicateCheck({
             isOpen: true,
@@ -508,6 +508,7 @@ export const OrdensFullTab = () => {
         .from('full_orders')
         .select('id, status')
         .eq('frete_ml', parsedData.shippingNumber)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false }) // Pegar a mais recente
         .limit(1)
         .maybeSingle();
@@ -583,6 +584,7 @@ export const OrdensFullTab = () => {
         .from("full_orders")
         .select("*, full_order_items(*, product:products(*))")
         .eq("id", ordem.id)
+        .eq("company_id", companyId)
         .maybeSingle();
         
       if (error) throw error;
