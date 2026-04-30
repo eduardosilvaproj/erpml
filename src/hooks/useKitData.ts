@@ -249,7 +249,8 @@ export function useBulkCreateKits() {
             product_id: item.product_id,
             quantity: item.quantity,
           }));
-          await supabase.from("kit_items").insert(kitItems);
+          const { error: insErr } = await supabase.from("kit_items").insert(kitItems);
+          if (insErr) throw insErr;
         }
         created.push(kit.id);
       }
