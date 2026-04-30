@@ -494,7 +494,8 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
         }
       }
 
-      await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id).eq("company_id", companyId);
+      const { error: invErr } = await supabase.from("invoices").update({ status: "importada" }).eq("id", data.id).eq("company_id", companyId);
+      if (invErr) console.error("Erro ao atualizar status da nota:", invErr.message);
       toast({
         title: "Reprocessamento concluído",
         description: `${created} criado(s), ${updated} atualizado(s)${skipped ? `, ${skipped} ignorado(s)` : ""}.`,
