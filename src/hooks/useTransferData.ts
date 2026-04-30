@@ -64,9 +64,13 @@ export function useUpdateTransferStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const companyId = useCompanyId();
+
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => 
-      stockService.updateTransferStatus(id, status),
+    mutationFn: ({ id, status }: { id: string; status: string }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return stockService.updateTransferStatus(id, status, companyId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transfer-orders"] });
       toast({ title: "Status atualizado!" });

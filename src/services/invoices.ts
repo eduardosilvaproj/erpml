@@ -60,18 +60,20 @@ export const invoicesService = {
         .maybeSingle();
 
       if (existing) {
-        await supabase.from('suppliers').update({
+        const { error: updError } = await supabase.from('suppliers').update({
           ...nfeData.supplier,
           updated_at: new Date().toISOString()
-        } as any).eq('id', existing.id);
+        } as any).eq('id', existing.id).eq('company_id', companyId);
+        if (updError) throw updError;
         supplierId = existing.id;
       } else {
-        const { data: novo } = await supabase.from('suppliers').insert({
+        const { data: novo, error: insError } = await supabase.from('suppliers').insert({
           ...nfeData.supplier,
           company_id: companyId,
           origem: 'nota_fiscal',
           created_at: new Date().toISOString()
         } as any).select().maybeSingle();
+        if (insError) throw insError;
         if (novo) supplierId = novo.id;
       }
     }
@@ -246,20 +248,22 @@ export const invoicesService = {
     return invoice;
   },
 
-  async confirmarEntrada(id: string) {
+  async confirmarEntrada(id: string, companyId: string) {
     const { error } = await supabase
       .from("invoices")
       .update({ status: "conferida" })
-      .eq("id", id);
+      .eq("id", id)
+      .eq("company_id", companyId);
     
     if (error) throw error;
   },
 
-  async excluirNota(id: string) {
+  async excluirNota(id: string, companyId: string) {
     const { error } = await supabase
       .from("invoices")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .eq("company_id", companyId);
     
     if (error) throw error;
   }

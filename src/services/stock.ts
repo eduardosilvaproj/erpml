@@ -36,9 +36,10 @@ export const stockService = {
       .select("stock_physical")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
     const oldStock = product.stock_physical || 0;
     if (oldStock < quantity) {
       throw new Error("Estoque insuficiente");
@@ -71,9 +72,10 @@ export const stockService = {
       .select("stock_full")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
 
     const oldStock = product.stock_full || 0;
     const newStock = oldStock + quantity;
@@ -103,9 +105,10 @@ export const stockService = {
       .select("stock_physical")
       .eq("id", productId)
       .eq("company_id", companyId)
-      .single();
+      .maybeSingle();
     
     if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
 
     const oldStock = product.stock_physical || 0;
     const { error: updateError } = await supabase
@@ -236,13 +239,17 @@ export const stockService = {
     return order;
   },
 
-  async updateTransferStatus(id: string, status: string) {
+  async updateTransferStatus(id: string, status: string, companyId: string) {
     const updates: Record<string, any> = { status };
     if (status === "enviado") updates.sent_at = new Date().toISOString();
     if (status === "recebido_full") updates.received_at = new Date().toISOString();
     if (status === "conferido_full") updates.confirmed_at = new Date().toISOString();
 
-    const { error } = await supabase.from("transfer_orders").update(updates as any).eq("id", id);
+    const { error } = await supabase
+      .from("transfer_orders")
+      .update(updates as any)
+      .eq("id", id)
+      .eq("company_id", companyId);
     if (error) throw error;
   }
 };

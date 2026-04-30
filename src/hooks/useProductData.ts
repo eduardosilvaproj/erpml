@@ -110,8 +110,13 @@ export function useUpdateProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const companyId = useCompanyId();
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => productsService.updateProduct(id, data),
+    mutationFn: ({ id, data }: { id: string; data: ProductFormData }) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return productsService.updateProduct(id, data, companyId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast({ title: "Produto atualizado!" });
@@ -126,8 +131,13 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const companyId = useCompanyId();
+
   return useMutation({
-    mutationFn: (id: string) => productsService.deleteProduct(id),
+    mutationFn: (id: string) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return productsService.deleteProduct(id, companyId);
+    },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       if (result.deactivated) {
@@ -187,8 +197,13 @@ export function useDeleteSupplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const companyId = useCompanyId();
+
   return useMutation({
-    mutationFn: (id: string) => productsService.deleteSupplier(id),
+    mutationFn: (id: string) => {
+      if (!companyId) throw new Error("Empresa não encontrada");
+      return productsService.deleteSupplier(id, companyId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast({ title: "Fornecedor excluído!" });

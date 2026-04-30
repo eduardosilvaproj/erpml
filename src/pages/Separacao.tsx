@@ -324,7 +324,7 @@ const Separacao = () => {
         await ordersService.updateOrdem(orderInfo.id, {
           bipagem_state: items as any,
           updated_at: new Date().toISOString()
-        });
+        }, companyId);
       } catch (err) {
         console.error("Auto-save error:", err);
       }
@@ -349,7 +349,7 @@ const Separacao = () => {
         bipagem_state: items as any,
         status: 'pausado',
         pausado_em: new Date().toISOString()
-      });
+      }, companyId);
 
       setIsPaused(true);
       toast({ 
