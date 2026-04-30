@@ -457,7 +457,7 @@ export const OrdensFullTab = () => {
         
         if (itemsCount === 0 && (existing.status === 'rascunho' || existing.status === 'aguardando' || existing.status === 'em_separacao')) {
           console.log("Limpando rascunho zerado anterior para o frete", freteNumero);
-          await supabase.from('full_orders').delete().eq('id', existing.id);
+          await supabase.from('full_orders').delete().eq('id', existing.id).eq('company_id', companyId);
         } else {
           setDuplicateCheck({
             isOpen: true,
