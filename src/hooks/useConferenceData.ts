@@ -18,7 +18,7 @@ export interface ConferenceItem {
     xml_description: string;
     quantity: number;
     unit_value: number;
-    products?: { id: string; name: string; sku: string; barcode: string | null } | null;
+    products?: { id: string; name: string; sku: string; barcode: string | null; ean: string | null } | null;
   };
 }
 
@@ -43,7 +43,7 @@ export function useConferences(filters?: { status?: string; dateFrom?: string; d
     queryFn: async () => {
       let query = supabase
         .from("conferences")
-        .select("*, invoices(id, number, series, issuer_name, items_count), conference_items(*, invoice_items(xml_code, xml_description, quantity, unit_value, products(id, name, sku, barcode)))")
+        .select("*, invoices(id, number, series, issuer_name, items_count), conference_items(*, invoice_items(xml_code, xml_description, quantity, unit_value, products(id, name, sku, barcode, ean)))")
         .order("created_at", { ascending: false });
 
       if (companyId) {
@@ -75,7 +75,7 @@ export function usePendingInvoices() {
     queryFn: async () => {
       let query = supabase
         .from("invoices")
-        .select("*, invoice_items(*, products(id, name, sku, barcode))")
+        .select("*, invoice_items(*, products(id, name, sku, barcode, ean))")
         .eq("status", "aguardando_conferencia")
         .order("created_at", { ascending: false });
 
@@ -142,13 +142,13 @@ export function useScanItem() {
     mutationFn: async ({ conferenceId, barcode }: { conferenceId: string; barcode: string }) => {
       const confItems = await fetchConferenceItemsRaw<ConferenceItem>(
         conferenceId,
-        "*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode))",
+        "*, invoice_items(xml_code, xml_description, products(id, name, sku, barcode, ean))",
       );
 
       const matched = (confItems as unknown as ConferenceItem[]).find((ci) => {
         const prod = ci.invoice_items?.products;
         if (!prod) return false;
-        return prod.barcode === barcode || prod.sku === barcode;
+        return prod.ean === barcode || prod.barcode === barcode || prod.sku === barcode;
       });
 
       const matchByCode = !matched

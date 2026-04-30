@@ -793,14 +793,15 @@ const EntradaNota = () => {
                 .eq("company_id", companyId);
 
               if (!updateError) {
-                await supabase
+                const { error: itemUpdateErr } = await supabase
                   .from("invoice_items")
                   .update({ stock_updated: true })
                   .eq("id", insertedItem.id);
               }
             }
           } else if (productId && !match.matchedProductId && autoUpdateStock) {
-            await supabase
+            // Se for novo produto já criado com estoque inicial correto, apenas marca como atualizado se confirmar sucesso
+            const { error: itemUpdateErr } = await supabase
               .from("invoice_items")
               .update({ stock_updated: true })
               .eq("id", insertedItem.id);
@@ -965,7 +966,7 @@ const EntradaNota = () => {
                   .eq("company_id", companyId);
 
                 if (!updateError) {
-                  await supabase
+                  const { error: itemUpdateErr } = await supabase
                     .from("invoice_items")
                     .update({ stock_updated: true })
                     .eq("id", insertedItem.id);

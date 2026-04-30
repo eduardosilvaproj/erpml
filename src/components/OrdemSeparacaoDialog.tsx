@@ -189,7 +189,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
     if (boxMode === "scan_internal") {
       const internalCode = code.trim().toUpperCase();
       const target = itens.find((i) =>
-        i.product?.barcode === internalCode || i.product?.sku === internalCode
+        i.product?.ean === internalCode || i.product?.barcode === internalCode || i.product?.sku === internalCode
       );
 
       if (target) {
@@ -211,7 +211,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
 
     // 1. PRIORIDADE: EAN/Barcode Unitário (Unidade)
     const target = itens.find((i) =>
-      i.product?.barcode === codeTrimmed || i.product?.ean === codeTrimmed
+      i.product?.ean === codeTrimmed || i.product?.barcode === codeTrimmed
     );
 
     if (target) {
