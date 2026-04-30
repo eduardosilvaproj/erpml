@@ -113,7 +113,8 @@ export const ordersService = {
     const itemsToInsert = params.itens.map(i => ({
       order_id: order.id,
       product_id: i.product_id,
-      quantity: i.quantity || i.qtd_solicitada || 0
+      quantity: i.quantity || i.qtd_solicitada || 0,
+      company_id: params.companyId
     }));
 
     if (itemsToInsert.length > 0) {
@@ -222,6 +223,7 @@ export const ordersService = {
       .from("full_orders")
       .select(`*`)
       .eq("id", ordemId)
+      .eq("company_id", companyId)
       .maybeSingle();
 
     if (fetchError) throw fetchError;
@@ -238,7 +240,8 @@ export const ordersService = {
         separado_por: userId,
         updated_at: new Date().toISOString()
       })
-      .eq("id", ordemId);
+      .eq("id", ordemId)
+      .eq("company_id", companyId);
 
     if (updateOrderError) throw updateOrderError;
 

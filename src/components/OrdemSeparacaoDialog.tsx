@@ -347,7 +347,8 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
       const { error: e2 } = await supabase
         .from('full_orders')
         .update({ previsao_carregamento: novaData })
-        .eq('id', ordem.id);
+        .eq('id', ordem.id)
+        .eq('company_id', companyId);
       if (e1 || e2) throw e1 || e2;
       toast({ title: '✅ Previsão atualizada' });
       setEditingPrevisao(false);

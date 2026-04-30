@@ -131,7 +131,7 @@ export const productsService = {
         cost: data.cost || 0,
         is_primary: i === 0,
       }));
-      const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
+      const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks.map(l => ({ ...l, company_id: companyId })));
       if (linkError) throw linkError;
     }
     
@@ -141,7 +141,7 @@ export const productsService = {
         supplier_name: s.supplier_name,
         supplier_sku: s.supplier_sku
       }));
-      const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert);
+      const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
       if (skuError) throw skuError;
     }
 
@@ -171,7 +171,7 @@ export const productsService = {
     const { error } = await supabase.from("products").update(updateData).eq("id", id).eq("company_id", companyId);
     if (error) throw error;
 
-    await supabase.from("product_suppliers").delete().eq("product_id", id);
+    await supabase.from("product_suppliers").delete().eq("product_id", id).eq("company_id", companyId);
     if (supplier_ids.length > 0) {
       const supplierLinks = supplier_ids.map((sid, i) => ({
         product_id: id,
@@ -179,17 +179,17 @@ export const productsService = {
         cost: data.cost,
         is_primary: i === 0,
       }));
-      await supabase.from("product_suppliers").insert(supplierLinks);
+      await supabase.from("product_suppliers").insert(supplierLinks.map(l => ({ ...l, company_id: companyId })));
     }
 
-    await supabase.from("product_supplier_skus").delete().eq("product_id", id);
+    await supabase.from("product_supplier_skus").delete().eq("product_id", id).eq("company_id", companyId);
     if (supplier_skus && supplier_skus.length > 0) {
       const skusToInsert = supplier_skus.map(s => ({
         product_id: id,
         supplier_name: s.supplier_name,
         supplier_sku: s.supplier_sku
       }));
-      await supabase.from("product_supplier_skus").insert(skusToInsert);
+      await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
     }
   },
 
