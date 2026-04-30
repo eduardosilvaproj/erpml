@@ -154,7 +154,8 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
     }
   }
 
-  await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id);
+  const { error: invErr } = await supabase.from("invoices").update({ status: "importada" }).eq("id", inv.id).eq("company_id", companyId);
+  if (invErr) console.error("Erro ao atualizar status da nota:", invErr.message);
   return { created, updated, skipped, pendingCount: pending.length };
 }
 
