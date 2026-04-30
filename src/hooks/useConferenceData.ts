@@ -152,7 +152,9 @@ export function useScanItem() {
       });
 
       const matchByCode = !matched
-        ? (confItems as unknown as ConferenceItem[]).find((ci) => ci.invoice_items?.xml_code === barcode)
+        ? (confItems as unknown as ConferenceItem[]).find((ci) => 
+            ci.invoice_items?.xml_ean === barcode || ci.invoice_items?.xml_code === barcode
+          )
         : null;
 
       const target = matched || matchByCode;
