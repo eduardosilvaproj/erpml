@@ -171,7 +171,9 @@ export const productsService = {
     const { error } = await supabase.from("products").update(updateData).eq("id", id).eq("company_id", companyId);
     if (error) throw error;
 
-    await supabase.from("product_suppliers").delete().eq("product_id", id);
+    const { error: delSuppErr } = await supabase.from("product_suppliers").delete().eq("product_id", id);
+    if (delSuppErr) throw delSuppErr;
+
     if (supplier_ids.length > 0) {
       const supplierLinks = supplier_ids.map((sid, i) => ({
         product_id: id,
@@ -179,17 +181,22 @@ export const productsService = {
         cost: data.cost,
         is_primary: i === 0,
       }));
-      await supabase.from("product_suppliers").insert(supplierLinks);
+      const { error: insSuppErr } = await supabase.from("product_suppliers").insert(supplierLinks);
+      if (insSuppErr) throw insSuppErr;
     }
 
-    await supabase.from("product_supplier_skus").delete().eq("product_id", id);
+    const { error: delSkuErr } = await supabase.from("product_supplier_skus").delete().eq("product_id", id);
+    if (delSkuErr) throw delSkuErr;
+
     if (supplier_skus && supplier_skus.length > 0) {
       const skusToInsert = supplier_skus.map(s => ({
         product_id: id,
         supplier_name: s.supplier_name,
-        supplier_sku: s.supplier_sku
+        supplier_sku: s.supplier_sku,
+        company_id: companyId
       }));
-      await supabase.from("product_supplier_skus").insert(skusToInsert);
+      const { error: insSkuErr } = await supabase.from("product_supplier_skus").insert(skusToInsert);
+      if (insSkuErr) throw insSkuErr;
     }
   },
 
