@@ -323,16 +323,9 @@ function PrevisaoColeta({ orderId, freteId, value, onUpdate }: { orderId: string
       const { error: e1 } = await supabase
         .from('full_orders')
         .update({ previsao_carregamento: novaData })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .eq('company_id', companyId);
         
-      if (freteId) {
-        await supabase
-          .from('full_orders')
-          .update({ previsao_carregamento: novaData })
-          .eq('frete_ml', freteId)
-          .eq('company_id', companyId);
-      }
-
       if (e1) throw e1;
       
       toast({ title: '✅ Previsão atualizada' });
