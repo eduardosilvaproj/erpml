@@ -793,10 +793,12 @@ const EntradaNota = () => {
                 .eq("company_id", companyId);
 
               if (!updateError) {
-                const { error: itemUpdateErr } = await supabase
+                await supabase
                   .from("invoice_items")
                   .update({ stock_updated: true })
                   .eq("id", insertedItem.id);
+              } else {
+                console.error("Erro ao atualizar estoque:", updateError.message);
               }
             }
           } else if (productId && !match.matchedProductId && autoUpdateStock) {
@@ -805,6 +807,9 @@ const EntradaNota = () => {
               .from("invoice_items")
               .update({ stock_updated: true })
               .eq("id", insertedItem.id);
+            if (itemUpdateErr) {
+              console.error("Erro ao marcar item como atualizado:", itemUpdateErr.message);
+            }
           }
 
           // Link supplier SKU
@@ -966,10 +971,12 @@ const EntradaNota = () => {
                   .eq("company_id", companyId);
 
                 if (!updateError) {
-                  const { error: itemUpdateErr } = await supabase
+                  await supabase
                     .from("invoice_items")
                     .update({ stock_updated: true })
                     .eq("id", insertedItem.id);
+                } else {
+                  console.error("Erro ao atualizar estoque no lote:", updateError.message);
                 }
               }
             }
