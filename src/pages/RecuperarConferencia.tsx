@@ -55,7 +55,8 @@ const RecuperarConferencia = () => {
         const { count: totalRows } = await supabase
           .from("conference_items")
           .select("id", { count: "exact", head: true })
-          .eq("conference_id", c.id);
+          .eq("conference_id", c.id)
+          .eq("company_id", companyId);
 
         let distinct = 0;
         try {

@@ -209,7 +209,8 @@ const BalancoEstoque = () => {
       const { error } = await supabase
         .from("products")
         .update({ stock_physical: newQty })
-        .eq("id", p.id);
+        .eq("id", p.id)
+        .eq("company_id", companyId);
       if (error) fail++; else ok++;
     }
     setApplying(false);

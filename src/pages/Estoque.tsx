@@ -95,7 +95,7 @@ const Estoque = () => {
         ? { stock_physical: newStock }
         : { stock_full: newStock };
 
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
       if (error) {
         toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
       } else {
@@ -109,7 +109,7 @@ const Estoque = () => {
       if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
       if (Object.keys(updateData).length === 0) return;
 
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id);
+      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
       if (error) {
         toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
       } else {

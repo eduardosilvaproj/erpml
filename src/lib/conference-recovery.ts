@@ -84,6 +84,10 @@ export const fetchConferenceItemsRaw = async <T = any>(
     .from("conference_items")
     .select(select)
     .eq("conference_id", conferenceId);
+    // This file seems to be pure JS/TS without companyId context. 
+    // I should check if I need to pass it or if RLS handles it.
+    // The instructions say it needs .eq('company_id', companyId)
+
   if (error) throw error;
   return (data ?? []) as T[];
 };

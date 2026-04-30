@@ -132,7 +132,7 @@ export function useUpdateCustomer() {
         cpf: data.cpf || null,
         address: data.address || null,
         notes: data.notes || null,
-      }).eq("id", id);
+      }).eq("id", id).eq("company_id", companyId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -151,7 +151,7 @@ export function useDeleteCustomer() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("customers").delete().eq("id", id);
+      const { error } = await supabase.from("customers").delete().eq("id", id).eq("company_id", companyId);
       if (error) throw error;
     },
     onSuccess: () => {

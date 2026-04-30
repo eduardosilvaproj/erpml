@@ -111,7 +111,8 @@ export function useUpdateKit() {
       const { error } = await supabase
         .from("product_kits")
         .update({ ...kitData, description: kitData.description || null })
-        .eq("id", id);
+        .eq("id", id)
+        .eq("company_id", companyId);
       if (error) throw error;
 
       // Delete existing items and re-insert
@@ -142,7 +143,7 @@ export function useDeleteKit() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("product_kits").delete().eq("id", id);
+      const { error } = await supabase.from("product_kits").delete().eq("id", id).eq("company_id", companyId);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -195,12 +196,14 @@ export function useDeductKitStock() {
               stock_physical: product.stock_physical - needed,
               stock_full: product.stock_full + needed,
             })
-            .eq("id", item.product_id);
+            .eq("id", item.product_id)
+            .eq("company_id", companyId);
         } else {
           await supabase
             .from("products")
             .update({ stock_physical: product.stock_physical - needed })
-            .eq("id", item.product_id);
+            .eq("id", item.product_id)
+            .eq("company_id", companyId);
         }
       }
 
