@@ -117,7 +117,8 @@ export function useUpdateKit() {
       if (error) throw error;
 
       // Delete existing items and re-insert
-      await supabase.from("kit_items").delete().eq("kit_id", id);
+      const { error: delErr } = await supabase.from("kit_items").delete().eq("kit_id", id);
+      if (delErr) throw delErr;
 
       if (items.length > 0) {
         const kitItems = items.map((item) => ({
@@ -125,7 +126,8 @@ export function useUpdateKit() {
           product_id: item.product_id,
           quantity: item.quantity,
         }));
-        await supabase.from("kit_items").insert(kitItems);
+        const { error: insErr } = await supabase.from("kit_items").insert(kitItems);
+        if (insErr) throw insErr;
       }
     },
     onSuccess: () => {
@@ -247,7 +249,8 @@ export function useBulkCreateKits() {
             product_id: item.product_id,
             quantity: item.quantity,
           }));
-          await supabase.from("kit_items").insert(kitItems);
+          const { error: insErr } = await supabase.from("kit_items").insert(kitItems);
+          if (insErr) throw insErr;
         }
         created.push(kit.id);
       }
