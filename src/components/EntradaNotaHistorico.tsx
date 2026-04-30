@@ -112,9 +112,16 @@ async function reprocessInvoice(invoiceId: string, companyId: string) {
       const current = Number(prod?.stock_physical || 0);
       const currentCost = Number(prod?.cost || 0);
       const xmlUnit = Number(it.unit_value) || 0;
-      const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
+      const updatePayload: { stock_physical: number; cost?: number; updated_at: string } = { 
+        stock_physical: current + qty,
+        updated_at: new Date().toISOString()
+      };
       if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
-      const { error: prodUpdateErr } = await supabase.from("products").update(updatePayload).eq("id", productId);
+      const { error: prodUpdateErr } = await supabase
+        .from("products")
+        .update(updatePayload)
+        .eq("id", productId)
+        .eq("company_id", companyId);
       if (prodUpdateErr) { skipped++; continue; }
       updated++;
     }
@@ -431,9 +438,16 @@ function DetailDialog({ invoiceId, onClose }: { invoiceId: string | null; onClos
           const current = Number(prod?.stock_physical || 0);
           const currentCost = Number(prod?.cost || 0);
           const xmlUnit = Number(it.unit_value) || 0;
-          const updatePayload: { stock_physical: number; cost?: number } = { stock_physical: current + qty };
+          const updatePayload: { stock_physical: number; cost?: number; updated_at: string } = { 
+            stock_physical: current + qty,
+            updated_at: new Date().toISOString()
+          };
           if (currentCost === 0 && xmlUnit > 0) updatePayload.cost = Math.round(xmlUnit * 100) / 100;
-          const { error: prodUpdateErr } = await supabase.from("products").update(updatePayload).eq("id", productId);
+          const { error: prodUpdateErr } = await supabase
+            .from("products")
+            .update(updatePayload)
+            .eq("id", productId)
+            .eq("company_id", companyId);
           if (prodUpdateErr) { skipped++; continue; }
           updated++;
         }
