@@ -433,7 +433,11 @@ const Estoque = () => {
                       <TableBody>
                         {validationFiltered.map((p) => {
                           const d = p.stock_physical - p.stock_full;
-                          const hasDivergence = d !== 0;
+                          const isBelowMin = p.stock_physical < (p.min_stock || 0);
+                          const isZeroAndActive = p.stock_physical === 0 && p.active !== false;
+                          const isNegativeFull = p.stock_full < 0;
+                          const hasDivergence = isBelowMin || isZeroAndActive || isNegativeFull;
+
                           return (
                             <TableRow key={p.id}>
                               <TableCell className="py-2">
@@ -443,7 +447,7 @@ const Estoque = () => {
                               <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
                               <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                               <TableCell className="text-center font-bold">
-                                <span className={hasDivergence ? "text-destructive" : "text-emerald-600"}>{formatDifference(d)}</span>
+                                <span className="text-muted-foreground">{formatDifference(d)}</span>
                               </TableCell>
                               <TableCell>
                                 {hasDivergence ? (
