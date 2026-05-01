@@ -127,10 +127,11 @@ export default function PainelControle() {
     }
   }
 
-  const handleStatusUpdate = (moduleId: string, newStatus: ModuleStatus) => {
-    const { data: { user } } = (window as any).supabaseAuthSession || { data: { user: { email: 'user' } } };
+  const handleStatusUpdate = async (moduleId: string, newStatus: ModuleStatus) => {
+    const { data: { user } } = await supabase.auth.getUser();
     const userEmail = user?.email || "admin";
 
+    let currentHistory = [...history];
     const updatedModules = modules.map(m => {
       if (m.id === moduleId) {
         const oldStatus = m.status;
@@ -143,8 +144,7 @@ export default function PainelControle() {
             oldStatus,
             newStatus
           };
-          const newHistory = [newLog, ...history].slice(0, 50);
-          setHistory(newHistory);
+          currentHistory = [newLog, ...currentHistory].slice(0, 50);
           return { ...m, status: newStatus, lastTested: new Date().toISOString() };
         }
       }
@@ -152,7 +152,8 @@ export default function PainelControle() {
     });
 
     setModules(updatedModules);
-    saveState(updatedModules, history);
+    setHistory(currentHistory);
+    saveState(updatedModules, currentHistory);
   };
 
   const handleChecklistToggle = (moduleId: string, itemIndex: number) => {
