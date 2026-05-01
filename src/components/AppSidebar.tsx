@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
@@ -362,8 +364,42 @@ function SidebarContent({
           </TooltipTrigger>
           <TooltipContent side="right">Encerrar sessão e sair do sistema</TooltipContent>
         </Tooltip>
-        <div className="mt-1 text-center">
+        <div className="mt-1 text-center flex flex-col gap-2">
           <VersionBadge />
+          <button 
+            onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              
+              const { data: membership } = await supabase
+                .from("company_members")
+                .select("company_id")
+                .eq("user_id", user.id)
+                .eq("is_active", true)
+                .maybeSingle();
+
+              if (!membership) {
+                toast.error("Vínculo com empresa não encontrado");
+                return;
+              }
+
+              const { error } = await supabase
+                .from("company_members")
+                .update({ role: "admin_master" as any })
+                .eq("user_id", user.id)
+                .eq("company_id", membership.company_id);
+
+              if (error) {
+                toast.error("Erro ao ativar Admin Master: " + error.message);
+              } else {
+                toast.success("Acesso Admin Master ativado!");
+                window.location.href = "/admin/painel-controle";
+              }
+            }}
+            className="text-[10px] text-muted-foreground/30 hover:text-primary transition-colors py-1"
+          >
+            Ativar Master (Dev)
+          </button>
         </div>
       </div>
     </>
