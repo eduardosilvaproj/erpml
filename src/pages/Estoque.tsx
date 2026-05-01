@@ -370,16 +370,28 @@ const Estoque = () => {
             const totalPhys = allProds.reduce((s, p) => s + p.stock_physical, 0);
             const totalF = allProds.reduce((s, p) => s + p.stock_full, 0);
             const diff = totalPhys - totalF;
-            const divergentCount = allProds.filter((p) => p.stock_physical !== p.stock_full).length;
+            const divergentCount = allProds.filter((p) => {
+              const isBelowMin = p.stock_physical < (p.min_stock || 0);
+              const isZeroAndActive = p.stock_physical === 0 && p.active !== false;
+              const isNegativeFull = p.stock_full < 0;
+              return isBelowMin || isZeroAndActive || isNegativeFull;
+            }).length;
 
             const validationFiltered = allProds
-              .filter((p) => (onlyDivergent ? p.stock_physical !== p.stock_full : true))
-              .filter((p) =>
-                validationSearch
-                  ? p.name.toLowerCase().includes(validationSearch.toLowerCase()) ||
-                    p.sku.toLowerCase().includes(validationSearch.toLowerCase())
-                  : true
-              );
+              .filter((p) => {
+                const isBelowMin = p.stock_physical < (p.min_stock || 0);
+                const isZeroAndActive = p.stock_physical === 0 && p.active !== false;
+                const isNegativeFull = p.stock_full < 0;
+                const isDivergent = isBelowMin || isZeroAndActive || isNegativeFull;
+                
+                if (onlyDivergent && !isDivergent) return false;
+                
+                if (validationSearch) {
+                  const search = validationSearch.toLowerCase();
+                  return p.name.toLowerCase().includes(search) || p.sku.toLowerCase().includes(search);
+                }
+                return true;
+              });
 
             return (
               <>
@@ -421,7 +433,11 @@ const Estoque = () => {
                       <TableBody>
                         {validationFiltered.map((p) => {
                           const d = p.stock_physical - p.stock_full;
-                          const hasDivergence = d !== 0;
+                          const isBelowMin = p.stock_physical < (p.min_stock || 0);
+                          const isZeroAndActive = p.stock_physical === 0 && p.active !== false;
+                          const isNegativeFull = p.stock_full < 0;
+                          const hasDivergence = isBelowMin || isZeroAndActive || isNegativeFull;
+
                           return (
                             <TableRow key={p.id}>
                               <TableCell className="py-2">
@@ -431,7 +447,7 @@ const Estoque = () => {
                               <TableCell className="text-center font-bold text-primary">{formatNumber(p.stock_physical)}</TableCell>
                               <TableCell className="text-center font-bold text-accent">{formatNumber(p.stock_full)}</TableCell>
                               <TableCell className="text-center font-bold">
-                                <span className={hasDivergence ? "text-destructive" : "text-emerald-600"}>{formatDifference(d)}</span>
+                                <span className="text-muted-foreground">{formatDifference(d)}</span>
                               </TableCell>
                               <TableCell>
                                 {hasDivergence ? (
