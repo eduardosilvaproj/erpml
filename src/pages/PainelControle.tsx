@@ -117,7 +117,7 @@ export default function PainelControle() {
         .from("admin_panel_state")
         .upsert({
           company_id: company!.id,
-          data: { modules: updatedModules, history: updatedHistory }
+          data: { modules: updatedModules, history: updatedHistory } as any
         }, { onConflict: "company_id" });
 
       if (error) throw error;
