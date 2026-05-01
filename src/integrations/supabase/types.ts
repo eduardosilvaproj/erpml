@@ -1358,6 +1358,33 @@ export type Database = {
           },
         ]
       }
+      panel_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
       payment_logs: {
         Row: {
           asaas_payment_id: string | null
@@ -2807,7 +2834,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      company_role: "owner" | "manager" | "member"
+      company_role: "owner" | "manager" | "member" | "admin_master"
       company_status: "active" | "suspended" | "cancelled"
       ordem_full_status:
         | "rascunho"
@@ -2950,7 +2977,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      company_role: ["owner", "manager", "member"],
+      company_role: ["owner", "manager", "member", "admin_master"],
       company_status: ["active", "suspended", "cancelled"],
       ordem_full_status: [
         "rascunho",

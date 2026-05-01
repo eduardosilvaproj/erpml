@@ -52,6 +52,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/mentor-vendas": { title: "Mentor de Vendas", subtitle: "Crescimento guiado" },
   "/empresa": { title: "Minha Empresa", subtitle: "Dados e configurações" },
   "/admin": { title: "Admin", subtitle: "Painel administrativo" },
+  "/admin/painel-controle": { title: "Painel de Controle", subtitle: "Governança do sistema" },
   "/master-admin": { title: "Painel Master", subtitle: "Governança da plataforma" },
   "/onboarding": { title: "Onboarding", subtitle: "Configure sua empresa" },
   "/boas-vindas": { title: "Boas-vindas", subtitle: "Bem-vindo ao sistema" },

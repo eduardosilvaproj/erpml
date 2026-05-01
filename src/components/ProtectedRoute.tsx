@@ -48,7 +48,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   // Admins can access admin routes without a company
-  const adminRoutes = ["/admin", "/master-admin"];
+  const adminRoutes = ["/admin", "/master-admin", "/admin/painel-controle"];
   const allowedWithoutCompany = ["/onboarding", "/boas-vindas"];
 
   if (!hasCompany && !isAdmin && !allowedWithoutCompany.includes(location.pathname)) {

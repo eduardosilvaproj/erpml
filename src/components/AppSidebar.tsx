@@ -3,11 +3,12 @@ import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
-  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft
+  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft, Settings2
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin, usePendingUsers } from "@/hooks/useAdminData";
+import { useIsAdminMaster } from "@/hooks/useAdminMaster";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -70,6 +71,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const { data: isAdmin } = useIsAdmin();
+  const { data: isAdminMaster } = useIsAdminMaster();
   const { data: pendingUsers } = usePendingUsers(!!isAdmin);
   const pendingCount = isAdmin ? (pendingUsers?.length || 0) : 0;
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -115,6 +117,7 @@ export function AppSidebar() {
             go={go}
             signOut={signOut}
             isAdmin={!!isAdmin}
+            isAdminMaster={!!isAdminMaster}
             pendingCount={pendingCount}
             compact={isCollapsed}
           />
@@ -134,6 +137,7 @@ export function AppSidebar() {
         go={go}
         signOut={signOut}
         isAdmin={!!isAdmin}
+        isAdminMaster={!!isAdminMaster}
         pendingCount={pendingCount}
         compact={isCollapsed}
       />
@@ -142,7 +146,7 @@ export function AppSidebar() {
 }
 
 function SidebarContent({
-  isActive, toggleGroup, openGroup, setOpenGroup, go, signOut, isAdmin, pendingCount, compact,
+  isActive, toggleGroup, openGroup, setOpenGroup, go, signOut, isAdmin, isAdminMaster, pendingCount, compact,
 }: {
   isActive: (url: string) => boolean;
   toggleGroup: (label: string) => void;
@@ -151,6 +155,7 @@ function SidebarContent({
   go: (url: string) => void;
   signOut: () => void;
   isAdmin: boolean;
+  isAdminMaster: boolean;
   pendingCount: number;
   compact: boolean;
 }) {
@@ -320,6 +325,26 @@ function SidebarContent({
               <TooltipContent side="right">Governança da plataforma</TooltipContent>
             </Tooltip>
           </>
+        )}
+
+        {/* Admin Master */}
+        {isAdminMaster && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => { setOpenGroup(null); go("/admin/painel-controle"); }}
+                className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+                  isActive("/admin/painel-controle")
+                    ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
+                    : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                }`}
+              >
+                <Settings2 className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
+                <span className="truncate">Painel de Controle</span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Configurações globais</TooltipContent>
+          </Tooltip>
         )}
       </nav>
 

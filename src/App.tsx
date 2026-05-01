@@ -25,6 +25,7 @@ import IntegracaoML from "./pages/IntegracaoML";
 import PDV from "./pages/PDV";
 import CRM from "./pages/CRM";
 import PainelHub from "./pages/PainelHub";
+import PainelControle from "./pages/PainelControle";
 import AdminPanel from "./pages/AdminPanel";
 import Financeiro from "./pages/Financeiro";
 import IAConsulta from "./pages/IAConsulta";
@@ -137,6 +138,7 @@ const App = () => {
                       <Route path="/pesquisa" element={<PesquisaInteligente />} />
                       <Route path="/ia-ean13" element={<GeradorEAN13 />} />
                       <Route path="/admin" element={<AdminPanel />} />
+                      <Route path="/admin/painel-controle" element={<PainelControle />} />
                       <Route path="/mentor-vendas" element={<PlanProtectedRoute path="/mentor-vendas"><MentorVendasML /></PlanProtectedRoute>} />
                       <Route path="/empresa" element={<CompanyDashboard />} />
                       <Route path="/equipe" element={<Equipe />} />

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAllCompanies, useAllPlans, useToggleCompanyStatus, useUpdatePlan, useAdminUpdateCompany, useAdminChangeCompanyPlan, useAdminResetPassword, useDeleteCompany } from "@/hooks/useCompanyData";
 import { useIsAdmin, useSetTemporaryPassword } from "@/hooks/useAdminData";
+import { useIsAdminMaster } from "@/hooks/useAdminMaster";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ type CompanyWithExtras = Company & { plan?: Plan; members_count?: number; owner_
 
 export default function MasterAdmin() {
   const { data: isAdmin, isLoading: checkingAdmin } = useIsAdmin();
+  const { data: isAdminMaster } = useIsAdminMaster();
   const { data: companies, isLoading: loadingCompanies } = useAllCompanies();
   const { data: plans, isLoading: loadingPlans } = useAllPlans();
   const toggleStatus = useToggleCompanyStatus();
@@ -76,7 +78,7 @@ export default function MasterAdmin() {
   if (checkingAdmin) {
     return <div className="flex items-center justify-center min-h-[60vh]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (!isAdmin && !isAdminMaster) return <Navigate to="/" replace />;
 
   const totalCompanies = companies?.length || 0;
   const activeCompaniesCount = companies?.filter((c) => c.status === "active").length || 0;
