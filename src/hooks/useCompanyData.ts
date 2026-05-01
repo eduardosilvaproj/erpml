@@ -35,7 +35,7 @@ export interface CompanyMember {
   id: string;
   company_id: string;
   user_id: string;
-  role: string;
+  role: "owner" | "manager" | "member" | "admin_master";
   is_active: boolean;
   created_at: string;
 }
