@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
