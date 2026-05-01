@@ -146,7 +146,7 @@ export function AppSidebar() {
 }
 
 function SidebarContent({
-  isActive, toggleGroup, openGroup, setOpenGroup, go, signOut, isAdmin, pendingCount, compact,
+  isActive, toggleGroup, openGroup, setOpenGroup, go, signOut, isAdmin, isAdminMaster, pendingCount, compact,
 }: {
   isActive: (url: string) => boolean;
   toggleGroup: (label: string) => void;
@@ -155,6 +155,7 @@ function SidebarContent({
   go: (url: string) => void;
   signOut: () => void;
   isAdmin: boolean;
+  isAdminMaster: boolean;
   pendingCount: number;
   compact: boolean;
 }) {
