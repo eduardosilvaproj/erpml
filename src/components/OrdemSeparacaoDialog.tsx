@@ -408,7 +408,7 @@ export const OrdemSeparacaoDialog = ({ ordemId, onClose }: Props) => {
                   <span className="text-2xl font-black text-primary">Frete #{ordem?.frete_ml || "—"}</span>
                   <div className="flex gap-2">
                     {ordem && <Badge variant="outline" className={`${ordemStatusBadge(ordem.status as OrdemStatus).cls} px-3 py-1 text-xs font-bold uppercase`}>
-                      {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status).label}
+                      {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status as any).label}
                     </Badge>}
                     {recorder.status === "recording" && (
                       <Badge variant="outline" className="bg-destructive/15 text-destructive animate-pulse">
