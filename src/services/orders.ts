@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { OrdemFull, OrdemStatus, OrdemItem } from "@/hooks/useOrdensFull";
+import type { OrdemFull, OrdemStatus, OrdemItem, BipagemItemState } from "@/hooks/useOrdensFull";
 import { stockService } from "./stock";
 
 export const ordersService = {
@@ -14,13 +14,17 @@ export const ordersService = {
     
     if (error) throw error;
     
-    return (data || []).map((o: any) => ({
-      ...o,
-      numero: o.numero || o.frete_ml || o.ordem_id,
-      total_produtos: Array.isArray(o.bipagem_state) ? o.bipagem_state.length : 0,
-      total_itens: Array.isArray(o.bipagem_state) ? o.bipagem_state.reduce((s: number, i: any) => s + (i.neededQty || 0), 0) : 0,
-      total_itens_separados: Array.isArray(o.bipagem_state) ? o.bipagem_state.reduce((s: number, i: any) => s + (i.scannedQty || 0), 0) : 0,
-    })) as OrdemFull[];
+    return (data || []).map((o) => {
+      const bipagemState = Array.isArray(o.bipagem_state) ? (o.bipagem_state as unknown as BipagemItemState[]) : [];
+      return {
+        ...o,
+        bipagem_state: bipagemState,
+        numero: o.numero || o.frete_ml || o.ordem_id,
+        total_produtos: bipagemState.length,
+        total_itens: bipagemState.reduce((s: number, i) => s + (i.neededQty || 0), 0),
+        total_itens_separados: bipagemState.reduce((s: number, i) => s + (i.scannedQty || 0), 0),
+      } as unknown as OrdemFull;
+    });
   },
 
   async buscarOrdem(ordemId: string, companyId: string) {
@@ -38,7 +42,7 @@ export const ordersService = {
     if (error) throw error;
     if (!ordem) return null;
 
-    const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
+    const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as unknown as BipagemItemState[]) : [];
     const itens = (ordem as any)?.full_order_items?.map((item: any) => {
       const product = item.product;
       const bState = bipagemState.find(b => b.productId === item.product_id);
@@ -68,15 +72,16 @@ export const ordersService = {
           gtin_cx: product.gtin_cx,
           box_quantity: product.box_quantity
         } : null
-      };
+      } as OrdemItem;
     }) || [];
 
     return { 
       ordem: {
         ...ordem,
+        bipagem_state: bipagemState,
         numero: ordem.numero || ordem.frete_ml || ordem.ordem_id,
-      } as OrdemFull, 
-      itens: itens as OrdemItem[] 
+      } as unknown as OrdemFull, 
+      itens
     };
   },
 
@@ -84,7 +89,12 @@ export const ordersService = {
     companyId: string;
     descricao: string;
     frete_ml?: string | null;
-    itens: { product_id: string; product?: any; quantity?: number; qtd_solicitada?: number }[];
+    itens: { 
+      product_id: string; 
+      product?: { name?: string; sku?: string; barcode?: string | null; image_url?: string | null }; 
+      quantity?: number; 
+      qtd_solicitada?: number 
+    }[];
     status?: OrdemStatus;
   }) {
     const { data: order, error: orderError } = await supabase
@@ -94,7 +104,7 @@ export const ordersService = {
         frete_ml: params.frete_ml,
         descricao: params.descricao,
         status: params.status || 'aguardando',
-        bipagem_state: params.itens.map(i => ({
+        bipagem_state: (params.itens.map(i => ({
           productId: i.product_id,
           name: i.product?.name || 'Produto',
           sku: i.product?.sku || '',
@@ -103,7 +113,7 @@ export const ordersService = {
           neededQty: i.quantity || i.qtd_solicitada || 0,
           scannedQty: 0,
           status: 'pendente'
-        })) as any
+        })) as unknown) as any
       })
       .select()
       .maybeSingle();
@@ -121,7 +131,11 @@ export const ordersService = {
       if (itemsErr) throw itemsErr;
     }
 
-    return order as OrdemFull;
+    return {
+      ...order,
+      numero: order.numero || order.frete_ml || order.ordem_id,
+      bipagem_state: Array.isArray(order.bipagem_state) ? (order.bipagem_state as unknown as BipagemItemState[]) : []
+    } as unknown as OrdemFull;
   },
 
   async updateOrdem(id: string, updates: any, companyId: string) {

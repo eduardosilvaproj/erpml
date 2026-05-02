@@ -1,18 +1,56 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Database, Json } from "@/integrations/supabase/types";
 
-export type MLConnectionStatus = {
+/**
+ * Interface for Mercado Livre connection status.
+ */
+export interface MLConnectionStatus {
   has_refresh_token: boolean;
   is_active: boolean;
   ml_user_id: string;
   needs_reauth: boolean;
   seller_nickname: string | null;
   token_expires_at: string;
-};
+  updated_at?: string;
+}
+
+/**
+ * Result of the catalog synchronization process.
+ */
+export interface SyncCatalogResult {
+  linked_products: number;
+  matched_products: number;
+  removed_links: number;
+  total_items: number;
+  unmatched_items: number;
+}
+
+/**
+ * Result of order synchronization.
+ */
+export interface SyncOrdersResult {
+  total_fetched: number;
+  inserted: number;
+  updated: number;
+  total_in_ml: number;
+}
+
+/**
+ * Type for Mercado Livre Questions from the database.
+ */
+export type MLQuestion = Database["public"]["Tables"]["ml_questions"]["Row"];
+
+/**
+ * Result of a Mercado Livre API function call error context.
+ */
+interface FunctionErrorContext {
+  json: () => Promise<{ error: string }>;
+}
 
 async function getFunctionErrorMessage(error: any) {
-  const context = error?.context;
+  const context = error?.context as FunctionErrorContext | undefined;
   if (context && typeof context.json === "function") {
     const payload = await context.json().catch(() => null);
     if (payload?.error) {
@@ -23,6 +61,28 @@ async function getFunctionErrorMessage(error: any) {
   return error?.message || "Erro ao comunicar com a integração.";
 }
 
+/**
+ * Low-level utility to call the Mercado Livre Edge Function.
+ */
+export function useMLApi() {
+  const callML = async <T = unknown>(action: string, params?: unknown): Promise<T> => {
+    const { data, error } = await supabase.functions.invoke("ml-api", {
+      body: { action, params },
+    });
+
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error));
+    }
+
+    return data as T;
+  };
+
+  return { callML };
+}
+
+/**
+ * Hook to check current connection status with Mercado Livre.
+ */
 export function useMLConnection() {
   const { user } = useAuth();
 
@@ -43,6 +103,25 @@ export function useMLConnection() {
   });
 }
 
+/**
+ * Hook to retrieve valid Mercado Livre auth URL for connection.
+ */
+export function useMLAuthUrl() {
+  const { user } = useAuth();
+  const { callML } = useMLApi();
+
+  return useQuery({
+    queryKey: ["ml-auth-url", user?.id],
+    enabled: !!user,
+    queryFn: () => callML<{ url: string }>("get-auth-url"),
+    staleTime: Infinity,
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to disconnect Mercado Livre account.
+ */
 export function useDisconnectML() {
   const { callML } = useMLApi();
   const queryClient = useQueryClient();
@@ -63,40 +142,30 @@ export function useDisconnectML() {
   });
 }
 
-export function useMLApi() {
-  const callML = async <T = any>(action: string, params?: unknown): Promise<T> => {
-    const { data, error } = await supabase.functions.invoke("ml-api", {
-      body: { action, params },
-    });
-
-    if (error) {
-      throw new Error(await getFunctionErrorMessage(error));
-    }
-
-    return data as T;
-  };
-
-  return { callML };
-}
-
+/**
+ * Hook to fetch active items from Mercado Livre.
+ */
 export function useMLItems(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-items"],
     enabled,
-    queryFn: () => callML("get-items", { limit: 50, offset: 0 }),
+    queryFn: () => callML<{ total: number; items: any[] }>("get-items", { limit: 50, offset: 0 }),
     retry: false,
   });
 }
 
+/**
+ * Hook to fetch orders from Mercado Livre.
+ */
 export function useMLOrders(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-orders"],
     enabled,
-    queryFn: () => callML("get-orders", { limit: 20, offset: 0 }),
+    queryFn: () => callML<{ paging: { total: number }; results: any[] }>("get-orders", { limit: 20, offset: 0 }),
     retry: false,
   });
 }
@@ -125,12 +194,7 @@ export function useSyncMLOrders() {
 
   return useMutation({
     mutationFn: async () => {
-      return callML<{
-        total_fetched: number;
-        inserted: number;
-        updated: number;
-        total_in_ml: number;
-      }>("sync-orders", { limit: 200 });
+      return callML<SyncOrdersResult>("sync-orders", { limit: 200 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
@@ -225,13 +289,7 @@ export function useSyncMLCatalog() {
 
   return useMutation({
     mutationFn: async () => {
-      return callML<{
-        linked_products: number;
-        matched_products: number;
-        removed_links: number;
-        total_items: number;
-        unmatched_items: number;
-      }>("sync-catalog");
+      return callML<SyncCatalogResult>("sync-catalog");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
@@ -242,26 +300,13 @@ export function useSyncMLCatalog() {
   });
 }
 
-export function useMLAuthUrl() {
-  const { user } = useAuth();
-  const { callML } = useMLApi();
-
-  return useQuery({
-    queryKey: ["ml-auth-url", user?.id],
-    enabled: !!user,
-    queryFn: () => callML("get-auth-url"),
-    staleTime: Infinity,
-    retry: 1,
-  });
-}
-
 export function useMLWebhookStatus(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-webhook-status"],
     enabled,
-    queryFn: () => callML("webhook-status"),
+    queryFn: () => callML<{ is_registered: boolean; webhook_url?: string }>("webhook-status"),
     retry: false,
   });
 }
@@ -307,7 +352,7 @@ export function useMLQuestions() {
         .order("question_date", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data;
+      return data as MLQuestion[];
     },
   });
 }
