@@ -165,7 +165,7 @@ export function useMLOrders(enabled: boolean) {
   return useQuery({
     queryKey: ["ml-orders"],
     enabled,
-    queryFn: () => callML<{ paging: { total: number }; results: unknown[] }>("get-orders", { limit: 20, offset: 0 }),
+    queryFn: () => callML<{ paging: { total: number }; results: any[] }>("get-orders", { limit: 20, offset: 0 }),
     retry: false,
   });
 }
