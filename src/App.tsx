@@ -80,7 +80,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
+const App = (): JSX.Element => {
   if (isVersionOutdated()) {
     return <UpdateRequiredModal />;
   }
