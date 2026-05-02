@@ -141,7 +141,7 @@ export const productsService = {
    * @param companyId - ID da empresa.
    * @returns {Promise<Product>} Produto criado.
    */
-  async createProduct(data: any, companyId: string | null) {
+  async createProduct(data: ProductFormData, companyId: string | null) {
     try {
       // Validação no servidor via Edge Function
       const { data: validation, error: validationError } = await supabase.functions.invoke("validate-product", {
@@ -158,7 +158,7 @@ export const productsService = {
         throw new Error(validation?.error || validationError?.message || "Erro na validação do produto");
       }
 
-      const { supplier_ids = [], supplier_skus = [], ...productData } = data;
+      const { supplier_ids = [], supplier_skus = [], ...productData } = data as any;
       const insertData = {
         ...productData,
         name: validation.sanitized.name,
