@@ -97,12 +97,28 @@ export const productsService = {
   },
 
   async createProduct(data: any, companyId: string | null) {
+    // Validação no servidor via Edge Function
+    const { data: validation, error: validationError } = await supabase.functions.invoke("validate-product", {
+      body: { 
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        stock_physical: data.stock_physical || 0,
+        company_id: companyId
+      }
+    });
+
+    if (validationError || !validation.valid) {
+      throw new Error(validation?.error || validationError?.message || "Erro na validação do produto");
+    }
+
     const { supplier_ids = [], supplier_skus = [], ...productData } = data;
     const insertData = {
       ...productData,
+      name: validation.sanitized.name,
+      description: validation.sanitized.description,
       barcode: productData.barcode || null,
       ean: productData.ean || productData.barcode || null,
-      description: productData.description || null,
       category_id: productData.category_id || null,
       weight: productData.weight ?? null,
       width: productData.width ?? null,
