@@ -122,7 +122,7 @@ export const useCreateOrdemFull = () => {
       return ordersService.createOrdemFull({ 
         ...params, 
         companyId,
-        status: params.status as OrdemStatus
+        status: params.status
       });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ordens-full"] }),
