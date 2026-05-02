@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { productsService } from "@/services/products";
@@ -87,6 +87,39 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
     queryKey: ["products-all", companyId, activeOnly],
     enabled: !!companyId,
     queryFn: () => productsService.fetchAllProducts(companyId!, activeOnly),
+  });
+}
+
+/**
+ * Hook to fetch products with infinite scrolling.
+ */
+export function useProductsInfinite(filters?: {
+  search?: string;
+  category_id?: string;
+  supplier_id?: string;
+  status?: "active" | "inactive" | "all";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
+}) {
+  const companyId = useCompanyId();
+  const pageSize = 50;
+
+  return useInfiniteQuery({
+    queryKey: ["products-infinite", filters, companyId],
+    enabled: !!companyId,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const result = await productsService.fetchProducts(
+        { ...filters, page: (pageParam / pageSize) + 1, pageSize },
+        companyId
+      );
+      return result;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalLoaded = allPages.length * pageSize;
+      return totalLoaded < lastPage.total ? totalLoaded : undefined;
+    },
   });
 }
 

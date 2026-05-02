@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
@@ -12,6 +12,45 @@ export type CartItem = {
   unitPrice: number;
   stockPhysical: number;
 };
+
+/**
+ * Hook to fetch sales with infinite scrolling.
+ */
+export function useSalesInfinite(filters?: { dateFrom?: string; dateTo?: string }) {
+  const companyId = useCompanyId();
+  const pageSize = 50;
+
+  return useInfiniteQuery({
+    queryKey: ["sales-infinite", filters, companyId],
+    enabled: !!companyId,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      let query = supabase
+        .from("sales")
+        .select("*, sale_items(*, products(id, name, sku)), customers(id, name)", { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(pageParam, pageParam + pageSize - 1);
+
+      if (companyId) {
+        query = query.eq("company_id", companyId);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte("created_at", filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte("created_at", filters.dateTo + "T23:59:59");
+      }
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { sales: data || [], total: count || 0 };
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalLoaded = allPages.length * pageSize;
+      return lastPage.sales.length === pageSize ? totalLoaded : undefined;
+    },
+  });
+}
 
 export function useSales(filters?: { dateFrom?: string; dateTo?: string; limit?: number }) {
   const companyId = useCompanyId();
