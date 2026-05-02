@@ -190,7 +190,7 @@ export const useUpdateFullOrder = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, ...rest }: { id: string; status: OrdemStatus; [key: string]: Json }) => {
+    mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: Json }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       return ordersService.updateOrdemStatus(id, status, companyId, rest);
     },
