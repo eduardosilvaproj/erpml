@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useAuth, AuthProvider } from "../AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { ReactNode } from "react";
+import { ReactNode, createElement } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -25,11 +25,10 @@ const queryClient = new QueryClient({
   },
 });
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>{children}</AuthProvider>
-  </QueryClientProvider>
-);
+const wrapper = ({ children }: { children: ReactNode }) => 
+  createElement(QueryClientProvider, { client: queryClient }, 
+    createElement(AuthProvider, null, children)
+  );
 
 describe("useAuth", () => {
   beforeEach(() => {

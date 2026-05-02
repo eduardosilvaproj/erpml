@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useProducts, useCreateProduct } from "../useProductData";
 import { productsService } from "@/services/products";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode } from "react";
+import { ReactNode, createElement } from "react";
 
 vi.mock("@/services/products", () => ({
   productsService: {
@@ -25,11 +25,8 @@ const queryClient = new QueryClient({
   },
 });
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
-    {children}
-  </QueryClientProvider>
-);
+const wrapper = ({ children }: { children: ReactNode }) => 
+  createElement(QueryClientProvider, { client: queryClient }, children);
 
 describe("useProductData hooks", () => {
   beforeEach(() => {
