@@ -155,7 +155,7 @@ export function OrderDetailsView({ ordemId, onClose }: OrderDetailsViewProps) {
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-black text-primary">Frete #{ordem.frete_ml || "—"}</span>
                     <Badge variant="outline" className={`${ordemStatusBadge(ordem.status as any).cls} px-3 py-1 text-xs font-bold uppercase`}>
-                      {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status).label}
+                      {ordem.status === 'aguardando_carregamento' ? '🚛 Aguardando Carregamento' : ordemStatusBadge(ordem.status as any).label}
                     </Badge>
                   </div>
                   <span className="text-xs font-mono text-muted-foreground uppercase">ID Interno: {(ordem as any)?.ordem_id || ordem.numero}</span>
