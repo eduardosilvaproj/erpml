@@ -1,23 +1,22 @@
-export const formatNumber = (num: number, decimals: number = 0) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(num);
+/**
+ * Utilitário para formatar valores monetários em Real Brasileiro (BRL).
+ * 
+ * @param value - Valor numérico a ser formatado.
+ * @returns {string} Valor formatado (Ex: "R$ 1.250,00").
+ */
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
 };
 
-export const formatDifference = (num: number, decimals: number = 0) => {
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-    signDisplay: 'exceptZero',
-  }).format(num);
-};
-
-export const formatPercent = (num: number, decimals: number = 1) => {
-  if (num === 0) return "0%";
-  return new Intl.NumberFormat('pt-BR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-    signDisplay: 'always',
-  }).format(num) + '%';
+/**
+ * Formata uma data para o padrão brasileiro (DD/MM/AAAA).
+ * 
+ * @param date - Objeto Date ou string de data.
+ * @returns {string} Data formatada.
+ */
+export const formatDate = (date: Date | string): string => {
+  return new Intl.DateTimeFormat("pt-BR").format(new Date(date));
 };
