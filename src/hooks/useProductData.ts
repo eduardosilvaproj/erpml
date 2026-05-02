@@ -2,39 +2,31 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { productsService } from "@/services/products";
+import type { Database } from "@/integrations/supabase/types";
 
-export type Product = {
-  id: string;
-  sku: string;
-  barcode: string | null;
-  ean: string | null;
-  name: string;
-  description: string | null;
-  category_id: string | null;
-  cost: number;
-  price: number;
-  weight: number | null;
-  width: number | null;
-  height: number | null;
-  depth: number | null;
-  sku_ml: string | null;
-  id_ml: string | null;
-  stock_physical: number;
-  stock_full: number;
-  min_stock: number;
-  active: boolean;
-  created_at: string;
-  updated_at: string;
-  company_id: string | null;
-  image_url: string | null;
-  gtin_cx: string | null;
-  box_quantity: number | null;
+/**
+ * Interface representing a Product in the system.
+ * Directly mapped from the database schema with additional joined fields.
+ */
+export type Product = Database["public"]["Tables"]["products"]["Row"] & {
   categories?: { name: string } | null;
-  product_suppliers?: { supplier_id: string; cost: number; is_primary: boolean; suppliers: { id: string; name: string } }[];
+  product_suppliers?: { 
+    supplier_id: string; 
+    cost: number; 
+    is_primary: boolean; 
+    suppliers: { id: string; name: string } 
+  }[];
   product_alternative_gtins?: { gtin: string }[];
-  product_supplier_skus?: { id: string; supplier_name: string; supplier_sku: string }[];
+  product_supplier_skus?: { 
+    id: string; 
+    supplier_name: string; 
+    supplier_sku: string 
+  }[];
 };
 
+/**
+ * Data required to create or update a product.
+ */
 export type ProductFormData = {
   sku: string;
   barcode?: string;
@@ -58,6 +50,12 @@ export type ProductFormData = {
   supplier_skus?: { supplier_name: string; supplier_sku: string }[];
 };
 
+/**
+ * Hook to fetch paginated products with filters.
+ * 
+ * @example
+ * const { data, isLoading } = useProducts({ search: 'fones', status: 'active' });
+ */
 export function useProducts(filters?: {
   search?: string;
   category_id?: string;
@@ -78,6 +76,9 @@ export function useProducts(filters?: {
   });
 }
 
+/**
+ * Hook to fetch all products for a company.
+ */
 export function useAllProducts(opts?: { activeOnly?: boolean }) {
   const companyId = useCompanyId();
   const activeOnly = opts?.activeOnly ?? true;
@@ -89,6 +90,9 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
   });
 }
 
+/**
+ * Hook to create a new product.
+ */
 export function useCreateProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -106,10 +110,12 @@ export function useCreateProduct() {
   });
 }
 
+/**
+ * Hook to update an existing product.
+ */
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   const companyId = useCompanyId();
 
   return useMutation({
@@ -127,10 +133,12 @@ export function useUpdateProduct() {
   });
 }
 
+/**
+ * Hook to delete or deactivate a product.
+ */
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   const companyId = useCompanyId();
 
   return useMutation({
@@ -138,7 +146,7 @@ export function useDeleteProduct() {
       if (!companyId) throw new Error("Empresa não encontrada");
       return productsService.deleteProduct(id, companyId);
     },
-    onSuccess: (result) => {
+    onSuccess: (result: { deactivated: boolean }) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       if (result.deactivated) {
         toast({ 
@@ -155,6 +163,9 @@ export function useDeleteProduct() {
   });
 }
 
+/**
+ * Hook to fetch product categories.
+ */
 export function useCategories() {
   const companyId = useCompanyId();
 
@@ -165,6 +176,9 @@ export function useCategories() {
   });
 }
 
+/**
+ * Hook to fetch suppliers for the company.
+ */
 export function useSuppliers() {
   const companyId = useCompanyId();
 
@@ -175,6 +189,9 @@ export function useSuppliers() {
   });
 }
 
+/**
+ * Hook to create a new supplier.
+ */
 export function useCreateSupplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -193,10 +210,12 @@ export function useCreateSupplier() {
   });
 }
 
+/**
+ * Hook to delete a supplier.
+ */
 export function useDeleteSupplier() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   const companyId = useCompanyId();
 
   return useMutation({
