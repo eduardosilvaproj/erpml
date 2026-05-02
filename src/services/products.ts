@@ -49,6 +49,10 @@ export const productsService = {
       query = query.eq("category_id", filters.category_id);
     }
 
+    if (filters?.supplier_id) {
+      query = query.eq("product_suppliers.supplier_id", filters.supplier_id);
+    }
+
     if (filters?.needsCorrection === "no_sku") {
       query = query.or("sku.is.null,sku.eq.''");
     } else if (filters?.needsCorrection === "no_ean") {
