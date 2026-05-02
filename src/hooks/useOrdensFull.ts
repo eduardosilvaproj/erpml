@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService } from "@/services/orders";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 /** Valid statuses for an order in the Full flow. */
 export type OrdemStatus = "pdf_carregado" | "separando" | "aguardando_carregamento" | "carregando" | "enviado" | "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "cancelada" | "pausado";
@@ -115,10 +115,14 @@ export const useCreateOrdemFull = () => {
         quantity?: number; 
         qtd_solicitada?: number 
       }[];
-      status?: OrdemStatus;
+      status?: OrdemStatus | string;
     }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
-      return ordersService.createOrdemFull({ ...params, companyId });
+      return ordersService.createOrdemFull({ 
+        ...params, 
+        companyId,
+        status: params.status as OrdemStatus
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ordens-full"] }),
   });
@@ -131,9 +135,9 @@ export const useUpdateOrdemStatus = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, Json> }) => {
+    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus | string; extra?: Record<string, Json> }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
-      return ordersService.updateOrdemStatus(id, status, companyId, extra);
+      return ordersService.updateOrdemStatus(id, status as OrdemStatus, companyId, extra);
     },
     onSuccess: (_, v) => {
       qc.invalidateQueries({ queryKey: ["ordens-full"] });
