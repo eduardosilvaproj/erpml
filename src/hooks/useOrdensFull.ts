@@ -136,7 +136,7 @@ export const useUpdateOrdemStatus = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus | string; extra?: Record<string, Json> }) => {
+    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, Json> }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       return ordersService.updateOrdemStatus(id, status as OrdemStatus, companyId, extra);
     },
