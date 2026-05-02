@@ -1,4 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
+import * as Sentry from "@sentry/react";
+import posthog from "posthog-js";
 import type { Product, ProductFormData } from "@/hooks/useProductData";
 
 export const productsService = {
