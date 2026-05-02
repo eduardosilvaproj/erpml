@@ -3,8 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Returns the current user's company_id for multi-tenant data scoping.
- * All data hooks should use this to filter and insert with the correct company_id.
+ * Hook para obter o ID da empresa associada ao usuário autenticado.
+ * Essencial para o isolamento de dados (multi-tenancy) no Supabase.
+ * O ID é buscado no perfil do usuário e armazenado em cache pelo React Query.
+ * 
+ * @returns {string | null} O UUID da empresa ou null se não houver sessão ou vínculo.
  */
 export function useCompanyId(): string | null {
   const { user } = useAuth();

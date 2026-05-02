@@ -5,6 +5,12 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useCompanyId } from "@/hooks/useCompanyId";
 
+/**
+ * Hook para gerenciar a lógica de busca por código de barras.
+ * Identifica se o código é um GTIN de caixa, SKU ou EAN individual.
+ * 
+ * @returns Objeto com estados de modais, resultados de busca e funções de reset.
+ */
 export function useBarcodeSearch() {
   const [isSearching, setIsSearching] = useState(false);
   const [notFoundOpen, setNotFoundOpen] = useState(false);
