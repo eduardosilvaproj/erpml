@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
 import {
@@ -15,12 +15,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useProducts, useCategories } from "@/hooks/useProductData";
+import { useProductsInfinite, useCategories } from "@/hooks/useProductData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatNumber, formatDifference } from "@/lib/formatters";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 const Estoque = () => {
   const navigate = useNavigate();
