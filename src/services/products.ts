@@ -2,6 +2,14 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Product, ProductFormData } from "@/hooks/useProductData";
 
 export const productsService = {
+  /**
+   * Busca produtos do banco de dados aplicando filtros, paginação e ordenação.
+   * Utiliza RPC para buscas textuais otimizadas ou queries diretas.
+   * 
+   * @param filters - Critérios de filtro (search, status, categories, etc).
+   * @param companyId - ID da empresa proprietária dos dados.
+   * @returns {Promise<{products: Product[], total: number}>} Produtos encontrados e total de registros.
+   */
   async fetchProducts(filters: any, companyId: string | null) {
     let query;
     
@@ -70,6 +78,13 @@ export const productsService = {
     return { products: filtered, total: count || 0 };
   },
 
+  /**
+   * Carrega todos os produtos de forma iterativa (paginando internamente até o fim).
+   * 
+   * @param companyId - ID da empresa.
+   * @param activeOnly - Se deve filtrar apenas produtos ativos.
+   * @returns {Promise<{products: Product[], total: number}>} Todos os produtos carregados.
+   */
   async fetchAllProducts(companyId: string, activeOnly: boolean = true) {
     const PAGE_SIZE = 1000;
     let all: Product[] = [];
@@ -96,6 +111,14 @@ export const productsService = {
     return { products: all, total: all.length };
   },
 
+  /**
+   * Cria um produto, validando-o primeiro via Edge Function "validate-product".
+   * Também gerencia os relacionamentos com fornecedores e SKUs.
+   * 
+   * @param data - Dados do formulário de produto.
+   * @param companyId - ID da empresa.
+   * @returns {Promise<Product>} Produto criado.
+   */
   async createProduct(data: any, companyId: string | null) {
     // Validação no servidor via Edge Function
     const { data: validation, error: validationError } = await supabase.functions.invoke("validate-product", {
@@ -164,6 +187,13 @@ export const productsService = {
     return product;
   },
 
+  /**
+   * Atualiza dados de um produto e sincroniza fornecedores/SKUs.
+   * 
+   * @param id - ID do produto a ser atualizado.
+   * @param data - Novos dados do produto.
+   * @param companyId - ID da empresa para segurança da operação.
+   */
   async updateProduct(id: string, data: ProductFormData, companyId: string) {
     const { supplier_ids, supplier_skus, ...productData } = data;
     const updateData = {
@@ -216,6 +246,13 @@ export const productsService = {
     }
   },
 
+  /**
+   * Remove um produto ou o desativa caso existam registros dependentes em outras tabelas.
+   * 
+   * @param id - ID do produto.
+   * @param companyId - ID da empresa.
+   * @returns {Promise<{deactivated: boolean}>} Indica se foi desativado (true) ou deletado (false).
+   */
   async deleteProduct(id: string, companyId: string) {
     const tablesToCheck = [
       "sale_items",
@@ -263,6 +300,12 @@ export const productsService = {
     }
   },
 
+  /**
+   * Localiza um produto específico pelo EAN (código de barras) ou SKU.
+   * 
+   * @param params - Objeto contendo ean ou sku e o ID da empresa.
+   * @returns {Promise<Product | null>} Dados resumidos do produto encontrado.
+   */
   async findProductByEanOrSku(params: { ean?: string; sku?: string; companyId: string }) {
     let query = supabase.from("products").select("id, name, price, stock_physical").eq("company_id", params.companyId);
     if (params.ean) {
@@ -289,6 +332,14 @@ export const productsService = {
     return data;
   },
 
+  /**
+   * Incrementa ou decrementa o estoque físico de um produto de forma atômica.
+   * 
+   * @param id - ID do produto.
+   * @param delta - Quantidade a somar (positivo) ou subtrair (negativo).
+   * @param companyId - ID da empresa.
+   * @returns {Promise<number>} Novo saldo de estoque.
+   */
   async atualizarEstoque(id: string, delta: number, companyId: string) {
     const { data: product, error: fetchError } = await supabase
       .from("products")

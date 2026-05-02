@@ -51,7 +51,10 @@ export type ProductFormData = {
 };
 
 /**
- * Hook to fetch paginated products with filters.
+ * Hook para buscar produtos paginados com filtros aplicados.
+ * 
+ * @param filters - Filtros opcionais (busca, categoria, fornecedor, status, ordenação).
+ * @returns {import("@tanstack/react-query").UseQueryResult} Objeto contendo produtos e metadados da consulta.
  * 
  * @example
  * const { data, isLoading } = useProducts({ search: 'fones', status: 'active' });
@@ -77,7 +80,11 @@ export function useProducts(filters?: {
 }
 
 /**
- * Hook to fetch all products for a company.
+ * Hook para carregar todos os produtos de uma empresa sem paginação.
+ * Útil para seletores e listas de referência rápida.
+ * 
+ * @param opts - Opções como carregar apenas ativos (padrão: true).
+ * @returns {import("@tanstack/react-query").UseQueryResult} Lista completa de produtos.
  */
 export function useAllProducts(opts?: { activeOnly?: boolean }) {
   const companyId = useCompanyId();
@@ -91,7 +98,11 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
 }
 
 /**
- * Hook to fetch products with infinite scrolling.
+ * Hook para busca infinita de produtos (Infinite Scroll).
+ * Implementa cursor-based pagination para performance em listas grandes.
+ * 
+ * @param filters - Filtros de busca e ordenação.
+ * @returns {import("@tanstack/react-query").UseInfiniteQueryResult} Dados das páginas carregadas e funções de controle.
  */
 export function useProductsInfinite(filters?: {
   search?: string;
@@ -124,7 +135,10 @@ export function useProductsInfinite(filters?: {
 }
 
 /**
- * Hook to create a new product.
+ * Hook para criar um novo produto no sistema.
+ * Realiza validação no servidor via Edge Function antes da inserção.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Função de mutação e estado da operação.
  */
 export function useCreateProduct() {
   const queryClient = useQueryClient();
@@ -144,7 +158,9 @@ export function useCreateProduct() {
 }
 
 /**
- * Hook to update an existing product.
+ * Hook para atualizar os dados de um produto existente.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Função de mutação para atualização.
  */
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
@@ -167,7 +183,10 @@ export function useUpdateProduct() {
 }
 
 /**
- * Hook to delete or deactivate a product.
+ * Hook para excluir ou desativar um produto.
+ * Se o produto possuir histórico (vendas, etc), ele será apenas desativado.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Função para disparar a remoção.
  */
 export function useDeleteProduct() {
   const queryClient = useQueryClient();

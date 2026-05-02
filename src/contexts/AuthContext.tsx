@@ -17,8 +17,20 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+/**
+ * Hook para acessar o contexto de autenticação do sistema.
+ * Fornece a sessão atual, o usuário logado e função de logout.
+ * 
+ * @returns {AuthContextType} Contexto contendo { session, user, loading, signOut }.
+ */
 export const useAuth = () => useContext(AuthContext);
 
+/**
+ * Provedor de autenticação que envolve a aplicação.
+ * Gerencia a persistência da sessão via Supabase e escuta mudanças de estado (login/logout).
+ * 
+ * @param children - Componentes filhos que terão acesso ao contexto.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);

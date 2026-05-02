@@ -11,6 +11,12 @@ interface AdminUser {
   roles: string[];
 }
 
+/**
+ * Hook para listar todos os usuários administradores do sistema.
+ * Realiza uma chamada para a Edge Function 'admin-users'.
+ * 
+ * @returns {import("@tanstack/react-query").UseQueryResult} Lista de objetos AdminUser.
+ */
 export function useAdminUsers() {
   return useQuery({
     queryKey: ["admin-users"],
@@ -40,6 +46,11 @@ export function useAdminUsers() {
   });
 }
 
+/**
+ * Hook para alternar o papel (role) de um usuário.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Mutação para alterar roles.
+ */
 export function useToggleRole() {
   const queryClient = useQueryClient();
 
@@ -74,6 +85,11 @@ export function useToggleRole() {
   });
 }
 
+/**
+ * Hook para excluir permanentemente um usuário (apenas para Admin Master).
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Mutação de exclusão.
+ */
 export function useDeleteUser() {
   const queryClient = useQueryClient();
 
@@ -108,6 +124,12 @@ export function useDeleteUser() {
   });
 }
 
+/**
+ * Hook que verifica se o usuário autenticado é um administrador.
+ * Consulta a tabela 'user_roles' para verificar permissões.
+ * 
+ * @returns {import("@tanstack/react-query").UseQueryResult} Booleano indicando status de admin.
+ */
 export function useIsAdmin() {
   return useQuery({
     queryKey: ["is-admin"],
@@ -135,6 +157,12 @@ interface PendingUser {
   full_name: string;
 }
 
+/**
+ * Hook para listar usuários com cadastro pendente ou sem empresa vinculada.
+ * 
+ * @param enabled - Se a consulta deve ser executada automaticamente.
+ * @returns {import("@tanstack/react-query").UseQueryResult} Lista de usuários pendentes.
+ */
 export function usePendingUsers(enabled = true) {
   return useQuery({
     queryKey: ["pending-users"],
@@ -171,6 +199,11 @@ export function usePendingUsers(enabled = true) {
   });
 }
 
+/**
+ * Hook para criar uma nova empresa e vinculá-la a um usuário pendente.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Mutação de criação de empresa.
+ */
 export function useCreateCompanyForUser() {
   const queryClient = useQueryClient();
 
@@ -206,6 +239,11 @@ export function useCreateCompanyForUser() {
   });
 }
 
+/**
+ * Hook para gerar e definir uma senha temporária para um usuário.
+ * 
+ * @returns {import("@tanstack/react-query").UseMutationResult} Dados da nova senha gerada.
+ */
 export function useSetTemporaryPassword() {
   return useMutation({
     mutationFn: async (targetUserId: string): Promise<{ email: string; temporaryPassword: string }> => {
