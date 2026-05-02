@@ -91,6 +91,39 @@ export function useAllProducts(opts?: { activeOnly?: boolean }) {
 }
 
 /**
+ * Hook to fetch products with infinite scrolling.
+ */
+export function useProductsInfinite(filters?: {
+  search?: string;
+  category_id?: string;
+  supplier_id?: string;
+  status?: "active" | "inactive" | "all";
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
+}) {
+  const companyId = useCompanyId();
+  const pageSize = 50;
+
+  return useInfiniteQuery({
+    queryKey: ["products-infinite", filters, companyId],
+    enabled: !!companyId,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const result = await productsService.fetchProducts(
+        { ...filters, page: (pageParam / pageSize) + 1, pageSize },
+        companyId
+      );
+      return result;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalLoaded = allPages.length * pageSize;
+      return totalLoaded < lastPage.total ? totalLoaded : undefined;
+    },
+  });
+}
+
+/**
  * Hook to create a new product.
  */
 export function useCreateProduct() {
