@@ -96,6 +96,18 @@ export function useCreateSale() {
       customerId?: string;
       discount?: number;
     }) => {
+      // Validação no servidor via Edge Function
+      const { data: validation, error: validationError } = await supabase.functions.invoke("validate-order", {
+        body: { 
+          items: items.map(i => ({ product_id: i.productId, quantity: i.quantity, unit_price: i.unitPrice })),
+          company_id: companyId
+        }
+      });
+
+      if (validationError || !validation.valid) {
+        throw new Error(validation?.error || validationError?.message || "Erro na validação do pedido");
+      }
+
       const totalValue = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0) - (discount || 0);
       const saleNumber = `VND-${Date.now().toString(36).toUpperCase()}`;
 
