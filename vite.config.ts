@@ -9,6 +9,11 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: "./src/test/setup.ts",
+  },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version || "1.0.0"),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
