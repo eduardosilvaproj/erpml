@@ -116,7 +116,7 @@ export const useCreateOrdemFull = () => {
         quantity?: number; 
         qtd_solicitada?: number 
       }[];
-      status?: OrdemStatus;
+      status?: OrdemStatus | string;
     }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       return ordersService.createOrdemFull({ 
