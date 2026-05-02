@@ -2,34 +2,47 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useAuth } from "@/contexts/AuthContext";
 import { ordersService } from "@/services/orders";
+import type { Database } from "@/integrations/supabase/types";
 
+/** Valid statuses for an order in the Full flow. */
 export type OrdemStatus = "pdf_carregado" | "separando" | "aguardando_carregamento" | "carregando" | "enviado" | "rascunho" | "aguardando" | "em_separacao" | "separada" | "concluida" | "cancelada" | "pausado";
+
+/** Valid statuses for an individual item within an order. */
 export type ItemStatus = "pendente" | "parcial" | "completo" | "excesso";
 
-export interface OrdemFull {
-  id: string;
-  ordem_id: string;
-  numero: string;
-  frete_ml: string | null;
-  descricao: string | null;
-  status: OrdemStatus;
-  previsao_carregamento?: string | null;
-  company_id: string;
-  separado_em?: string | null;
-  separado_por?: string | null;
-  bipagem_state?: any;
-  created_at: string;
-  updated_at: string;
+/**
+ * State of a single product during the scanning (bipagem) process.
+ */
+export interface BipagemItemState {
+  productId: string;
+  name: string;
+  sku: string;
+  barcode: string | null;
+  image_url: string | null;
+  neededQty: number;
+  scannedQty: number;
+  status: ItemStatus;
+}
+
+/**
+ * Interface representing a Full Order.
+ * Directly mapped from the database with computed fields.
+ */
+export type OrdemFull = Database["public"]["Tables"]["full_orders"]["Row"] & {
+  bipagem_state?: BipagemItemState[] | null;
   total_itens?: number;
   total_produtos?: number;
   total_itens_separados?: number;
   total_produtos_separados?: number;
-  atribuido_para?: string | null;
   atribuido?: { full_name: string | null } | null;
   separado_por_profile?: { full_name: string | null } | null;
   prazo?: string | null;
-}
+  atribuido_para?: string | null;
+};
 
+/**
+ * Interface representing an item within a Full Order.
+ */
 export interface OrdemItem {
   id: string;
   ordem_id: string;
@@ -55,9 +68,12 @@ export interface OrdemItem {
     stock_full: number;
     gtin_cx?: string | null;
     box_quantity?: number | null;
-  };
+  } | null;
 }
 
+/**
+ * Hook to fetch all Full orders for the current company.
+ */
 export const useOrdensFull = () => {
   const companyId = useCompanyId();
   return useQuery({
@@ -67,6 +83,10 @@ export const useOrdensFull = () => {
   });
 };
 
+/**
+ * Hook to fetch a single Full order and its items.
+ * @param ordemId Unique ID of the order.
+ */
 export const useOrdemFull = (ordemId: string | null) => {
   const companyId = useCompanyId();
   return useQuery({
@@ -76,6 +96,9 @@ export const useOrdemFull = (ordemId: string | null) => {
   });
 };
 
+/**
+ * Hook to create a new Full order.
+ */
 export const useCreateOrdemFull = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
@@ -86,7 +109,12 @@ export const useCreateOrdemFull = () => {
       prazo?: string | null;
       atribuido_para?: string | null;
       enviarParaSeparacao?: boolean;
-      itens: { product_id: string; product?: any; quantity?: number; qtd_solicitada?: number }[];
+      itens: { 
+        product_id: string; 
+        product?: { name?: string; sku?: string; barcode?: string | null; image_url?: string | null }; 
+        quantity?: number; 
+        qtd_solicitada?: number 
+      }[];
       status?: OrdemStatus;
     }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
@@ -96,11 +124,14 @@ export const useCreateOrdemFull = () => {
   });
 };
 
+/**
+ * Hook to update the status of a Full order.
+ */
 export const useUpdateOrdemStatus = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, any> }) => {
+    mutationFn: ({ id, status, extra }: { id: string; status: OrdemStatus; extra?: Record<string, Json> }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       return ordersService.updateOrdemStatus(id, status, companyId, extra);
     },
@@ -111,6 +142,9 @@ export const useUpdateOrdemStatus = () => {
   });
 };
 
+/**
+ * Hook to update the separated quantity of an item.
+ */
 export const useUpdateItemQuantity = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
@@ -126,6 +160,9 @@ export const useUpdateItemQuantity = () => {
   });
 };
 
+/**
+ * Hook to delete an order.
+ */
 export const useDeleteOrdem = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
@@ -141,11 +178,14 @@ export const useDeleteOrdem = () => {
   });
 };
 
+/**
+ * Generic update for Full orders.
+ */
 export const useUpdateFullOrder = () => {
   const qc = useQueryClient();
   const companyId = useCompanyId();
   return useMutation({
-    mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: any }) => {
+    mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: Json }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
       return ordersService.updateOrdemStatus(id, status as OrdemStatus, companyId, rest);
     },
