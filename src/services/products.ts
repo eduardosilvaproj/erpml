@@ -416,7 +416,7 @@ export const productsService = {
     return data;
   },
 
-  async createSupplier(data: any, companyId: string | null) {
+  async createSupplier(data: SupplierFormData, companyId: string | null) {
     const { data: supplier, error } = await supabase
       .from("suppliers")
       .insert({ ...data, company_id: companyId })
