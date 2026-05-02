@@ -1144,7 +1144,7 @@ export const OrdensFullTab = () => {
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-muted-foreground">{o.numero}</span>
-                        <Badge variant="outline" className={ordemStatusBadge(o.status).cls}>{ordemStatusBadge(o.status).label}</Badge>
+                        <Badge variant="outline" className={ordemStatusBadge(o.status as any).cls}>{ordemStatusBadge(o.status as any).label}</Badge>
                       </div>
                       <p className="font-medium text-sm line-clamp-2">{o.descricao || "Sem descrição"}</p>
                       <div className="text-xs text-muted-foreground">
@@ -1257,7 +1257,7 @@ export const OrdensFullTab = () => {
                     // Corrigido: Agora permite executar se for manager/owner ou se não estiver atribuído
                     const mostrarExecutar = !['enviado', 'cancelada', 'concluida', 'separada', 'aguardando_carregamento'].includes(o.status);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null || canManageOrders) && mostrarExecutar;
-                    const sb = ordemStatusBadge(o.status);
+                    const sb = ordemStatusBadge(o.status as any);
                     
                     // Bug 1: Botão de exclusão visível se total_itens for 0
                     const isZerada = o.total_itens === 0;
