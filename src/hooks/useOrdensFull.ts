@@ -38,6 +38,7 @@ export type OrdemFull = Database["public"]["Tables"]["full_orders"]["Row"] & {
   separado_por_profile?: { full_name: string | null } | null;
   prazo?: string | null;
   atribuido_para?: string | null;
+  numero: string;
 };
 
 /**
