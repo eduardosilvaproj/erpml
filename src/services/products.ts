@@ -3,6 +3,26 @@ import * as Sentry from "@sentry/react";
 import posthog from "posthog-js";
 import type { Product, ProductFormData } from "@/hooks/useProductData";
 
+export interface ProductFilters {
+  search?: string;
+  category_id?: string;
+  supplier_id?: string;
+  status?: "active" | "inactive" | "all";
+  page?: number;
+  pageSize?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
+}
+
+export interface SupplierFormData {
+  name: string;
+  cnpj?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}
+
 export const productsService = {
   /**
    * Busca produtos do banco de dados aplicando filtros, paginação e ordenação.
@@ -12,7 +32,7 @@ export const productsService = {
    * @param companyId - ID da empresa proprietária dos dados.
    * @returns {Promise<{products: Product[], total: number}>} Produtos encontrados e total de registros.
    */
-  async fetchProducts(filters: any, companyId: string | null) {
+  async fetchProducts(filters: ProductFilters | undefined, companyId: string | null) {
     let query;
     
     if (filters?.search && companyId) {
