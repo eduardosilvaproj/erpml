@@ -9,6 +9,9 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   test: {
     globals: true,
     environment: "jsdom",
