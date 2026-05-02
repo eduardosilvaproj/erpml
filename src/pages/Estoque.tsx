@@ -30,41 +30,68 @@ const Estoque = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
-  const [page, setPage] = useState(1);
   const [onlyDivergent, setOnlyDivergent] = useState(false);
   const [validationSearch, setValidationSearch] = useState("");
   const [adjustDialog, setAdjustDialog] = useState<{ id: string; name: string; stock_physical: number; stock_full: number; gtin_cx?: string | null; box_quantity?: number | null } | null>(null);
   const [adjustPhysical, setAdjustPhysical] = useState("");
   const [adjustFull, setAdjustFull] = useState("");
 
-  // Box mode for adjust dialog
+  // Mode toggle
   const [adjustBoxMode, setAdjustBoxMode] = useState(false);
   const [adjustBoxGtinCx, setAdjustBoxGtinCx] = useState("");
   const [adjustBoxUnitsPerBox, setAdjustBoxUnitsPerBox] = useState("");
   const [adjustBoxCount, setAdjustBoxCount] = useState("");
   const [adjustBoxTarget, setAdjustBoxTarget] = useState<"physical" | "full">("physical");
 
-  const { data, isLoading, refetch } = useProducts({
+  const filters = useMemo(() => ({
     search: search || undefined,
     category_id: categoryFilter || undefined,
-    page,
-    pageSize: 50,
     sortBy: "name",
-    sortOrder: "asc",
-  });
+    sortOrder: "asc" as const,
+  }), [search, categoryFilter]);
+
+  const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductsInfinite(filters);
   const { data: categories } = useCategories();
 
-  const products = data?.products || [];
+  const allProducts = useMemo(() => data?.pages.flatMap(page => page.products) || [], [data]);
 
-  const totalPhysical = products.reduce((s, p) => s + p.stock_physical, 0);
-  const totalFull = products.reduce((s, p) => s + p.stock_full, 0);
-  const lowStock = products.filter((p) => (p.stock_physical + p.stock_full) <= p.min_stock && p.min_stock > 0);
+  const filtered = useMemo(() => {
+    let result = allProducts;
+    if (stockFilter === "low") {
+      result = result.filter((p) => (p.stock_physical + p.stock_full) <= p.min_stock && p.min_stock > 0);
+    } else if (stockFilter === "zero") {
+      result = result.filter((p) => p.stock_physical + p.stock_full === 0);
+    }
+    return result;
+  }, [allProducts, stockFilter]);
 
-  const filtered = stockFilter === "low"
-    ? products.filter((p) => (p.stock_physical + p.stock_full) <= p.min_stock && p.min_stock > 0)
-    : stockFilter === "zero"
-      ? products.filter((p) => p.stock_physical + p.stock_full === 0)
-      : products;
+  const totalPhysical = useMemo(() => allProducts.reduce((s, p) => s + p.stock_physical, 0), [allProducts]);
+  const totalFull = useMemo(() => allProducts.reduce((s, p) => s + p.stock_full, 0), [allProducts]);
+  const lowStockCount = useMemo(() => allProducts.filter((p) => (p.stock_physical + p.stock_full) <= p.min_stock && p.min_stock > 0).length, [allProducts]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 64, // row height
+    overscan: 10,
+  });
+
+  useEffect(() => {
+    const scrollElement = parentRef.current;
+    if (!scrollElement) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      if (scrollHeight - scrollTop <= clientHeight * 1.5 && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    };
+
+    scrollElement.addEventListener("scroll", handleScroll);
+    return () => scrollElement.removeEventListener("scroll", handleScroll);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const openAdjustDialog = (p: typeof products[0]) => {
     setAdjustDialog({
