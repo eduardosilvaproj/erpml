@@ -610,7 +610,7 @@ function ReputacaoTab() {
   const delayRate = totalSales > 0 ? (totalDelays / totalSales) * 100 : 0;
   const complaintRate = totalSales > 0 ? (totalComplaints / totalSales) * 100 : 0;
 
-  let reputation: { label: string; color: string; bg: string; icon: typeof ShieldCheck } =
+  const reputation: { label: string; color: string; bg: string; icon: typeof ShieldCheck } =
     delayRate < 3 && complaintRate < 1
       ? { label: "Verde (Boa)", color: "text-green-600", bg: "bg-green-100 dark:bg-green-950/40", icon: ShieldCheck }
       : delayRate < 6 && complaintRate < 3

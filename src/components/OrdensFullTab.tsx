@@ -358,7 +358,7 @@ export const OrdensFullTab = () => {
       
       const altProductIds = altGtins?.map(ag => ag.product_id) || [];
       
-      let orConditions = [
+      const orConditions = [
         `ean.in.(${eans.join(",")})`,
         `barcode.in.(${eans.join(",")})`,
         `gtin_cx.in.(${eans.join(",")})`

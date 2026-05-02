@@ -1017,7 +1017,7 @@ Deno.serve(async (req) => {
 
         // Fetch orders from ML API (last 90 days, up to 200)
         const maxOrders = parsePositiveInt(params.limit, 200, 500);
-        let allOrders: any[] = [];
+        const allOrders: any[] = [];
         let orderOffset = 0;
         let totalOrders = 0;
 
@@ -1179,7 +1179,7 @@ Deno.serve(async (req) => {
 
         // Fetch recent questions from ML
         const maxQuestions = parsePositiveInt(params.limit, 100, 500);
-        let allQuestions: any[] = [];
+        const allQuestions: any[] = [];
         let qOffset = 0;
         let totalQuestions = 0;
 

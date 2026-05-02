@@ -61,7 +61,7 @@ export async function buscarPorCodigo(codigo: string, companyId?: string): Promi
   }
 
   // 4. Último caso: SKUs de fornecedores (apenas se configurado)
-  let querySupplier = supabase
+  const querySupplier = supabase
     .from('product_supplier_skus')
     .select('*, product:products(*)')
     .eq('supplier_sku', trimmed);
