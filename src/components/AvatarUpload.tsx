@@ -93,8 +93,9 @@ export function AvatarUpload({ size = "lg", editable = true }: AvatarUploadProps
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["company-members"] });
       toast.success("Avatar atualizado!");
-    } catch (error: any) {
-      toast.error(error.message || "Erro ao enviar avatar");
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || "Erro ao enviar avatar");
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";

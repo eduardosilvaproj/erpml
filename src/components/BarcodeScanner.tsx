@@ -11,7 +11,7 @@ export function BarcodeScanner({ onScan, disabled }: BarcodeScannerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<import("html5-qrcode").Html5Qrcode | null>(null);
   const lastCodeRef = useRef<string>("");
   const lastTimeRef = useRef<number>(0);
   const reactId = useId();
@@ -21,10 +21,14 @@ export function BarcodeScanner({ onScan, disabled }: BarcodeScannerProps) {
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
-      } catch {}
+      } catch {
+        // Ignored
+      }
       try {
         scannerRef.current.clear();
-      } catch {}
+      } catch {
+        // Ignored
+      }
       scannerRef.current = null;
     }
   }, []);
@@ -73,9 +77,9 @@ export function BarcodeScanner({ onScan, disabled }: BarcodeScannerProps) {
         );
 
         setIsStarting(false);
-      } catch (err: any) {
-        if (cancelled) return;
-        const msg = err?.message || String(err);
+      } catch (err) {
+        const error = err as Error;
+        const msg = error?.message || String(error);
         if (msg.includes("NotAllowedError") || msg.includes("Permission")) {
           setError("Permissão de câmera negada. Permita o acesso nas configurações do navegador.");
         } else if (msg.includes("NotFoundError") || msg.includes("no camera")) {
