@@ -2807,6 +2807,7 @@ export type Database = {
           unique_products: number
         }[]
       }
+      get_my_company_id: { Args: never; Returns: string }
       get_user_company_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -2815,6 +2816,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_master: { Args: never; Returns: boolean }
       is_company_member: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
@@ -2823,6 +2825,7 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_member_of: { Args: { target_company_id: string }; Returns: boolean }
       marcar_ordem_enviada: { Args: { _ordem_id: string }; Returns: undefined }
       marcar_ordem_separada: { Args: { _ordem_id: string }; Returns: undefined }
       reset_company_data: { Args: { p_company_id: string }; Returns: undefined }
