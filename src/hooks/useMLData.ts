@@ -151,7 +151,7 @@ export function useMLItems(enabled: boolean) {
   return useQuery({
     queryKey: ["ml-items"],
     enabled,
-    queryFn: () => callML<{ total: number; results: any[] }>("get-items", { limit: 50, offset: 0 }),
+    queryFn: () => callML<{ total: number; items: any[] }>("get-items", { limit: 50, offset: 0 }),
     retry: false,
   });
 }
