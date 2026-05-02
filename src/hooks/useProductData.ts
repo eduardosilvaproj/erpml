@@ -43,6 +43,7 @@ export type ProductFormData = {
   sku_ml?: string;
   id_ml?: string;
   min_stock?: number;
+  stock_physical?: number;
   supplier_ids: string[];
   image_url?: string;
   gtin_cx?: string;
