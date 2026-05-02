@@ -122,71 +122,82 @@ export const productsService = {
    * @returns {Promise<Product>} Produto criado.
    */
   async createProduct(data: any, companyId: string | null) {
-    // Validação no servidor via Edge Function
-    const { data: validation, error: validationError } = await supabase.functions.invoke("validate-product", {
-      body: { 
-        name: data.name,
-        description: data.description,
-        price: data.price,
-        stock_physical: data.stock_physical || 0,
-        company_id: companyId
+    try {
+      // Validação no servidor via Edge Function
+      const { data: validation, error: validationError } = await supabase.functions.invoke("validate-product", {
+        body: { 
+          name: data.name,
+          description: data.description,
+          price: data.price,
+          stock_physical: data.stock_physical || 0,
+          company_id: companyId
+        }
+      });
+
+      if (validationError || !validation.valid) {
+        throw new Error(validation?.error || validationError?.message || "Erro na validação do produto");
       }
-    });
 
-    if (validationError || !validation.valid) {
-      throw new Error(validation?.error || validationError?.message || "Erro na validação do produto");
-    }
+      const { supplier_ids = [], supplier_skus = [], ...productData } = data;
+      const insertData = {
+        ...productData,
+        name: validation.sanitized.name,
+        description: validation.sanitized.description,
+        barcode: productData.barcode || null,
+        ean: productData.ean || productData.barcode || null,
+        category_id: productData.category_id || null,
+        weight: productData.weight ?? null,
+        width: productData.width ?? null,
+        height: productData.height ?? null,
+        depth: productData.depth ?? null,
+        sku_ml: productData.sku_ml || null,
+        id_ml: productData.id_ml || null,
+        min_stock: productData.min_stock ?? 0,
+        company_id: companyId,
+        image_url: productData.image_url || null,
+        gtin_cx: productData.gtin_cx || null,
+        box_quantity: productData.box_quantity ?? null,
+      };
 
-    const { supplier_ids = [], supplier_skus = [], ...productData } = data;
-    const insertData = {
-      ...productData,
-      name: validation.sanitized.name,
-      description: validation.sanitized.description,
-      barcode: productData.barcode || null,
-      ean: productData.ean || productData.barcode || null,
-      category_id: productData.category_id || null,
-      weight: productData.weight ?? null,
-      width: productData.width ?? null,
-      height: productData.height ?? null,
-      depth: productData.depth ?? null,
-      sku_ml: productData.sku_ml || null,
-      id_ml: productData.id_ml || null,
-      min_stock: productData.min_stock ?? 0,
-      company_id: companyId,
-      image_url: productData.image_url || null,
-      gtin_cx: productData.gtin_cx || null,
-      box_quantity: productData.box_quantity ?? null,
-    };
+      const { data: product, error } = await supabase
+        .from("products")
+        .insert({ ...insertData, company_id: companyId })
+        .select()
+        .maybeSingle();
+      if (error) throw error;
 
-    const { data: product, error } = await supabase
-      .from("products")
-      .insert({ ...insertData, company_id: companyId })
-      .select()
-      .maybeSingle();
-    if (error) throw error;
+      if (supplier_ids.length > 0) {
+        const supplierLinks = supplier_ids.map((sid: string, i: number) => ({
+          product_id: product.id,
+          supplier_id: sid,
+          cost: data.cost || 0,
+          is_primary: i === 0,
+        }));
+        const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
+        if (linkError) throw linkError;
+      }
+      
+      if (supplier_skus && supplier_skus.length > 0) {
+        const skusToInsert = supplier_skus.map((s: any) => ({
+          product_id: product.id,
+          supplier_name: s.supplier_name,
+          supplier_sku: s.supplier_sku
+        }));
+        const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
+        if (skuError) throw skuError;
+      }
 
-    if (supplier_ids.length > 0) {
-      const supplierLinks = supplier_ids.map((sid: string, i: number) => ({
+      posthog.capture('product_created', {
         product_id: product.id,
-        supplier_id: sid,
-        cost: data.cost || 0,
-        is_primary: i === 0,
-      }));
-      const { error: linkError } = await supabase.from("product_suppliers").insert(supplierLinks);
-      if (linkError) throw linkError;
-    }
-    
-    if (supplier_skus && supplier_skus.length > 0) {
-      const skusToInsert = supplier_skus.map((s: any) => ({
-        product_id: product.id,
-        supplier_name: s.supplier_name,
-        supplier_sku: s.supplier_sku
-      }));
-      const { error: skuError } = await supabase.from("product_supplier_skus").insert(skusToInsert.map(s => ({ ...s, company_id: companyId })));
-      if (skuError) throw skuError;
-    }
+        category_id: product.category_id,
+        price: product.price
+      });
 
-    return product;
+      return product;
+    } catch (err) {
+      Sentry.captureException(err);
+      throw err;
+    }
   },
 
   /**
