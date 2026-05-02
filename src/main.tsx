@@ -1,6 +1,21 @@
 import { createRoot } from "react-dom/client";
+import * as Sentry from "@sentry/react";
+import posthog from "posthog-js";
 import App from "./App.tsx";
 import "./index.css";
+
+Sentry.init({
+  dsn: import.meta.env.VITE_SENTRY_DSN,
+  environment: import.meta.env.MODE,
+  tracesSampleRate: 1.0,
+});
+
+if (import.meta.env.VITE_POSTHOG_KEY) {
+  posthog.init(import.meta.env.VITE_POSTHOG_KEY, {
+    api_host: import.meta.env.VITE_POSTHOG_HOST || "https://app.posthog.com",
+    autocapture: true,
+  });
+}
 
 // App version — updated at build time via Vite's define
 const APP_VERSION = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "dev";
