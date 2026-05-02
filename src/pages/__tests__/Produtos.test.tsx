@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import Produtos from "../Produtos";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
@@ -39,14 +39,18 @@ const queryClient = new QueryClient({
   },
 });
 
-const renderPage = () => {
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Produtos />
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
+const renderPage = async () => {
+  let result: any;
+  await act(async () => {
+    result = render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Produtos />
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  });
+  return result;
 };
 
 describe("Produtos Page", () => {
@@ -70,7 +74,7 @@ describe("Produtos Page", () => {
       isFetchingNextPage: false,
     });
 
-    renderPage();
+    await renderPage();
 
     expect(screen.getByText("Produto 1")).toBeInTheDocument();
     expect(screen.getByText("SKU1")).toBeInTheDocument();
@@ -85,7 +89,7 @@ describe("Produtos Page", () => {
       isFetchingNextPage: false,
     });
 
-    renderPage();
+    await renderPage();
 
     const searchInput = screen.getByPlaceholderText(/Buscar por nome ou código/i);
     fireEvent.change(searchInput, { target: { value: "test query" } });
