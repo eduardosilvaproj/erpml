@@ -192,7 +192,7 @@ export const useUpdateFullOrder = () => {
   return useMutation({
     mutationFn: ({ id, status, ...rest }: { id: string; status: string; [key: string]: Json }) => {
       if (!companyId) throw new Error("Empresa não encontrada");
-      return ordersService.updateOrdemStatus(id, status, companyId, rest);
+      return ordersService.updateOrdemStatus(id, status as OrdemStatus, companyId, rest);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["full-orders", companyId] });
