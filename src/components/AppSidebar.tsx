@@ -21,8 +21,8 @@ import { VersionBadge } from "@/components/VersionBadge";
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
 export { menuGroups } from "@/lib/menu-data";
 
-interface SubItem { label: string; url: string; icon: any; tooltip: string; }
-interface NavGroup { label: string; icon: any; color: string; tooltip: string; subItems: SubItem[]; }
+interface SubItem { label: string; url: string; icon: React.ElementType; tooltip: string; }
+interface NavGroup { label: string; icon: React.ElementType; color: string; tooltip: string; subItems: SubItem[]; }
 
 const groups: NavGroup[] = [
   {
@@ -385,7 +385,7 @@ function SidebarContent({
 
               const { error } = await supabase
                 .from("company_members")
-                .update({ role: "admin_master" as any })
+                .update({ role: "admin_master" })
                 .eq("user_id", user.id)
                 .eq("company_id", membership.company_id);
 

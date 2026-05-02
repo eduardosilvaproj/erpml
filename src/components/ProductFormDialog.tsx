@@ -184,7 +184,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     if (data && data.length > 0) return true;
 
     // Also check alternative GTINs
-    let altQuery = supabase
+    const altQuery = supabase
       .from("product_alternative_gtins")
       .select("id")
       .eq("gtin", ean);

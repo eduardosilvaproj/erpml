@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Package, Boxes, UsersRound, Users, Warehouse, CameraIcon,
   ScanBarcode, ClipboardList, ArrowRightLeft, Monitor, Megaphone,
-  ShoppingBag, Store, BarChart3, TrendingUp, Search
+  ShoppingBag, BarChart3, TrendingUp, Search
 } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty,
@@ -13,7 +13,7 @@ import {
 interface SearchItem {
   label: string;
   url: string;
-  icon: any;
+  icon: React.ElementType;
   category: string;
   keywords?: string[];
 }
@@ -43,7 +43,7 @@ const searchItems: SearchItem[] = [
 
 const quickAccess = searchItems.slice(0, 6);
 
-export function GlobalSearch() {
+export function GlobalSearch(): JSX.Element {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 

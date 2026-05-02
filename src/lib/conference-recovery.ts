@@ -62,7 +62,7 @@ export const buildConferenceItemIdentity = ({ productId, sku, barcode, name }: C
  * a partir de uma lista paginada.
  */
 export const fetchConferenceTotals = async (conferenceId: string, companyId?: string | null): Promise<ConferenceTotals> => {
-  let q = supabase.rpc("get_conference_totals" as any, { conf_id: conferenceId });
+  const q = supabase.rpc("get_conference_totals" as any, { conf_id: conferenceId });
   // RLS should handle it, but if explicit filter is needed:
   // if (companyId) q = q.eq("company_id", companyId); 
   // RPC calls usually don't support .eq unless they return a table.
