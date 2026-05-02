@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { OrdemFull, OrdemStatus, OrdemItem } from "@/hooks/useOrdensFull";
+import type { OrdemFull, OrdemStatus, OrdemItem, BipagemItemState } from "@/hooks/useOrdensFull";
 import { stockService } from "./stock";
 
 export const ordersService = {
@@ -14,13 +14,17 @@ export const ordersService = {
     
     if (error) throw error;
     
-    return (data || []).map((o: any) => ({
-      ...o,
-      numero: o.numero || o.frete_ml || o.ordem_id,
-      total_produtos: Array.isArray(o.bipagem_state) ? o.bipagem_state.length : 0,
-      total_itens: Array.isArray(o.bipagem_state) ? o.bipagem_state.reduce((s: number, i: any) => s + (i.neededQty || 0), 0) : 0,
-      total_itens_separados: Array.isArray(o.bipagem_state) ? o.bipagem_state.reduce((s: number, i: any) => s + (i.scannedQty || 0), 0) : 0,
-    })) as OrdemFull[];
+    return (data || []).map((o) => {
+      const bipagemState = Array.isArray(o.bipagem_state) ? (o.bipagem_state as unknown as BipagemItemState[]) : [];
+      return {
+        ...o,
+        bipagem_state: bipagemState,
+        numero: o.numero || o.frete_ml || o.ordem_id,
+        total_produtos: bipagemState.length,
+        total_itens: bipagemState.reduce((s: number, i) => s + (i.neededQty || 0), 0),
+        total_itens_separados: bipagemState.reduce((s: number, i) => s + (i.scannedQty || 0), 0),
+      } as OrdemFull;
+    });
   },
 
   async buscarOrdem(ordemId: string, companyId: string) {
@@ -38,7 +42,7 @@ export const ordersService = {
     if (error) throw error;
     if (!ordem) return null;
 
-    const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
+    const bipagemState = Array.isArray(ordem?.bipagem_state) ? (ordem.bipagem_state as unknown as BipagemItemState[]) : [];
     const itens = (ordem as any)?.full_order_items?.map((item: any) => {
       const product = item.product;
       const bState = bipagemState.find(b => b.productId === item.product_id);
@@ -68,15 +72,16 @@ export const ordersService = {
           gtin_cx: product.gtin_cx,
           box_quantity: product.box_quantity
         } : null
-      };
+      } as OrdemItem;
     }) || [];
 
     return { 
       ordem: {
         ...ordem,
+        bipagem_state: bipagemState,
         numero: ordem.numero || ordem.frete_ml || ordem.ordem_id,
       } as OrdemFull, 
-      itens: itens as OrdemItem[] 
+      itens
     };
   },
 
