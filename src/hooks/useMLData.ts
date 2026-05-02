@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Database } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 /**
  * Interface for Mercado Livre connection status.
@@ -50,7 +50,7 @@ interface FunctionErrorContext {
 }
 
 async function getFunctionErrorMessage(error: any) {
-  const context = error?.context;
+  const context = error?.context as FunctionErrorContext | undefined;
   if (context && typeof context.json === "function") {
     const payload = await context.json().catch(() => null);
     if (payload?.error) {
@@ -59,6 +59,48 @@ async function getFunctionErrorMessage(error: any) {
   }
 
   return error?.message || "Erro ao comunicar com a integração.";
+}
+
+/**
+ * Low-level utility to call the Mercado Livre Edge Function.
+ */
+export function useMLApi() {
+  const callML = async <T = unknown>(action: string, params?: unknown): Promise<T> => {
+    const { data, error } = await supabase.functions.invoke("ml-api", {
+      body: { action, params },
+    });
+
+    if (error) {
+      throw new Error(await getFunctionErrorMessage(error));
+    }
+
+    return data as T;
+  };
+
+  return { callML };
+}
+
+/**
+ * Hook to check current connection status with Mercado Livre.
+ */
+export function useMLConnection() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["ml-connection", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ml-api", {
+        body: { action: "connection-status" },
+      });
+
+      if (error) {
+        throw new Error(await getFunctionErrorMessage(error));
+      }
+
+      return (data as MLConnectionStatus | null) ?? null;
+    },
+  });
 }
 
 /**
@@ -101,25 +143,6 @@ export function useDisconnectML() {
 }
 
 /**
- * Low-level utility to call the Mercado Livre Edge Function.
- */
-export function useMLApi() {
-  const callML = async <T = unknown>(action: string, params?: unknown): Promise<T> => {
-    const { data, error } = await supabase.functions.invoke("ml-api", {
-      body: { action, params },
-    });
-
-    if (error) {
-      throw new Error(await getFunctionErrorMessage(error));
-    }
-
-    return data as T;
-  };
-
-  return { callML };
-}
-
-/**
  * Hook to fetch active items from Mercado Livre.
  */
 export function useMLItems(enabled: boolean) {
@@ -128,7 +151,7 @@ export function useMLItems(enabled: boolean) {
   return useQuery({
     queryKey: ["ml-items"],
     enabled,
-    queryFn: () => callML<{ total: number; results: string[] }>("get-items", { limit: 50, offset: 0 }),
+    queryFn: () => callML<{ total: number; results: any[] }>("get-items", { limit: 50, offset: 0 }),
     retry: false,
   });
 }
@@ -171,12 +194,7 @@ export function useSyncMLOrders() {
 
   return useMutation({
     mutationFn: async () => {
-      return callML<{
-        total_fetched: number;
-        inserted: number;
-        updated: number;
-        total_in_ml: number;
-      }>("sync-orders", { limit: 200 });
+      return callML<SyncOrdersResult>("sync-orders", { limit: 200 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
@@ -271,13 +289,7 @@ export function useSyncMLCatalog() {
 
   return useMutation({
     mutationFn: async () => {
-      return callML<{
-        linked_products: number;
-        matched_products: number;
-        removed_links: number;
-        total_items: number;
-        unmatched_items: number;
-      }>("sync-catalog");
+      return callML<SyncCatalogResult>("sync-catalog");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
@@ -288,26 +300,13 @@ export function useSyncMLCatalog() {
   });
 }
 
-export function useMLAuthUrl() {
-  const { user } = useAuth();
-  const { callML } = useMLApi();
-
-  return useQuery({
-    queryKey: ["ml-auth-url", user?.id],
-    enabled: !!user,
-    queryFn: () => callML("get-auth-url"),
-    staleTime: Infinity,
-    retry: 1,
-  });
-}
-
 export function useMLWebhookStatus(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-webhook-status"],
     enabled,
-    queryFn: () => callML("webhook-status"),
+    queryFn: () => callML<{ is_registered: boolean; webhook_url?: string }>("webhook-status"),
     retry: false,
   });
 }
@@ -353,7 +352,7 @@ export function useMLQuestions() {
         .order("question_date", { ascending: false })
         .limit(200);
       if (error) throw error;
-      return data;
+      return data as MLQuestion[];
     },
   });
 }
