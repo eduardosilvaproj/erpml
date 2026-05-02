@@ -1257,7 +1257,7 @@ export const OrdensFullTab = () => {
                     // Corrigido: Agora permite executar se for manager/owner ou se não estiver atribuído
                     const mostrarExecutar = !['enviado', 'cancelada', 'concluida', 'separada', 'aguardando_carregamento'].includes(o.status);
                     const podeExecutar = (o.atribuido_para === user?.id || o.atribuido_para === null || canManageOrders) && mostrarExecutar;
-                    const sb = ordemStatusBadge(o.status);
+                    const sb = ordemStatusBadge(o.status as any);
                     
                     // Bug 1: Botão de exclusão visível se total_itens for 0
                     const isZerada = o.total_itens === 0;
