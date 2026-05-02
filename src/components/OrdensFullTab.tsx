@@ -1144,7 +1144,7 @@ export const OrdensFullTab = () => {
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-xs text-muted-foreground">{o.numero}</span>
-                        <Badge variant="outline" className={ordemStatusBadge(o.status).cls}>{ordemStatusBadge(o.status).label}</Badge>
+                        <Badge variant="outline" className={ordemStatusBadge(o.status as any).cls}>{ordemStatusBadge(o.status as any).label}</Badge>
                       </div>
                       <p className="font-medium text-sm line-clamp-2">{o.descricao || "Sem descrição"}</p>
                       <div className="text-xs text-muted-foreground">
