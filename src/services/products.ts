@@ -72,11 +72,7 @@ export const productsService = {
     if (error) throw error;
 
     let filtered = data as unknown as Product[];
-    if (filters?.supplier_id) {
-      filtered = filtered.filter((p) =>
-        p.product_suppliers?.some((ps) => ps.supplier_id === filters.supplier_id)
-      );
-    }
+    
     if (filters?.needsCorrection === "no_supplier") {
       filtered = filtered.filter((p) => !p.product_supplier_skus || p.product_supplier_skus.length === 0);
     }
