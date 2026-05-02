@@ -463,7 +463,7 @@ export default function DuplicadorAnuncios() {
       };
 
       console.log("[Duplicador] Publishing payload:", JSON.stringify(payload, null, 2));
-      const result = await callML("duplicate-item", payload);
+      const result = await callML<{ id: string; permalink?: string }>("duplicate-item", payload);
       console.log("[Duplicador] Publish result:", result);
 
       setPublishResult({
