@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Package, Boxes, UsersRound, Users, Warehouse, CameraIcon,
   ScanBarcode, ClipboardList, ArrowRightLeft, Monitor, Megaphone,
-  ShoppingBag, BarChart3, TrendingUp, Search
+  BarChart3, TrendingUp, Search
 } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty,
