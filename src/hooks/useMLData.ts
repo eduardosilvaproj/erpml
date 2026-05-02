@@ -61,26 +61,25 @@ async function getFunctionErrorMessage(error: any) {
   return error?.message || "Erro ao comunicar com a integração.";
 }
 
-export function useMLConnection() {
+/**
+ * Hook to retrieve valid Mercado Livre auth URL for connection.
+ */
+export function useMLAuthUrl() {
   const { user } = useAuth();
+  const { callML } = useMLApi();
 
   return useQuery({
-    queryKey: ["ml-connection", user?.id],
+    queryKey: ["ml-auth-url", user?.id],
     enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke("ml-api", {
-        body: { action: "connection-status" },
-      });
-
-      if (error) {
-        throw new Error(await getFunctionErrorMessage(error));
-      }
-
-      return (data as MLConnectionStatus | null) ?? null;
-    },
+    queryFn: () => callML<{ url: string }>("get-auth-url"),
+    staleTime: Infinity,
+    retry: 1,
   });
 }
 
+/**
+ * Hook to disconnect Mercado Livre account.
+ */
 export function useDisconnectML() {
   const { callML } = useMLApi();
   const queryClient = useQueryClient();
@@ -101,8 +100,11 @@ export function useDisconnectML() {
   });
 }
 
+/**
+ * Low-level utility to call the Mercado Livre Edge Function.
+ */
 export function useMLApi() {
-  const callML = async <T = any>(action: string, params?: unknown): Promise<T> => {
+  const callML = async <T = unknown>(action: string, params?: unknown): Promise<T> => {
     const { data, error } = await supabase.functions.invoke("ml-api", {
       body: { action, params },
     });
@@ -117,24 +119,30 @@ export function useMLApi() {
   return { callML };
 }
 
+/**
+ * Hook to fetch active items from Mercado Livre.
+ */
 export function useMLItems(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-items"],
     enabled,
-    queryFn: () => callML("get-items", { limit: 50, offset: 0 }),
+    queryFn: () => callML<{ total: number; results: string[] }>("get-items", { limit: 50, offset: 0 }),
     retry: false,
   });
 }
 
+/**
+ * Hook to fetch orders from Mercado Livre.
+ */
 export function useMLOrders(enabled: boolean) {
   const { callML } = useMLApi();
 
   return useQuery({
     queryKey: ["ml-orders"],
     enabled,
-    queryFn: () => callML("get-orders", { limit: 20, offset: 0 }),
+    queryFn: () => callML<{ paging: { total: number }; results: unknown[] }>("get-orders", { limit: 20, offset: 0 }),
     retry: false,
   });
 }
