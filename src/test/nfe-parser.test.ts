@@ -131,8 +131,14 @@ describe("NF-e XML Parser", () => {
 describe("Product Matching", () => {
   const dbProducts = [
     { id: "1", name: "Camiseta Algodão Branca M", barcode: "7891234567890", sku: "SKU-001" },
-    { id: "2", name: "Calça Jeans Azul", barcode: "7891234567891", sku: "PROD002" },
-    { id: "3", name: "Tênis Esportivo", barcode: "7891234567892", sku: "SKU-003" },
+    { id: "2", name: "Calça Jeans Azul", barcode: "7891234567891", sku: "PROD002", gtin_cx: "7891234567000" },
+    {
+      id: "3",
+      name: "Tênis Esportivo",
+      barcode: "7891234567892",
+      sku: "SKU-003",
+      product_gtins: [{ gtin: "7891234567555", tipo: "pacote", box_quantity: 6 }],
+    },
   ];
 
   it("matches by barcode (exact)", () => {
@@ -143,29 +149,35 @@ describe("Product Matching", () => {
     expect(results[0].confidence).toBe(100);
   });
 
-  it("matches by SKU (exact)", () => {
-    const xmlProducts = [{ code: "PROD002", ean: "", description: "Qualquer", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
+  it("matches by gtin_cx when the unit barcode is different", () => {
+    const xmlProducts = [{ code: "PROD002", ean: "7891234567000", description: "Qualquer", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
     const results = matchProducts(xmlProducts, dbProducts);
     expect(results[0].matchType).toBe("exact");
     expect(results[0].matchedProductId).toBe("2");
   });
 
-  it("fuzzy matches by description", () => {
-    const xmlProducts = [{ code: "X", ean: "", description: "Calça Jeans Azul 42", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
+  it("matches by alternate GTIN from product_gtins", () => {
+    const xmlProducts = [{ code: "X", ean: "7891234567555", description: "Tênis pacote", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
     const results = matchProducts(xmlProducts, dbProducts);
-    expect(results[0].matchType).toBe("fuzzy");
-    expect(results[0].matchedProductId).toBe("2");
-    expect(results[0].confidence).toBeGreaterThanOrEqual(60);
+    expect(results[0].matchType).toBe("exact");
+    expect(results[0].matchedProductId).toBe("3");
   });
 
-  it("returns none for unmatched products", () => {
-    const xmlProducts = [{ code: "X", ean: "", description: "Produto Completamente Diferente XYZ", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
+  it("returns none when only SKU matches but there is no EAN/GTIN match", () => {
+    const xmlProducts = [{ code: "PROD002", ean: "", description: "Qualquer", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
     const results = matchProducts(xmlProducts, dbProducts);
     expect(results[0].matchType).toBe("none");
     expect(results[0].matchedProductId).toBeNull();
   });
 
-  it("matches barcode and SKU even with formatting differences", () => {
+  it("returns none when only description is similar", () => {
+    const xmlProducts = [{ code: "X", ean: "", description: "Calça Jeans Azul 42", ncm: "", cfop: "", unit: "UN", quantity: 1, unitValue: 10, totalValue: 10 }];
+    const results = matchProducts(xmlProducts, dbProducts);
+    expect(results[0].matchType).toBe("none");
+    expect(results[0].matchedProductId).toBeNull();
+  });
+
+  it("matches barcodes even with formatting differences", () => {
     const formattedDbProducts = [
       { id: "10", name: "Kit Caneca", barcode: "7891234567890", sku: "SKU01" },
     ];

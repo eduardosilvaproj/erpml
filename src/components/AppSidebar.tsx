@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
-  LogOut, ShieldCheck, Crown, ChevronDown, Boxes, UsersRound,
+  LogOut, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
-  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft, Settings2,
+  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
   LockKeyhole, Import
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsAdmin, usePendingUsers, useHasAdminAccess } from "@/hooks/useAdminData";
-import { useIsAdminMaster } from "@/hooks/useAdminMaster";
+import { usePendingUsers, useHasAdminAccess } from "@/hooks/useAdminData";
 import { useAdminMasterDev } from "@/hooks/useAdminMasterDev";
 
 
@@ -359,40 +356,6 @@ function SidebarContent({
         </Tooltip>
         <div className="mt-1 text-center flex flex-col gap-2">
           <VersionBadge />
-          <button 
-            onClick={async () => {
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) return;
-              
-              const { data: membership } = await supabase
-                .from("company_members")
-                .select("company_id")
-                .eq("user_id", user.id)
-                .eq("is_active", true)
-                .maybeSingle();
-
-              if (!membership) {
-                toast.error("Vínculo com empresa não encontrado");
-                return;
-              }
-
-              const { error } = await supabase
-                .from("company_members")
-                .update({ role: "admin_master" })
-                .eq("user_id", user.id)
-                .eq("company_id", membership.company_id);
-
-              if (error) {
-                toast.error("Erro ao ativar Admin Master: " + error.message);
-              } else {
-                toast.success("Acesso Admin Master ativado!");
-                window.location.href = "/master-admin";
-              }
-            }}
-            className="text-[10px] text-muted-foreground/30 hover:text-primary transition-colors py-1"
-          >
-            Ativar Master (Dev)
-          </button>
         </div>
       </div>
     </>
