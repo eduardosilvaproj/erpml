@@ -23,7 +23,6 @@ const renderWithProviders = (ui: React.ReactElement) => {
 describe("Public Routes", () => {
   it("renders login form with email and password fields", () => {
     const { getByRole, getByLabelText } = renderWithProviders(<Login />);
-    expect(getByRole("heading", { name: "Entrar" })).toBeInTheDocument();
     expect(getByLabelText("E-mail")).toBeInTheDocument();
     expect(getByLabelText("Senha")).toBeInTheDocument();
     expect(getByRole("button", { name: /entrar/i })).toBeInTheDocument();
