@@ -1,0 +1,1 @@
+UPDATE public.products SET price = ROUND((cost * 1.5)::numeric, 2) WHERE price = 0 AND cost > 0;

@@ -1,0 +1,1 @@
+ALTER TABLE public.invoices ADD COLUMN IF NOT EXISTS supplier_id UUID REFERENCES public.suppliers(id);
