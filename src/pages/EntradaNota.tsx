@@ -85,7 +85,7 @@ const EntradaNota = () => {
     {
       currentStep, completedSteps, conferenceItems, batchNfes, batchConferenceMode, 
       currentBatchNfIdx, divergences, divergenceActions, adjustedItems, entryNotes, 
-      autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave
+      autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave, kitGroups: state.kitGroups
     },
     state
   );
