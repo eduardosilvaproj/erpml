@@ -100,7 +100,7 @@ const EntradaNota = () => {
     { 
       nfeData, matches, adjustedItems, autoUpdateStock, autoUpdateCost, 
       isBatchMode: batchNfes.length > 1, selectedBatchNfes: batchNfes.filter(n => n.selected), 
-      batchSelectedForConfirm 
+      batchSelectedForConfirm, kitGroups: state.kitGroups
     },
     setSaving, setDone, setBatchConfirmResult, persistence.clearPersistedState
   );
