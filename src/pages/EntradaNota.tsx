@@ -214,6 +214,7 @@ const EntradaNota = () => {
     setCurrentStep(1); setCompletedSteps(new Set()); setNfMode("sefaz"); setNfeData(null); setMatches([]); 
     setConferenceItems([]); setDivergences([]); setAdjustedItems([]); setDone(false); setSaving(false);
     setBatchNfes([]); setSefazEntries([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
+    state.setKitGroups([]);
     persistence.clearPersistedState();
   };
 
