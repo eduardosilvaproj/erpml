@@ -20,6 +20,7 @@ interface PersistenceInput {
   done: boolean;
   nfMode: "sefaz" | "xml";
   nfeChave: string;
+  kitGroups: KitGroup[];
 }
 
 interface Setters {
