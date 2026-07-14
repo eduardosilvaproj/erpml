@@ -98,6 +98,7 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       if (s.autoUpdateCost != null) setters.setAutoUpdateCost(s.autoUpdateCost);
       if (s.nfMode) setters.setNfMode(s.nfMode);
       if (s.nfeChave) setters.setNfeChave(s.nfeChave);
+      if (s.kitGroups) setters.setKitGroups(s.kitGroups);
       toast({ title: "Progresso restaurado!", description: "Continuando de onde você parou." });
     } catch {}
     setShowRestoreDialog(false);
