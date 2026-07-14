@@ -24,11 +24,11 @@ export const useEntradaNotaConfirm = (
   setBatchConfirmResult: (v: any) => void,
   clearPersistedState: () => void
 ) => {
-  const autoCreateProductFromXml = async (xmlProduct: NFeProduct): Promise<string | null> => {
+  const autoCreateProductFromXml = async (xmlProduct: NFeProduct, skipStock: boolean = false): Promise<string | null> => {
     if (!companyId) throw new Error("Empresa não identificada");
     const ean = (xmlProduct.ean || "").trim();
     const sku = (xmlProduct.code || `NF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`).trim();
-    const qty = Math.floor(xmlProduct.quantity);
+    const qty = skipStock ? 0 : Math.floor(xmlProduct.quantity);
 
     if (ean) {
       const existing = await productsService.findProductByEanOrSku({ ean, companyId });
