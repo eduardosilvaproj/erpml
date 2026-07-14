@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type WizardStep, type ConferenceItem, type BatchNfe, type SefazEntry } from "../types";
+import { type WizardStep, type ConferenceItem, type BatchNfe, type SefazEntry, type KitGroup } from "../types";
 import { type NFeData, type MatchResult } from "@/lib/nfe-parser";
 
 export const useEntradaNotaState = () => {
