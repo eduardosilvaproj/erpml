@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { productsService } from "@/services/products";
 import { type NFeProduct, type MatchResult } from "@/lib/nfe-parser";
-import { type BatchNfe } from "../types";
+import { type BatchNfe, type KitGroup } from "../types";
 
 export const useEntradaNotaConfirm = (
   companyId: string | null,
@@ -17,6 +17,7 @@ export const useEntradaNotaConfirm = (
     isBatchMode: boolean;
     selectedBatchNfes: BatchNfe[];
     batchSelectedForConfirm: Set<string>;
+    kitGroups: KitGroup[];
   },
   setSaving: (v: boolean) => void,
   setDone: (v: boolean) => void,
