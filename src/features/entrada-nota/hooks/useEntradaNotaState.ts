@@ -100,6 +100,7 @@ export const useEntradaNotaState = () => {
     autoUpdateStock, setAutoUpdateStock,
     autoUpdateCost, setAutoUpdateCost,
     batchSelectedForConfirm, setBatchSelectedForConfirm,
-    batchConfirmResult, setBatchConfirmResult
+    batchConfirmResult, setBatchConfirmResult,
+    kitGroups, setKitGroups
   };
 };
