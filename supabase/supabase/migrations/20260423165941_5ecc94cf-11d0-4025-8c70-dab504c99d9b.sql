@@ -1,0 +1,1 @@
+ALTER TABLE public.full_orders ADD COLUMN IF NOT EXISTS frete_ml text;

@@ -1,0 +1,1 @@
+ALTER TABLE public.ml_connections ADD CONSTRAINT ml_connections_user_id_unique UNIQUE (user_id);

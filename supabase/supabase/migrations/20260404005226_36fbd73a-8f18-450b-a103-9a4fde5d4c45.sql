@@ -1,0 +1,1 @@
+ALTER TABLE public.companies ADD COLUMN is_courtesy boolean NOT NULL DEFAULT false;

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_order_recordings_pedido_id ON public.order_recordings (pedido_id);

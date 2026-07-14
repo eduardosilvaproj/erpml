@@ -1,0 +1,2 @@
+ALTER TABLE public.product_alternative_gtins ADD COLUMN IF NOT EXISTS tipo TEXT NOT NULL DEFAULT 'generico';
+CREATE INDEX IF NOT EXISTS idx_product_alternative_gtins_gtin_company ON public.product_alternative_gtins(company_id, gtin);

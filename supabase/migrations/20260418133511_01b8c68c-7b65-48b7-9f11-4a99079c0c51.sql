@@ -1,0 +1,2 @@
+ALTER TABLE public.gravacoes_full DROP CONSTRAINT IF EXISTS gravacoes_full_tipo_check;
+ALTER TABLE public.gravacoes_full ADD CONSTRAINT gravacoes_full_tipo_check CHECK (tipo IN ('separacao', 'despacho', 'sem_ordem'));
