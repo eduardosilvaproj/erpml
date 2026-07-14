@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { type WizardStep, type ConferenceItem, type BatchNfe } from "../types";
+import { type WizardStep, type ConferenceItem, type BatchNfe, type KitGroup } from "../types";
 
 const STORAGE_KEY = "entrada_nota_wizard_state";
 
@@ -20,6 +20,7 @@ interface PersistenceInput {
   done: boolean;
   nfMode: "sefaz" | "xml";
   nfeChave: string;
+  kitGroups: KitGroup[];
 }
 
 interface Setters {
@@ -37,6 +38,7 @@ interface Setters {
   setAutoUpdateCost: (v: boolean) => void;
   setNfMode: (m: "sefaz" | "xml") => void;
   setNfeChave: (k: string) => void;
+  setKitGroups: (v: KitGroup[]) => void;
 }
 
 export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Setters) => {
@@ -58,8 +60,9 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
     state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes, 
     state.batchConferenceMode, state.currentBatchNfIdx, state.divergences, 
     state.divergenceActions, state.adjustedItems, state.entryNotes, 
-    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave
+    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave, state.kitGroups
   ]);
+
 
   useEffect(() => {
     if (hasRestoredState) return;
@@ -95,6 +98,7 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       if (s.autoUpdateCost != null) setters.setAutoUpdateCost(s.autoUpdateCost);
       if (s.nfMode) setters.setNfMode(s.nfMode);
       if (s.nfeChave) setters.setNfeChave(s.nfeChave);
+      if (s.kitGroups) setters.setKitGroups(s.kitGroups);
       toast({ title: "Progresso restaurado!", description: "Continuando de onde você parou." });
     } catch {}
     setShowRestoreDialog(false);

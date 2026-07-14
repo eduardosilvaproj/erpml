@@ -85,7 +85,7 @@ const EntradaNota = () => {
     {
       currentStep, completedSteps, conferenceItems, batchNfes, batchConferenceMode, 
       currentBatchNfIdx, divergences, divergenceActions, adjustedItems, entryNotes, 
-      autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave
+      autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave, kitGroups: state.kitGroups
     },
     state
   );
@@ -100,7 +100,7 @@ const EntradaNota = () => {
     { 
       nfeData, matches, adjustedItems, autoUpdateStock, autoUpdateCost, 
       isBatchMode: batchNfes.length > 1, selectedBatchNfes: batchNfes.filter(n => n.selected), 
-      batchSelectedForConfirm 
+      batchSelectedForConfirm, kitGroups: state.kitGroups
     },
     setSaving, setDone, setBatchConfirmResult, persistence.clearPersistedState
   );
@@ -214,6 +214,7 @@ const EntradaNota = () => {
     setCurrentStep(1); setCompletedSteps(new Set()); setNfMode("sefaz"); setNfeData(null); setMatches([]); 
     setConferenceItems([]); setDivergences([]); setAdjustedItems([]); setDone(false); setSaving(false);
     setBatchNfes([]); setSefazEntries([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
+    state.setKitGroups([]);
     persistence.clearPersistedState();
   };
 
@@ -389,6 +390,9 @@ const EntradaNota = () => {
             itemsToShow={itemsToShow} adjustedItems={adjustedItems} updateAdjustedQty={(idx, q) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, quantity: q } } : item))}
             updateAdjustedCost={(idx, c) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, unitValue: c, totalValue: c * item.xmlProduct.quantity } } : item))}
             removeAdjustedItem={(idx) => setAdjustedItems(prev => prev.filter((_, i) => i !== idx))} onOpenNewProduct={handleOpenNewProductDialog} entryNotes={entryNotes} setEntryNotes={setEntryNotes} setCurrentStep={setCurrentStep} goToStep={goToStep} formatCurrency={formatCurrency} hasMatchesOrBatch={matches.length > 0 || isBatchMode}
+            kitGroups={state.kitGroups}
+            onCreateKit={(kg) => state.setKitGroups(prev => [...prev, kg])}
+            onRemoveKitGroup={(id) => state.setKitGroups(prev => prev.filter(k => k.kitId !== id))}
           />
         )}
 

@@ -1,1 +1,2 @@
-404: Not Found
+const Dashboard = () => null;
+export default Dashboard;

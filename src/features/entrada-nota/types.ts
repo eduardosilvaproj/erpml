@@ -38,3 +38,13 @@ export interface SefazEntry {
   nfeData?: NFeData;
   matches?: MatchResult[];
 }
+
+export interface KitGroup {
+  kitId: string;
+  name: string;
+  sku: string;
+  itemIndices: number[];
+  quantity: number;
+  cost: number;
+  price?: number;
+}
