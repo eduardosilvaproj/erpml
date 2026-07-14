@@ -60,8 +60,9 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
     state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes, 
     state.batchConferenceMode, state.currentBatchNfIdx, state.divergences, 
     state.divergenceActions, state.adjustedItems, state.entryNotes, 
-    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave
+    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave, state.kitGroups
   ]);
+
 
   useEffect(() => {
     if (hasRestoredState) return;
