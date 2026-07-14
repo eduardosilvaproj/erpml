@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { type WizardStep, type ConferenceItem, type BatchNfe } from "../types";
+import { type WizardStep, type ConferenceItem, type BatchNfe, type KitGroup } from "../types";
 
 const STORAGE_KEY = "entrada_nota_wizard_state";
 
