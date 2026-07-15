@@ -91,10 +91,27 @@ serve(async (req: Request) => {
           : null;
         const valorTotal = orderData?.total_amount ?? null;
         const statusMap: Record<string, string> = {
-          opened: "pendente",
+          // abertos/pendentes
+          pending: "pendente_recebimento",
+          opened: "pendente_recebimento",
+          claim: "pendente_recebimento",
+          dispute: "pendente_recebimento",
+          recontact: "pendente_recebimento",
+          // envio/devolução
+          shipped: "em_transito",
+          return_in_transit: "em_transito",
+          return_delivered: "recebido",
+          // finalizados
+          delivered: "recebido",
+          received: "recebido",
           closed: "concluida",
+          cancelled: "cancelada",
+          failed: "cancelada",
+          return_to_buyer: "cancelada",
+          refunded: "reembolsada",
+          not_delivered: "nao_recebida",
         };
-        const returnStatus = statusMap[claim.status] ?? "pendente";
+        const returnStatus = statusMap[claim.status] ?? "pendente_recebimento";
 
         const payload: any = {
           company_id: companyId,
