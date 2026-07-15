@@ -2286,6 +2286,353 @@ export type Database = {
           },
         ]
       }
+      quarantine_stock: {
+        Row: {
+          company_id: string
+          condition: Database["public"]["Enums"]["item_condition"] | null
+          created_at: string
+          id: string
+          notes: string | null
+          product_id: string | null
+          quantity: number
+          reason: string | null
+          released_at: string | null
+          released_by: string | null
+          released_to: string | null
+          return_id: string | null
+          return_item_id: string | null
+          status: Database["public"]["Enums"]["quarantine_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          condition?: Database["public"]["Enums"]["item_condition"] | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          released_to?: string | null
+          return_id?: string | null
+          return_item_id?: string | null
+          status?: Database["public"]["Enums"]["quarantine_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          condition?: Database["public"]["Enums"]["item_condition"] | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          quantity?: number
+          reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          released_to?: string | null
+          return_id?: string | null
+          return_item_id?: string | null
+          status?: Database["public"]["Enums"]["quarantine_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarantine_stock_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarantine_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarantine_stock_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarantine_stock_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarantine_stock_return_item_id_fkey"
+            columns: ["return_item_id"]
+            isOneToOne: false
+            referencedRelation: "return_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_actions: {
+        Row: {
+          action: string
+          company_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          return_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          company_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          return_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          company_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          return_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_actions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_actions_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_evidence: {
+        Row: {
+          bucket: string
+          caption: string | null
+          company_id: string
+          created_at: string
+          id: string
+          kind: string
+          return_id: string
+          return_item_id: string | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          bucket?: string
+          caption?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          return_id: string
+          return_item_id?: string | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          bucket?: string
+          caption?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          return_id?: string
+          return_item_id?: string | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_evidence_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_evidence_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_evidence_return_item_id_fkey"
+            columns: ["return_item_id"]
+            isOneToOne: false
+            referencedRelation: "return_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      return_items: {
+        Row: {
+          company_id: string
+          condition: Database["public"]["Enums"]["item_condition"] | null
+          created_at: string
+          decision: string | null
+          ean: string | null
+          expected_quantity: number
+          id: string
+          nome_produto: string | null
+          notes: string | null
+          product_id: string | null
+          received_quantity: number
+          return_id: string
+          sku: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          condition?: Database["public"]["Enums"]["item_condition"] | null
+          created_at?: string
+          decision?: string | null
+          ean?: string | null
+          expected_quantity?: number
+          id?: string
+          nome_produto?: string | null
+          notes?: string | null
+          product_id?: string | null
+          received_quantity?: number
+          return_id: string
+          sku?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          condition?: Database["public"]["Enums"]["item_condition"] | null
+          created_at?: string
+          decision?: string | null
+          ean?: string | null
+          expected_quantity?: number
+          id?: string
+          nome_produto?: string | null
+          notes?: string | null
+          product_id?: string | null
+          received_quantity?: number
+          return_id?: string
+          sku?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "return_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_search_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "returns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      returns: {
+        Row: {
+          company_id: string
+          concluded_at: string | null
+          created_at: string
+          created_by: string | null
+          customer_document: string | null
+          customer_name: string | null
+          external_id: string | null
+          id: string
+          motivo: string | null
+          notes: string | null
+          numero: string
+          order_reference: string | null
+          received_at: string | null
+          responsavel_id: string | null
+          source: Database["public"]["Enums"]["return_source"]
+          status: Database["public"]["Enums"]["return_status"]
+          updated_at: string
+          valor_total: number | null
+        }
+        Insert: {
+          company_id: string
+          concluded_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_document?: string | null
+          customer_name?: string | null
+          external_id?: string | null
+          id?: string
+          motivo?: string | null
+          notes?: string | null
+          numero: string
+          order_reference?: string | null
+          received_at?: string | null
+          responsavel_id?: string | null
+          source?: Database["public"]["Enums"]["return_source"]
+          status?: Database["public"]["Enums"]["return_status"]
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Update: {
+          company_id?: string
+          concluded_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_document?: string | null
+          customer_name?: string | null
+          external_id?: string | null
+          id?: string
+          motivo?: string | null
+          notes?: string | null
+          numero?: string
+          order_reference?: string | null
+          received_at?: string | null
+          responsavel_id?: string | null
+          source?: Database["public"]["Enums"]["return_source"]
+          status?: Database["public"]["Enums"]["return_status"]
+          updated_at?: string
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_items: {
         Row: {
           created_at: string
@@ -3772,6 +4119,13 @@ export type Database = {
       app_role: "admin" | "moderator" | "user" | "admin_master"
       company_role: "owner" | "manager" | "member" | "admin_master"
       company_status: "active" | "suspended" | "cancelled"
+      item_condition:
+        | "aprovado"
+        | "avariado"
+        | "errado"
+        | "incompleto"
+        | "embalagem_violada"
+        | "outro"
       ordem_full_status:
         | "rascunho"
         | "aguardando"
@@ -3782,6 +4136,14 @@ export type Database = {
         | "enviada"
       ordem_item_status: "pendente" | "parcial" | "completo" | "excesso"
       plan_type: "free" | "basic" | "premium" | "enterprise"
+      quarantine_status: "em_quarentena" | "liberado" | "descartado"
+      return_source: "mercado_livre" | "loja" | "manual" | "pdv"
+      return_status:
+        | "pendente"
+        | "em_conferencia"
+        | "aguardando_decisao"
+        | "concluida"
+        | "cancelada"
       store_payment_method: "pix" | "cartao" | "boleto"
       store_payment_status: "pendente" | "pago" | "cancelado" | "expirado"
       store_sale_mode: "mercadolivre" | "proprio" | "hibrido"
@@ -3915,6 +4277,14 @@ export const Constants = {
       app_role: ["admin", "moderator", "user", "admin_master"],
       company_role: ["owner", "manager", "member", "admin_master"],
       company_status: ["active", "suspended", "cancelled"],
+      item_condition: [
+        "aprovado",
+        "avariado",
+        "errado",
+        "incompleto",
+        "embalagem_violada",
+        "outro",
+      ],
       ordem_full_status: [
         "rascunho",
         "aguardando",
@@ -3926,6 +4296,15 @@ export const Constants = {
       ],
       ordem_item_status: ["pendente", "parcial", "completo", "excesso"],
       plan_type: ["free", "basic", "premium", "enterprise"],
+      quarantine_status: ["em_quarentena", "liberado", "descartado"],
+      return_source: ["mercado_livre", "loja", "manual", "pdv"],
+      return_status: [
+        "pendente",
+        "em_conferencia",
+        "aguardando_decisao",
+        "concluida",
+        "cancelada",
+      ],
       store_payment_method: ["pix", "cartao", "boleto"],
       store_payment_status: ["pendente", "pago", "cancelado", "expirado"],
       store_sale_mode: ["mercadolivre", "proprio", "hibrido"],

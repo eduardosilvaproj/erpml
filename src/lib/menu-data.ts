@@ -2,7 +2,7 @@ import {
   Package, Boxes, UsersRound, Users, Warehouse, CameraIcon,
   ScanBarcode, ClipboardList, ArrowRightLeft, Monitor, Megaphone,
   ShoppingBag, Store, BarChart3, DollarSign, Sparkles, GraduationCap,
-  Brain, TrendingUp, Copy, Activity
+  Brain, TrendingUp, Copy, Activity, Undo2
 } from "lucide-react";
 
 export interface MenuItem {
@@ -42,6 +42,7 @@ export const menuGroups: MenuGroup[] = [
       { title: "Conferência", url: "/conferencia", icon: ScanBarcode, desc: "Bip de recebimento" },
       { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList, desc: "Inventário físico" },
       { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, desc: "Transferir para FULL", premium: true },
+      { title: "Devoluções", url: "/devolucoes", icon: Undo2, desc: "RMA, quarentena e evidências", premium: true },
     ],
   },
   {
