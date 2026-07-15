@@ -1,203 +1,259 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
-import { handleCors, makeCorsHeaders } from "../_shared/cors.ts";
+// Edge Function: ml-returns-sync
+// Sincroniza devoluções do Mercado Livre via API post-purchase/v1/claims
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-Deno.serve(async (req) => {
-  const cors = handleCors(req);
-  if (cors) return cors;
-  const corsHeaders = makeCorsHeaders(req);
+const ML_API_BASE = "https://api.mercadolibre.com";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+
+  let dryRun = false;
+  try {
+    const body = await req.json();
+    dryRun = body?.dryRun === true;
+  } catch (_) {}
+
+  const authHeader = req.headers.get("Authorization");
+  const cronSecret = req.headers.get("x-cron-secret");
+  let expectedCronSecret = Deno.env.get("CRON_SECRET") ?? null;
+  if (cronSecret) {
+    try {
+      const { data: vaultSecret } = await supabase.rpc("get_cron_secret");
+      if (vaultSecret) expectedCronSecret = vaultSecret as unknown as string;
+    } catch (_) {}
+  }
+  const hasCronAuth = !!expectedCronSecret && !!cronSecret && cronSecret === expectedCronSecret;
+
+  let requesterUserId: string | null = null;
+
+  if (!hasCronAuth) {
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+    }
+    requesterUserId = claimsData.claims.sub as string;
+  }
+
+  let allowedUserIds: string[] | null = null;
+  if (requesterUserId) {
+    const { data: requesterProfile } = await supabase
+      .from("profiles")
+      .select("company_id")
+      .eq("id", requesterUserId)
+      .maybeSingle();
+    const requesterCompanyId = requesterProfile?.company_id ?? null;
+    if (!requesterCompanyId) {
+      return new Response(JSON.stringify({ error: "Empresa não encontrada para o usuário." }), { status: 403, headers: corsHeaders });
+    }
+    const { data: companyProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("company_id", requesterCompanyId);
+    allowedUserIds = (companyProfiles ?? []).map((p) => p.id as string);
+    if (!allowedUserIds.length) {
+      return new Response(JSON.stringify({ success: true, synced: 0 }), { headers: corsHeaders });
+    }
+  }
 
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const cronSecretHeader = req.headers.get("x-cron-secret") ?? "";
-    const expectedCronSecret = Deno.env.get("CRON_SECRET") ?? "";
-    const isCron = !!cronSecretHeader && cronSecretHeader === expectedCronSecret;
+    let connQuery = supabase.from("ml_connections").select("*").eq("is_active", true);
+    if (allowedUserIds) connQuery = connQuery.in("user_id", allowedUserIds);
+    const { data: connections, error: connError } = await connQuery;
 
-    if (!isCron && !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (connError) throw connError;
+    if (!connections || connections.length === 0) {
+      return new Response(JSON.stringify({ synced: 0, message: "Nenhuma conexão ML ativa" }), { headers: corsHeaders });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    let totalSynced = 0;
+    const diagnostics: any[] = [];
 
-    // Body pode vir vazio no cron
-    const body = await req.json().catch(() => ({}));
-
-    // Determina alvos (empresas + conexões ML) a sincronizar
-    type Target = { companyId: string; userId: string; accessToken: string; sellerId: string | null };
-    const targets: Target[] = [];
-
-    if (isCron) {
-      // Cron: sincroniza todas as conexões ML ativas
-      const { data: conns } = await supabase
-        .from("ml_connections")
-        .select("user_id, access_token, seller_id");
-      for (const c of conns ?? []) {
-        if (!c.access_token) continue;
-        // Descobre a company_id do usuário via profiles
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("company_id")
-          .eq("id", c.user_id)
-          .maybeSingle();
-        if (!prof?.company_id) continue;
-        targets.push({
-          companyId: prof.company_id,
-          userId: c.user_id,
-          accessToken: c.access_token,
-          sellerId: c.seller_id ?? null,
-        });
-      }
-    } else {
-      // Chamada manual: usa o usuário autenticado
-      const { data: userRes } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-      const user = userRes?.user;
-      if (!user) {
-        return new Response(JSON.stringify({ error: "unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      let companyId: string | undefined = body.companyId;
-      if (!companyId) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("company_id")
-          .eq("id", user.id)
-          .maybeSingle();
-        companyId = prof?.company_id ?? undefined;
-      }
-      if (!companyId) {
-        return new Response(JSON.stringify({ error: "companyId not found for user" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const { data: conn } = await supabase
-        .from("ml_connections")
-        .select("access_token, seller_id")
-        .eq("user_id", user.id)
+    for (const conn of connections) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", conn.user_id)
         .maybeSingle();
-      if (!conn?.access_token) {
-        return new Response(JSON.stringify({ error: "ML não conectado" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      targets.push({
-        companyId,
-        userId: user.id,
-        accessToken: conn.access_token,
-        sellerId: conn.seller_id ?? null,
-      });
-    }
 
-    let totalCreated = 0;
-    let totalSkipped = 0;
-    let totalClaims = 0;
-    const perTarget: any[] = [];
-
-    for (const t of targets) {
-      const url = `https://api.mercadolibre.com/post-purchase/v1/claims/search?stage=claim&limit=50`;
-      const mlRes = await fetch(url, {
-        headers: { Authorization: `Bearer ${t.accessToken}` },
-      });
-      if (!mlRes.ok) {
-        const detail = await mlRes.text();
-        perTarget.push({ companyId: t.companyId, error: "ml_fetch_failed", detail });
+      const companyId = profile?.company_id;
+      if (!companyId) {
+        console.warn(`[ml-returns-sync] Conexão ${conn.ml_user_id} sem company_id associada.`);
         continue;
       }
-      const payload = await mlRes.json();
-      const claims: any[] = payload?.data ?? payload?.results ?? [];
-      totalClaims += claims.length;
 
-      let created = 0;
-      let skipped = 0;
-
-      for (const c of claims) {
-        const externalId = String(c.id ?? c.claim_id ?? "");
-        if (!externalId) { skipped++; continue; }
-
-        const { data: exists } = await supabase
-          .from("returns")
-          .select("id")
-          .eq("company_id", t.companyId)
-          .eq("external_id", externalId)
+      if (!requesterUserId) {
+        const { data: settings } = await supabase
+          .from("ml_settings")
+          .select("auto_sync_orders")
+          .eq("user_id", conn.user_id)
           .maybeSingle();
-        if (exists) { skipped++; continue; }
+        if (settings && !settings.auto_sync_orders) continue;
+      }
 
-        const orderRef = String(c.resource_id ?? c.order_id ?? "");
-        const numero = `ML-${externalId}`;
-        const { data: inserted, error } = await supabase
-          .from("returns")
-          .insert({
-            company_id: t.companyId,
-            numero,
-            source: "mercado_livre",
-            external_id: externalId,
-            status: "pendente",
-            order_reference: orderRef || null,
-            motivo: c.reason?.name ?? c.reason_id ?? null,
-          })
-          .select("id")
-          .single();
+      let accessToken = conn.access_token;
+      const expiresAt = new Date(conn.token_expires_at ?? 0).getTime();
+      if (Date.now() + 5 * 60 * 1000 >= expiresAt) {
+        const mlAppId = Deno.env.get("MERCADO_LIVRE_APP_ID");
+        const mlSecret = Deno.env.get("MERCADO_LIVRE_CLIENT_SECRET");
+        if (!mlAppId || !mlSecret) {
+          console.error(`[ml-returns-sync] Refresh abortado — secrets faltando.`);
+          continue;
+        }
 
-        if (error || !inserted) { skipped++; continue; }
-        created++;
+        const refreshRes = await fetch(`${ML_API_BASE}/oauth/token`, {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "refresh_token",
+            client_id: mlAppId,
+            client_secret: mlSecret,
+            refresh_token: conn.refresh_token,
+          }),
+        });
 
-        // Tenta hidratar return_items com base numa ml_order existente
-        if (orderRef) {
-          const { data: mlOrder } = await supabase
-            .from("ml_orders")
-            .select("id")
-            .eq("company_id", t.companyId)
-            .eq("ml_order_id", orderRef)
-            .maybeSingle();
-          if (mlOrder?.id) {
-            const { data: mlItems } = await supabase
-              .from("ml_order_items")
-              .select("product_id, sku, ean, title, quantity")
-              .eq("ml_order_id", mlOrder.id);
-            if (mlItems && mlItems.length) {
-              const rows = mlItems.map((it: any) => ({
-                return_id: inserted.id,
-                company_id: t.companyId,
-                product_id: it.product_id ?? null,
-                sku: it.sku ?? null,
-                ean: it.ean ?? null,
-                nome_produto: it.title ?? null,
-                expected_quantity: it.quantity ?? 1,
-              }));
-              await supabase.from("return_items").insert(rows);
-            }
-          }
+        if (refreshRes.ok) {
+          const tokenData = await refreshRes.json();
+          accessToken = tokenData.access_token;
+          await supabase
+            .from("ml_connections")
+            .update({
+              access_token: tokenData.access_token,
+              refresh_token: tokenData.refresh_token || conn.refresh_token,
+              token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+            })
+            .eq("id", conn.id);
+        } else {
+          console.error(`Falha ao renovar token para ${conn.ml_user_id}`);
+          continue;
         }
       }
 
-      totalCreated += created;
-      totalSkipped += skipped;
-      perTarget.push({ companyId: t.companyId, created, skipped, claims: claims.length });
+      const claimsRes = await fetch(
+        `${ML_API_BASE}/post-purchase/v1/claims/search?seller_id=${conn.ml_user_id}&stage=return&limit=50`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      if (!claimsRes.ok) {
+        console.error(`Erro ao buscar claims para ${conn.ml_user_id}: ${claimsRes.status}`);
+        if (dryRun) {
+          diagnostics.push({ seller_id: conn.ml_user_id, ml_status: claimsRes.status, error: true });
+        }
+        continue;
+      }
+
+      const claimsData = await claimsRes.json();
+      const claims = claimsData.data || claimsData.results || [];
+
+      if (dryRun) {
+        diagnostics.push({
+          seller_id: conn.ml_user_id,
+          company_id: companyId,
+          claims_found: claims.length,
+          claims: claims.map((c: any) => ({ id: c.id, status: c.status, order_id: c.order_id })),
+        });
+        continue;
+      }
+
+      for (const claim of claims) {
+        const { data: existing } = await supabase
+          .from("returns")
+          .select("id")
+          .eq("ml_claim_id", String(claim.id))
+          .eq("company_id", companyId)
+          .maybeSingle();
+
+        if (existing) continue;
+
+        const mlStatus = claim.status || "pending";
+        const statusMap: Record<string, string> = {
+          pending: "pendente_recebimento",
+          shipped: "pendente_recebimento",
+          delivered: "recebido",
+          cancelled: "cancelada",
+          failed: "cancelada",
+          return_to_buyer: "cancelada",
+        };
+        const mappedStatus = statusMap[mlStatus] || "pendente_recebimento";
+
+        const { data: ret, error: retError } = await supabase
+          .from("returns")
+          .insert({
+            company_id: companyId,
+            ml_return_id: claim.return_id ? String(claim.return_id) : null,
+            ml_order_id: claim.order_id ? String(claim.order_id) : null,
+            ml_claim_id: String(claim.id),
+            status: mappedStatus as any,
+            source: "ml_claim",
+            motivo: claim.reason || claim.reason_id || "Devolução via ML",
+            created_by: conn.user_id,
+          })
+          .select()
+          .maybeSingle();
+
+        if (retError || !ret) {
+          console.error("Erro ao criar devolução:", retError);
+          continue;
+        }
+
+        if (claim.order_id) {
+          const { data: mlOrderItems } = await supabase
+            .from("ml_order_items")
+            .select("*, products(id, name, sku)")
+            .eq("ml_order_id", Number(claim.order_id));
+
+          if (mlOrderItems && mlOrderItems.length > 0) {
+            const returnItems = mlOrderItems.map((item: any) => ({
+              return_id: ret.id,
+              company_id: companyId,
+              product_id: item.product_id || null,
+              sku: item.products?.sku || item.sku || null,
+              nome_produto: item.products?.name || item.ml_item_title || "Produto ML",
+              expected_quantity: item.quantity || 1,
+            }));
+            await supabase.from("return_items").insert(returnItems);
+          }
+        }
+
+        await supabase.from("return_actions").insert({
+          return_id: ret.id,
+          company_id: companyId,
+          action: "created",
+          description: "Devolução sincronizada automaticamente do Mercado Livre",
+          metadata: { ml_claim_id: claim.id, ml_status: mlStatus },
+        });
+
+        totalSynced++;
+      }
     }
 
     return new Response(
-      JSON.stringify({
-        ok: true,
-        mode: isCron ? "cron" : "manual",
-        created: totalCreated,
-        skipped: totalSkipped,
-        total: totalClaims,
-        targets: perTarget,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify(
+        dryRun
+          ? { success: true, dryRun: true, diagnostics }
+          : { success: true, synced: totalSynced, message: `${totalSynced} devolução(ões) sincronizada(s)` }
+      ),
+      { headers: corsHeaders }
     );
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (err: any) {
+    console.error("Erro no sync de devoluções:", err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });
