@@ -4,7 +4,7 @@ import {
   LogOut, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
   Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
-  LockKeyhole, Import, Activity
+  LockKeyhole, Import, Activity, Undo2
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -47,6 +47,7 @@ const groups: NavGroup[] = [
       { label: "Conferência", url: "/conferencia", icon: ScanBarcode, tooltip: "Bipe produtos para verificar se o estoque está correto" },
       { label: "Balanço", url: "/balanco-estoque", icon: BarChart, tooltip: "Realize inventário físico do estoque" },
       { label: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, tooltip: "Transferir mercadorias para o FULL do Mercado Livre" },
+      { label: "Devoluções", url: "/devolucoes", icon: Undo2, tooltip: "Gerencie devoluções, quarentena e evidências" },
     ],
   },
   {
