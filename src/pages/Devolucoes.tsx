@@ -25,11 +25,11 @@ export default function Devolucoes() {
         body: { companyId },
       });
       if (error) throw error;
-      const created = (data as any)?.created ?? 0;
-      const total = (data as any)?.total ?? 0;
+      const raw = JSON.stringify(data, null, 2);
+      console.log("[ml-returns-sync DIAG]", raw);
       toast({
-        title: "Sincronização concluída",
-        description: `${created} nova(s) devolução(ões) importada(s) de ${total} claim(s).`,
+        title: "Diagnóstico ML (ver console)",
+        description: raw.slice(0, 500),
       });
       queryClient.invalidateQueries({ queryKey: ["returns"] });
     } catch (e: any) {
