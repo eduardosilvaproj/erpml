@@ -217,6 +217,24 @@ function SidebarContent({
           <TooltipContent side="right">Voltar para o painel principal</TooltipContent>
         </Tooltip>
 
+        {/* Devoluções - atalho direto */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => { setOpenGroup(null); go("/devolucoes"); }}
+              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+                isActive("/devolucoes")
+                  ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
+                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+              }`}
+            >
+              <Undo2 className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
+              <span className="truncate">Devoluções</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Gerencie devoluções, quarentena e evidências</TooltipContent>
+        </Tooltip>
+
         {/* Groups */}
         {groups.map((group) => {
           const isOpen = openGroup === group.label;

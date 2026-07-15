@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   Package, Boxes, UsersRound, Users, Warehouse, CameraIcon,
   ScanBarcode, ClipboardList, ArrowRightLeft, Monitor, Megaphone,
-  ShoppingBag, BarChart3, TrendingUp, Search
+  ShoppingBag, BarChart3, TrendingUp, Search, Undo2
 } from "lucide-react";
 import {
   CommandDialog, CommandInput, CommandList, CommandEmpty,
@@ -32,6 +32,7 @@ const searchItems: SearchItem[] = [
   { label: "Conferência", url: "/conferencia", icon: ScanBarcode, category: "Estoque", keywords: ["bip", "recebimento"] },
   { label: "Balanço", url: "/balanco-estoque", icon: ClipboardList, category: "Estoque", keywords: ["inventário"] },
   { label: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, category: "Estoque", keywords: ["transferir"] },
+  { label: "Devoluções", url: "/devolucoes", icon: Undo2, category: "Estoque", keywords: ["devolucao", "devoluções", "rma", "quarentena"] },
   // Vendas
   { label: "PDV / Nova venda", url: "/pdv", icon: Monitor, category: "Vendas", keywords: ["caixa", "vender"] },
   { label: "Campanhas", url: "/campanhas", icon: Megaphone, category: "Vendas", keywords: ["anúncios", "massa"] },
