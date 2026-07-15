@@ -1,4 +1,4 @@
-// Edge Function: ml-returns-sync — MODO DIAGNÓSTICO
+// Edge Function: ml-returns-sync — DIAGNÓSTICO v2
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -20,7 +20,6 @@ serve(async (req: Request) => {
   if (!authHeader?.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
   }
-
   const { data: userRes } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
   const user = userRes?.user;
   if (!user) {
@@ -29,7 +28,7 @@ serve(async (req: Request) => {
 
   const { data: conn } = await supabase
     .from("ml_connections")
-    .select("access_token, ml_user_id, seller_nickname")
+    .select("access_token, ml_user_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -39,35 +38,33 @@ serve(async (req: Request) => {
 
   const token = conn.access_token;
   const sellerId = conn.ml_user_id;
+  const headers = { Authorization: `Bearer ${token}` };
   const results: any = { seller_id: sellerId, tests: [] };
 
-  try {
-    const r1 = await fetch(`${ML_API_BASE}/post-purchase/v1/claims/search?seller_id=${sellerId}&limit=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    results.tests.push({ endpoint: "/post-purchase/v1/claims/search (sem stage)", status: r1.status, body: await r1.json().catch(() => "erro parse") });
-  } catch (e: any) { results.tests.push({ endpoint: "/post-purchase/v1/claims/search", error: e.message }); }
+  const endpoints = [
+    `/post-purchase/v1/claims/search?stage=claim&limit=10`,
+    `/post-purchase/v1/claims/search?stage=dispute&limit=10`,
+    `/post-purchase/v1/claims/search?type=mediations&limit=10`,
+    `/post-purchase/v1/claims/search?type=return&limit=10`,
+    `/post-purchase/v1/claims/search?type=cancel_purchase&limit=10`,
+    `/post-purchase/v1/claims/search?status=opened&limit=10`,
+    `/post-purchase/v1/claims/search?status=closed&limit=10`,
+    `/post-purchase/v1/claims/search?resource=order&limit=10`,
+    `/post-purchase/v2/claims/search?limit=10`,
+    `/users/${sellerId}/claims/search?limit=10`,
+    `/post-purchase/v1/claims/search?player_role=respondent&limit=10`,
+    `/post-purchase/v1/claims/search?player_role=complainant&limit=10`,
+  ];
 
-  try {
-    const r2 = await fetch(`${ML_API_BASE}/post-purchase/v1/claims/search?seller_id=${sellerId}&stage=return&limit=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    results.tests.push({ endpoint: "/post-purchase/v1/claims/search?stage=return", status: r2.status, body: await r2.json().catch(() => "erro parse") });
-  } catch (e: any) { results.tests.push({ endpoint: "/post-purchase/v1/claims/search?stage=return", error: e.message }); }
-
-  try {
-    const r3 = await fetch(`${ML_API_BASE}/orders/search?seller=${sellerId}&order.status=cancelled&limit=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    results.tests.push({ endpoint: "/orders/search?order.status=cancelled", status: r3.status, body: await r3.json().catch(() => "erro parse") });
-  } catch (e: any) { results.tests.push({ endpoint: "/orders/search?order.status=cancelled", error: e.message }); }
-
-  try {
-    const r4 = await fetch(`${ML_API_BASE}/returns/search?seller_id=${sellerId}&limit=5`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    results.tests.push({ endpoint: "/returns/search", status: r4.status, body: await r4.json().catch(() => "erro parse") });
-  } catch (e: any) { results.tests.push({ endpoint: "/returns/search", error: e.message }); }
+  for (const ep of endpoints) {
+    try {
+      const r = await fetch(`${ML_API_BASE}${ep}`, { headers });
+      const body = await r.json().catch(() => "erro parse");
+      results.tests.push({ endpoint: ep, status: r.status, total: (body as any)?.paging?.total, sample: Array.isArray((body as any)?.data) ? (body as any).data.slice(0,2) : body });
+    } catch (e: any) {
+      results.tests.push({ endpoint: ep, error: e.message });
+    }
+  }
 
   return new Response(JSON.stringify(results, null, 2), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
