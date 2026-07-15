@@ -52,12 +52,12 @@ serve(async (req: Request) => {
   const summary = { fetched: 0, inserted: 0, updated: 0, skipped: 0, errors: [] as any[] };
 
   try {
-    // Buscar claims em stage=claim (devoluções/reclamações reais), ambos status
+    // Buscar devoluções (type=return): abertas + fechadas
     const claims: any[] = [];
     for (const status of ["opened", "closed"]) {
       let offset = 0;
       while (true) {
-        const url = `${ML_API_BASE}/post-purchase/v1/claims/search?stage=claim&status=${status}&limit=50&offset=${offset}`;
+        const url = `${ML_API_BASE}/post-purchase/v1/claims/search?seller_id=${sellerId}&type=return&status=${status}&limit=100&offset=${offset}`;
         const r = await fetch(url, { headers });
         if (!r.ok) {
           summary.errors.push({ url, status: r.status, body: await r.text() });
@@ -67,9 +67,9 @@ serve(async (req: Request) => {
         const data = j?.data ?? [];
         claims.push(...data);
         const total = j?.paging?.total ?? 0;
-        offset += data.length || 50;
+        offset += data.length || 100;
         if (offset >= total || data.length === 0) break;
-        if (offset >= 500) break; // safety cap por status
+        if (offset >= 1000) break; // safety cap por status
       }
     }
     summary.fetched = claims.length;
@@ -91,10 +91,27 @@ serve(async (req: Request) => {
           : null;
         const valorTotal = orderData?.total_amount ?? null;
         const statusMap: Record<string, string> = {
-          opened: "pendente",
+          // abertos/pendentes
+          pending: "pendente_recebimento",
+          opened: "pendente_recebimento",
+          claim: "pendente_recebimento",
+          dispute: "pendente_recebimento",
+          recontact: "pendente_recebimento",
+          // envio/devolução
+          shipped: "em_transito",
+          return_in_transit: "em_transito",
+          return_delivered: "recebido",
+          // finalizados
+          delivered: "recebido",
+          received: "recebido",
           closed: "concluida",
+          cancelled: "cancelada",
+          failed: "cancelada",
+          return_to_buyer: "cancelada",
+          refunded: "reembolsada",
+          not_delivered: "nao_recebida",
         };
-        const returnStatus = statusMap[claim.status] ?? "pendente";
+        const returnStatus = statusMap[claim.status] ?? "pendente_recebimento";
 
         const payload: any = {
           company_id: companyId,
