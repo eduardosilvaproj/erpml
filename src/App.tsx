@@ -29,6 +29,8 @@ const Separacao = lazy(() => import("./pages/Separacao"));
 const RecuperarConferencia = lazy(() => import("./pages/RecuperarConferencia"));
 const Estoque = lazy(() => import("./pages/Estoque"));
 const MovimentacaoFull = lazy(() => import("./pages/MovimentacaoFull"));
+const Devolucoes = lazy(() => import("./pages/Devolucoes"));
+const DevolucaoDetail = lazy(() => import("./pages/DevolucaoDetail"));
 const IntegracaoML = lazy(() => import("./pages/IntegracaoML"));
 const PDV = lazy(() => import("./pages/PDV"));
 const CRM = lazy(() => import("./pages/CRM"));
@@ -133,6 +135,8 @@ const App = (): JSX.Element => {
                               <Route path="/estoque" element={<Estoque />} />
                               <Route path="/balanco-estoque" element={<BalancoEstoque />} />
                               <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
+                              <Route path="/devolucoes" element={<PlanProtectedRoute path="/devolucoes"><Devolucoes /></PlanProtectedRoute>} />
+                              <Route path="/devolucoes/:returnId" element={<PlanProtectedRoute path="/devolucoes"><DevolucaoDetail /></PlanProtectedRoute>} />
                               <Route path="/kits" element={<Kits />} />
                               <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                               <Route path="/duplicador-anuncios" element={<PlanProtectedRoute path="/integracao-ml"><DuplicadorAnuncios /></PlanProtectedRoute>} />

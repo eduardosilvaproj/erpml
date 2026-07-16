@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { type WizardStep, type ConferenceItem, type BatchNfe } from "../types";
+import { type WizardStep, type ConferenceItem, type BatchNfe, type KitGroup } from "../types";
 
 const STORAGE_KEY = "entrada_nota_wizard_state";
 
@@ -14,6 +14,7 @@ interface PersistenceInput {
   divergences: ConferenceItem[];
   divergenceActions: Record<number, "conferida" | "nota">;
   adjustedItems: any[];
+  kitGroups: KitGroup[];
   entryNotes: string;
   autoUpdateStock: boolean;
   autoUpdateCost: boolean;
@@ -32,6 +33,7 @@ interface Setters {
   setDivergences: (items: ConferenceItem[]) => void;
   setDivergenceActions: (actions: Record<number, "conferida" | "nota">) => void;
   setAdjustedItems: (items: any[]) => void;
+  setKitGroups: (groups: KitGroup[]) => void;
   setEntryNotes: (notes: string) => void;
   setAutoUpdateStock: (v: boolean) => void;
   setAutoUpdateCost: (v: boolean) => void;
@@ -55,9 +57,9 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch {}
   }, [
-    state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes, 
-    state.batchConferenceMode, state.currentBatchNfIdx, state.divergences, 
-    state.divergenceActions, state.adjustedItems, state.entryNotes, 
+    state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes,
+    state.batchConferenceMode, state.currentBatchNfIdx, state.divergences,
+    state.divergenceActions, state.adjustedItems, state.kitGroups, state.entryNotes,
     state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave
   ]);
 
@@ -90,6 +92,7 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       if (s.divergences) setters.setDivergences(s.divergences);
       if (s.divergenceActions) setters.setDivergenceActions(s.divergenceActions);
       if (s.adjustedItems) setters.setAdjustedItems(s.adjustedItems);
+      if (s.kitGroups) setters.setKitGroups(s.kitGroups);
       if (s.entryNotes) setters.setEntryNotes(s.entryNotes);
       if (s.autoUpdateStock != null) setters.setAutoUpdateStock(s.autoUpdateStock);
       if (s.autoUpdateCost != null) setters.setAutoUpdateCost(s.autoUpdateCost);

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { type WizardStep, type ConferenceItem, type BatchNfe, type SefazEntry } from "../types";
+import { type WizardStep, type ConferenceItem, type BatchNfe, type SefazEntry, type KitGroup } from "../types";
 import { type NFeData, type MatchResult } from "@/lib/nfe-parser";
 
 export const useEntradaNotaState = () => {
@@ -46,6 +46,7 @@ export const useEntradaNotaState = () => {
 
   // Step 4 - Adjustments
   const [adjustedItems, setAdjustedItems] = useState<MatchResult[]>([]);
+  const [kitGroups, setKitGroups] = useState<KitGroup[]>([]);
   const [newProductDialog, setNewProductDialog] = useState(false);
   const [newProductData, setNewProductData] = useState({ name: "", ean: "", sku: "", price: "" });
   const [entryNotes, setEntryNotes] = useState("");
@@ -91,6 +92,7 @@ export const useEntradaNotaState = () => {
     divergences, setDivergences,
     divergenceActions, setDivergenceActions,
     adjustedItems, setAdjustedItems,
+    kitGroups, setKitGroups,
     newProductDialog, setNewProductDialog,
     newProductData, setNewProductData,
     entryNotes, setEntryNotes,

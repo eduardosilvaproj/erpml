@@ -29,6 +29,15 @@ export interface BatchNfe {
   partialReason?: string;
 }
 
+export interface KitGroup {
+  kitId: string;
+  name: string;
+  sku: string;
+  itemIndices: number[];
+  quantity: number;
+  cost: number;
+}
+
 export interface SefazEntry {
   id: string;
   number: string;

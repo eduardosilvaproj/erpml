@@ -70,6 +70,7 @@ const EntradaNota = () => {
     divergences, setDivergences,
     divergenceActions, setDivergenceActions,
     adjustedItems, setAdjustedItems,
+    kitGroups, setKitGroups,
     newProductDialog, setNewProductDialog,
     setNewProductData,
     entryNotes, setEntryNotes,
@@ -83,8 +84,8 @@ const EntradaNota = () => {
 
   const persistence = useEntradaNotaPersistence(
     {
-      currentStep, completedSteps, conferenceItems, batchNfes, batchConferenceMode, 
-      currentBatchNfIdx, divergences, divergenceActions, adjustedItems, entryNotes, 
+      currentStep, completedSteps, conferenceItems, batchNfes, batchConferenceMode,
+      currentBatchNfIdx, divergences, divergenceActions, adjustedItems, kitGroups, entryNotes,
       autoUpdateStock, autoUpdateCost, done, nfMode, nfeChave
     },
     state
@@ -97,10 +98,10 @@ const EntradaNota = () => {
 
   const confirmHook = useEntradaNotaConfirm(
     companyId, queryClient, toast,
-    { 
-      nfeData, matches, adjustedItems, autoUpdateStock, autoUpdateCost, 
-      isBatchMode: batchNfes.length > 1, selectedBatchNfes: batchNfes.filter(n => n.selected), 
-      batchSelectedForConfirm 
+    {
+      nfeData, matches, adjustedItems, kitGroups, autoUpdateStock, autoUpdateCost,
+      isBatchMode: batchNfes.length > 1, selectedBatchNfes: batchNfes.filter(n => n.selected),
+      batchSelectedForConfirm
     },
     setSaving, setDone, setBatchConfirmResult, persistence.clearPersistedState
   );
@@ -212,7 +213,7 @@ const EntradaNota = () => {
 
   const reset = () => {
     setCurrentStep(1); setCompletedSteps(new Set()); setNfMode("sefaz"); setNfeData(null); setMatches([]); 
-    setConferenceItems([]); setDivergences([]); setAdjustedItems([]); setDone(false); setSaving(false);
+    setConferenceItems([]); setDivergences([]); setAdjustedItems([]); setKitGroups([]); setDone(false); setSaving(false);
     setBatchNfes([]); setSefazEntries([{ id: `init-${Date.now()}`, number: "", series: "001", status: "idle" }]);
     persistence.clearPersistedState();
   };
@@ -386,9 +387,26 @@ const EntradaNota = () => {
 
         {currentStep === 4 && (
           <StepAjustes
-            itemsToShow={itemsToShow} adjustedItems={adjustedItems} updateAdjustedQty={(idx, q) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, quantity: q } } : item))}
+            itemsToShow={itemsToShow} adjustedItems={adjustedItems} kitGroups={kitGroups}
+            updateAdjustedQty={(idx, q) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, quantity: q } } : item))}
             updateAdjustedCost={(idx, c) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, unitValue: c, totalValue: c * item.xmlProduct.quantity } } : item))}
-            removeAdjustedItem={(idx) => setAdjustedItems(prev => prev.filter((_, i) => i !== idx))} onOpenNewProduct={handleOpenNewProductDialog} entryNotes={entryNotes} setEntryNotes={setEntryNotes} setCurrentStep={setCurrentStep} goToStep={goToStep} formatCurrency={formatCurrency} hasMatchesOrBatch={matches.length > 0 || isBatchMode}
+            removeAdjustedItem={(idx) => setAdjustedItems(prev => prev.filter((_, i) => i !== idx))}
+            onOpenNewProduct={handleOpenNewProductDialog}
+            onCreateKit={(name, sku, price, itemIndices, quantity) => {
+              const items = adjustedItems.length > 0 ? adjustedItems : itemsToShow;
+              const kitItems = itemIndices.map(i => ({
+                product_id: items[i].matchedProductId || '',
+                quantity: Math.floor(items[i].xmlProduct.quantity / quantity) || 1,
+              }));
+              const totalCost = itemIndices.reduce((sum, i) => sum + items[i].xmlProduct.unitValue * items[i].xmlProduct.quantity, 0);
+              const kitId = `kit-${Date.now()}`;
+              setKitGroups(prev => [...prev, {
+                kitId, name, sku, itemIndices, quantity,
+                cost: Math.round(totalCost * 100) / 100,
+              }]);
+            }}
+            onRemoveKitGroup={(kitId) => setKitGroups(prev => prev.filter(g => g.kitId !== kitId))}
+            entryNotes={entryNotes} setEntryNotes={setEntryNotes} setCurrentStep={setCurrentStep} goToStep={goToStep} formatCurrency={formatCurrency} hasMatchesOrBatch={matches.length > 0 || isBatchMode}
           />
         )}
 
