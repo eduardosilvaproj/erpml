@@ -315,17 +315,23 @@ serve(async (req: Request) => {
   }
 
   // --- Buscar conexões ML ---
-  let query = supabase
+  const { data: rawConns, error: connErr } = await supabase
     .from("ml_connections")
-    .select("id, user_id, company_id, access_token, ml_user_id, seller_nickname")
+    .select("id, user_id, access_token, ml_user_id, seller_nickname")
     .eq("is_active", true);
-
-  if (!isCron && userCompanyId) {
-    query = query.eq("company_id", userCompanyId);
-  }
-
-  const { data: conns, error: connErr } = await query;
   if (connErr) return json({ error: connErr.message }, 500);
+
+  const userIds = [...new Set((rawConns ?? []).map((conn: any) => conn.user_id).filter(Boolean))];
+  const { data: profiles, error: profilesErr } = userIds.length
+    ? await supabase.from("profiles").select("id, company_id").in("id", userIds)
+    : { data: [], error: null };
+  if (profilesErr) return json({ error: profilesErr.message }, 500);
+
+  const companyByUser = new Map((profiles ?? []).map((profile: any) => [profile.id, profile.company_id]));
+  const conns = (rawConns ?? [])
+    .map((conn: any) => ({ ...conn, company_id: companyByUser.get(conn.user_id) ?? null }))
+    .filter((conn: any) => conn.company_id && (isCron || conn.company_id === userCompanyId));
+
   if (!conns || conns.length === 0) {
     return json({
       success: true,
