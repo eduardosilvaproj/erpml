@@ -156,45 +156,60 @@ async function syncConnection(supabase: any, conn: any) {
           ? String(claim.resource_id)
           : null;
 
-      // 3. Upsert seguro por (company_id, ml_claim_id)
-      const { data: existing } = await supabase
+      // 3. Upsert seguro por (company_id, external_id)
+      const { data: existing, error: existingErr } = await supabase
         .from("returns")
         .select("id")
         .eq("company_id", conn.company_id)
-        .eq("ml_claim_id", String(claimId))
+        .eq("external_id", String(claimId))
         .maybeSingle();
+
+      if (existingErr) {
+        result.errors.push(`select_${claimId}:${existingErr.message}`);
+        result.skipped++;
+        continue;
+      }
 
       let returnRowId: string | null = existing?.id ?? null;
 
       if (existing) {
-        await supabase
+        const { error: updErr } = await supabase
           .from("returns")
           .update({
-            status: "pendente_recebimento",
-            ml_return_id: mlReturnId || null,
+            status: "pendente",
+            source: "mercado_livre",
+            order_reference: mlOrderId,
             updated_at: new Date().toISOString(),
           })
           .eq("id", existing.id);
+        if (updErr) {
+          result.errors.push(`update_${claimId}:${updErr.message}`);
+          result.skipped++;
+          continue;
+        }
         result.updated++;
 
-        await supabase.from("return_actions").insert({
+        const { error: actionErr } = await supabase.from("return_actions").insert({
           return_id: existing.id,
+          company_id: conn.company_id,
           action: "updated",
           user_id: conn.user_id,
-          details: { source: "ml_claim", claim_id: String(claimId) },
+          details: { source: "ml_claim", claim_id: String(claimId), ml_return_id: mlReturnId || null },
         });
+        if (actionErr) result.errors.push(`action_${claimId}:${actionErr.message}`);
       } else {
         const { data: inserted, error: insErr } = await supabase
           .from("returns")
           .insert({
             company_id: conn.company_id,
-            ml_claim_id: String(claimId),
-            ml_return_id: mlReturnId || null,
-            ml_order_id: mlOrderId,
-            source: "ml_claim",
-            status: "pendente_recebimento",
+            numero: `ML-${claimId}`,
+            external_id: String(claimId),
+            order_reference: mlOrderId,
+            source: "mercado_livre",
+            status: "pendente",
             motivo: claim.reason_id || "Devolução Mercado Livre",
             created_by: conn.user_id,
+            notes: mlReturnId ? `ML return_id: ${mlReturnId}` : null,
           })
           .select("id")
           .single();
@@ -206,12 +221,14 @@ async function syncConnection(supabase: any, conn: any) {
         returnRowId = inserted.id;
         result.inserted++;
 
-        await supabase.from("return_actions").insert({
+        const { error: actionErr } = await supabase.from("return_actions").insert({
           return_id: inserted.id,
+          company_id: conn.company_id,
           action: "created",
           user_id: conn.user_id,
-          details: { source: "ml_claim", claim_id: String(claimId) },
+          details: { source: "ml_claim", claim_id: String(claimId), ml_return_id: mlReturnId || null },
         });
+        if (actionErr) result.errors.push(`action_${claimId}:${actionErr.message}`);
       }
 
       // 4. Itens: só se novo e houver ml_order_id
@@ -232,13 +249,15 @@ async function syncConnection(supabase: any, conn: any) {
           if (items && items.length > 0) {
             const rows = items.map((it: any) => ({
               return_id: returnRowId,
+              company_id: conn.company_id,
               product_id: it.product_id,
               sku: it.sku,
               nome_produto: it.ml_item_title,
-              quantidade_esperada: it.quantity || 1,
-              quantidade_recebida: 0,
+              expected_quantity: it.quantity || 1,
+              received_quantity: 0,
             }));
-            await supabase.from("return_items").insert(rows);
+            const { error: itemsErr } = await supabase.from("return_items").insert(rows);
+            if (itemsErr) result.errors.push(`items_${claimId}:${itemsErr.message}`);
           }
         }
       }
@@ -251,7 +270,8 @@ async function syncConnection(supabase: any, conn: any) {
 }
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  try {
+    if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -295,17 +315,23 @@ serve(async (req: Request) => {
   }
 
   // --- Buscar conexões ML ---
-  let query = supabase
+  const { data: rawConns, error: connErr } = await supabase
     .from("ml_connections")
-    .select("id, user_id, company_id, access_token, ml_user_id, seller_nickname")
+    .select("id, user_id, access_token, ml_user_id, seller_nickname")
     .eq("is_active", true);
-
-  if (!isCron && userCompanyId) {
-    query = query.eq("company_id", userCompanyId);
-  }
-
-  const { data: conns, error: connErr } = await query;
   if (connErr) return json({ error: connErr.message }, 500);
+
+  const userIds = [...new Set((rawConns ?? []).map((conn: any) => conn.user_id).filter(Boolean))];
+  const { data: profiles, error: profilesErr } = userIds.length
+    ? await supabase.from("profiles").select("id, company_id").in("id", userIds)
+    : { data: [], error: null };
+  if (profilesErr) return json({ error: profilesErr.message }, 500);
+
+  const companyByUser = new Map((profiles ?? []).map((profile: any) => [profile.id, profile.company_id]));
+  const conns = (rawConns ?? [])
+    .map((conn: any) => ({ ...conn, company_id: companyByUser.get(conn.user_id) ?? null }))
+    .filter((conn: any) => conn.company_id && (isCron || conn.company_id === userCompanyId));
+
   if (!conns || conns.length === 0) {
     return json({
       success: true,
@@ -341,5 +367,21 @@ serve(async (req: Request) => {
     totals.perConnection.push(r);
   }
 
-  return json(totals);
+    return json(totals);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("[ml-returns-sync] fatal", { message, stack });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: message,
+        stage: "ml-returns-sync",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
 });
