@@ -189,6 +189,53 @@ export const ordersService = {
   },
 
   async updateOrdemStatus(id: string, status: OrdemStatus, companyId: string, extra?: Record<string, any>) {
+    // Se for marcar como enviado, dar baixa no stock_full antes de atualizar o status
+    if (status === "enviado") {
+      const { data: ordem, error: fetchError } = await supabase
+        .from("full_orders")
+        .select(`*, full_order_items(*, product:products(*))`)
+        .eq("id", id)
+        .eq("company_id", companyId)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+      if (!ordem) throw new Error("Ordem não encontrada");
+
+      const bipagemItems = Array.isArray(ordem.bipagem_state) ? (ordem.bipagem_state as any[]) : [];
+
+      for (const item of bipagemItems) {
+        const qty = item.scannedQty || item.neededQty || 0;
+        if (qty <= 0) continue;
+
+        // Expande: produto avulso = 1 movimento; kit = 1 movimento por componente
+        type Move = { productId: string; quantity: number };
+        const moves: Move[] = [];
+        if (item.isKit && Array.isArray(item.components)) {
+          for (const c of item.components) {
+            if (!c?.productId) continue;
+            moves.push({ productId: c.productId, quantity: qty * (c.quantity || 1) });
+          }
+        } else if (item.productId) {
+          moves.push({ productId: item.productId, quantity: qty });
+        }
+
+        for (const m of moves) {
+          try {
+            await stockService.darBaixaFull(
+              m.productId,
+              m.quantity,
+              companyId,
+              id,
+              `Envio FULL - Baixa do estoque (Ordem ${ordem.frete_ml || ordem.numero || id})${item.isKit ? ' [kit]' : ''}`
+            );
+          } catch (err: any) {
+            console.error(`Erro ao dar baixa FULL do produto ${m.productId}:`, err.message);
+            // Não interrompe o fluxo — continua com os demais itens
+          }
+        }
+      }
+    }
+
     const { error } = await supabase
       .from("full_orders")
       .update({ status, ...(extra || {}) })

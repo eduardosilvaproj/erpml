@@ -67,6 +67,44 @@ export const stockService = {
     });
   },
 
+  async darBaixaFull(productId: string, quantity: number, companyId: string, referenceId?: string, notes?: string) {
+    const { data: product, error: fetchError } = await supabase
+      .from("products")
+      .select("stock_full")
+      .eq("id", productId)
+      .eq("company_id", companyId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!product) throw new Error("Produto não encontrado");
+    const oldStock = product.stock_full || 0;
+    if (oldStock < quantity) {
+      throw new Error("Estoque FULL insuficiente");
+    }
+
+    const newStock = oldStock - quantity;
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ stock_full: newStock })
+      .eq("id", productId)
+      .eq("company_id", companyId);
+
+    if (updateError) throw updateError;
+
+    await this.logMovement({
+      productId,
+      companyId,
+      type: 'saida',
+      quantity,
+      oldStock,
+      newStock,
+      stockType: 'full',
+      referenceId,
+      referenceType: referenceId ? 'order' : 'manual',
+      notes: notes || 'Baixa do estoque FULL'
+    });
+  },
+
   async creditarFull(productId: string, quantity: number, companyId: string) {
     const { data: product, error: fetchError } = await supabase
       .from("products")
