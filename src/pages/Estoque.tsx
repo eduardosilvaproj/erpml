@@ -30,6 +30,7 @@ const Estoque = () => {
   const { toast } = useToast();
   const companyId = useCompanyId();
   const [search, setSearch] = useState("");
+  const [brandFilter, setBrandFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState<"name_asc" | "stock_asc" | "stock_desc">("name_asc");
@@ -49,9 +50,10 @@ const Estoque = () => {
   const filters = useMemo(() => ({
     search: search || undefined,
     category_id: categoryFilter || undefined,
+    brand: brandFilter || undefined,
     sortBy: "name",
     sortOrder: "asc" as const,
-  }), [search, categoryFilter]);
+  }), [search, categoryFilter, brandFilter]);
 
   const { data, isLoading, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } = useProductsInfinite(filters);
   const { data: categories } = useCategories();
@@ -66,6 +68,9 @@ const Estoque = () => {
       name: p.name,
       sku: p.sku,
       ean: p.ean,
+      brand: p.brand || '',
+      cost: p.cost || 0,
+      price: p.price || 0,
       stock_physical: p.stock_physical,
       stock_full: p.stock_full,
       min_stock: p.min_stock,
@@ -77,6 +82,9 @@ const Estoque = () => {
       name: k.name,
       sku: k.sku,
       ean: k.ean || '',
+      brand: '',
+      cost: 0,
+      price: 0,
       stock_physical: k.stock_physical || 0,
       stock_full: k.stock_full || 0,
       min_stock: k.stock_min || 0,
@@ -215,20 +223,28 @@ const Estoque = () => {
   };
 
   const handleExportCSV = () => {
-    if (allItems.length === 0) return;
-    const headers = ["SKU", "Produto", "Tipo", "Físico", "FULL", "Total"];
-    const rows = allItems.map((p) => [
-      p.sku,
-      p.name,
-      p.type === 'kit' ? 'Kit' : 'Produto',
+    if (filteredItems.length === 0) return;
+    const BOM = "﻿";
+    const sep = ";";
+    const quote = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const headers = ["SKU", "Produto", "Marca", "Tipo", "Físico", "FULL", "Total", "Preço Custo", "Preço Venda", "Valor Total"].join(sep);
+    const rows = filteredItems.map((p) => [
+      quote(p.sku),
+      quote(p.name),
+      quote(p.brand),
+      quote(p.type === 'kit' ? 'Kit' : 'Produto'),
       p.stock_physical,
       p.stock_full,
-      p.stock_physical + p.stock_full
-    ]);
-    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+      p.stock_physical + p.stock_full,
+      p.cost,
+      p.price,
+      (p.stock_physical + p.stock_full) * p.price
+    ].join(sep));
+    const csv = BOM + [headers, ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "estoque.csv"; a.click();
+    const date = new Date().toISOString().slice(0, 10);
+    const a = document.createElement("a"); a.href = url; a.download = `estoque-${date}.csv`; a.click();
   };
 
   const handleReprocessKitStock = async () => {
@@ -318,6 +334,7 @@ const Estoque = () => {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Buscar produto..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
+            <Input placeholder="Filtrar por marca..." className="w-[180px]" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} />
             <Select value={stockFilter} onValueChange={setStockFilter}>
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
