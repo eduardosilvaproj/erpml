@@ -1,13 +1,15 @@
 import { useState } from "react";
 import {
   Search, TrendingUp, Package, Truck, BarChart3, Clock, Star, ArrowUpRight,
-  Sparkles, MapPin, Phone, DollarSign, Lightbulb, Bookmark, BookmarkCheck, Trash2, Eye
+  Sparkles, MapPin, Phone, DollarSign, Lightbulb, Bookmark, BookmarkCheck, Trash2, Eye,
+  WifiOff, Database
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useProductSearch, type ProductResult, type SupplierResult, type TrendingItem } from "@/hooks/useProductSearch";
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from "@/hooks/useWatchlist";
 
@@ -156,7 +158,7 @@ export default function PesquisaInteligente() {
   const {
     search, isSearching, searchResults,
     fetchTrending, isTrendingLoading, trendingItems,
-    searchHistory,
+    searchHistory, isFallback, searchError,
   } = useProductSearch();
 
   const { data: watchlist = [], isLoading: watchlistLoading } = useWatchlist();
@@ -255,6 +257,25 @@ export default function PesquisaInteligente() {
               )}
             </CardContent>
           </Card>
+
+          {/* Fallback / Error indicators */}
+          {searchError && (
+            <Alert variant="destructive">
+              <WifiOff className="h-4 w-4" />
+              <AlertTitle>Erro de conexão</AlertTitle>
+              <AlertDescription>{searchError}</AlertDescription>
+            </Alert>
+          )}
+
+          {isFallback && !searchError && (
+            <Alert>
+              <Database className="h-4 w-4" />
+              <AlertTitle>Modo offline</AlertTitle>
+              <AlertDescription>
+                A pesquisa inteligente por IA não estava disponível. Os resultados abaixo são do seu catálogo local.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Search Results */}
           {searchResults && (
