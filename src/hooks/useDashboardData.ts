@@ -83,6 +83,14 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
         .select("id, created_at")
         .eq("company_id", companyId as string);
 
+      // Fetch ML orders with items for cost calculation
+      const { data: mlOrders } = await supabase
+        .from("ml_orders")
+        .select("id, total_amount, ml_order_items(product_id, quantity, unit_price)")
+        .gte("date_created", from)
+        .lte("date_created", to + "T23:59:59")
+        .eq("company_id", companyId as string);
+
       // Fetch pending full orders
       const { count: pendingFull } = await supabase
         .from('full_orders')
@@ -119,6 +127,7 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
       const custs = customers || [];
       const xfers = transfers || [];
       const pmts = (payments || []) as any[];
+      const mlOrdersData = mlOrders || [];
 
       // --- KPI Calculations ---
 
@@ -131,18 +140,18 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
       const mlNetRevenue = mlMetrics?.netRevenue ?? 0;
       const mlFees = mlMetrics?.totalFees ?? 0;
       const mlShipping = mlMetrics?.totalShipping ?? 0;
-      const mlOrders = mlMetrics?.totalOrders ?? 0;
+      const mlOrdersCount = mlMetrics?.totalOrders ?? 0;
 
       // Consolidated Revenue (PDV + ML)
       const consolidatedRevenue = revenue + mlRevenue;
       const prevConsolidatedRevenue = prevRevenue; // ML prev not available, use PDV only for trend
 
       // Total sales count (PDV + ML)
-      const totalSales = sales.length + mlOrders;
+      const totalSales = sales.length + mlOrdersCount;
       const prevTotalSales = prev.length;
 
-      // Ticket médio
-      const avgTicket = totalSales > 0 ? revenue / totalSales : 0;
+      // Ticket médio (receita consolidada / total de vendas)
+      const avgTicket = totalSales > 0 ? consolidatedRevenue / totalSales : 0;
       const prevAvgTicket = prevTotalSales > 0 ? prevRevenue / prevTotalSales : 0;
 
       // Cost & profit calculation
@@ -170,7 +179,17 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
         }
       }
 
-      const netProfit = (revenue + mlNetRevenue) - totalCost;
+      // ML cost calculation
+      let mlTotalCost = 0;
+      for (const order of mlOrdersData) {
+        const items = (order as any).ml_order_items || [];
+        for (const item of items) {
+          const cost = productCostMap.get(item.product_id) || 0;
+          mlTotalCost += cost * item.quantity;
+        }
+      }
+
+      const netProfit = (revenue + mlNetRevenue) - (totalCost + mlTotalCost);
       const profitMargin = consolidatedRevenue > 0 ? (netProfit / consolidatedRevenue) * 100 : 0;
 
       // Top products ranking
@@ -225,7 +244,7 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
         mlNetRevenue,
         mlFees,
         mlShipping,
-        mlOrders,
+        mlOrders: mlOrdersCount,
         totalSales,
         salesTrend: calcTrend(totalSales, prevTotalSales),
         netProfit,

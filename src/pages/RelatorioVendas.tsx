@@ -9,13 +9,16 @@ import { formatCurrency } from "@/lib/formatters";
 import { FileDown, BarChart3, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type PeriodKey = "7d" | "15d" | "30d" | "90d";
+type PeriodKey = "7d" | "14d" | "15d" | "30d" | "39d" | "6m" | "1a";
 
 const PERIOD_OPTIONS: { key: PeriodKey; label: string; days: number }[] = [
   { key: "7d", label: "7 dias", days: 7 },
+  { key: "14d", label: "14 dias", days: 14 },
   { key: "15d", label: "15 dias", days: 15 },
   { key: "30d", label: "30 dias", days: 30 },
-  { key: "90d", label: "90 dias", days: 90 },
+  { key: "39d", label: "39 dias", days: 39 },
+  { key: "6m", label: "6 meses", days: 180 },
+  { key: "1a", label: "1 ano", days: 365 },
 ];
 
 export default function RelatorioVendas() {

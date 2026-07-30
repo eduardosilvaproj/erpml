@@ -118,7 +118,7 @@ export const productsService = {
     while (true) {
       let q = supabase
         .from("products")
-        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*)")
+        .select("*, categories(name), product_suppliers(supplier_id, cost, is_primary, suppliers(id, name)), product_alternative_gtins(gtin), product_supplier_skus(*), ml_linked_products(ml_price)")
         .eq("company_id", companyId)
         .order("name", { ascending: true })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);

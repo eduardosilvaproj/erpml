@@ -2,7 +2,7 @@ import { useState, Fragment, useMemo, useRef } from "react";
 import {
   Users, Plus, Search, ShoppingBag, Pencil, Trash2, Loader2, MessageSquare,
   Phone, Mail, Eye, ArrowLeft, Filter, ArrowUpDown, Calendar, MapPin, FileText,
-  DollarSign, TrendingUp, Clock
+  DollarSign, TrendingUp, Clock, Download, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ import {
 } from "@/hooks/useCustomerData";
 import MLQuestionsTab from "@/components/MLQuestionsTab";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
 
 // Avatar colors based on name hash
@@ -98,6 +98,44 @@ function useCustomerPurchaseTotals() {
   });
 }
 
+// Hook to find ML buyers not yet in customers
+function useMLBuyersToImport() {
+  const cid = useCompanyId();
+  return useQuery({
+    queryKey: ["ml-buyers-to-import", cid],
+    enabled: !!cid,
+    queryFn: async () => {
+      // Get unique buyers from ml_orders
+      const { data: mlBuyers, error: mlErr } = await supabase
+        .from("ml_orders")
+        .select("ml_buyer_nickname, ml_buyer_id")
+        .not("ml_buyer_nickname", "is", null)
+        .eq("company_id", cid as string);
+      if (mlErr) throw mlErr;
+
+      // Get existing customer names
+      const { data: existing, error: custErr } = await supabase
+        .from("customers")
+        .select("name")
+        .eq("company_id", cid as string);
+      if (custErr) throw custErr;
+
+      const existingNames = new Set((existing || []).map((c) => c.name.toLowerCase().trim()));
+
+      // Deduplicate by nickname
+      const seen = new Set<string>();
+      const toImport: { nickname: string; buyerId: number | null }[] = [];
+      for (const b of mlBuyers || []) {
+        const key = (b.ml_buyer_nickname || "").toLowerCase().trim();
+        if (!key || seen.has(key) || existingNames.has(key)) continue;
+        seen.add(key);
+        toImport.push({ nickname: b.ml_buyer_nickname!, buyerId: b.ml_buyer_id });
+      }
+      return toImport;
+    },
+  });
+}
+
 const CRM = () => {
   const companyId = useCompanyId();
   const [search, setSearch] = useState("");
@@ -121,9 +159,13 @@ const CRM = () => {
   const { data: stats } = useCustomerStats();
   const { data: purchases } = useCustomerWithPurchases(profileCustomer?.id || selectedCustomerId);
   const { data: purchaseTotals } = useCustomerPurchaseTotals();
+  const { data: mlBuyersToImport, isLoading: mlBuyersLoading } = useMLBuyersToImport();
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [importingML, setImportingML] = useState(false);
 
   const openNew = () => {
     setEditing(null);
@@ -230,6 +272,47 @@ const CRM = () => {
   }, [customers, filterType, sortType, purchaseTotals]);
 
   const getCustomerTotals = (id: string) => purchaseTotals?.[id] || { total: 0, count: 0, lastDate: "" };
+
+  // Query ML orders for the profile customer
+  const { data: mlOrdersForCustomer } = useQuery({
+    queryKey: ["ml-orders-for-customer", profileCustomer?.id],
+    enabled: !!profileCustomer && !!companyId,
+    queryFn: async () => {
+      const name = profileCustomer!.name.trim();
+      const { data, error } = await supabase
+        .from("ml_orders")
+        .select("*, ml_order_items(*)")
+        .eq("company_id", companyId as string)
+        .ilike("ml_buyer_nickname", name)
+        .order("date_created", { ascending: false, nullsFirst: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleImportMLBuyers = async () => {
+    if (!mlBuyersToImport || mlBuyersToImport.length === 0) {
+      toast({ title: "Nenhum comprador ML para importar" });
+      return;
+    }
+    setImportingML(true);
+    try {
+      const records = mlBuyersToImport.map((b) => ({
+        name: b.nickname,
+        company_id: companyId,
+      }));
+      const { error } = await supabase.from("customers").insert(records);
+      if (error) throw error;
+      toast({ title: `${records.length} comprador(es) ML importado(s) com sucesso!` });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["customer-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-buyers-to-import"] });
+    } catch (e: any) {
+      toast({ title: "Erro ao importar", description: e.message, variant: "destructive" });
+    } finally {
+      setImportingML(false);
+    }
+  };
 
 
   // ===== PROFILE VIEW =====
@@ -342,6 +425,58 @@ const CRM = () => {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">Nenhuma compra registrada</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ML Orders */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              Pedidos Mercado Livre
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {mlOrdersForCustomer && mlOrdersForCustomer.length > 0 ? (
+              <div className="space-y-3">
+                {mlOrdersForCustomer.map((order: any) => {
+                  const netValue = Number(order.total_amount || 0)
+                    - Number(order.marketplace_fee || 0)
+                    - Number(order.shipping_cost || 0);
+                  return (
+                    <div key={order.id} className="rounded-xl bg-muted/30 p-4 border border-border/40">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="font-medium text-sm">
+                          Pedido #{order.ml_order_id}
+                        </p>
+                        <Badge variant="outline" className="text-[10px]">
+                          {order.status}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {order.date_created
+                          ? new Date(order.date_created).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+                          : "—"}
+                      </p>
+                      {order.ml_order_items?.map((item: any) => (
+                        <p key={item.id} className="text-xs text-muted-foreground">
+                          {item.quantity}x {item.ml_item_title || "Item"}
+                        </p>
+                      ))}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          {order.marketplace_fee > 0 && <span>Comissão: {formatCurrency(order.marketplace_fee)}</span>}
+                          {order.shipping_cost > 0 && <span className="ml-2">Frete: {formatCurrency(order.shipping_cost)}</span>}
+                        </div>
+                        <p className="font-bold text-foreground">{formatCurrency(netValue)}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum pedido ML encontrado para este cliente</p>
             )}
           </CardContent>
         </Card>
@@ -506,7 +641,24 @@ const CRM = () => {
         </TabsList>
 
         <TabsContent value="clientes" className="space-y-6">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={handleImportMLBuyers}
+              disabled={importingML || mlBuyersLoading || (mlBuyersToImport?.length || 0) === 0}
+            >
+              {importingML ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-2 h-4 w-4" />
+              )}
+              Importar Compradores ML
+              {mlBuyersToImport && mlBuyersToImport.length > 0 && (
+                <span className="ml-1.5 rounded-full bg-primary/20 text-primary text-xs px-2 py-0.5">
+                  {mlBuyersToImport.length}
+                </span>
+              )}
+            </Button>
             <Button onClick={openNew}>
               <Plus className="mr-2 h-4 w-4" />
               Novo Cliente

@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, DollarSign, TrendingDown, Search, ArrowUpDown, Loader2, Percent } from "lucide-react";
+import { AlertTriangle, DollarSign, TrendingDown, Search, ArrowUpDown, Loader2, Percent, Receipt } from "lucide-react";
 
 interface ProductWithML {
   id: string;
@@ -33,6 +33,8 @@ interface ProductEnriched extends ProductWithML {
   margin: number;
   costWithTax: number;
   marginWithTax: number;
+  marginLiquida: number;
+  mlNetPrice: number;
 }
 
 function getMarginClass(margin: number): string {
@@ -61,6 +63,34 @@ export default function ConciliacaoPrecos() {
   const [search, setSearch] = useState("");
   const [sortAsc, setSortAsc] = useState(false);
   const [aliquota, setAliquota] = useState(0); // % de imposto sobre o custo
+  const [taxaML, setTaxaML] = useState<number | null>(null); // % de taxas ML sobre o valor bruto
+
+  // Busca a taxa média de comissão ML dos últimos 90 dias
+  const { data: taxaMediaML } = useQuery({
+    queryKey: ["taxa-media-ml", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("ml_orders")
+        .select("total_amount, marketplace_fee, shipping_cost")
+        .eq("company_id", companyId)
+        .gte("date_created", cutoff)
+        .gt("total_amount", 0);
+      if (error) throw error;
+      if (!data || data.length === 0) return 0;
+      const totalFees = data.reduce((s, r) => s + Number(r.marketplace_fee || 0) + Number(r.shipping_cost || 0), 0);
+      const totalAmount = data.reduce((s, r) => s + Number(r.total_amount || 0), 0);
+      return totalAmount > 0 ? (totalFees / totalAmount) * 100 : 0;
+    },
+  });
+
+  // Inicializa taxaML com o valor calculado quando carregar
+  useMemo(() => {
+    if (taxaMediaML != null && taxaML === null) {
+      setTaxaML(Number(taxaMediaML.toFixed(2)));
+    }
+  }, [taxaMediaML, taxaML]);
 
   const { data: products, isLoading, error } = useQuery({
     queryKey: ["conciliacao-precos", companyId],
@@ -125,6 +155,7 @@ export default function ConciliacaoPrecos() {
 
   const enriched = useMemo(() => {
     if (!products) return [];
+    const taxa = taxaML ?? 0;
     return products.map((p) => {
       const margin = p.ml_price && p.ml_price > 0
         ? ((p.ml_price - p.cost) / p.ml_price) * 100
@@ -133,9 +164,15 @@ export default function ConciliacaoPrecos() {
       const marginWithTax = p.ml_price && p.ml_price > 0
         ? ((p.ml_price - costWithTax) / p.ml_price) * 100
         : 0;
-      return { ...p, margin, costWithTax, marginWithTax };
+      const mlNetPrice = p.ml_price && p.ml_price > 0
+        ? p.ml_price * (1 - taxa / 100)
+        : 0;
+      const marginLiquida = mlNetPrice > 0
+        ? ((mlNetPrice - costWithTax) / mlNetPrice) * 100
+        : 0;
+      return { ...p, margin, costWithTax, marginWithTax, marginLiquida, mlNetPrice };
     });
-  }, [products, aliquota]);
+  }, [products, aliquota, taxaML]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return enriched;
@@ -149,20 +186,20 @@ export default function ConciliacaoPrecos() {
   }, [enriched, search]);
 
   const sorted = useMemo(() => {
-    const sortKey = aliquota > 0 ? "marginWithTax" : "margin";
+    const sortKey = taxaML != null && taxaML > 0 ? "marginLiquida" : aliquota > 0 ? "marginWithTax" : "margin";
     return [...filtered].sort((a, b) =>
       sortAsc ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey]
     );
-  }, [filtered, sortAsc, aliquota]);
+  }, [filtered, sortAsc, aliquota, taxaML]);
 
   const summary: SummaryCards = useMemo(() => {
-    const sortKey = aliquota > 0 ? "marginWithTax" : "margin";
+    const sortKey = taxaML != null && taxaML > 0 ? "marginLiquida" : aliquota > 0 ? "marginWithTax" : "margin";
     return {
       total: enriched.length,
       margemNegativa: enriched.filter((p) => p[sortKey] < 0).length,
       alerta: enriched.filter((p) => p[sortKey] >= 0 && p[sortKey] < 20).length,
     };
-  }, [enriched, aliquota]);
+  }, [enriched, aliquota, taxaML]);
 
   const toggleSort = () => setSortAsc((prev) => !prev);
 
@@ -261,6 +298,20 @@ export default function ConciliacaoPrecos() {
             className="w-24 text-sm font-mono"
           />
         </div>
+        <div className="flex items-center gap-2">
+          <Receipt className="h-4 w-4 text-muted-foreground" />
+          <Input
+            type="number"
+            min={0}
+            max={100}
+            step={0.1}
+            placeholder="Taxa ML %"
+            value={taxaML != null ? taxaML : ""}
+            onChange={(e) => setTaxaML(Number(e.target.value) || 0)}
+            className="w-24 text-sm font-mono"
+            title="Percentual médio de taxas ML (comissão + frete) sobre o valor bruto"
+          />
+        </div>
         <Button variant="outline" size="sm" onClick={toggleSort} className="gap-1.5">
           <ArrowUpDown className="h-4 w-4" />
           {sortAsc ? "Margem (crescente)" : "Margem (decrescente)"}
@@ -282,13 +333,14 @@ export default function ConciliacaoPrecos() {
                 <TableHead className="text-right">Diferença</TableHead>
                 <TableHead className="text-right">Margem %</TableHead>
                 <TableHead className="text-right">Margem c/ Imposto</TableHead>
+                <TableHead className="text-right">Margem Líquida</TableHead>
                 <TableHead className="text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sorted.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={11} className="text-center text-muted-foreground py-8">
                     {search ? "Nenhum produto encontrado para esta busca." : "Nenhum produto com anúncio no ML encontrado."}
                   </TableCell>
                 </TableRow>
@@ -343,9 +395,12 @@ export default function ConciliacaoPrecos() {
                       <TableCell className={`text-right font-mono text-sm ${aliquota > 0 ? getMarginClass(p.marginWithTax) : "text-muted-foreground"}`}>
                         {aliquota > 0 ? `${p.marginWithTax.toFixed(1)}%` : "—"}
                       </TableCell>
+                      <TableCell className={`text-right font-mono text-sm ${taxaML != null && taxaML > 0 ? getMarginClass(p.marginLiquida) : "text-muted-foreground"}`}>
+                        {taxaML != null && taxaML > 0 ? `${p.marginLiquida.toFixed(1)}%` : "—"}
+                      </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant={getBadgeVariant(aliquota > 0 ? p.marginWithTax : p.margin)}>
-                          {getBadgeLabel(aliquota > 0 ? p.marginWithTax : p.margin)}
+                        <Badge variant={getBadgeVariant(taxaML != null && taxaML > 0 ? p.marginLiquida : aliquota > 0 ? p.marginWithTax : p.margin)}>
+                          {getBadgeLabel(taxaML != null && taxaML > 0 ? p.marginLiquida : aliquota > 0 ? p.marginWithTax : p.margin)}
                         </Badge>
                       </TableCell>
                     </TableRow>

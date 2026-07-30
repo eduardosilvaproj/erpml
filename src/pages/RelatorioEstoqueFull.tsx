@@ -62,9 +62,9 @@ const RelatorioEstoqueFull = () => {
         case "diferenca":
           return ((aFull - aPhys) - (bFull - bPhys)) * dir;
         case "price":
-          return ((a.price ?? 0) - (b.price ?? 0)) * dir;
+          return (getMlPrice(a) - getMlPrice(b)) * dir;
         case "total":
-          return (aFull * (a.price ?? 0) - bFull * (b.price ?? 0)) * dir;
+          return (aFull * getMlPrice(a) - bFull * getMlPrice(b)) * dir;
         default:
           return 0;
       }
@@ -81,7 +81,16 @@ const RelatorioEstoqueFull = () => {
 
   const totalFull = filtered.length;
   const totalFullUnits = filtered.reduce((s, p) => s + (p.stock_full ?? 0), 0);
-  const totalFullValue = filtered.reduce((s, p) => s + (p.stock_full ?? 0) * (p.price ?? 0), 0);
+  // Helper to get ML price from linked products
+  const getMlPrice = (p: any): number => {
+    const linked = p.ml_linked_products;
+    if (linked && linked.length > 0 && linked[0].ml_price != null) {
+      return linked[0].ml_price;
+    }
+    return p.price ?? 0;
+  };
+
+  const totalFullValue = filtered.reduce((s, p) => s + (p.stock_full ?? 0) * getMlPrice(p), 0);
 
   const toggleSort = useCallback((field: SortField) => {
     setSortField((prev) => {
@@ -111,7 +120,7 @@ const RelatorioEstoqueFull = () => {
       ...filtered.map((p) => {
         const full = p.stock_full ?? 0;
         const phys = p.stock_physical ?? 0;
-        return `"${p.sku}","${p.name}",${full},${phys},${full - phys},${p.price ?? 0},${(full * (p.price ?? 0)).toFixed(2)}`;
+        return `"${p.sku}","${p.name}",${full},${phys},${full - phys},${getMlPrice(p)},${(full * getMlPrice(p)).toFixed(2)}`;
       }),
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
@@ -232,7 +241,8 @@ const RelatorioEstoqueFull = () => {
                     const full = p.stock_full ?? 0;
                     const phys = p.stock_physical ?? 0;
                     const diff = full - phys;
-                    const total = full * (p.price ?? 0);
+                    const mlPrice = getMlPrice(p);
+                    const total = full * mlPrice;
                     const semEstoqueFisico = phys === 0;
                     return (
                       <TableRow

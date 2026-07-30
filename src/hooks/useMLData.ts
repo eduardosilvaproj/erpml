@@ -177,9 +177,19 @@ export function usePersistedMLOrders() {
     queryKey: ["ml-persisted-orders", user?.id],
     enabled: !!user,
     queryFn: async () => {
+      // Busca o company_id do usuário
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("company_id")
+        .eq("id", user!.id)
+        .maybeSingle();
+      const companyId = profile?.company_id;
+      if (!companyId) return [];
+
       const { data, error } = await supabase
         .from("ml_orders")
         .select("*, ml_order_items(*, products(id, name, sku))")
+        .eq("company_id", companyId)
         .order("date_created", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -410,7 +420,20 @@ export function useMLWebhookStatus(enabled: boolean) {
   return useQuery({
     queryKey: ["ml-webhook-status"],
     enabled,
-    queryFn: () => callML<{ is_registered: boolean; webhook_url?: string }>("webhook-status"),
+    queryFn: async () => {
+      const result = await callML<any>("webhook-status");
+      // ML retorna array de webhooks, não { is_registered: boolean }
+      if (Array.isArray(result)) {
+        const activeWebhooks = result.filter((w: any) => w?.active === true);
+        return {
+          is_registered: activeWebhooks.length > 0,
+          webhooks: result,
+          webhook_url: activeWebhooks[0]?.url ?? null,
+        };
+      }
+      // Fallback para formato antigo
+      return result as { is_registered: boolean; webhook_url?: string };
+    },
     retry: false,
   });
 }

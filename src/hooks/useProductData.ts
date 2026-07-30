@@ -10,18 +10,19 @@ import type { Database } from "@/integrations/supabase/types";
  */
 export type Product = Database["public"]["Tables"]["products"]["Row"] & {
   categories?: { name: string } | null;
-  product_suppliers?: { 
-    supplier_id: string; 
-    cost: number; 
-    is_primary: boolean; 
-    suppliers: { id: string; name: string } 
+  product_suppliers?: {
+    supplier_id: string;
+    cost: number;
+    is_primary: boolean;
+    suppliers: { id: string; name: string }
   }[];
   product_alternative_gtins?: { gtin: string }[];
-  product_supplier_skus?: { 
-    id: string; 
-    supplier_name: string; 
-    supplier_sku: string 
+  product_supplier_skus?: {
+    id: string;
+    supplier_name: string;
+    supplier_sku: string
   }[];
+  ml_linked_products?: { ml_price: number | null }[];
 };
 
 /**

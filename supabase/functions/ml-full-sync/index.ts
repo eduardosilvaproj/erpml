@@ -429,6 +429,61 @@ serve(async (req: Request) => {
           continue;
         }
 
+        // === VINCULAR DADOS FINANCEIROS DO PEDIDO ===
+        // Busca o ml_order correspondente para copiar dados financeiros
+        try {
+          const { data: mlOrder } = await supabase
+            .from("ml_orders")
+            .select("total_amount, shipping_cost, marketplace_fee, date_created")
+            .eq("ml_order_id", mlOrderId)
+            .eq("company_id", companyId)
+            .maybeSingle();
+
+          if (mlOrder) {
+            console.log(`[ml-full-sync] Dados financeiros encontrados em ml_orders para pedido ${mlOrderId}:`, {
+              total_amount: mlOrder.total_amount,
+              shipping_cost: mlOrder.shipping_cost,
+              marketplace_fee: mlOrder.marketplace_fee,
+            });
+            // TODO: Quando a migration for aplicada, copiar estes campos para full_orders:
+            // total_amount, shipping_cost, marketplace_fee
+          } else {
+            // Tenta buscar da API ML e persistir em ml_orders
+            console.log(`[ml-full-sync] Pedido ${mlOrderId} não encontrado em ml_orders. Buscando da API ML...`);
+            const orderDetailResp = await fetch(`${ML_API_BASE}/orders/${mlOrderId}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (orderDetailResp.ok) {
+              const orderDetail = await orderDetailResp.json();
+              const totalAmount = Number(orderDetail.total_amount ?? 0);
+              const shippingCost = Number(orderDetail.shipping?.cost ?? 0);
+              const marketplaceFee = Number(orderDetail.fees?.amount ?? 0);
+
+              console.log(`[ml-full-sync] Dados financeiros da API ML para pedido ${mlOrderId}:`, {
+                total_amount: totalAmount,
+                shipping_cost: shippingCost,
+                marketplace_fee: marketplaceFee,
+              });
+
+              // Persiste em ml_orders se ainda não existir
+              await supabase.from("ml_orders").upsert({
+                ml_order_id: mlOrderId,
+                company_id: companyId,
+                total_amount: totalAmount,
+                shipping_cost: shippingCost,
+                marketplace_fee: marketplaceFee,
+                date_created: orderDetail.date_created ?? new Date().toISOString(),
+                status: orderDetail.status ?? "paid",
+                buyer_nickname: buyerNickname,
+              }).eq("ml_order_id", mlOrderId).eq("company_id", companyId);
+            } else {
+              console.warn(`[ml-full-sync] Falha ao buscar detalhes do pedido ${mlOrderId} da API ML: ${orderDetailResp.status}`);
+            }
+          }
+        } catch (finErr) {
+          console.error(`[ml-full-sync] Erro ao processar dados financeiros do pedido ${mlOrderId}:`, finErr);
+        }
+
         // Insere apenas os itens vinculados (product_id é NOT NULL)
         if (itemsToInsert.length) {
           await supabase
