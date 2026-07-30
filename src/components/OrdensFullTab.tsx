@@ -300,21 +300,25 @@ export const OrdensFullTab = () => {
           const eanMatch = block.match(/Código universal:[\s\n]*(\d{12,14})/);
           if (!eanMatch) continue;
           const ean = eanMatch[1];
-          
+          // Valor do SKU. Em KITS o ML repete os EANs dos componentes separados
+          // por "/" (ex.: "7899706189385/7899706189422") — é o MESMO SKU usado
+          // no cadastro do kit, então serve para casar o kit pelo SKU.
+          const skuValMatch = block.match(/SKU:\s*(\S+)/);
+          const skuRaw = skuValMatch ? skuValMatch[1] : "";
           const skuMatch = block.match(/SKU:\s*\S+\s*\n([\s\S]+)/);
-          const nomePDF = skuMatch 
+          const nomePDF = skuMatch
             ? skuMatch[1].replace(/\n/g, ' ').replace(/Código universal/g, '').trim()
             : '';
-          
-          products.push({ ean, nomePDF });
+
+          products.push({ ean, skuRaw, nomePDF });
         }
         
         const qtys = [...text.matchAll(/(\d+)\s*[•·]\s*A data de validade/g)]
           .map(m => parseInt(m[1]));
         
-        return products.map((p, i) => ({ 
+        return products.map((p, i) => ({
           ean: p.ean,
-          sku: "",
+          sku: p.skuRaw || "",
           pdfName: p.nomePDF || "—",
           quantity: qtys[i] || 0 
         }));
@@ -416,11 +420,13 @@ export const OrdensFullTab = () => {
         }
 
         if (!product) {
-          // Busca kit por EAN ou SKU (case-insensitive) e EXPANDE em seus itens
-          const itemCode = item.ean?.toUpperCase();
+          // Busca kit por EAN (código universal) OU SKU (códigos separados por
+          // "/") — ambos vêm no PDF e ambos são salvos no cadastro do kit.
+          const eanCode = item.ean?.toUpperCase();
+          const skuCode = (item.sku || "").toUpperCase();
           const kit = kits?.find(k =>
-            (k.ean && k.ean.toUpperCase() === itemCode) ||
-            (k.sku && k.sku.toUpperCase() === itemCode)
+            (k.ean && eanCode && k.ean.toUpperCase() === eanCode) ||
+            (k.sku && skuCode && k.sku.toUpperCase() === skuCode)
           );
           if (kit && (kit as any).kit_items?.length > 0) {
             const kitQtd = item.quantity || 1;

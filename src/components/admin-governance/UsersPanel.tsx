@@ -363,12 +363,12 @@ export const UsersPanel = () => {
               </div>
               <div className="space-y-2">
                 <Label>Empresa Vinculada</Label>
-                <Select value={formData.companyId} onValueChange={(v) => setFormData({...formData, companyId: v})}>
+                <Select value={formData.companyId || "none"} onValueChange={(v) => setFormData({...formData, companyId: v === "none" ? "" : v})}>
                   <SelectTrigger>
                     <SelectValue placeholder="Nenhuma" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
+                    <SelectItem value="none">Nenhuma</SelectItem>
                     {companies?.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
