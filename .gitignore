@@ -15,8 +15,8 @@ dist-ssr
 # Secrets / credentials (nunca commitar)
 cron secret.txt
 *secret*.txt
-.env
-.env.*
+.env.local
+.env.*.local
 
 # Prompts auxiliares gerados durante o desenvolvimento
 PROMPT_*.md

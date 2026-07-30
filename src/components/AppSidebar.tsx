@@ -4,7 +4,7 @@ import {
   LogOut, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor,
   Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
-  LockKeyhole, Import, Activity
+  LockKeyhole, Import, Activity, Undo2
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -47,6 +47,7 @@ const groups: NavGroup[] = [
       { label: "Conferência", url: "/conferencia", icon: ScanBarcode, tooltip: "Bipe produtos para verificar se o estoque está correto" },
       { label: "Balanço", url: "/balanco-estoque", icon: BarChart, tooltip: "Realize inventário físico do estoque" },
       { label: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, tooltip: "Transferir mercadorias para o FULL do Mercado Livre" },
+      { label: "Devoluções", url: "/devolucoes", icon: Undo2, tooltip: "Gerencie devoluções, quarentena e evidências" },
     ],
   },
   {
@@ -215,6 +216,24 @@ function SidebarContent({
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">Voltar para o painel principal</TooltipContent>
+        </Tooltip>
+
+        {/* Devoluções - atalho direto */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={() => { setOpenGroup(null); go("/devolucoes"); }}
+              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+                isActive("/devolucoes")
+                  ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
+                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+              }`}
+            >
+              <Undo2 className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
+              <span className="truncate">Devoluções</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Gerencie devoluções, quarentena e evidências</TooltipContent>
         </Tooltip>
 
         {/* Groups */}

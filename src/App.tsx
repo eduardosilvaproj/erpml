@@ -76,9 +76,8 @@ const DuplicadorAnuncios = lazy(() => import("./pages/DuplicadorAnuncios"));
 const AdminMasterDev = lazy(() => import("./pages/AdminMasterDev"));
 // Removed AdminGovernance lazy load as it's now redirected to MasterAdmin
 const Importacao = lazy(() => import("./pages/Importacao"));
-const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
-const RelatorioEstoqueFisico = lazy(() => import("./pages/RelatorioEstoqueFisico"));
-const RelatorioEstoqueFull = lazy(() => import("./pages/RelatorioEstoqueFull"));
+const Devolucoes = lazy(() => import("./pages/Devolucoes"));
+const DevolucaoDetail = lazy(() => import("./pages/DevolucaoDetail"));
 
 
 const queryClient = new QueryClient({
@@ -166,6 +165,8 @@ const App = (): JSX.Element => {
                               <Route path="/pesquisa" element={<PesquisaInteligente />} />
                               <Route path="/ia-ean13" element={<GeradorEAN13 />} />
                               <Route path="/importacao" element={<Importacao />} />
+                              <Route path="/devolucoes" element={<PlanProtectedRoute path="/devolucoes"><Devolucoes /></PlanProtectedRoute>} />
+                              <Route path="/devolucoes/:returnId" element={<PlanProtectedRoute path="/devolucoes"><DevolucaoDetail /></PlanProtectedRoute>} />
                               <Route path="/admin" element={<Navigate to="/master-admin" replace />} />
                               <Route path="/admin/painel-controle" element={<Navigate to="/master-admin" replace />} />
                               <Route path="/mentor-vendas" element={<PlanProtectedRoute path="/mentor-vendas"><MentorVendasML /></PlanProtectedRoute>} />

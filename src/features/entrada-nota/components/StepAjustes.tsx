@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Package, Check } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Package, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -26,60 +29,70 @@ interface StepAjustesProps {
   goToStep: (s: any) => void;
   formatCurrency: (v: number) => string;
   hasMatchesOrBatch: boolean;
+  kitGroups: KitGroup[];
+  onCreateKit: (kit: KitGroup) => void;
+  onRemoveKitGroup: (kitId: string) => void;
 }
 
 export const StepAjustes = ({
-  itemsToShow, adjustedItems, kitGroups, updateAdjustedQty, updateAdjustedCost, updateAdjustedName, removeAdjustedItem,
-  onOpenNewProduct, onCreateKit, onRemoveKitGroup, entryNotes, setEntryNotes, setCurrentStep, goToStep, formatCurrency, hasMatchesOrBatch
+  itemsToShow, adjustedItems, updateAdjustedQty, updateAdjustedCost, removeAdjustedItem,
+  onOpenNewProduct, entryNotes, setEntryNotes, setCurrentStep, goToStep, formatCurrency, hasMatchesOrBatch,
+  kitGroups, onCreateKit, onRemoveKitGroup
 }: StepAjustesProps) => {
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
-  const [kitDialogOpen, setKitDialogOpen] = useState(false);
+  const rows = adjustedItems.length > 0 ? adjustedItems : itemsToShow;
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [kitDialog, setKitDialog] = useState(false);
   const [kitName, setKitName] = useState("");
   const [kitSku, setKitSku] = useState("");
-  const [kitPrice, setKitPrice] = useState(0);
-  const [kitQuantity, setKitQuantity] = useState(1);
+  const [kitPrice, setKitPrice] = useState("");
+  const [kitQty, setKitQty] = useState(1);
 
-  const items = adjustedItems.length > 0 ? adjustedItems : itemsToShow;
-  const kitItemIndices = new Set(kitGroups.flatMap(g => g.itemIndices));
+  const inKitIdx = new Set<number>(kitGroups.flatMap((k) => k.itemIndices));
 
-  const toggleSelect = (idx: number) => {
-    setSelectedIndices(prev => {
+  const toggleSel = (idx: number) => {
+    if (inKitIdx.has(idx)) return;
+    setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
+      if (next.has(idx)) next.delete(idx); else next.add(idx);
       return next;
     });
   };
 
   const openKitDialog = () => {
-    const selected = Array.from(selectedIndices).map(i => items[i]);
-    if (selected.length < 2) return;
-    const minQty = Math.min(...selected.map(s => Math.floor(s.xmlProduct.quantity)));
-    const totalCost = selected.reduce((sum, s) => sum + s.xmlProduct.unitValue * s.xmlProduct.quantity, 0);
-    const names = selected.map(s => s.xmlProduct.description);
-    const suggestedName = names.length <= 3 ? names.join(" + ") : `${names[0]} + ${names[1]} + ...`;
-    setKitName(suggestedName);
-    setKitSku(`KIT-ENT-${Date.now().toString(36).toUpperCase()}`);
-    setKitPrice(Math.round(totalCost * 1.3 * 100) / 100);
-    setKitQuantity(minQty);
-    setKitDialogOpen(true);
+    const indices = Array.from(selected);
+    const first = rows[indices[0]];
+    const suggestedName = `Kit ${indices.map((i) => rows[i]?.xmlProduct.description?.split(" ")[0]).filter(Boolean).join(" + ")}`.slice(0, 80);
+    setKitName(suggestedName || `Kit ${Date.now()}`);
+    setKitSku(`KIT-${Date.now().toString().slice(-6)}`);
+    setKitPrice(String(indices.reduce((s, i) => s + (rows[i]?.xmlProduct.unitValue || 0), 0).toFixed(2)));
+    setKitQty(Math.floor(first?.xmlProduct.quantity || 1));
+    setKitDialog(true);
   };
 
   const confirmKit = () => {
-    if (!kitName.trim() || !kitSku.trim()) return;
-    onCreateKit(kitName.trim(), kitSku.trim(), kitPrice, Array.from(selectedIndices), kitQuantity);
-    setSelectedIndices(new Set());
-    setKitDialogOpen(false);
+    const indices = Array.from(selected);
+    const cost = indices.reduce((s, i) => s + (rows[i]?.xmlProduct.unitValue || 0), 0);
+    onCreateKit({
+      kitId: `kit-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: kitName.trim() || `Kit ${Date.now()}`,
+      sku: kitSku.trim() || `KIT-${Date.now()}`,
+      itemIndices: indices,
+      quantity: kitQty,
+      cost,
+      price: parseFloat(kitPrice) || 0,
+    });
+    setSelected(new Set());
+    setKitDialog(false);
   };
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">{items.length} produto(s)</p>
+      <div className="flex justify-between items-center flex-wrap gap-2">
+        <p className="text-sm text-muted-foreground">{rows.length} produto(s){kitGroups.length > 0 && ` • ${kitGroups.length} kit(s)`}</p>
         <div className="flex gap-2">
-          {selectedIndices.size >= 2 && (
+          {selected.size >= 2 && (
             <Button size="sm" className="gap-1" onClick={openKitDialog}>
-              <Package className="h-3.5 w-3.5" /> Criar Kit ({selectedIndices.size})
+              <Package className="h-3.5 w-3.5" /> Criar Kit ({selected.size})
             </Button>
           )}
           <Button variant="outline" size="sm" className="gap-1" onClick={onOpenNewProduct}>
@@ -90,17 +103,17 @@ export const StepAjustes = ({
 
       {kitGroups.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Kits criados nesta entrada:</p>
-          {kitGroups.map(kg => (
-            <div key={kg.kitId} className="flex items-center justify-between bg-primary/5 rounded-lg px-3 py-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-primary" />
-                <span className="font-medium">{kg.name}</span>
-                <Badge variant="secondary">{kg.quantity}x</Badge>
-                <span className="text-muted-foreground text-xs">SKU: {kg.sku}</span>
+          {kitGroups.map((kg) => (
+            <div key={kg.kitId} className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <Package className="h-4 w-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">🎁 {kg.name}</p>
+                  <p className="text-xs text-muted-foreground">{kg.itemIndices.length} componentes • {kg.quantity} kit(s) • Custo {formatCurrency(kg.cost)}</p>
+                </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemoveKitGroup(kg.kitId)}>
-                <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onRemoveKitGroup(kg.kitId)}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
           ))}
@@ -120,38 +133,24 @@ export const StepAjustes = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.map((item, i) => {
-              const inKit = kitItemIndices.has(i);
+            {rows.map((item, i) => {
+              const isInKit = inKitIdx.has(i);
               return (
-                <TableRow key={i} className={inKit ? "opacity-50" : ""}>
+                <TableRow key={i} className={isInKit ? "opacity-50" : ""}>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`h-7 w-7 rounded border ${selectedIndices.has(i) ? "bg-primary text-primary-foreground border-primary" : "border-border"}`}
-                      onClick={() => toggleSelect(i)}
-                      disabled={inKit}
-                    >
-                      {selectedIndices.has(i) && <Check className="h-3.5 w-3.5" />}
-                    </Button>
+                    <Checkbox
+                      checked={selected.has(i) || isInKit}
+                      disabled={isInKit}
+                      onCheckedChange={() => toggleSel(i)}
+                    />
                   </TableCell>
                   <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <Input
-                        value={item.xmlProduct.description}
-                        onChange={(e) => updateAdjustedName(i, e.target.value)}
-                        className="h-8 text-sm font-medium"
-                        disabled={inKit}
-                      />
-                      <div className="flex flex-wrap gap-1.5">
-                        <span className="text-xs text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</span>
-                        {item.matchedProductName && item.matchedProductName !== item.xmlProduct.description && (
-                          <span className="text-xs text-amber-500">
-                            Sistema: {item.matchedProductName}
-                          </span>
-                        )}
+                    <div className="flex items-center gap-2">
+                      <div>
+                        <p className="text-sm font-medium">{item.xmlProduct.description}</p>
+                        <p className="text-xs text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</p>
                       </div>
-                      {inKit && <Badge variant="outline" className="mt-1 text-xs w-fit">Em kit</Badge>}
+                      {isInKit && <Badge variant="secondary" className="text-[10px]">Em kit</Badge>}
                     </div>
                   </TableCell>
                   <TableCell className="text-center">
@@ -161,7 +160,7 @@ export const StepAjustes = ({
                       onChange={(e) => updateAdjustedQty(i, parseFloat(e.target.value) || 0)}
                       className="w-20 h-8 text-center mx-auto"
                       min={0}
-                      disabled={inKit}
+                      disabled={isInKit}
                     />
                   </TableCell>
                   <TableCell className="text-center">
@@ -172,14 +171,14 @@ export const StepAjustes = ({
                       onChange={(e) => updateAdjustedCost(i, parseFloat(e.target.value) || 0)}
                       className="w-24 h-8 text-center mx-auto"
                       min={0}
-                      disabled={inKit}
+                      disabled={isInKit}
                     />
                   </TableCell>
                   <TableCell className="text-center font-medium text-sm">
                     {formatCurrency(item.xmlProduct.quantity * item.xmlProduct.unitValue)}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeAdjustedItem(i)} disabled={inKit}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeAdjustedItem(i)} disabled={isInKit}>
                       <Trash2 className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </TableCell>
@@ -209,47 +208,37 @@ export const StepAjustes = ({
         </Button>
       </div>
 
-      <Dialog open={kitDialogOpen} onOpenChange={setKitDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" /> Criar Kit
-            </DialogTitle>
-          </DialogHeader>
+      <Dialog open={kitDialog} onOpenChange={setKitDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Criar Kit</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Kit *</label>
-              <Input value={kitName} onChange={e => setKitName(e.target.value)} placeholder="Ex: Kit Perfume Premium" />
+              <label className="text-xs text-muted-foreground mb-1 block">Nome do kit *</label>
+              <Input value={kitName} onChange={(e) => setKitName(e.target.value)} />
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">SKU *</label>
-              <Input value={kitSku} onChange={e => setKitSku(e.target.value)} placeholder="KIT-XXX" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Preço de Venda</label>
-              <Input type="number" step="0.01" value={kitPrice} onChange={e => setKitPrice(parseFloat(e.target.value) || 0)} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Quantidade de Kits</label>
-              <Input type="number" value={kitQuantity} onChange={e => setKitQuantity(parseInt(e.target.value) || 1)} min={1} />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">Componentes ({selectedIndices.size}):</p>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {Array.from(selectedIndices).map(i => {
-                  const item = items[i];
-                  return (
-                    <div key={i} className="flex justify-between text-sm bg-muted/30 rounded px-2 py-1">
-                      <span className="truncate">{item.xmlProduct.description}</span>
-                      <span className="text-muted-foreground shrink-0 ml-2">{Math.floor(item.xmlProduct.quantity)}un</span>
-                    </div>
-                  );
-                })}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">SKU *</label>
+                <Input value={kitSku} onChange={(e) => setKitSku(e.target.value)} />
               </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Preço de venda</label>
+                <Input type="number" step="0.01" value={kitPrice} onChange={(e) => setKitPrice(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Quantidade de kits</label>
+              <Input type="number" min={1} value={kitQty} onChange={(e) => setKitQty(parseInt(e.target.value) || 1)} />
+            </div>
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Componentes:</p>
+              {Array.from(selected).map((i) => (
+                <p key={i} className="text-xs">• {rows[i]?.xmlProduct.description} ({formatCurrency(rows[i]?.xmlProduct.unitValue || 0)})</p>
+              ))}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setKitDialogOpen(false)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setKitDialog(false)}>Cancelar</Button>
             <Button onClick={confirmKit}>Criar Kit</Button>
           </DialogFooter>
         </DialogContent>

@@ -18,17 +18,18 @@ export const useEntradaNotaConfirm = (
     isBatchMode: boolean;
     selectedBatchNfes: BatchNfe[];
     batchSelectedForConfirm: Set<string>;
+    kitGroups: KitGroup[];
   },
   setSaving: (v: boolean) => void,
   setDone: (v: boolean) => void,
   setBatchConfirmResult: (v: any) => void,
   clearPersistedState: () => void
 ) => {
-  const autoCreateProductFromXml = async (xmlProduct: NFeProduct): Promise<string | null> => {
+  const autoCreateProductFromXml = async (xmlProduct: NFeProduct, skipStock: boolean = false): Promise<string | null> => {
     if (!companyId) throw new Error("Empresa não identificada");
     const ean = (xmlProduct.ean || "").trim();
     const sku = (xmlProduct.code || `NF-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`).trim();
-    const qty = Math.floor(xmlProduct.quantity);
+    const qty = skipStock ? 0 : Math.floor(xmlProduct.quantity);
 
     if (ean) {
       const existing = await productsService.findProductByEanOrSku({ ean, companyId });
@@ -116,18 +117,18 @@ export const useEntradaNotaConfirm = (
 
       let itemsSaved = 0;
       let itemsFailed = 0;
-
-      const kitItemIndices = new Set(state.kitGroups.flatMap(g => g.itemIndices));
-      const itemsToImport = state.adjustedItems.length > 0 ? state.adjustedItems : state.matches;
+      const inKitIdx = new Set<number>(state.kitGroups.flatMap((k) => k.itemIndices));
+      const idxToProductId = new Map<number, string>();
 
       for (let idx = 0; idx < itemsToImport.length; idx++) {
         const match = itemsToImport[idx];
+        const isInKit = inKitIdx.has(idx);
         try {
           let productId = match.matchedProductId;
 
-          if (!productId && state.autoUpdateStock) {
+          if (!productId && (state.autoUpdateStock || isInKit)) {
             try {
-              productId = await autoCreateProductFromXml(match.xmlProduct);
+              productId = await autoCreateProductFromXml(match.xmlProduct, isInKit);
             } catch (err: any) {
               console.error("Erro ao criar produto automaticamente:", err);
               itemsFailed++;
@@ -158,9 +159,10 @@ export const useEntradaNotaConfirm = (
             continue;
           }
 
-          // Skip stock update for items that belong to a kit group
-          const isKitItem = kitItemIndices.has(idx);
-          if (productId && match.matchedProductId && state.autoUpdateStock && !isKitItem) {
+          if (productId) idxToProductId.set(idx, productId);
+
+          // Skip stock/cost update for kit components — only the kit itself gets stock
+          if (productId && match.matchedProductId && state.autoUpdateStock && !isInKit) {
             const { data: current, error: fetchError } = await supabase
               .from("products")
               .select("stock_physical, cost, price")
@@ -206,7 +208,7 @@ export const useEntradaNotaConfirm = (
                   .eq("id", insertedItem.id);
               }
             }
-          } else if (productId && !match.matchedProductId && state.autoUpdateStock) {
+          } else if (productId && !match.matchedProductId && state.autoUpdateStock && !isInKit) {
             await supabase
               .from("invoice_items")
               .update({ stock_updated: true })
@@ -229,43 +231,38 @@ export const useEntradaNotaConfirm = (
         }
       }
 
-      // Create kits and update kit stock
+      // Create kits from kitGroups
       for (const kg of state.kitGroups) {
         try {
-          const kitItems = kg.itemIndices.map(i => ({
-            product_id: itemsToImport[i].matchedProductId || '',
-            quantity: Math.floor(itemsToImport[i].xmlProduct.quantity / kg.quantity) || 1,
-          }));
+          const kitItems = kg.itemIndices
+            .map((i) => ({ productId: idxToProductId.get(i), qty: Math.floor(itemsToImport[i]?.xmlProduct.quantity || 1) }))
+            .filter((k) => !!k.productId);
+          if (kitItems.length === 0) continue;
 
-          const { data: kit, error: kitError } = await supabase
+          const { data: kitRow, error: kitErr } = await supabase
             .from("product_kits")
             .insert({
               name: kg.name,
               sku: kg.sku,
-              price: kg.price,
+              price: kg.price || 0,
               cost: kg.cost,
               stock_physical: kg.quantity,
-              company_id: companyId,
               active: true,
-            })
+              company_id: companyId,
+            } as any)
             .select()
             .maybeSingle();
 
-          if (kitError) throw kitError;
+          if (kitErr || !kitRow) { console.error("Erro ao criar kit:", kitErr); continue; }
 
-          if (kitItems.length > 0 && kit) {
-            const dbKitItems = kitItems.map(item => ({
-              kit_id: kit.id,
-              product_id: item.product_id,
-              quantity: item.quantity,
-            }));
-            const { error: itemsError } = await supabase.from("kit_items").insert(dbKitItems);
-            if (itemsError) throw itemsError;
-          }
-        } catch (err: any) {
-          console.error("Erro ao criar kit na confirmação:", err);
+          await supabase.from("kit_items").insert(
+            kitItems.map((k) => ({ kit_id: kitRow.id, product_id: k.productId as string, quantity: 1 }))
+          );
+        } catch (err) {
+          console.error("Erro ao criar kit:", err);
         }
       }
+
 
       await queryClient.invalidateQueries({ queryKey: ["invoices"] });
       await queryClient.invalidateQueries({ queryKey: ["invoice-stats"] });

@@ -1,162 +1,86 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Plus, Undo2, Search, Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import { useCompanyId } from "@/hooks/useCompanyId";
-import { useAuth } from "@/contexts/AuthContext";
-import { useReturns, useCreateReturn } from "@/hooks/useDevolucoes";
+import { Button } from "@/components/ui/button";
+import { Undo2, Plus, RefreshCw, Loader2 } from "lucide-react";
 import { ReturnsListTab } from "@/components/devolucoes/ReturnsListTab";
 import { QuarantinePanel } from "@/components/devolucoes/QuarantinePanel";
 import { ReturnForm } from "@/components/devolucoes/ReturnForm";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCompanyId } from "@/hooks/useCompanyId";
 
-const TAB_LABELS = ["Pendentes", "Em Conferência", "Aguardando Decisão", "Concluídas", "Quarentena"];
-
-const Devolucoes = () => {
+export default function Devolucoes() {
+  const [formOpen, setFormOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
-  const companyId = useCompanyId();
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-
   const queryClient = useQueryClient();
+  const companyId = useCompanyId();
 
-  const handleManualSync = async () => {
+  const handleSyncML = async () => {
+    if (syncing) return;
+    setSyncing(true);
     try {
-      setIsSyncing(true);
       const { data, error } = await supabase.functions.invoke("ml-returns-sync", {
-        body: { dryRun: false },
+        body: { companyId },
       });
-
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      toast({ title: "Sincronização concluída", description: data?.message || "Devoluções atualizadas." });
+      const raw = JSON.stringify(data, null, 2);
+      console.log("[ml-returns-sync DIAG]", raw);
+      toast({
+        title: "Diagnóstico ML (ver console)",
+        description: raw.slice(0, 500),
+      });
       queryClient.invalidateQueries({ queryKey: ["returns"] });
-    } catch (err: any) {
-      toast({ title: "Erro na sincronização", description: err.message, variant: "destructive" });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao sincronizar",
+        description: e?.message ?? String(e),
+        variant: "destructive",
+      });
     } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const { data: returns, isLoading } = useReturns();
-  const createReturn = useCreateReturn();
-
-  const statusMap: Record<string, string> = {
-    pendentes: "pendente_recebimento",
-    em_conferencia: "em_conferencia",
-    aguardando: "aguardando_decisao",
-    concluidas: "concluida",
-  };
-
-  const filteredReturns = returns?.filter((r) => {
-    const statusFilter = statusMap[activeTab];
-    if (statusFilter && r.status !== statusFilter) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      return (
-        r.ml_order_id?.toLowerCase().includes(q) ||
-        r.ml_return_id?.toLowerCase().includes(q) ||
-        r.motivo?.toLowerCase().includes(q) ||
-        r.notes?.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
-
-  const handleCreateReturn = async (data: {
-    ml_order_id?: string; motivo?: string; notes?: string;
-    items: { product_id: string; nome_produto: string; sku?: string; expected_quantity: number }[];
-  }) => {
-    try {
-      await createReturn.mutateAsync(data);
-      toast({ title: "Devolução criada!", description: "Aguardando recebimento." });
-      setCreateDialogOpen(false);
-    } catch (err: any) {
-      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      setSyncing(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Undo2 className="h-6 w-6 text-primary" /> Devoluções e Retiradas
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie devoluções do Mercado Livre e retiradas de estoque
-          </p>
+    <div className="container mx-auto p-4 md:p-6 space-y-4 max-w-6xl">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Undo2 className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Devoluções e Retiradas</h1>
         </div>
-        <Button onClick={handleManualSync} variant="outline" className="gap-1" disabled={isSyncing}>
-          {isSyncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          Sincronizar ML
-        </Button>
-        <Button onClick={() => setCreateDialogOpen(true)} className="gap-1">
-          <Plus className="h-4 w-4" /> Nova Devolução
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por pedido ML, motivo..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleSyncML} disabled={syncing}>
+            {syncing ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            {syncing ? "Sincronizando..." : "Sincronizar ML"}
+          </Button>
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nova devolução
+          </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
+      <Tabs defaultValue="pendentes" className="w-full">
+        <TabsList className="w-full flex-wrap h-auto">
           <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
-          <TabsTrigger value="em_conferencia">Em Conferência</TabsTrigger>
-          <TabsTrigger value="aguardando">Aguard. Decisão</TabsTrigger>
+          <TabsTrigger value="conferencia">Em Conferência</TabsTrigger>
+          <TabsTrigger value="decisao">Aguardando Decisão</TabsTrigger>
           <TabsTrigger value="concluidas">Concluídas</TabsTrigger>
           <TabsTrigger value="quarentena">Quarentena</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="pendentes">
-          <ReturnsListTab returns={filteredReturns} isLoading={isLoading} status="pendente_recebimento" />
-        </TabsContent>
-        <TabsContent value="em_conferencia">
-          <ReturnsListTab returns={filteredReturns} isLoading={isLoading} status="em_conferencia" />
-        </TabsContent>
-        <TabsContent value="aguardando">
-          <ReturnsListTab returns={filteredReturns} isLoading={isLoading} status="aguardando_decisao" />
-        </TabsContent>
-        <TabsContent value="concluidas">
-          <ReturnsListTab returns={filteredReturns} isLoading={isLoading} status="concluida" />
-        </TabsContent>
-        <TabsContent value="quarentena">
-          <QuarantinePanel />
-        </TabsContent>
+        <TabsContent value="pendentes" className="mt-4"><ReturnsListTab status="pendente" /></TabsContent>
+        <TabsContent value="conferencia" className="mt-4"><ReturnsListTab status="em_conferencia" /></TabsContent>
+        <TabsContent value="decisao" className="mt-4"><ReturnsListTab status="aguardando_decisao" /></TabsContent>
+        <TabsContent value="concluidas" className="mt-4"><ReturnsListTab status="concluida" /></TabsContent>
+        <TabsContent value="quarentena" className="mt-4"><QuarantinePanel /></TabsContent>
       </Tabs>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nova Devolução</DialogTitle>
-          </DialogHeader>
-          <ReturnForm
-            onSubmit={handleCreateReturn}
-            onCancel={() => setCreateDialogOpen(false)}
-            isSaving={createReturn.isPending}
-          />
-        </DialogContent>
-      </Dialog>
+      <ReturnForm open={formOpen} onOpenChange={setFormOpen} />
     </div>
   );
-};
-
-export default Devolucoes;
+}

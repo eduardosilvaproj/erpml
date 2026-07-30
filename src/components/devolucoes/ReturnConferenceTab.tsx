@@ -1,172 +1,137 @@
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Camera, CheckCircle2, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { useReturn, useUpdateReturnStatus, useClassifyItem, useAddReturnAction } from "@/hooks/useDevolucoes";
-import { ReturnStatusStepper } from "./ReturnStatusStepper";
+import { Input } from "@/components/ui/input";
+import { BarcodeScannerInput, BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
 import { ReturnClassification } from "./ReturnClassification";
-import { ReturnTimeline } from "./ReturnTimeline";
-import { ReturnEvidence } from "./ReturnEvidence";
-import { BarcodeScannerInput, type BarcodeScannerInputHandle } from "@/components/BarcodeScannerInput";
-import { useBarcodeSearch } from "@/hooks/useBarcodeSearch";
-import { useCompanyId } from "@/hooks/useCompanyId";
+import { useReturnItems, useBipReturnItem, useProcessItemDecision, useUpdateReturnStatus } from "@/hooks/useDevolucoes";
+import { ItemCondition, ReturnItem } from "@/services/returns";
+import { CheckCircle2, ScanLine } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-interface ReturnConferenceTabProps {
-  returnId: string;
-}
-
-export const ReturnConferenceTab = ({ returnId }: ReturnConferenceTabProps) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const companyId = useCompanyId();
-  const { data: returnData, isLoading } = useReturn(returnId);
+export function ReturnConferenceTab({ returnId }: { returnId: string }) {
+  const { data: items = [] } = useReturnItems(returnId);
+  const bip = useBipReturnItem();
+  const decision = useProcessItemDecision();
   const updateStatus = useUpdateReturnStatus();
-  const classifyItem = useClassifyItem();
-  const addAction = useAddReturnAction();
-  const barcodeSearch = useBarcodeSearch();
+  const [code, setCode] = useState("");
+  const [selected, setSelected] = useState<ReturnItem | null>(null);
+  const [condition, setCondition] = useState<ItemCondition | undefined>();
+  const [qty, setQty] = useState(1);
+  const [notes, setNotes] = useState("");
   const scannerRef = useRef<BarcodeScannerInputHandle>(null);
-  const [scannedItems, setScannedItems] = useState<Record<string, number>>({});
+  const { toast } = useToast();
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  }
-
-  if (!returnData) {
-    return <div className="text-center py-12 text-muted-foreground">Devolução não encontrada.</div>;
-  }
-
-  const handleScan = async (code: string) => {
-    const result = await barcodeSearch.handleSearch(code);
-    if (!result?.produto) {
-      toast({ title: "Produto não encontrado", variant: "destructive" });
-      return;
+  const handleScan = async (c: string) => {
+    const result = await bip.mutateAsync({ returnId, code: c });
+    if (result) {
+      scannerRef.current?.flash(true);
+      toast({ title: `Bipado: ${result.nome_produto ?? c}` });
+    } else {
+      scannerRef.current?.flash(false);
+      toast({ title: "Item não encontrado", variant: "destructive" });
     }
-    const productId = result.produto.id;
-    setScannedItems((prev) => ({ ...prev, [productId]: (prev[productId] || 0) + result.qty }));
-    toast({ title: "Produto escaneado!", description: `${result.produto.name}: +${result.qty}` });
   };
 
-  const handleReceive = async () => {
-    await updateStatus.mutateAsync({ returnId, status: "recebido" });
-    await addAction.mutateAsync({ returnId, action: "status_recebido", description: "Mercadoria recebida fisicamente" });
-    toast({ title: "Devolução recebida!" });
+  const openDecision = (item: ReturnItem) => {
+    setSelected(item);
+    setCondition(item.condition ?? undefined);
+    setQty(item.received_quantity || item.expected_quantity);
+    setNotes("");
   };
 
-  const handleStartConference = async () => {
-    await updateStatus.mutateAsync({ returnId, status: "em_conferencia" });
-    toast({ title: "Conferência iniciada!" });
-  };
-
-  const handleClassify = async (itemId: string, condition: string, notes?: string) => {
-    await classifyItem.mutateAsync({ itemId, condition, notes });
-    await addAction.mutateAsync({
-      returnId, action: "item_classified",
-      description: `Item classificado como: ${condition}`,
-      metadata: { item_id: itemId, condition, notes },
+  const applyDecision = async () => {
+    if (!selected || !condition) return;
+    await decision.mutateAsync({
+      returnItemId: selected.id,
+      returnId,
+      condition,
+      quantity: qty,
+      notes,
     });
-    toast({ title: "Item classificado!" });
+    setSelected(null);
   };
 
-  const handleApprove = async () => {
-    await updateStatus.mutateAsync({ returnId, status: "aprovada" });
-    await addAction.mutateAsync({ returnId, action: "status_aprovada", description: "Devolução aprovada — estoque será atualizado" });
-    toast({ title: "Devolução aprovada!", description: "Estoque será atualizado." });
+  const finalize = async () => {
+    await updateStatus.mutateAsync({ returnId, status: "aguardando_decisao" });
   };
 
-  const handleReject = async () => {
-    await updateStatus.mutateAsync({ returnId, status: "recusada" });
-    await addAction.mutateAsync({ returnId, action: "status_recusada", description: "Devolução recusada" });
-    toast({ title: "Devolução recusada" });
-  };
-
-  const items = returnData.return_items || [];
-  const totalScanned = Object.values(scannedItems).reduce((s, v) => s + v, 0);
-  const totalExpected = items.reduce((s, i) => s + i.expected_quantity, 0);
+  const allProcessed = items.length > 0 && items.every(i => i.condition);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/devolucoes")}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h2 className="text-lg font-bold">
-            {returnData.ml_order_id ? `Pedido ML #${returnData.ml_order_id}` : `Devolução #${returnId.slice(0, 8)}`}
-          </h2>
-          <p className="text-sm text-muted-foreground">{returnData.motivo || "Sem motivo registrado"}</p>
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <ScanLine className="h-4 w-4 text-primary" />
+          <span className="font-medium text-sm">Bipar item recebido</span>
         </div>
-      </div>
+        <BarcodeScannerInput
+          ref={scannerRef}
+          value={code}
+          onChange={setCode}
+          onScan={handleScan}
+          scanMode
+          autoFocus
+          placeholder="Bipe o código do produto devolvido..."
+        />
+      </Card>
 
-      <ReturnStatusStepper status={returnData.status} />
-
-      {/* Actions by status */}
-      <div className="flex gap-2 flex-wrap">
-        {returnData.status === "pendente_recebimento" && (
-          <Button onClick={handleReceive}><Package className="h-4 w-4 mr-2" /> Receber Mercadoria</Button>
-        )}
-        {returnData.status === "recebido" && (
-          <Button onClick={handleStartConference}><Camera className="h-4 w-4 mr-2" /> Iniciar Conferência</Button>
-        )}
-        {returnData.status === "aguardando_decisao" && (
-          <>
-            <Button variant="default" className="bg-emerald-600" onClick={handleApprove}>
-              <CheckCircle2 className="h-4 w-4 mr-2" /> Aprovar
-            </Button>
-            <Button variant="destructive" onClick={handleReject}>
-              <XCircle className="h-4 w-4 mr-2" /> Recusar
-            </Button>
-          </>
-        )}
-      </div>
-
-      {/* Scanner (only during conference) */}
-      {returnData.status === "em_conferencia" && (
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Escanear Produtos</CardTitle></CardHeader>
-          <CardContent>
-            <BarcodeScannerInput ref={scannerRef} onScan={handleScan} placeholder="Bipe o código de barras..." scanMode />
-            <div className="mt-2 text-sm text-muted-foreground">
-              Escaneados: {totalScanned} / {totalExpected} unidades
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Items */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium">Itens ({items.length})</h3>
-        {items.map((item) => (
-          <Card key={item.id}>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium">{item.products?.name || item.nome_produto || "Produto"}</p>
-                  <p className="text-xs text-muted-foreground">SKU: {item.products?.sku || item.sku || "—"}</p>
+      <div className="space-y-2">
+        {items.map(item => (
+          <Card key={item.id} className="p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{item.nome_produto ?? item.sku ?? item.ean ?? "Item"}</div>
+                <div className="text-xs text-muted-foreground">
+                  SKU: {item.sku ?? "-"} · Esperado: {item.expected_quantity} · Recebido: {item.received_quantity}
                 </div>
-                <Badge variant="secondary">{item.expected_quantity} un</Badge>
+                {item.condition && (
+                  <div className="text-xs mt-1 flex items-center gap-1 text-emerald-600">
+                    <CheckCircle2 className="h-3 w-3" /> Classificado: {item.condition}
+                  </div>
+                )}
               </div>
-              {item.condition && (
-                <Badge variant="outline">{item.condition}</Badge>
-              )}
-              {returnData.status === "em_conferencia" && !item.condition && (
-                <ReturnClassification itemId={item.id} onClassify={handleClassify} />
-              )}
-            </CardContent>
+              <Button size="sm" variant={item.condition ? "outline" : "default"} onClick={() => openDecision(item)}>
+                {item.condition ? "Reavaliar" : "Classificar"}
+              </Button>
+            </div>
           </Card>
         ))}
       </div>
 
-      {/* Evidence */}
-      <ReturnEvidence returnId={returnId} />
+      {selected && (
+        <Card className="p-4 space-y-4 border-primary/40">
+          <div>
+            <div className="font-semibold">{selected.nome_produto}</div>
+            <div className="text-xs text-muted-foreground">Classifique este item</div>
+          </div>
+          <ReturnClassification value={condition} onChange={setCondition} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground">Quantidade</label>
+              <Input type="number" min={0} value={qty} onChange={e => setQty(Number(e.target.value) || 0)} />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">Observação</label>
+              <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Opcional" />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setSelected(null)}>Cancelar</Button>
+            <Button onClick={applyDecision} disabled={!condition || decision.isPending}>
+              Aplicar decisão
+            </Button>
+          </div>
+        </Card>
+      )}
 
-      {/* Timeline */}
-      <div>
-        <h3 className="text-sm font-medium mb-3">Histórico</h3>
-        <ReturnTimeline actions={returnData.return_actions || []} />
-      </div>
+      {allProcessed && (
+        <div className="flex justify-end">
+          <Button onClick={finalize} disabled={updateStatus.isPending}>
+            Finalizar conferência
+          </Button>
+        </div>
+      )}
     </div>
   );
-};
+}

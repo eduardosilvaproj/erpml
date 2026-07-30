@@ -1,5 +1,5 @@
-// Edge Function: ml-returns-sync
-// Sincroniza devoluções do Mercado Livre via API post-purchase/v1/claims
+// Edge Function: ml-returns-sync — Produção
+// Sincroniza devoluções FÍSICAS ABERTAS/EM TRÂNSITO do Mercado Livre
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,275 +7,381 @@ const ML_API_BASE = "https://api.mercadolibre.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
+const OPEN_RETURN_STATUSES = new Set([
+  "pending",
+  "shipped",
+  "in_transit",
+  "to_be_agreed",
+  "opened",
+  "ready_to_ship",
+]);
+
+const CLOSED_RETURN_STATUSES = new Set([
+  "delivered",
+  "closed",
+  "cancelled",
+  "canceled",
+  "failed",
+  "return_to_buyer",
+  "expired",
+  "not_delivered",
+]);
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+function isOpenPhysicalReturn(returnData: any): { open: boolean; status: string | null; hasPhysical: boolean } {
+  if (!returnData || typeof returnData !== "object") {
+    return { open: false, status: null, hasPhysical: false };
+  }
+
+  // A API pode devolver um objeto único ou {data:[...]} / {results:[...]}
+  const candidates: any[] = [];
+  if (Array.isArray(returnData)) candidates.push(...returnData);
+  else if (Array.isArray(returnData.data)) candidates.push(...returnData.data);
+  else if (Array.isArray(returnData.results)) candidates.push(...returnData.results);
+  else candidates.push(returnData);
+
+  for (const r of candidates) {
+    if (!r) continue;
+    const status = String(
+      r.status ??
+      r.shipping?.status ??
+      r.subtype ??
+      ""
+    ).toLowerCase();
+
+    // Sinais de retorno físico: existe shipping/tracking/id de retorno
+    const hasPhysical =
+      !!r.id ||
+      !!r.return_id ||
+      !!r.shipping ||
+      !!r.tracking_number ||
+      !!r.shipment_id;
+
+    if (!hasPhysical) continue;
+    if (CLOSED_RETURN_STATUSES.has(status)) continue;
+    if (OPEN_RETURN_STATUSES.has(status) || status === "") {
+      // status vazio + objeto físico presente = tratamos como aberto
+      return { open: true, status: status || "pending", hasPhysical: true };
+    }
+    // Status desconhecido, mas não fechado explicitamente → considera aberto
+    return { open: true, status, hasPhysical: true };
+  }
+  return { open: false, status: null, hasPhysical: false };
+}
+
+function pickReturnObject(returnData: any): any | null {
+  if (!returnData) return null;
+  if (Array.isArray(returnData)) return returnData[0] ?? null;
+  if (Array.isArray(returnData.data)) return returnData.data[0] ?? null;
+  if (Array.isArray(returnData.results)) return returnData.results[0] ?? null;
+  return returnData;
+}
+
+async function syncConnection(supabase: any, conn: any) {
+  const result = {
+    seller_id: conn.ml_user_id,
+    company_id: conn.company_id,
+    fetched: 0,
+    physicalOpen: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [] as string[],
+  };
+
+  const token = conn.access_token;
+  const sellerId = conn.ml_user_id;
+  if (!token || !sellerId) {
+    result.errors.push("missing_token_or_seller");
+    return result;
+  }
+
+  // 1. Buscar claims stage=claim
+  let claims: any[] = [];
+  try {
+    const r = await fetch(
+      `${ML_API_BASE}/post-purchase/v1/claims/search?stage=claim&limit=50`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!r.ok) {
+      result.errors.push(`claims_search_${r.status}`);
+      return result;
+    }
+    const body = await r.json();
+    claims = body.data || body.results || [];
+    result.fetched = claims.length;
+  } catch (e: any) {
+    result.errors.push(`claims_search_error:${e.message}`);
+    return result;
+  }
+
+  for (const claim of claims) {
+    try {
+      const claimId = claim.id;
+      if (!claimId) { result.skipped++; continue; }
+
+      // 2. Confirmar devolução física
+      let returnPayload: any = null;
+      try {
+        const rr = await fetch(
+          `${ML_API_BASE}/post-purchase/v2/claims/${claimId}/returns`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (rr.status === 404) { result.skipped++; continue; }
+        if (!rr.ok) { result.skipped++; continue; }
+        returnPayload = await rr.json();
+      } catch {
+        result.skipped++;
+        continue;
+      }
+
+      const { open } = isOpenPhysicalReturn(returnPayload);
+      if (!open) { result.skipped++; continue; }
+      result.physicalOpen++;
+
+      const returnObj = pickReturnObject(returnPayload) || {};
+      const mlReturnId = String(returnObj.id || returnObj.return_id || "");
+      const mlOrderId =
+        claim.resource === "order" && claim.resource_id
+          ? String(claim.resource_id)
+          : null;
+
+      // 3. Upsert seguro por (company_id, external_id)
+      const { data: existing, error: existingErr } = await supabase
+        .from("returns")
+        .select("id")
+        .eq("company_id", conn.company_id)
+        .eq("external_id", String(claimId))
+        .maybeSingle();
+
+      if (existingErr) {
+        result.errors.push(`select_${claimId}:${existingErr.message}`);
+        result.skipped++;
+        continue;
+      }
+
+      let returnRowId: string | null = existing?.id ?? null;
+
+      if (existing) {
+        const { error: updErr } = await supabase
+          .from("returns")
+          .update({
+            status: "pendente",
+            source: "mercado_livre",
+            order_reference: mlOrderId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+        if (updErr) {
+          result.errors.push(`update_${claimId}:${updErr.message}`);
+          result.skipped++;
+          continue;
+        }
+        result.updated++;
+
+        const { error: actionErr } = await supabase.from("return_actions").insert({
+          return_id: existing.id,
+          company_id: conn.company_id,
+          action: "updated",
+          user_id: conn.user_id,
+          details: { source: "ml_claim", claim_id: String(claimId), ml_return_id: mlReturnId || null },
+        });
+        if (actionErr) result.errors.push(`action_${claimId}:${actionErr.message}`);
+      } else {
+        const { data: inserted, error: insErr } = await supabase
+          .from("returns")
+          .insert({
+            company_id: conn.company_id,
+            numero: `ML-${claimId}`,
+            external_id: String(claimId),
+            order_reference: mlOrderId,
+            source: "mercado_livre",
+            status: "pendente",
+            motivo: claim.reason_id || "Devolução Mercado Livre",
+            created_by: conn.user_id,
+            notes: mlReturnId ? `ML return_id: ${mlReturnId}` : null,
+          })
+          .select("id")
+          .single();
+
+        if (insErr) {
+          result.errors.push(`insert_${claimId}:${insErr.message}`);
+          continue;
+        }
+        returnRowId = inserted.id;
+        result.inserted++;
+
+        const { error: actionErr } = await supabase.from("return_actions").insert({
+          return_id: inserted.id,
+          company_id: conn.company_id,
+          action: "created",
+          user_id: conn.user_id,
+          details: { source: "ml_claim", claim_id: String(claimId), ml_return_id: mlReturnId || null },
+        });
+        if (actionErr) result.errors.push(`action_${claimId}:${actionErr.message}`);
+      }
+
+      // 4. Itens: só se novo e houver ml_order_id
+      if (!existing && returnRowId && mlOrderId) {
+        const { data: mlOrder } = await supabase
+          .from("ml_orders")
+          .select("id")
+          .eq("company_id", conn.company_id)
+          .eq("ml_order_id", Number(mlOrderId))
+          .maybeSingle();
+
+        if (mlOrder?.id) {
+          const { data: items } = await supabase
+            .from("ml_order_items")
+            .select("product_id, sku, ml_item_title, quantity")
+            .eq("ml_order_id", mlOrder.id);
+
+          if (items && items.length > 0) {
+            const rows = items.map((it: any) => ({
+              return_id: returnRowId,
+              company_id: conn.company_id,
+              product_id: it.product_id,
+              sku: it.sku,
+              nome_produto: it.ml_item_title,
+              expected_quantity: it.quantity || 1,
+              received_quantity: 0,
+            }));
+            const { error: itemsErr } = await supabase.from("return_items").insert(rows);
+            if (itemsErr) result.errors.push(`items_${claimId}:${itemsErr.message}`);
+          }
+        }
+      }
+    } catch (e: any) {
+      result.errors.push(`claim_${claim?.id}:${e.message}`);
+    }
+  }
+
+  return result;
+}
+
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  try {
+    if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // === Body: dryRun opcional ===
-  let dryRun = false;
-  try {
-    const body = await req.json();
-    dryRun = body?.dryRun === true;
-  } catch (_) {
-    // sem body (ex: cron) -> fluxo normal
-  }
-
-  // === AUTH: CRON_SECRET (cron) ou usuário autenticado (manual, escopado à empresa) ===
+  // --- Autenticação ---
   const authHeader = req.headers.get("Authorization");
   const cronSecret = req.headers.get("x-cron-secret");
-  let expectedCronSecret = Deno.env.get("CRON_SECRET") ?? null;
+
+  let expectedCron = Deno.env.get("CRON_SECRET") ?? null;
   if (cronSecret) {
     try {
       const { data: vaultSecret } = await supabase.rpc("get_cron_secret");
-      if (vaultSecret) expectedCronSecret = vaultSecret as unknown as string;
+      if (vaultSecret) expectedCron = vaultSecret as unknown as string;
     } catch (_) {}
   }
-  const hasCronAuth = !!expectedCronSecret && !!cronSecret && cronSecret === expectedCronSecret;
+  const isCron = !!expectedCron && !!cronSecret && cronSecret === expectedCron;
 
-  let requesterUserId: string | null = null;
+  let userCompanyId: string | null = null;
+  let userId: string | null = null;
 
-  if (!hasCronAuth) {
+  if (!isCron) {
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      return json({ error: "Unauthorized" }, 401);
     }
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const anonClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await anonClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims?.sub) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: corsHeaders });
+    const { data: userRes, error } = await supabase.auth.getUser(token);
+    if (error || !userRes?.user) {
+      return json({ error: "Unauthorized" }, 401);
     }
-    requesterUserId = claimsData.claims.sub as string;
-  }
-
-  // Escopo: manual = apenas conexões da empresa do solicitante; cron = todas as empresas com auto-sync ligado
-  let allowedUserIds: string[] | null = null;
-  if (requesterUserId) {
-    const { data: requesterProfile } = await supabase
+    userId = userRes.user.id;
+    const { data: prof } = await supabase
       .from("profiles")
       .select("company_id")
-      .eq("id", requesterUserId)
+      .eq("id", userId)
       .maybeSingle();
-    const requesterCompanyId = requesterProfile?.company_id ?? null;
-    if (!requesterCompanyId) {
-      return new Response(JSON.stringify({ error: "Empresa não encontrada para o usuário." }), { status: 403, headers: corsHeaders });
-    }
-    const { data: companyProfiles } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("company_id", requesterCompanyId);
-    allowedUserIds = (companyProfiles ?? []).map((p) => p.id as string);
-    if (!allowedUserIds.length) {
-      return new Response(JSON.stringify({ success: true, synced: 0 }), { headers: corsHeaders });
+    userCompanyId = prof?.company_id ?? null;
+    if (!userCompanyId) {
+      return json({ error: "Usuário sem empresa vinculada" }, 400);
     }
   }
 
-  try {
-    let connQuery = supabase.from("ml_connections").select("*").eq("is_active", true);
-    if (allowedUserIds) connQuery = connQuery.in("user_id", allowedUserIds);
-    const { data: connections, error: connError } = await connQuery;
+  // --- Buscar conexões ML ---
+  const { data: rawConns, error: connErr } = await supabase
+    .from("ml_connections")
+    .select("id, user_id, access_token, ml_user_id, seller_nickname")
+    .eq("is_active", true);
+  if (connErr) return json({ error: connErr.message }, 500);
 
-    if (connError) throw connError;
-    if (!connections || connections.length === 0) {
-      return new Response(JSON.stringify({ synced: 0, message: "Nenhuma conexão ML ativa" }), { headers: corsHeaders });
-    }
+  const userIds = [...new Set((rawConns ?? []).map((conn: any) => conn.user_id).filter(Boolean))];
+  const { data: profiles, error: profilesErr } = userIds.length
+    ? await supabase.from("profiles").select("id, company_id").in("id", userIds)
+    : { data: [], error: null };
+  if (profilesErr) return json({ error: profilesErr.message }, 500);
 
-    let totalSynced = 0;
-    const diagnostics: any[] = [];
+  const companyByUser = new Map((profiles ?? []).map((profile: any) => [profile.id, profile.company_id]));
+  const conns = (rawConns ?? [])
+    .map((conn: any) => ({ ...conn, company_id: companyByUser.get(conn.user_id) ?? null }))
+    .filter((conn: any) => conn.company_id && (isCron || conn.company_id === userCompanyId));
 
-    for (const conn of connections) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("company_id")
-        .eq("id", conn.user_id)
-        .maybeSingle();
+  if (!conns || conns.length === 0) {
+    return json({
+      success: true,
+      fetched: 0,
+      physicalOpen: 0,
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: [],
+      message: "Nenhuma conexão ML ativa",
+    });
+  }
 
-      const companyId = profile?.company_id;
-      if (!companyId) {
-        console.warn(`[ml-returns-sync] Conexão ${conn.ml_user_id} sem company_id associada.`);
-        continue;
-      }
+  const totals = {
+    success: true,
+    fetched: 0,
+    physicalOpen: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0,
+    errors: [] as string[],
+    perConnection: [] as any[],
+  };
 
-      // Sync automático (cron): respeita a config de auto-sync do usuário
-      if (!requesterUserId) {
-        const { data: settings } = await supabase
-          .from("ml_settings")
-          .select("auto_sync_orders")
-          .eq("user_id", conn.user_id)
-          .maybeSingle();
-        if (settings && !settings.auto_sync_orders) continue;
-      }
+  for (const conn of conns) {
+    const r = await syncConnection(supabase, conn);
+    totals.fetched += r.fetched;
+    totals.physicalOpen += r.physicalOpen;
+    totals.inserted += r.inserted;
+    totals.updated += r.updated;
+    totals.skipped += r.skipped;
+    totals.errors.push(...r.errors);
+    totals.perConnection.push(r);
+  }
 
-      // Refresh token se expirado
-      let accessToken = conn.access_token;
-      const expiresAt = new Date(conn.token_expires_at ?? 0).getTime();
-      if (Date.now() + 5 * 60 * 1000 >= expiresAt) {
-        const mlAppId = Deno.env.get("MERCADO_LIVRE_APP_ID");
-        const mlSecret = Deno.env.get("MERCADO_LIVRE_CLIENT_SECRET");
-        if (!mlAppId || !mlSecret) {
-          console.error(`[ml-returns-sync] Refresh abortado — secrets faltando.`);
-          continue;
-        }
-
-        const refreshRes = await fetch(`${ML_API_BASE}/oauth/token`, {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({
-            grant_type: "refresh_token",
-            client_id: mlAppId,
-            client_secret: mlSecret,
-            refresh_token: conn.refresh_token,
-          }),
-        });
-
-        if (refreshRes.ok) {
-          const tokenData = await refreshRes.json();
-          accessToken = tokenData.access_token;
-          await supabase
-            .from("ml_connections")
-            .update({
-              access_token: tokenData.access_token,
-              refresh_token: tokenData.refresh_token || conn.refresh_token,
-              token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-            })
-            .eq("id", conn.id);
-        } else {
-          console.error(`Falha ao renovar token para ${conn.ml_user_id}`);
-          continue;
-        }
-      }
-
-      // Busca claims em aberto (status=opened) com tipo=return
-      // Inclui todos os estágios: claim, dispute, recontact, return (pendentes e em andamento)
-      const claimsRes = await fetch(
-        `${ML_API_BASE}/post-purchase/v1/claims/search?seller_id=${conn.ml_user_id}&type=return&status=opened&limit=100`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
-
-      if (!claimsRes.ok) {
-        console.error(`Erro ao buscar claims para ${conn.ml_user_id}: ${claimsRes.status}`);
-        if (dryRun) {
-          diagnostics.push({ seller_id: conn.ml_user_id, ml_status: claimsRes.status, error: true });
-        }
-        continue;
-      }
-
-      const claimsData = await claimsRes.json();
-      const claims = claimsData.data || claimsData.results || [];
-
-      if (dryRun) {
-        diagnostics.push({
-          seller_id: conn.ml_user_id,
-          company_id: companyId,
-          claims_found: claims.length,
-          claims: claims.map((c: any) => ({ id: c.id, status: c.status, order_id: c.order_id })),
-        });
-        continue;
-      }
-
-      for (const claim of claims) {
-        const { data: existing } = await supabase
-          .from("returns")
-          .select("id")
-          .eq("ml_claim_id", String(claim.id))
-          .eq("company_id", companyId)
-          .maybeSingle();
-
-        if (existing) continue;
-
-        const mlStatus = claim.status || "pending";
-        const statusMap: Record<string, string> = {
-          // Statuses abertos/pendentes
-          pending: "pendente_recebimento",
-          opened: "pendente_recebimento",
-          claim: "pendente_recebimento",
-          dispute: "pendente_recebimento",
-          recontact: "pendente_recebimento",
-          // Statuses de envio/devolução
-          shipped: "em_transito",
-          return_in_transit: "em_transito",
-          return_delivered: "recebido",
-          // Statuses finalizados
-          delivered: "recebido",
-          received: "recebido",
-          closed: "concluida",
-          cancelled: "cancelada",
-          failed: "cancelada",
-          return_to_buyer: "cancelada",
-          refunded: "reembolsada",
-          not_delivered: "nao_recebida",
-        };
-        const mappedStatus = statusMap[mlStatus] || "pendente_recebimento";
-
-        const { data: ret, error: retError } = await supabase
-          .from("returns")
-          .insert({
-            company_id: companyId,
-            ml_return_id: claim.return_id ? String(claim.return_id) : null,
-            ml_order_id: claim.order_id ? String(claim.order_id) : null,
-            ml_claim_id: String(claim.id),
-            status: mappedStatus as any,
-            source: "ml_claim",
-            motivo: claim.reason || claim.reason_id || "Devolução via ML",
-            created_by: conn.user_id,
-          })
-          .select()
-          .maybeSingle();
-
-        if (retError || !ret) {
-          console.error("Erro ao criar devolução:", retError);
-          continue;
-        }
-
-        if (claim.order_id) {
-          const { data: mlOrderItems } = await supabase
-            .from("ml_order_items")
-            .select("*, products(id, name, sku)")
-            .eq("ml_order_id", Number(claim.order_id));
-
-          if (mlOrderItems && mlOrderItems.length > 0) {
-            const returnItems = mlOrderItems.map((item: any) => ({
-              return_id: ret.id,
-              company_id: companyId,
-              product_id: item.product_id || null,
-              sku: item.products?.sku || item.sku || null,
-              nome_produto: item.products?.name || item.ml_item_title || "Produto ML",
-              expected_quantity: item.quantity || 1,
-            }));
-            await supabase.from("return_items").insert(returnItems);
-          }
-        }
-
-        await supabase.from("return_actions").insert({
-          return_id: ret.id,
-          company_id: companyId,
-          action: "created",
-          description: "Devolução sincronizada automaticamente do Mercado Livre",
-          metadata: { ml_claim_id: claim.id, ml_status: mlStatus },
-        });
-
-        totalSynced++;
-      }
-    }
-
+    return json(totals);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error("[ml-returns-sync] fatal", { message, stack });
     return new Response(
-      JSON.stringify(
-        dryRun
-          ? { success: true, dryRun: true, diagnostics }
-          : { success: true, synced: totalSynced, message: `${totalSynced} devolução(ões) sincronizada(s)` }
-      ),
-      { headers: corsHeaders }
+      JSON.stringify({
+        success: false,
+        error: message,
+        stage: "ml-returns-sync",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
-  } catch (err: any) {
-    console.error("Erro no sync de devoluções:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });

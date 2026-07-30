@@ -1,89 +1,64 @@
 import { useNavigate } from "react-router-dom";
-import { Undo2, Eye, Loader2, Package, Calendar, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { type ReturnData } from "@/services/returns";
+import { PackageOpen, ChevronRight } from "lucide-react";
+import { useReturnsList } from "@/hooks/useDevolucoes";
+import { ReturnStatus, ReturnSource } from "@/services/returns";
 
-interface ReturnsListTabProps {
-  returns?: ReturnData[];
-  isLoading: boolean;
-  status: string;
-}
-
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pendente_recebimento: { label: "Pendente Recebimento", color: "bg-yellow-500/15 text-yellow-600" },
-  recebido: { label: "Recebido", color: "bg-blue-500/15 text-blue-600" },
-  em_conferencia: { label: "Em Conferência", color: "bg-purple-500/15 text-purple-600" },
-  aguardando_decisao: { label: "Aguardando Decisão", color: "bg-orange-500/15 text-orange-600" },
-  aprovada: { label: "Aprovada", color: "bg-emerald-500/15 text-emerald-600" },
-  recusada: { label: "Recusada", color: "bg-red-500/15 text-red-600" },
-  concluida: { label: "Concluída", color: "bg-green-500/15 text-green-600" },
-  cancelada: { label: "Cancelada", color: "bg-gray-500/15 text-gray-600" },
+const SOURCE_LABEL: Record<ReturnSource, string> = {
+  mercado_livre: "Mercado Livre",
+  loja: "Loja",
+  manual: "Manual",
+  pdv: "PDV",
 };
 
-export const ReturnsListTab = ({ returns, isLoading, status }: ReturnsListTabProps) => {
+const STATUS_STYLE: Record<ReturnStatus, string> = {
+  pendente: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  em_conferencia: "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  aguardando_decisao: "bg-violet-500/10 text-violet-600 border-violet-500/30",
+  concluida: "bg-emerald-500/10 text-emerald-600 border-emerald-500/30",
+  cancelada: "bg-destructive/10 text-destructive border-destructive/30",
+};
+
+export function ReturnsListTab({ status }: { status?: ReturnStatus }) {
+  const { data = [], isLoading } = useReturnsList(status);
   const navigate = useNavigate();
 
-  if (isLoading) {
+  if (isLoading) return <div className="text-sm text-muted-foreground p-8 text-center">Carregando...</div>;
+  if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!returns || returns.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <Undo2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p className="font-medium">Nenhuma devolução encontrada</p>
-        <p className="text-sm mt-1">Crie uma nova devolução ou aguarde a sincronização automática.</p>
+      <div className="rounded-lg border border-dashed p-10 text-center">
+        <PackageOpen className="h-10 w-10 mx-auto text-muted-foreground opacity-40" />
+        <p className="mt-3 text-sm text-muted-foreground">Nenhuma devolução nesta categoria.</p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-3">
-      {returns.map((ret) => {
-        const cfg = statusConfig[ret.status] || { label: ret.status, color: "bg-gray-500/15 text-gray-600" };
-        const itemCount = ret.return_items?.length || 0;
-        const totalQty = ret.return_items?.reduce((s, i) => s + i.expected_quantity, 0) || 0;
-
-        return (
-          <Card key={ret.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/devolucoes/${ret.id}`)}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1.5 min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium">
-                      {ret.ml_order_id ? `Pedido ML #${ret.ml_order_id}` : `Devolução #${ret.id.slice(0, 8)}`}
-                    </span>
-                    <Badge variant="secondary" className={cfg.color}>{cfg.label}</Badge>
-                    <Badge variant="outline" className="text-xs">{ret.source === "manual" ? "Manual" : "ML"}</Badge>
-                  </div>
-                  {ret.motivo && (
-                    <p className="text-sm text-muted-foreground">{ret.motivo}</p>
-                  )}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Package className="h-3.5 w-3.5" />
-                      {itemCount} item(ns) · {totalQty} un
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5" />
-                      {new Date(ret.created_at).toLocaleDateString("pt-BR")}
-                    </span>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Eye className="h-4 w-4" />
-                </Button>
+    <div className="space-y-2">
+      {data.map(r => (
+        <Card
+          key={r.id}
+          className="p-4 cursor-pointer hover:bg-muted/40 transition-colors"
+          onClick={() => navigate(`/devolucoes/${r.id}`)}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">{r.numero}</span>
+                <Badge variant="outline" className={STATUS_STYLE[r.status]}>{r.status.replace("_", " ")}</Badge>
+                <Badge variant="secondary">{SOURCE_LABEL[r.source]}</Badge>
               </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+              <div className="text-xs text-muted-foreground mt-1 truncate">
+                {r.customer_name ?? "Sem cliente"} · {r.order_reference ?? "sem referência"} ·{" "}
+                {new Date(r.created_at).toLocaleDateString("pt-BR")}
+              </div>
+              {r.motivo && <div className="text-sm mt-1 line-clamp-1">{r.motivo}</div>}
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+        </Card>
+      ))}
     </div>
   );
-};
+}

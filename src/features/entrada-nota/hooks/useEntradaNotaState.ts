@@ -50,6 +50,7 @@ export const useEntradaNotaState = () => {
   const [newProductDialog, setNewProductDialog] = useState(false);
   const [newProductData, setNewProductData] = useState({ name: "", ean: "", sku: "", price: "" });
   const [entryNotes, setEntryNotes] = useState("");
+  const [kitGroups, setKitGroups] = useState<KitGroup[]>([]);
 
   // Step 5 - Confirm
   const [saving, setSaving] = useState(false);
@@ -101,6 +102,7 @@ export const useEntradaNotaState = () => {
     autoUpdateStock, setAutoUpdateStock,
     autoUpdateCost, setAutoUpdateCost,
     batchSelectedForConfirm, setBatchSelectedForConfirm,
-    batchConfirmResult, setBatchConfirmResult
+    batchConfirmResult, setBatchConfirmResult,
+    kitGroups, setKitGroups
   };
 };

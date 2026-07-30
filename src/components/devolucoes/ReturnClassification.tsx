@@ -1,68 +1,43 @@
-import { useState } from "react";
-import { CheckCircle2, XCircle, AlertTriangle, HelpCircle, ShieldAlert } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, AlertTriangle, XCircle, PackageMinus, PackageX, HelpCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ItemCondition } from "@/services/returns";
 
-interface ReturnClassificationProps {
-  itemId: string;
-  currentCondition?: string | null;
-  onClassify: (itemId: string, condition: string, notes?: string) => void;
-}
-
-const conditions = [
-  { value: "good", label: "Aprovado", icon: CheckCircle2, color: "text-emerald-500", desc: "Produto em perfeito estado" },
-  { value: "damaged", label: "Avariado", icon: XCircle, color: "text-red-500", desc: "Produto com avaria física" },
-  { value: "wrong_item", label: "Errado", icon: AlertTriangle, color: "text-orange-500", desc: "Produto diferente do pedido" },
-  { value: "incomplete", label: "Incompleto", icon: HelpCircle, color: "text-yellow-500", desc: "Faltam itens/acessórios" },
-  { value: "packaging_violated", label: "Embalagem Violada", icon: ShieldAlert, color: "text-purple-500", desc: "Embalagem violada" },
-  { value: "other", label: "Outro", icon: HelpCircle, color: "text-gray-500", desc: "Outra classificação" },
+const OPTIONS: { value: ItemCondition; label: string; icon: any; color: string }[] = [
+  { value: "aprovado", label: "Aprovado", icon: CheckCircle2, color: "text-emerald-500 border-emerald-500/50" },
+  { value: "avariado", label: "Avariado", icon: AlertTriangle, color: "text-amber-500 border-amber-500/50" },
+  { value: "errado", label: "Produto errado", icon: XCircle, color: "text-red-500 border-red-500/50" },
+  { value: "incompleto", label: "Incompleto", icon: PackageMinus, color: "text-orange-500 border-orange-500/50" },
+  { value: "embalagem_violada", label: "Embalagem violada", icon: PackageX, color: "text-rose-500 border-rose-500/50" },
+  { value: "outro", label: "Outro", icon: HelpCircle, color: "text-muted-foreground border-border" },
 ];
 
-export const ReturnClassification = ({ itemId, currentCondition, onClassify }: ReturnClassificationProps) => {
-  const [selected, setSelected] = useState(currentCondition || "");
-  const [notes, setNotes] = useState("");
-
-  const handleClassify = () => {
-    if (!selected) return;
-    onClassify(itemId, selected, notes || undefined);
-  };
-
+export function ReturnClassification({
+  value,
+  onChange,
+}: {
+  value?: ItemCondition | null;
+  onChange: (v: ItemCondition) => void;
+}) {
   return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium">Classificação do Produto</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {conditions.map((c) => {
-          const Icon = c.icon;
-          const isSelected = selected === c.value;
-          return (
-            <button
-              key={c.value}
-              onClick={() => setSelected(c.value)}
-              className={`flex flex-col items-center gap-1 p-3 rounded-lg border text-center transition-all ${
-                isSelected ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
-              }`}
-            >
-              <Icon className={`h-5 w-5 ${c.color}`} />
-              <span className="text-xs font-medium">{c.label}</span>
-              <span className="text-[10px] text-muted-foreground leading-tight">{c.desc}</span>
-            </button>
-          );
-        })}
-      </div>
-      {selected && (
-        <div className="space-y-2">
-          <Textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Observações sobre a classificação..."
-            rows={2}
-          />
-          <Button size="sm" onClick={handleClassify} className="w-full">
-            Confirmar Classificação
-          </Button>
-        </div>
-      )}
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {OPTIONS.map(opt => {
+        const Icon = opt.icon;
+        const active = value === opt.value;
+        return (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-3 transition-all hover:bg-muted/50",
+              active ? cn("ring-2 ring-offset-2 ring-offset-background", opt.color) : "border-border"
+            )}
+          >
+            <Icon className={cn("h-5 w-5", opt.color)} />
+            <span className="text-xs font-medium">{opt.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
-};
+}

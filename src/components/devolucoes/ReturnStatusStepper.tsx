@@ -1,45 +1,47 @@
-import { CheckCircle2, Clock, Package, AlertTriangle, XCircle } from "lucide-react";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ReturnStatus } from "@/services/returns";
 
-interface ReturnStatusStepperProps {
-  status: string;
-}
-
-const steps = [
-  { key: "pendente_recebimento", label: "Pendente", icon: Clock, color: "text-yellow-500" },
-  { key: "recebido", label: "Recebido", icon: Package, color: "text-blue-500" },
-  { key: "em_conferencia", label: "Conferência", icon: AlertTriangle, color: "text-purple-500" },
-  { key: "aguardando_decisao", label: "Decisão", icon: CheckCircle2, color: "text-orange-500" },
-  { key: "concluida", label: "Concluída", icon: CheckCircle2, color: "text-emerald-500" },
+const STEPS: { key: ReturnStatus; label: string }[] = [
+  { key: "pendente", label: "Pendente" },
+  { key: "em_conferencia", label: "Conferência" },
+  { key: "aguardando_decisao", label: "Decisão" },
+  { key: "concluida", label: "Concluída" },
 ];
 
-const statusOrder = ["pendente_recebimento", "recebido", "em_conferencia", "aguardando_decisao", "aprovada", "recusada", "concluida", "cancelada"];
-
-export const ReturnStatusStepper = ({ status }: ReturnStatusStepperProps) => {
-  const currentIdx = statusOrder.indexOf(status);
-
+export function ReturnStatusStepper({ status }: { status: ReturnStatus }) {
+  if (status === "cancelada") {
+    return (
+      <div className="rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+        Devolução cancelada
+      </div>
+    );
+  }
+  const currentIdx = STEPS.findIndex(s => s.key === status);
   return (
-    <div className="flex items-center gap-0">
-      {steps.map((step, idx) => {
-        const Icon = step.icon;
-        const isActive = currentIdx >= idx;
-        const isCurrent = status === step.key;
-
+    <div className="flex items-center gap-2 overflow-x-auto">
+      {STEPS.map((s, i) => {
+        const done = i < currentIdx;
+        const active = i === currentIdx;
         return (
-          <div key={step.key} className="flex-1 flex items-center">
-            <div className={`flex flex-col items-center gap-1 ${isActive ? step.color : "text-muted-foreground/40"}`}>
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center border-2 ${
-                isCurrent ? "border-current bg-current/10" : isActive ? "border-current" : "border-muted-foreground/20"
-              }`}>
-                <Icon className="h-4 w-4" />
-              </div>
-              <span className="text-[10px] font-medium whitespace-nowrap">{step.label}</span>
+          <div key={s.key} className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-medium shrink-0",
+                done && "bg-emerald-500 text-white border-emerald-500",
+                active && "bg-primary text-primary-foreground border-primary",
+                !done && !active && "bg-muted text-muted-foreground border-border"
+              )}
+            >
+              {done ? <Check className="h-4 w-4" /> : i + 1}
             </div>
-            {idx < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${isActive ? "bg-current/30" : "bg-muted-foreground/10"}`} />
-            )}
+            <span className={cn("text-sm whitespace-nowrap", active ? "font-semibold" : "text-muted-foreground")}>
+              {s.label}
+            </span>
+            {i < STEPS.length - 1 && <div className="h-px w-6 bg-border" />}
           </div>
         );
       })}
     </div>
   );
-};
+}

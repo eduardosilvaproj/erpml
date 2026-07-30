@@ -42,7 +42,7 @@ export const menuGroups: MenuGroup[] = [
       { title: "Conferência", url: "/conferencia", icon: ScanBarcode, desc: "Bip de recebimento" },
       { title: "Balanço", url: "/balanco-estoque", icon: ClipboardList, desc: "Inventário físico" },
       { title: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, desc: "Transferir para FULL", premium: true },
-      { title: "Devoluções", url: "/devolucoes", icon: Undo2, desc: "Devoluções e retiradas ML", premium: true },
+      { title: "Devoluções", url: "/devolucoes", icon: Undo2, desc: "RMA, quarentena e evidências" },
     ],
   },
   {

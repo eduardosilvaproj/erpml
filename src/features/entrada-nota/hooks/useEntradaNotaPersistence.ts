@@ -21,6 +21,7 @@ interface PersistenceInput {
   done: boolean;
   nfMode: "sefaz" | "xml";
   nfeChave: string;
+  kitGroups: KitGroup[];
 }
 
 interface Setters {
@@ -39,6 +40,7 @@ interface Setters {
   setAutoUpdateCost: (v: boolean) => void;
   setNfMode: (m: "sefaz" | "xml") => void;
   setNfeChave: (k: string) => void;
+  setKitGroups: (v: KitGroup[]) => void;
 }
 
 export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Setters) => {
@@ -57,11 +59,12 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
     } catch {}
   }, [
-    state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes,
-    state.batchConferenceMode, state.currentBatchNfIdx, state.divergences,
-    state.divergenceActions, state.adjustedItems, state.kitGroups, state.entryNotes,
-    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave
+    state.currentStep, state.completedSteps, state.conferenceItems, state.batchNfes, 
+    state.batchConferenceMode, state.currentBatchNfIdx, state.divergences, 
+    state.divergenceActions, state.adjustedItems, state.entryNotes, 
+    state.autoUpdateStock, state.autoUpdateCost, state.done, state.nfMode, state.nfeChave, state.kitGroups
   ]);
+
 
   useEffect(() => {
     if (hasRestoredState) return;
@@ -98,6 +101,7 @@ export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Sett
       if (s.autoUpdateCost != null) setters.setAutoUpdateCost(s.autoUpdateCost);
       if (s.nfMode) setters.setNfMode(s.nfMode);
       if (s.nfeChave) setters.setNfeChave(s.nfeChave);
+      if (s.kitGroups) setters.setKitGroups(s.kitGroups);
       toast({ title: "Progresso restaurado!", description: "Continuando de onde você parou." });
     } catch {}
     setShowRestoreDialog(false);
