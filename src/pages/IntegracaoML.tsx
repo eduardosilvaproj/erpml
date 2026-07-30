@@ -20,6 +20,9 @@ import {
   User,
   CalendarDays,
   Shield,
+  Download,
+  Webhook,
+  List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -271,6 +274,47 @@ export default function IntegracaoML() {
     }
   };
 
+  const handleSyncAll = async () => {
+    try {
+      // 1. Sincronizar catálogo (ML → ERP: preços, estoques)
+      const catalogResult = await syncCatalog.mutateAsync();
+      // 2. Sincronizar pedidos
+      const ordersResult = await syncOrders.mutateAsync();
+      // 3. Registrar webhooks
+      try { await registerWebhook.mutateAsync(); } catch {}
+      toast({
+        title: "Sincronização completa!",
+        description: `Catálogo: ${catalogResult.linked_products} vinculados. Pedidos: ${ordersResult.inserted} novos, ${ordersResult.updated} atualizados.`,
+      });
+    } catch (e: any) {
+      toast({ title: "Erro na sincronização completa", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleForcePriceSync = async () => {
+    try {
+      // Sincroniza catálogo para atualizar ml_price e products.price
+      const result = await syncCatalog.mutateAsync();
+      // Depois envia os preços do ERP para o ML (bidirecional)
+      const syncResult = await syncAllToML.mutateAsync();
+      toast({
+        title: "Preços sincronizados!",
+        description: `${result.linked_products} produtos com preços atualizados. ${syncResult.synced} enviados para o ML.`,
+      });
+    } catch (e: any) {
+      toast({ title: "Erro ao sincronizar preços", description: e.message, variant: "destructive" });
+    }
+  };
+
+  const handleRegisterWebhooks = async () => {
+    try {
+      await registerWebhook.mutateAsync();
+      toast({ title: "Webhooks registrados com sucesso!" });
+    } catch (e: any) {
+      toast({ title: "Erro ao registrar webhooks", description: e.message, variant: "destructive" });
+    }
+  };
+
   const mlConnected = isConnected && !connection?.needs_reauth;
 
   if (loadingConn) {
@@ -322,6 +366,14 @@ export default function IntegracaoML() {
                 <Button variant="outline" size="sm" onClick={handleSyncCatalog} disabled={syncCatalog.isPending || connection?.needs_reauth}>
                   <RefreshCw className={`mr-1 h-3 w-3 ${syncCatalog.isPending ? "animate-spin" : ""}`} />
                   Sincronizar agora
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleSyncAll} disabled={syncCatalog.isPending || syncOrders.isPending || connection?.needs_reauth}>
+                  <Download className={`mr-1 h-3 w-3 ${syncCatalog.isPending || syncOrders.isPending ? "animate-spin" : ""}`} />
+                  Sincronizar Tudo
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleRegisterWebhooks} disabled={registerWebhook.isPending || connection?.needs_reauth}>
+                  <Webhook className={`mr-1 h-3 w-3 ${registerWebhook.isPending ? "animate-spin" : ""}`} />
+                  {webhookStatus?.is_registered ? "Re-registrar Webhooks" : "Registrar Webhooks"}
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -560,17 +612,23 @@ export default function IntegracaoML() {
                     <CardTitle>Produtos Vinculados</CardTitle>
                     <CardDescription>Sincronize preço e estoque para o ML</CardDescription>
                   </div>
-                  <Button onClick={async () => {
-                    try {
-                      const result = await syncAllToML.mutateAsync();
-                      toast({ title: "Sincronização concluída!", description: `${result.synced} produto(s) atualizados.` });
-                    } catch (e: any) {
-                      toast({ title: "Erro", description: e.message, variant: "destructive" });
-                    }
-                  }} disabled={syncAllToML.isPending || !linked?.length || connection?.needs_reauth}>
-                    {syncAllToML.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                    Enviar Tudo → ML
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleForcePriceSync} disabled={syncCatalog.isPending || syncAllToML.isPending || !linked?.length || connection?.needs_reauth}>
+                      <DollarSign className={`mr-1 h-3 w-3 ${syncCatalog.isPending || syncAllToML.isPending ? "animate-spin" : ""}`} />
+                      Forçar Preços
+                    </Button>
+                    <Button onClick={async () => {
+                      try {
+                        const result = await syncAllToML.mutateAsync();
+                        toast({ title: "Sincronização concluída!", description: `${result.synced} produto(s) atualizados.` });
+                      } catch (e: any) {
+                        toast({ title: "Erro", description: e.message, variant: "destructive" });
+                      }
+                    }} disabled={syncAllToML.isPending || !linked?.length || connection?.needs_reauth}>
+                      {syncAllToML.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                      Enviar Tudo → ML
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {loadingLinked ? (
