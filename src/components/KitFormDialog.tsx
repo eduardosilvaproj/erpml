@@ -57,7 +57,6 @@ function ProductPicker({
                     value={keywords}
                     onSelect={() => {
                       onChange(p.id);
-                      setOpen(false);
                     }}
                   >
                     <Check className={cn("h-4 w-4 mr-2", value === p.id ? "opacity-100" : "opacity-0")} />
@@ -171,8 +170,8 @@ export const KitFormDialog = ({ open, onOpenChange, kit, initialData, onSuccess 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle>{kit ? "Editar Kit" : "Novo Kit"}</DialogTitle>
+        <DialogHeader className="p-6 pb-0 pr-14">
+          <DialogTitle className="truncate pr-6">{kit ? "Editar Kit" : "Novo Kit"}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="flex-1 px-6 py-4">
           <div className="space-y-4">
@@ -218,7 +217,7 @@ export const KitFormDialog = ({ open, onOpenChange, kit, initialData, onSuccess 
                   </div>
                 )}
                 {formItems.map((item, idx) => (
-                  <div key={idx} className="flex gap-3 items-end bg-muted/30 p-3 rounded-lg border border-border/50">
+                  <div key={`item-${idx}`} className="flex gap-3 items-end bg-muted/30 p-3 rounded-lg border border-border/50">
                     <div className="flex-1 space-y-1.5">
                       <Label className="text-[10px] uppercase font-bold text-muted-foreground">Produto</Label>
                       <ProductPicker

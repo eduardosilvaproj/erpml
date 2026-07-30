@@ -452,7 +452,7 @@ const Kits = () => {
                       <TableCell>
                         {expandedKit === kit.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </TableCell>
-                      <TableCell className="font-medium">{kit.name}</TableCell>
+                      <TableCell className="font-medium max-w-[200px] truncate">{kit.name}</TableCell>
                       <TableCell className="font-mono text-xs">{kit.sku}</TableCell>
                       <TableCell className="font-mono text-xs">
                         {kit.ean ? (

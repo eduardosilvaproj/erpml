@@ -438,8 +438,8 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     <>
       <Dialog open={open} onOpenChange={guardedClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] p-0">
-          <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle>{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+          <DialogHeader className="px-6 pt-6 pb-0 pr-14">
+            <DialogTitle className="truncate pr-6">{product ? "Editar Produto" : "Novo Produto"}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[70vh] px-6">
             <Form {...form}>
