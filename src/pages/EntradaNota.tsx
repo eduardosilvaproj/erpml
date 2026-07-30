@@ -264,11 +264,12 @@ const EntradaNota = () => {
               loading={loading} batchSearchProgress={batchSearchProgress} dragOver={dragOver} setDragOver={setDragOver} handleBatchDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files) handleBatchXmlUpload(e.dataTransfer.files); }}
               handleBatchXmlUpload={handleBatchXmlUpload} batchNfes={batchNfes} setBatchNfes={setBatchNfes} setNfeData={setNfeData} setMatches={setMatches} goToStep={goToStep} formatCurrency={formatCurrency}
               handleSefazSearch={async () => {
+                if (loading) return; // proteção contra clique duplo
                 const valid = sefazEntries.filter(e => {
                   const digits = normalizeDigits(e.number);
                   return digits.length >= 1 && digits.length <= 44;
                 });
-                
+
                 if (valid.length === 0) {
                   toast({
                     title: "Número inválido",
@@ -280,82 +281,86 @@ const EntradaNota = () => {
 
                 setLoading(true);
                 setBatchSearchProgress({ current: 0, total: valid.length });
-                
+
                 try {
                   const dbProducts = await fetchProductsForMatching();
                   let processed = 0;
-                  
+
                   for (const entry of valid) {
                     try {
                       const clean = normalizeDigits(entry.number);
                       const isFullChave = clean.length === 44;
-                      
-                      const { data, error } = await supabase.functions.invoke("nfe-consulta", { 
-                        body: { 
+
+                      const controller = new AbortController();
+                      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                      const { data, error } = await supabase.functions.invoke("nfe-consulta", {
+                        body: {
                           chave: clean,
                           number: !isFullChave ? clean : undefined,
                           series: entry.series
-                        } 
+                        }
                       });
-                      
+                      clearTimeout(timeoutId);
+
                       if (error) {
                         console.error("Erro na chamada da Edge Function:", error);
                         let msg = "Falha ao conectar com o serviço de busca.";
                         if (error instanceof Error) msg = error.message;
                         else if (typeof error === 'object' && 'message' in error) msg = (error as any).message;
-                        
-                        if (msg.includes("Failed to send a request") || msg.includes("fetch")) {
-                          msg = "Não foi possível alcançar o servidor. Verifique sua conexão ou se a função está ativa.";
+
+                        if (msg.includes("Failed to send a request") || msg.includes("fetch") || msg.includes("504") || msg.includes("500")) {
+                          msg = "O servidor demorou muito para responder. Tente novamente com menos notas ou use o upload do XML.";
                         }
-                        
-                        throw new Error(`Erro de comunicação: ${msg}`);
+
+                        throw new Error(msg);
                       }
 
                       if (data?.error) {
                         throw new Error(data.error);
                       }
 
-                      const nfe: NFeData = { 
-                        number: data.numero, 
-                        series: data.serie, 
-                        issuerName: data.issuerName || `Emitente ${data.cnpjFormatado || "não identificado"}`, 
-                        issuerCnpj: data.cnpjEmitente, 
-                        totalValue: data.totalValue || 0, 
-                        issueDate: data.dataEmissao, 
-                        products: data.products || [] 
+                      const nfe: NFeData = {
+                        number: data.numero,
+                        series: data.serie,
+                        issuerName: data.issuerName || `Emitente ${data.cnpjFormatado || "não identificado"}`,
+                        issuerCnpj: data.cnpjEmitente,
+                        totalValue: data.totalValue || 0,
+                        issueDate: data.dataEmissao,
+                        products: data.products || []
                       };
 
                       const matched = matchProducts(nfe.products, dbProducts);
-                      
-                      if (valid.length === 1) { 
-                        setNfeData(nfe); 
-                        setMatches(matched); 
-                        if (isFullChave) setNfeChave(clean); 
+
+                      if (valid.length === 1) {
+                        setNfeData(nfe);
+                        setMatches(matched);
+                        if (isFullChave) setNfeChave(clean);
                       }
-                      
-                      setBatchNfes(prev => [...prev, { 
-                        id: generateId(), 
-                        nfeData: nfe, 
-                        matches: matched, 
-                        selected: true, 
-                        conferenceStatus: "pending", 
-                        partialData: !!data.partialData, 
-                        partialReason: data.partialReason 
+
+                      setBatchNfes(prev => [...prev, {
+                        id: generateId(),
+                        nfeData: nfe,
+                        matches: matched,
+                        selected: true,
+                        conferenceStatus: "pending",
+                        partialData: !!data.partialData,
+                        partialReason: data.partialReason
                       }]);
-                      
-                    } catch (e: any) { 
+
+                    } catch (e: any) {
                       console.error("Erro ao processar nota:", e);
-                      toast({ 
-                        title: "Erro na nota " + entry.number, 
-                        description: e.message, 
-                        variant: "destructive" 
-                      }); 
+                      toast({
+                        title: "Erro na nota " + entry.number,
+                        description: e.message,
+                        variant: "destructive"
+                      });
                     }
-                    processed++; 
+                    processed++;
                     setBatchSearchProgress({ current: processed, total: valid.length });
                   }
-                } finally { 
-                  setLoading(false); 
+                } finally {
+                  setLoading(false);
                 }
               }}
             />

@@ -289,7 +289,16 @@ export default function IntegracaoML() {
         description: `Catálogo: ${catalogResult.linked_products} vinculados. Pedidos: ${ordersResult.inserted} novos, ${ordersResult.updated} atualizados.`,
       });
     } catch (e: any) {
-      toast({ title: "Erro na sincronização completa", description: e.message, variant: "destructive" });
+      const msg = e?.message || "";
+      if (msg.includes("504") || msg.includes("timeout") || msg.includes("Failed to fetch")) {
+        toast({
+          title: "Sincronização parcial",
+          description: "O servidor demorou muito. As operações concluídas foram salvas. Tente novamente mais tarde.",
+          variant: "default",
+        });
+      } else {
+        toast({ title: "Erro na sincronização completa", description: msg, variant: "destructive" });
+      }
     }
   };
 
