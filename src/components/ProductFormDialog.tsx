@@ -36,6 +36,7 @@ const schema = z.object({
   barcode: z.string().max(50).optional().or(z.literal("")),
   ean: z.string().max(50).optional().or(z.literal("")),
   name: z.string().min(1, "Nome obrigatório").max(200),
+  brand: z.string().max(100).optional().or(z.literal("")),
   description: z.string().max(1000).optional().or(z.literal("")),
   category_id: z.string().optional().or(z.literal("")),
   cost: z.coerce.number().min(0, "Custo inválido"),
@@ -109,6 +110,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
     barcode: p?.barcode || "",
     ean: (p as any)?.ean || p?.barcode || "",
     name: p?.name || "",
+    brand: (p as any)?.brand || "",
     description: p?.description || "",
     category_id: p?.category_id || "",
     cost: p?.cost || 0,
@@ -254,6 +256,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       barcode: values.barcode || undefined,
       ean: values.ean || values.barcode || undefined,
       name: values.name,
+      brand: values.brand || undefined,
       description: values.description || undefined,
       category_id: values.category_id || undefined,
       cost: values.cost,
@@ -555,6 +558,15 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                   <FormItem>
                     <FormLabel>Nome do produto *</FormLabel>
                     <FormControl><Input {...field} placeholder="Nome do produto" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                {/* Brand */}
+                <FormField control={form.control} name="brand" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marca</FormLabel>
+                    <FormControl><Input {...field} placeholder="Ex: Nestlé, Coca-Cola, ..." /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />

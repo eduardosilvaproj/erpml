@@ -7,6 +7,7 @@ export interface ProductFilters {
   search?: string;
   category_id?: string;
   supplier_id?: string;
+  brand?: string;
   status?: "active" | "inactive" | "all";
   page?: number;
   pageSize?: number;
@@ -65,6 +66,10 @@ export const productsService = {
 
     if (filters?.category_id) {
       query = query.eq("category_id", filters.category_id);
+    }
+
+    if (filters?.brand) {
+      query = query.ilike("brand", `%${filters.brand}%`);
     }
 
     if (filters?.supplier_id) {
@@ -181,6 +186,7 @@ export const productsService = {
         description: validation.sanitized.description,
         barcode: productData.barcode || null,
         ean: productData.ean || productData.barcode || null,
+        brand: productData.brand || null,
         category_id: productData.category_id || null,
         weight: productData.weight ?? null,
         width: productData.width ?? null,
@@ -249,6 +255,7 @@ export const productsService = {
       ...productData,
       barcode: productData.barcode || null,
       ean: productData.ean || productData.barcode || null,
+      brand: productData.brand || null,
       description: productData.description || null,
       category_id: productData.category_id || null,
       weight: productData.weight ?? null,

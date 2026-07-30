@@ -37,6 +37,7 @@ const Produtos = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [brandFilter, setBrandFilter] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [correctionFilter, setCorrectionFilter] = useState<string>("");
@@ -58,12 +59,13 @@ const Produtos = () => {
   const filters = useMemo(() => ({
     search: search || undefined,
     category_id: categoryFilter || undefined,
+    brand: brandFilter || undefined,
     supplier_id: supplierFilter || undefined,
     status: (statusFilter as any) || "active",
     needsCorrection: (correctionFilter as any) || undefined,
     sortBy,
     sortOrder,
-  }), [search, categoryFilter, supplierFilter, statusFilter, correctionFilter, sortBy, sortOrder]);
+  }), [search, categoryFilter, brandFilter, supplierFilter, statusFilter, correctionFilter, sortBy, sortOrder]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useProductsInfinite(filters);
 
@@ -239,6 +241,15 @@ const Produtos = () => {
                     {categories?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Filtrar por marca..."
+                    className="pl-10 w-[180px]"
+                    value={brandFilter}
+                    onChange={(e) => setBrandFilter(e.target.value)}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

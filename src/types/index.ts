@@ -75,6 +75,7 @@ export interface ProductFilters {
   search?: string;
   category_id?: string;
   supplier_id?: string;
+  brand?: string;
   status?: "active" | "inactive" | "all";
   page?: number;
   pageSize?: number;

@@ -2154,6 +2154,7 @@ export type Database = {
           active: boolean
           barcode: string | null
           box_quantity: number | null
+          brand: string | null
           category_id: string | null
           company_id: string | null
           cost: number
@@ -2182,6 +2183,7 @@ export type Database = {
           active?: boolean
           barcode?: string | null
           box_quantity?: number | null
+          brand?: string | null
           category_id?: string | null
           company_id?: string | null
           cost?: number
@@ -2210,6 +2212,7 @@ export type Database = {
           active?: boolean
           barcode?: string | null
           box_quantity?: number | null
+          brand?: string | null
           category_id?: string | null
           company_id?: string | null
           cost?: number
