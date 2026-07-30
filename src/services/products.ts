@@ -250,12 +250,11 @@ export const productsService = {
    * @param companyId - ID da empresa para segurança da operação.
    */
   async updateProduct(id: string, data: ProductFormData, companyId: string) {
-    const { supplier_ids, supplier_skus, ...productData } = data;
+    const { supplier_ids, supplier_skus, brand: _brand, ...productData } = data;
     const updateData = {
       ...productData,
       barcode: productData.barcode || null,
       ean: productData.ean || productData.barcode || null,
-      brand: productData.brand || null,
       description: productData.description || null,
       category_id: productData.category_id || null,
       weight: productData.weight ?? null,

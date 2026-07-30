@@ -21,7 +21,6 @@ interface PersistenceInput {
   done: boolean;
   nfMode: "sefaz" | "xml";
   nfeChave: string;
-  kitGroups: KitGroup[];
 }
 
 interface Setters {
@@ -40,7 +39,6 @@ interface Setters {
   setAutoUpdateCost: (v: boolean) => void;
   setNfMode: (m: "sefaz" | "xml") => void;
   setNfeChave: (k: string) => void;
-  setKitGroups: (v: KitGroup[]) => void;
 }
 
 export const useEntradaNotaPersistence = (state: PersistenceInput, setters: Setters) => {

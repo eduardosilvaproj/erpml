@@ -4,7 +4,7 @@ import {
   LogOut, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor,
   Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
-  LockKeyhole, Import, Activity, Undo2
+  LockKeyhole, Import, Activity, Undo2, TrendingDown
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";

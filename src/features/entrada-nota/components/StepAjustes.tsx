@@ -7,8 +7,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { type MatchResult } from "@/lib/nfe-parser";
 import { type KitGroup } from "../types";
 
@@ -18,10 +16,10 @@ interface StepAjustesProps {
   kitGroups: KitGroup[];
   updateAdjustedQty: (idx: number, qty: number) => void;
   updateAdjustedCost: (idx: number, cost: number) => void;
-  updateAdjustedName: (idx: number, name: string) => void;
+  updateAdjustedName?: (idx: number, name: string) => void;
   removeAdjustedItem: (idx: number) => void;
   onOpenNewProduct: () => void;
-  onCreateKit: (name: string, sku: string, price: number, itemIndices: number[], quantity: number) => void;
+  onCreateKit: (kit: KitGroup) => void;
   onRemoveKitGroup: (kitId: string) => void;
   entryNotes: string;
   setEntryNotes: (v: string) => void;
@@ -29,9 +27,6 @@ interface StepAjustesProps {
   goToStep: (s: any) => void;
   formatCurrency: (v: number) => string;
   hasMatchesOrBatch: boolean;
-  kitGroups: KitGroup[];
-  onCreateKit: (kit: KitGroup) => void;
-  onRemoveKitGroup: (kitId: string) => void;
 }
 
 export const StepAjustes = ({

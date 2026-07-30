@@ -76,8 +76,9 @@ const DuplicadorAnuncios = lazy(() => import("./pages/DuplicadorAnuncios"));
 const AdminMasterDev = lazy(() => import("./pages/AdminMasterDev"));
 // Removed AdminGovernance lazy load as it's now redirected to MasterAdmin
 const Importacao = lazy(() => import("./pages/Importacao"));
-const Devolucoes = lazy(() => import("./pages/Devolucoes"));
-const DevolucaoDetail = lazy(() => import("./pages/DevolucaoDetail"));
+const RelatorioEstoqueFisico = lazy(() => import("./pages/RelatorioEstoqueFisico"));
+const RelatorioEstoqueFull = lazy(() => import("./pages/RelatorioEstoqueFull"));
+const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
 
 
 const queryClient = new QueryClient({
