@@ -79,6 +79,7 @@ const Importacao = lazy(() => import("./pages/Importacao"));
 const RelatorioEstoqueFisico = lazy(() => import("./pages/RelatorioEstoqueFisico"));
 const RelatorioEstoqueFull = lazy(() => import("./pages/RelatorioEstoqueFull"));
 const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
+const RelatorioVendas = lazy(() => import("./pages/RelatorioVendas"));
 
 
 const queryClient = new QueryClient({
@@ -146,6 +147,7 @@ const App = (): JSX.Element => {
                               <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                               <Route path="/duplicador-anuncios" element={<PlanProtectedRoute path="/integracao-ml"><DuplicadorAnuncios /></PlanProtectedRoute>} />
                               <Route path="/conciliacao-precos" element={<ConciliacaoPrecos />} />
+                              <Route path="/relatorio-vendas" element={<RelatorioVendas />} />
                               {/* Removed /campanhas route — feature removed */}
                               <Route path="/pdv" element={<PDV />} />
                               <Route path="/crm" element={<CRM />} />

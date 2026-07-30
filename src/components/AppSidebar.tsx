@@ -67,6 +67,7 @@ const groups: NavGroup[] = [
     subItems: [
       { label: "Minha Empresa", url: "/empresa", icon: Building2, tooltip: "Dados e configurações da sua empresa" },
       { label: "Relatórios", url: "/painel-hub", icon: BarChart3, tooltip: "Métricas e relatórios de desempenho" },
+      { label: "Relatório de Vendas", url: "/relatorio-vendas", icon: BarChart, tooltip: "Relatório detalhado de vendas PDV e ML" },
       { label: "Performance Separação", url: "/dashboard-separacao", icon: Activity, tooltip: "KPIs operacionais, gráfico e ranking de operadores" },
       { label: "Financeiro", url: "/financeiro", icon: DollarSign, tooltip: "Cobranças, pagamentos e faturamento" },
       { label: "Conciliação Preços", url: "/conciliacao-precos", icon: TrendingDown, tooltip: "Compare preços de custo (NF) com preços do Mercado Livre" },

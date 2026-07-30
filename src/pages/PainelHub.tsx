@@ -14,6 +14,8 @@ import { useMLConnection, useMLItems, useMLLinkedProducts, useMLOrders, usePersi
 import { useInvoicesWithPayments } from "@/hooks/useFinanceiroData";
 import { useMyCompany } from "@/hooks/useCompanyData";
 import { useToast } from "@/hooks/use-toast";
+import { useFinancialMetrics } from "@/hooks/useFinancialMetrics";
+import { formatCurrency } from "@/lib/formatters";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, Legend } from "recharts";
 import { useMemo, useState } from "react";
 
@@ -57,9 +59,6 @@ const PainelHub = () => {
   const totalFull = products.reduce((s, p) => s + p.stock_full, 0);
   const lowStock = products.filter((p) => p.min_stock > 0 && (p.stock_physical + p.stock_full) <= p.min_stock);
   const pendingTransfers = transfers?.filter((t) => t.status !== "conferido_full" && t.status !== "cancelado") || [];
-
-  const formatCurrency = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const salesChartData = useMemo(() => {
     const days: { date: string; label: string; vendas: number; faturamento: number }[] = [];
@@ -606,6 +605,111 @@ const PainelHub = () => {
     </Card>
   );
 
+  const { data: financialMetricsData, isLoading: loadingFinancial } = useFinancialMetrics(selectedPeriod.days);
+
+  const ResultadoSection = useMemo(() => {
+    if (loadingFinancial || !financialMetricsData) {
+      return (
+        <div className="flex justify-center py-12">
+          <p className="text-muted-foreground">Carregando métricas financeiras...</p>
+        </div>
+      );
+    }
+
+    const {
+      grossRevenue, pdvDiscounts, mlFees, mlShipping, totalDeductions,
+      netRevenue, cmv, contributionMargin, pdvSalesCount, mlOrdersCount, salesDetail,
+    } = financialMetricsData;
+
+    const summaryCards = [
+      { label: "Faturamento Bruto", value: formatCurrency(grossRevenue), color: "text-primary" },
+      { label: "Descontos/Taxas", value: formatCurrency(totalDeductions), color: "text-destructive" },
+      { label: "Faturamento Líquido", value: formatCurrency(netRevenue), color: netRevenue >= 0 ? "text-primary" : "text-destructive" },
+      { label: "CMV", value: formatCurrency(cmv), color: "text-muted-foreground" },
+      { label: "Margem", value: `${contributionMargin.toFixed(1)}%`, color: contributionMargin >= 0 ? "text-emerald-600" : "text-destructive" },
+    ];
+
+    return (
+      <div className="space-y-4">
+        {/* Summary Cards */}
+        <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+          {summaryCards.map((card) => (
+            <Card key={card.label}>
+              <CardContent className="p-4">
+                <p className="text-xs text-muted-foreground">{card.label}</p>
+                <p className={`text-lg font-bold mt-1 ${card.color}`}>{card.value}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Detail Table */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Detalhamento de Vendas ({pdvSalesCount + mlOrdersCount} registros)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Produto</TableHead>
+                    <TableHead className="text-right">Qtd</TableHead>
+                    <TableHead className="text-right">Valor Bruto</TableHead>
+                    <TableHead className="text-right">Desconto</TableHead>
+                    <TableHead className="text-right">Valor Líquido</TableHead>
+                    <TableHead className="text-right">Custo</TableHead>
+                    <TableHead className="text-right">Margem</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {salesDetail.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                        Nenhuma venda no período
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    salesDetail.slice(0, 50).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                          {new Date(item.date).toLocaleDateString("pt-BR")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.type === "PDV" ? "default" : "secondary"}>
+                            {item.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{item.productName}</TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.grossValue)}</TableCell>
+                        <TableCell className="text-right text-destructive">
+                          {item.discount > 0 ? formatCurrency(item.discount) : "—"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(item.netValue)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatCurrency(item.cost)}</TableCell>
+                        <TableCell className="text-right">
+                          <span className={item.marginPercent >= 0 ? "text-emerald-600" : "text-destructive"}>
+                            {item.marginPercent.toFixed(1)}%
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }, [financialMetricsData, loadingFinancial]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -660,6 +764,7 @@ const PainelHub = () => {
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="ml">Mercado Livre</TabsTrigger>
+          <TabsTrigger value="resultado">Resultado</TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="space-y-6 mt-4">
@@ -689,6 +794,10 @@ const PainelHub = () => {
 
         <TabsContent value="ml" className="space-y-6 mt-4">
           {MLSection}
+        </TabsContent>
+
+        <TabsContent value="resultado" className="space-y-6 mt-4">
+          {ResultadoSection}
         </TabsContent>
       </Tabs>
     </div>
