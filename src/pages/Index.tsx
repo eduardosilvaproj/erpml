@@ -1,8 +1,10 @@
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
   DollarSign, Percent, Truck, Send, UserPlus,
-  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle, ScanBarcode
+  ShoppingCart, Target, Store, PackageOpen, Monitor, ScanLine, PlusCircle, ScanBarcode,
+  RefreshCw
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,6 +114,7 @@ const quickActions = [
 
 const Index = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [period, setPeriod] = useState<PeriodFilter>("30d");
   const periodDays = PERIOD_DAYS[period] ?? 30;
   const { data: mlConnection } = useMLConnection();
@@ -133,6 +136,20 @@ const Index = () => {
     <div className="space-y-6 lg:space-y-8">
       {/* Period Filter */}
       <div className="flex items-center justify-end gap-1 lg:gap-1.5">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 lg:h-8 w-7 lg:w-8 rounded-full"
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+            queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["ml-orders"] });
+            queryClient.invalidateQueries({ queryKey: ["ml-metrics"] });
+          }}
+          title="Atualizar dados"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+        </Button>
         {(Object.keys(periodLabels) as PeriodFilter[]).map((p) => (
           <button
             key={p}

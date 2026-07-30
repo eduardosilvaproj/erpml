@@ -340,6 +340,7 @@ async function syncCatalog(supabase: any, userId: string, accessToken: string) {
   }
 
   const productUpdates = new Map<string, Record<string, string>>();
+  const productPriceUpdates: { productId: string; price: number }[] = [];
   const linksToInsert: any[] = [];
   const linksToUpdate: { id: string; values: Record<string, any> }[] = [];
   const seenItemIds = new Set<string>();
@@ -374,18 +375,27 @@ async function syncCatalog(supabase: any, userId: string, accessToken: string) {
     }
 
     const existingLink = existingLinksByItemId.get(itemId);
+    const mlPrice = item.price ?? null;
+    const mlOriginalPrice = item.original_price ?? null;
+
     const linkValues = {
       user_id: userId,
       product_id: matchedProduct.id,
       ml_item_id: itemId,
       ml_title: item.title ?? matchedProduct.name,
-      ml_price: item.price ?? null,
+      ml_price: mlPrice,
+      ml_original_price: mlOriginalPrice,
       ml_available_quantity: item.available_quantity ?? null,
       ml_status: item.status ?? null,
       sync_status: "synced",
       last_synced_at: nowIso,
       updated_at: nowIso,
     };
+
+    // Track price update for products.price sync
+    if (mlPrice !== null) {
+      productPriceUpdates.push({ productId: matchedProduct.id, price: mlPrice });
+    }
 
     if (existingLink) {
       linksToUpdate.push({ id: existingLink.id, values: linkValues });
@@ -435,6 +445,18 @@ async function syncCatalog(supabase: any, userId: string, accessToken: string) {
 
     if (error) {
       throw error;
+    }
+  }
+
+  // Sync products.price with the latest ML price
+  for (const { productId, price } of productPriceUpdates) {
+    const { error } = await supabase
+      .from("products")
+      .update({ price, updated_at: nowIso })
+      .eq("id", productId);
+
+    if (error) {
+      console.error(`[sync-catalog] Failed to update products.price for ${productId}:`, error);
     }
   }
 
@@ -949,8 +971,8 @@ Deno.serve(async (req) => {
         const appId = Deno.env.get("MERCADO_LIVRE_APP_ID");
         const webhookUrl = `${supabaseUrl}/functions/v1/ml-webhook`;
 
-        // Register webhook with ML API for orders, items, and questions
-        const topics = ["orders_v2", "items", "questions"];
+        // Register webhook with ML API for orders, items, questions, and price changes
+        const topics = ["orders_v2", "items", "questions", "items_price"];
         const results: any[] = [];
 
         for (const topic of topics) {
@@ -1021,7 +1043,7 @@ Deno.serve(async (req) => {
         const companyId = memberData?.company_id ?? null;
 
         // Fetch orders from ML API (last 90 days, up to 200)
-        const maxOrders = parsePositiveInt(params.limit, 200, 500);
+        const maxOrders = parsePositiveInt(params.limit, 500, 500);
         const allOrders: any[] = [];
         let orderOffset = 0;
         let totalOrders = 0;

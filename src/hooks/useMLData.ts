@@ -181,10 +181,11 @@ export function usePersistedMLOrders() {
         .from("ml_orders")
         .select("*, ml_order_items(*, products(id, name, sku))")
         .order("date_created", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return data;
     },
+    refetchInterval: 60_000,
   });
 }
 
@@ -194,7 +195,7 @@ export function useSyncMLOrders() {
 
   return useMutation({
     mutationFn: async () => {
-      return callML<SyncOrdersResult>("sync-orders", { limit: 200 });
+      return callML<SyncOrdersResult>("sync-orders", { limit: 500 });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ml-persisted-orders"] });
