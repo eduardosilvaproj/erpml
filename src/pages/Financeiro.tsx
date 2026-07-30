@@ -34,6 +34,17 @@ export default function Financeiro() {
   const [isCash, setIsCash] = useState(false);
   const [installments, setInstallments] = useState(1);
   const [firstDueDate, setFirstDueDate] = useState("");
+  const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
+  const [discountValue, setDiscountValue] = useState(0);
+
+  // Computed discounted amount
+  const invoiceTotal = selectedInvoice ? Number(selectedInvoice.total_value) : 0;
+  const discountAmount =
+    discountType === "percent"
+      ? Math.min(invoiceTotal * (Math.min(discountValue, 100) / 100), invoiceTotal)
+      : Math.min(discountValue, invoiceTotal);
+  const discountedTotal = invoiceTotal - discountAmount;
+  const installmentValue = installments > 0 ? discountedTotal / installments : 0;
 
   const allInvoices = invoices || [];
 
@@ -83,7 +94,7 @@ export default function Financeiro() {
     if (!selectedInvoice) return;
 
     const paymentRecords = [];
-    const amount = Number(selectedInvoice.total_value) / installments;
+    const amount = installments > 0 ? discountedTotal / installments : 0;
 
     for (let i = 0; i < installments; i++) {
       let dueDate: string | null = null;
@@ -131,6 +142,8 @@ export default function Financeiro() {
     setIsCash(false);
     setInstallments(1);
     setFirstDueDate("");
+    setDiscountType("percent");
+    setDiscountValue(0);
   };
 
   const openPaymentDialog = (inv: any) => {
@@ -412,6 +425,64 @@ export default function Financeiro() {
                 </p>
               </div>
 
+              {/* Discount Section */}
+              <div className="rounded-lg border p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Desconto</Label>
+                  <div className="flex items-center gap-1 rounded-md border p-0.5">
+                    <button
+                      type="button"
+                      className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                        discountType === "percent"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => { setDiscountType("percent"); setDiscountValue(0); }}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                        discountType === "fixed"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => { setDiscountType("fixed"); setDiscountValue(0); }}
+                    >
+                      R$
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    {discountType === "fixed" && (
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                    )}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={discountType === "percent" ? 100 : invoiceTotal}
+                      step={discountType === "percent" ? 1 : 0.01}
+                      placeholder={discountType === "percent" ? "0%" : "0,00"}
+                      className={discountType === "fixed" ? "pl-8" : ""}
+                      value={discountValue || ""}
+                      onChange={(e) => setDiscountValue(parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="text-xs space-y-0.5">
+                    <p className="text-muted-foreground">
+                      Desconto: <span className="text-emerald-600 font-medium">- R$ {discountAmount.toFixed(2)}</span>
+                    </p>
+                    <p className="text-muted-foreground">
+                      Valor com desconto: <span className="font-medium">R$ {discountedTotal.toFixed(2)}</span>
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="is-cash"
@@ -452,7 +523,12 @@ export default function Financeiro() {
                     )}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {installments} x R$ {(Number(selectedInvoice.total_value) / installments).toFixed(2)}
+                    {installments} x R$ {installmentValue.toFixed(2)}
+                    {discountAmount > 0 && (
+                      <span className="text-emerald-600 ml-1">
+                        (com desconto)
+                      </span>
+                    )}
                   </div>
                 </>
               )}
