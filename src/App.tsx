@@ -52,7 +52,7 @@ const MasterAdmin = lazy(() => import("./pages/MasterAdmin"));
 const Upgrade = lazy(() => import("./pages/Upgrade"));
 const Equipe = lazy(() => import("./pages/Equipe"));
 const BoasVindas = lazy(() => import("./pages/BoasVindas"));
-const Campanhas = lazy(() => import("./pages/Campanhas"));
+// Removed Campanhas lazy import — feature removed
 const PesquisaInteligente = lazy(() => import("./pages/PesquisaInteligente"));
 const AnaliseConcorrencia = lazy(() => import("./pages/AnaliseConcorrencia"));
 const PrevisaoDemanda = lazy(() => import("./pages/PrevisaoDemanda"));
@@ -76,6 +76,9 @@ const DuplicadorAnuncios = lazy(() => import("./pages/DuplicadorAnuncios"));
 const AdminMasterDev = lazy(() => import("./pages/AdminMasterDev"));
 // Removed AdminGovernance lazy load as it's now redirected to MasterAdmin
 const Importacao = lazy(() => import("./pages/Importacao"));
+const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
+const RelatorioEstoqueFisico = lazy(() => import("./pages/RelatorioEstoqueFisico"));
+const RelatorioEstoqueFull = lazy(() => import("./pages/RelatorioEstoqueFull"));
 
 
 const queryClient = new QueryClient({
@@ -134,13 +137,16 @@ const App = (): JSX.Element => {
                               <Route path="/separacao" element={<Separacao />} />
                               <Route path="/estoque" element={<Estoque />} />
                               <Route path="/balanco-estoque" element={<BalancoEstoque />} />
+                              <Route path="/relatorio-estoque-fisico" element={<RelatorioEstoqueFisico />} />
+                              <Route path="/relatorio-estoque-full" element={<RelatorioEstoqueFull />} />
                               <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
                               <Route path="/devolucoes" element={<PlanProtectedRoute path="/devolucoes"><Devolucoes /></PlanProtectedRoute>} />
                               <Route path="/devolucoes/:returnId" element={<PlanProtectedRoute path="/devolucoes"><DevolucaoDetail /></PlanProtectedRoute>} />
                               <Route path="/kits" element={<Kits />} />
                               <Route path="/integracao-ml" element={<PlanProtectedRoute path="/integracao-ml"><IntegracaoML /></PlanProtectedRoute>} />
                               <Route path="/duplicador-anuncios" element={<PlanProtectedRoute path="/integracao-ml"><DuplicadorAnuncios /></PlanProtectedRoute>} />
-                              <Route path="/campanhas" element={<PlanProtectedRoute path="/campanhas"><Campanhas /></PlanProtectedRoute>} />
+                              <Route path="/conciliacao-precos" element={<ConciliacaoPrecos />} />
+                              {/* Removed /campanhas route — feature removed */}
                               <Route path="/pdv" element={<PDV />} />
                               <Route path="/crm" element={<CRM />} />
                               <Route path="/painel-hub" element={<PlanProtectedRoute path="/painel-hub"><PainelHub /></PlanProtectedRoute>} />

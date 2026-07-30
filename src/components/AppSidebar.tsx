@@ -2,7 +2,7 @@ import { useState } from "react";
 import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, Crown, ChevronDown, Boxes, UsersRound,
-  Users, ClipboardList, ScanBarcode, Monitor, Megaphone,
+  Users, ClipboardList, ScanBarcode, Monitor,
   Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
   LockKeyhole, Import, Activity
 } from "lucide-react";
@@ -54,7 +54,7 @@ const groups: NavGroup[] = [
     tooltip: "PDV, campanhas e integrações com marketplaces",
     subItems: [
       { label: "PDV", url: "/pdv", icon: Monitor, tooltip: "Registre vendas no balcão com ou sem leitor de código de barras" },
-      { label: "Campanhas", url: "/campanhas", icon: Megaphone, tooltip: "Crie promoções e descontos para seus produtos" },
+      // Removed Campanhas — feature removed
       { label: "Minha Loja", url: "/minha-loja/configurar", icon: Store, tooltip: "Configure sua vitrine virtual" },
       { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag, tooltip: "Conecte sua conta do Mercado Livre ao sistema" },
       { label: "Duplicador ML", url: "/duplicador-anuncios", icon: Copy, tooltip: "Duplique anúncios com variações automáticas" },
@@ -68,6 +68,7 @@ const groups: NavGroup[] = [
       { label: "Relatórios", url: "/painel-hub", icon: BarChart3, tooltip: "Métricas e relatórios de desempenho" },
       { label: "Performance Separação", url: "/dashboard-separacao", icon: Activity, tooltip: "KPIs operacionais, gráfico e ranking de operadores" },
       { label: "Financeiro", url: "/financeiro", icon: DollarSign, tooltip: "Cobranças, pagamentos e faturamento" },
+      { label: "Conciliação Preços", url: "/conciliacao-precos", icon: TrendingDown, tooltip: "Compare preços de custo (NF) com preços do Mercado Livre" },
     ],
   },
 ];
