@@ -326,6 +326,47 @@ export function useSyncPrice() {
   });
 }
 
+export function useSyncPictures() {
+  const { callML } = useMLApi();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      imageUrl,
+    }: {
+      itemId: string;
+      imageUrl: string;
+    }) => {
+      return callML("sync-pictures", { itemId, imageUrl });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ml-linked-products"] });
+      queryClient.invalidateQueries({ queryKey: ["ml-items"] });
+    },
+  });
+}
+
+export function useMLSyncLogs() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ["ml-sync-logs", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ml_sync_logs")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("started_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30_000,
+  });
+}
+
 export function useSyncAllToML() {
   const { callML } = useMLApi();
   const queryClient = useQueryClient();

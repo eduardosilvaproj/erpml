@@ -62,6 +62,7 @@ import {
   useRegisterMLWebhook,
   useUnregisterMLWebhook,
   useDisconnectML,
+  useMLSyncLogs,
 } from "@/hooks/useMLData";
 import { useMLSettings, useUpdateMLSettings } from "@/hooks/useMLSettings";
 import { useSearchParams } from "react-router-dom";
@@ -209,6 +210,7 @@ export default function IntegracaoML() {
   const unregisterWebhook = useUnregisterMLWebhook();
   const { data: mlSettings, isLoading: loadingSettings } = useMLSettings();
   const updateSettings = useUpdateMLSettings();
+  const { data: syncLogs, isLoading: loadingLogs, refetch: refetchLogs } = useMLSyncLogs();
 
   useEffect(() => {
     if (searchParams.get("connected") === "true") {
@@ -496,6 +498,7 @@ export default function IntegracaoML() {
               <TabsTrigger value="orders">Pedidos Recentes</TabsTrigger>
               <TabsTrigger value="items">Anúncios Ativos</TabsTrigger>
               <TabsTrigger value="linked">Vinculados</TabsTrigger>
+              <TabsTrigger value="logs">Logs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="orders">
@@ -698,6 +701,82 @@ export default function IntegracaoML() {
                     </div>
                   ) : (
                     <p className="text-center text-muted-foreground py-8">Nenhum produto vinculado</p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="logs">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Logs de Sincronização</CardTitle>
+                    <CardDescription>Histórico de sincronizações com o Mercado Livre</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => refetchLogs()} disabled={loadingLogs}>
+                    <RefreshCw className={`h-3 w-3 mr-1 ${loadingLogs ? "animate-spin" : ""}`} /> Atualizar
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {loadingLogs ? (
+                    <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                  ) : syncLogs?.length ? (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Data/Hora</TableHead>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Itens</TableHead>
+                            <TableHead>Detalhes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {syncLogs.map((log: any) => (
+                            <TableRow key={log.id}>
+                              <TableCell className="whitespace-nowrap text-xs">
+                                {log.started_at ? new Date(log.started_at).toLocaleString("pt-BR") : "—"}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {log.sync_type}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={
+                                  log.status === "completed" ? "default" :
+                                  log.status === "error" ? "destructive" :
+                                  log.status === "partial" ? "secondary" :
+                                  "outline"
+                                } className={
+                                  log.status === "completed" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                  log.status === "error" ? "" :
+                                  log.status === "partial" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                  ""
+                                }>
+                                  {log.status === "completed" ? "Completo" :
+                                   log.status === "error" ? "Erro" :
+                                   log.status === "partial" ? "Parcial" :
+                                   log.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{log.items_synced ?? "—"}</TableCell>
+                              <TableCell className="max-w-[300px]">
+                                <p className="text-xs text-muted-foreground truncate" title={log.details || log.error_message || ""}>
+                                  {log.details || log.error_message || "—"}
+                                </p>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      <p>Nenhum log de sincronização encontrado</p>
+                      <p className="text-xs mt-1">Os registros aparecerão após a primeira sincronização</p>
+                    </div>
                   )}
                 </CardContent>
               </Card>

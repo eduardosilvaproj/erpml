@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { enrichProduct } from "@/lib/enrich-product";
 import { useToast } from "@/hooks/use-toast";
 import { generateEAN13, generateGenericEAN13, isValidEAN13 } from "@/lib/ean13";
+import { useSyncPictures } from "@/hooks/useMLData";
 
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,6 +104,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
   const [isSkuLocked, setIsSkuLocked] = useState(true);
   const [isGeneratingSku, setIsGeneratingSku] = useState(false);
   const [genericEans, setGenericEans] = useState<string[]>([]);
+  const syncPictures = useSyncPictures();
 
 
   const getDefaults = (p?: Product | null): FormValues => ({
@@ -327,6 +329,27 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
         description: err.message,
         variant: "destructive",
       });
+    }
+
+    // Sync picture to linked ML items if a photo was uploaded
+    if (imageUrl && imageUrl !== product?.image_url) {
+      const productId = savedProduct?.id || product?.id;
+      if (productId) {
+        try {
+          const { data: mlLinks } = await supabase
+            .from("ml_linked_products")
+            .select("ml_item_id")
+            .eq("product_id", productId);
+
+          if (mlLinks && mlLinks.length > 0) {
+            for (const link of mlLinks) {
+              syncPictures.mutate({ itemId: link.ml_item_id, imageUrl });
+            }
+          }
+        } catch {
+          // Non-blocking: picture sync failure should not block the save
+        }
+      }
     }
 
     resetDirty();
