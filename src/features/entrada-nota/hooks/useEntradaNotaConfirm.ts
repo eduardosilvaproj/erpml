@@ -18,7 +18,6 @@ export const useEntradaNotaConfirm = (
     isBatchMode: boolean;
     selectedBatchNfes: BatchNfe[];
     batchSelectedForConfirm: Set<string>;
-    kitGroups: KitGroup[];
   },
   setSaving: (v: boolean) => void,
   setDone: (v: boolean) => void,
@@ -76,6 +75,7 @@ export const useEntradaNotaConfirm = (
     if (!state.nfeData) return;
     setSaving(true);
 
+      const itemsToImport = state.adjustedItems.length > 0 ? state.adjustedItems : state.matches;
     try {
       const { data: existing } = await supabase
         .from("invoices")

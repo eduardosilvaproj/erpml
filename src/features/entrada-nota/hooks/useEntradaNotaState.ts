@@ -102,6 +102,5 @@ export const useEntradaNotaState = () => {
     autoUpdateCost, setAutoUpdateCost,
     batchSelectedForConfirm, setBatchSelectedForConfirm,
     batchConfirmResult, setBatchConfirmResult,
-    kitGroups, setKitGroups
   };
 };

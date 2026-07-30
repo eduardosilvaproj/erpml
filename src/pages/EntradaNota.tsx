@@ -392,7 +392,6 @@ const EntradaNota = () => {
             updateAdjustedQty={(idx, q) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, quantity: q } } : item))}
             updateAdjustedCost={(idx, c) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, unitValue: c, totalValue: c * item.xmlProduct.quantity } } : item))}
             removeAdjustedItem={(idx) => setAdjustedItems(prev => prev.filter((_, i) => i !== idx))} onOpenNewProduct={handleOpenNewProductDialog} entryNotes={entryNotes} setEntryNotes={setEntryNotes} setCurrentStep={setCurrentStep} goToStep={goToStep} formatCurrency={formatCurrency} hasMatchesOrBatch={matches.length > 0 || isBatchMode}
-            kitGroups={state.kitGroups}
             onCreateKit={(kg) => state.setKitGroups(prev => [...prev, kg])}
             onRemoveKitGroup={(id) => state.setKitGroups(prev => prev.filter(k => k.kitId !== id))}
           />
