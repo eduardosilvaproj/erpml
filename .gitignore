@@ -15,6 +15,7 @@ dist-ssr
 # Secrets / credentials (nunca commitar)
 cron secret.txt
 *secret*.txt
+.env
 .env.local
 .env.*.local
 
