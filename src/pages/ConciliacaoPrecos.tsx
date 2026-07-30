@@ -17,6 +17,7 @@ interface ProductWithML {
   cost: number;
   price: number;
   ml_price: number | null;
+  ml_original_price: number | null;
   ml_item_id: string | null;
   ml_title: string | null;
   ml_status: string | null;
@@ -75,6 +76,7 @@ export default function ConciliacaoPrecos() {
           price,
           ml_linked_products (
             ml_price,
+            ml_original_price,
             ml_item_id,
             ml_title,
             ml_status
@@ -91,6 +93,7 @@ export default function ConciliacaoPrecos() {
       for (const row of data) {
         const links = row.ml_linked_products as Array<{
           ml_price: number | null;
+          ml_original_price: number | null;
           ml_item_id: string;
           ml_title: string | null;
           ml_status: string | null;
@@ -108,6 +111,7 @@ export default function ConciliacaoPrecos() {
             cost: row.cost,
             price: row.price,
             ml_price: link.ml_price,
+            ml_original_price: link.ml_original_price,
             ml_item_id: link.ml_item_id,
             ml_title: link.ml_title,
             ml_status: link.ml_status,
@@ -274,6 +278,7 @@ export default function ConciliacaoPrecos() {
                 <TableHead className="text-right">Preço Custo (NF)</TableHead>
                 <TableHead className="text-right">Custo c/ Imposto</TableHead>
                 <TableHead className="text-right">Preço ML</TableHead>
+                <TableHead className="text-right">Preço Promocional</TableHead>
                 <TableHead className="text-right">Diferença</TableHead>
                 <TableHead className="text-right">Margem %</TableHead>
                 <TableHead className="text-right">Margem c/ Imposto</TableHead>
@@ -283,7 +288,7 @@ export default function ConciliacaoPrecos() {
             <TableBody>
               {sorted.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                     {search ? "Nenhum produto encontrado para esta busca." : "Nenhum produto com anúncio no ML encontrado."}
                   </TableCell>
                 </TableRow>
@@ -312,6 +317,22 @@ export default function ConciliacaoPrecos() {
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm">
                         {formatCurrency(p.ml_price)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-sm">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {p.ml_original_price != null && p.ml_original_price > p.ml_price ? (
+                            <>
+                              <span className="line-through text-muted-foreground">
+                                {formatCurrency(p.ml_original_price)}
+                              </span>
+                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                Em Promoção
+                              </Badge>
+                            </>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className={`text-right font-mono text-sm ${diff < 0 ? "text-red-500" : "text-green-400"}`}>
                         {diff >= 0 ? "+" : ""}{formatCurrency(diff)}

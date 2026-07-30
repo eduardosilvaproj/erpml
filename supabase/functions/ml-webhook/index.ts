@@ -225,17 +225,21 @@ async function handleItemNotification(
   // Update ml_linked_products if this item is linked
   const { data: link } = await supabase
     .from("ml_linked_products")
-    .select("id")
+    .select("id, product_id")
     .eq("user_id", userId)
     .eq("ml_item_id", String(item.id))
     .maybeSingle();
 
   if (link) {
+    const mlPrice = item.price ?? null;
+    const mlOriginalPrice = item.original_price ?? null;
+
     await supabase
       .from("ml_linked_products")
       .update({
         ml_title: item.title ?? null,
-        ml_price: item.price ?? null,
+        ml_price: mlPrice,
+        ml_original_price: mlOriginalPrice,
         ml_available_quantity: item.available_quantity ?? null,
         ml_status: item.status ?? null,
         last_synced_at: new Date().toISOString(),
@@ -243,7 +247,70 @@ async function handleItemNotification(
       })
       .eq("id", link.id);
 
+    // Sync products.price with the ML price
+    if (mlPrice !== null && link.product_id) {
+      await supabase
+        .from("products")
+        .update({ price: mlPrice, updated_at: new Date().toISOString() })
+        .eq("id", link.product_id);
+    }
+
     console.log(`Linked product ${item.id} updated via webhook`);
+  }
+}
+
+async function handlePriceNotification(
+  supabase: any,
+  connection: any,
+  accessToken: string,
+  resourcePath: string
+) {
+  // items_price notifications: resource is like /items/MLB1234567890
+  const itemId = resourcePath.split("/").pop();
+  if (!itemId) return;
+
+  const response = await fetch(`${ML_API_BASE}/items/${itemId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to fetch item price ${resourcePath}:`, response.status);
+    return;
+  }
+
+  const item = await response.json();
+  const userId = connection.user_id;
+
+  const { data: link } = await supabase
+    .from("ml_linked_products")
+    .select("id, product_id")
+    .eq("user_id", userId)
+    .eq("ml_item_id", String(item.id))
+    .maybeSingle();
+
+  if (link) {
+    const mlPrice = item.price ?? null;
+    const mlOriginalPrice = item.original_price ?? null;
+
+    await supabase
+      .from("ml_linked_products")
+      .update({
+        ml_price: mlPrice,
+        ml_original_price: mlOriginalPrice,
+        last_synced_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", link.id);
+
+    // Sync products.price with the ML price
+    if (mlPrice !== null && link.product_id) {
+      await supabase
+        .from("products")
+        .update({ price: mlPrice, updated_at: new Date().toISOString() })
+        .eq("id", link.product_id);
+    }
+
+    console.log(`Price updated for linked product ${item.id} via webhook`);
   }
 }
 
@@ -400,6 +467,7 @@ Deno.serve(async (req) => {
     if (
       ((topic === "orders_v2" || topic === "orders") && !settings.auto_sync_orders) ||
       (topic === "items" && !settings.auto_sync_stock) ||
+      (topic === "items_price" && !settings.auto_sync_price) ||
       (topic === "questions" && !settings.auto_sync_orders)
     ) {
       console.log(`Webhook ${topic} skipped for user ${connection.user_id} — disabled in settings`);
@@ -431,6 +499,11 @@ Deno.serve(async (req) => {
 
       case "items": {
         await handleItemNotification(supabase, connection, accessToken, resource);
+        break;
+      }
+
+      case "items_price": {
+        await handlePriceNotification(supabase, connection, accessToken, resource);
         break;
       }
 

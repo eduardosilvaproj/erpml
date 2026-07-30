@@ -137,6 +137,7 @@ async function syncForConnection(supabase: any, conn: any, accessToken: string) 
   for (const l of existingLinks ?? []) linksByItemId.set(l.ml_item_id, l);
 
   const productUpdates = new Map<string, Record<string, string>>();
+  const productPriceUpdates: { productId: string; price: number }[] = [];
   const linksToInsert: any[] = [];
   const linksToUpdate: { id: string; values: Record<string, any> }[] = [];
   const seenItemIds = new Set<string>();
@@ -159,12 +160,20 @@ async function syncForConnection(supabase: any, conn: any, accessToken: string) 
     if (sellerSku && !normalizeText(product.sku_ml)) upd.sku_ml = sellerSku;
     if (Object.keys(upd).length) productUpdates.set(product.id, upd);
 
+    const mlPrice = item.price ?? null;
+    const mlOriginalPrice = item.original_price ?? null;
+
     const linkValues = {
       user_id: conn.user_id, product_id: product.id, ml_item_id: itemId,
-      ml_title: item.title ?? product.name, ml_price: item.price ?? null,
+      ml_title: item.title ?? product.name, ml_price: mlPrice,
+      ml_original_price: mlOriginalPrice,
       ml_available_quantity: item.available_quantity ?? null, ml_status: item.status ?? null,
       sync_status: "synced", last_synced_at: nowIso, updated_at: nowIso,
     };
+
+    if (mlPrice !== null) {
+      productPriceUpdates.push({ productId: product.id, price: mlPrice });
+    }
 
     const existing = linksByItemId.get(itemId);
     if (existing) linksToUpdate.push({ id: existing.id, values: linkValues });
@@ -186,6 +195,14 @@ async function syncForConnection(supabase: any, conn: any, accessToken: string) 
     .map((l: any) => l.id);
   if (staleIds.length) {
     await supabase.from("ml_linked_products").delete().in("id", staleIds);
+  }
+
+  // Sync products.price with the latest ML price
+  for (const { productId, price } of productPriceUpdates) {
+    await supabase
+      .from("products")
+      .update({ price, updated_at: nowIso })
+      .eq("id", productId);
   }
 
   return { total_items: mlItems.length, matched, removed: staleIds.length };
