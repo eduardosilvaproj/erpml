@@ -255,7 +255,6 @@ export const productsService = {
       ...productData,
       barcode: productData.barcode || null,
       ean: productData.ean || productData.barcode || null,
-      brand: productData.brand || null,
       description: productData.description || null,
       category_id: productData.category_id || null,
       weight: productData.weight ?? null,
