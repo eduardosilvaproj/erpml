@@ -68,7 +68,6 @@ const Estoque = () => {
       name: p.name,
       sku: p.sku,
       ean: p.ean,
-      brand: p.brand || '',
       cost: p.cost || 0,
       price: p.price || 0,
       stock_physical: p.stock_physical,

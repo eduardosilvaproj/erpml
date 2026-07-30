@@ -26,6 +26,7 @@ import MLQuestionsTab from "@/components/MLQuestionsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCompanyId } from "@/hooks/useCompanyId";
+import { useToast } from "@/hooks/use-toast";
 
 // Avatar colors based on name hash
 const AVATAR_COLORS = [

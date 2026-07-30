@@ -33,8 +33,9 @@ export function useUnansweredMLQuestionsCount() {
       supabase.removeChannel(existing);
     }
 
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
-      const channel = supabase
+      channel = supabase
         .channel(channelName)
         .on(
           "postgres_changes",
@@ -54,7 +55,7 @@ export function useUnansweredMLQuestionsCount() {
     }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
