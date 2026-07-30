@@ -2,7 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCompanyId } from "@/hooks/useCompanyId";
 
-export type PeriodFilter = "today" | "7d" | "15d" | "30d";
+export type PeriodFilter = "today" | "7d" | "14d" | "15d" | "30d" | "39d" | "6m" | "1a";
+
+export type MLMetricsInput = {
+  grossRevenue: number;
+  totalFees: number;
+  totalShipping: number;
+  netRevenue: number;
+  totalOrders: number;
+};
 
 function getDateRange(period: PeriodFilter) {
   const now = new Date();
@@ -11,8 +19,12 @@ function getDateRange(period: PeriodFilter) {
   const daysMap: Record<PeriodFilter, number> = {
     today: 0,
     "7d": 7,
+    "14d": 14,
     "15d": 15,
     "30d": 30,
+    "39d": 39,
+    "6m": 180,
+    "1a": 365,
   };
 
   const days = daysMap[period];
@@ -33,12 +45,12 @@ function calcTrend(current: number, previous: number): number {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-export function useDashboardData(period: PeriodFilter) {
+export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInput) {
   const companyId = useCompanyId();
   const { from, to, prevFrom, prevTo } = getDateRange(period);
 
   return useQuery({
-    queryKey: ["dashboard-data", period, companyId],
+    queryKey: ["dashboard-data", period, companyId, mlMetrics?.grossRevenue ?? 0],
     enabled: !!companyId,
     queryFn: async () => {
       // Fetch current period sales with items
@@ -110,12 +122,23 @@ export function useDashboardData(period: PeriodFilter) {
 
       // --- KPI Calculations ---
 
-      // Revenue
+      // PDV Revenue
       const revenue = sales.reduce((s, sale) => s + Number(sale.total_value), 0);
       const prevRevenue = prev.reduce((s, sale) => s + Number(sale.total_value), 0);
 
-      // Total sales count
-      const totalSales = sales.length;
+      // ML Revenue (from mlMetrics parameter)
+      const mlRevenue = mlMetrics?.grossRevenue ?? 0;
+      const mlNetRevenue = mlMetrics?.netRevenue ?? 0;
+      const mlFees = mlMetrics?.totalFees ?? 0;
+      const mlShipping = mlMetrics?.totalShipping ?? 0;
+      const mlOrders = mlMetrics?.totalOrders ?? 0;
+
+      // Consolidated Revenue (PDV + ML)
+      const consolidatedRevenue = revenue + mlRevenue;
+      const prevConsolidatedRevenue = prevRevenue; // ML prev not available, use PDV only for trend
+
+      // Total sales count (PDV + ML)
+      const totalSales = sales.length + mlOrders;
       const prevTotalSales = prev.length;
 
       // Ticket médio
@@ -147,8 +170,8 @@ export function useDashboardData(period: PeriodFilter) {
         }
       }
 
-      const netProfit = revenue - totalCost;
-      const profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0;
+      const netProfit = (revenue + mlNetRevenue) - totalCost;
+      const profitMargin = consolidatedRevenue > 0 ? (netProfit / consolidatedRevenue) * 100 : 0;
 
       // Top products ranking
       const topProducts = Array.from(productSalesMap.values())
@@ -196,6 +219,13 @@ export function useDashboardData(period: PeriodFilter) {
       return {
         revenue,
         revenueTrend: calcTrend(revenue, prevRevenue),
+        consolidatedRevenue,
+        consolidatedRevenueTrend: calcTrend(consolidatedRevenue, prevConsolidatedRevenue),
+        mlRevenue,
+        mlNetRevenue,
+        mlFees,
+        mlShipping,
+        mlOrders,
         totalSales,
         salesTrend: calcTrend(totalSales, prevTotalSales),
         netProfit,

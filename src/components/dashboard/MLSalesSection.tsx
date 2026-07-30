@@ -28,8 +28,12 @@ import type { PeriodFilter } from "@/hooks/useDashboardData";
 const PERIOD_DAYS: Record<PeriodFilter, number> = {
   today: 1,
   "7d": 7,
+  "14d": 14,
   "15d": 15,
   "30d": 30,
+  "39d": 39,
+  "6m": 180,
+  "1a": 365,
 };
 
 const STATUS_LABELS: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Package, Warehouse, TrendingUp, ArrowUpRight, ArrowDownRight,
   DollarSign, Percent, Truck, Send, UserPlus,
@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useDashboardData, type PeriodFilter } from "@/hooks/useDashboardData";
+import { useMLDashboardMetrics } from "@/hooks/useMLDashboardMetrics";
+import { useMLConnection } from "@/hooks/useMLData";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
@@ -17,11 +19,26 @@ import { BarcodeSearchDialogs } from "@/components/barcode/BarcodeSearchDialogs"
 import { useToast } from "@/hooks/use-toast";
 import { MLSalesSection } from "@/components/dashboard/MLSalesSection";
 
+const PERIOD_DAYS: Record<PeriodFilter, number> = {
+  today: 1,
+  "7d": 7,
+  "14d": 14,
+  "15d": 15,
+  "30d": 30,
+  "39d": 39,
+  "6m": 180,
+  "1a": 365,
+};
+
 const periodLabels: Record<PeriodFilter, string> = {
   today: "Hoje",
   "7d": "7 dias",
+  "14d": "14 dias",
   "15d": "15 dias",
   "30d": "30 dias",
+  "39d": "39 dias",
+  "6m": "6 meses",
+  "1a": "1 ano",
 };
 
 const quickAccessSections = [
@@ -96,7 +113,16 @@ const quickActions = [
 const Index = () => {
   const { toast } = useToast();
   const [period, setPeriod] = useState<PeriodFilter>("30d");
-  const { data, isLoading } = useDashboardData(period);
+  const periodDays = PERIOD_DAYS[period] ?? 30;
+  const { data: mlConnection } = useMLConnection();
+  const { metrics: mlMetrics } = useMLDashboardMetrics(periodDays);
+  const { data, isLoading } = useDashboardData(period, mlConnection ? {
+    grossRevenue: mlMetrics.grossRevenue,
+    totalFees: mlMetrics.totalFees,
+    totalShipping: mlMetrics.totalShipping,
+    netRevenue: mlMetrics.netRevenue,
+    totalOrders: mlMetrics.totalOrders,
+  } : undefined);
   const [showNewProduct, setShowNewProduct] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState("");
   const [newProductBarcode, setNewProductBarcode] = useState<string | null>(null);
@@ -212,7 +238,7 @@ const Index = () => {
           {/* Primary KPIs - row 1 */}
           <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
             <MetricCard icon={ShoppingCart} label="Vendas" value={String(data.totalSales)} trend={data.salesTrend} iconColor="text-primary" />
-            <MetricCard icon={DollarSign} label="Receita Bruta" value={formatCurrency(data.revenue)} trend={data.revenueTrend} iconColor="text-success" />
+            <MetricCard icon={DollarSign} label="Receita Total" value={formatCurrency(data.consolidatedRevenue)} trend={data.consolidatedRevenueTrend} iconColor="text-success" />
             <MetricCard icon={TrendingUp} label="Lucro Líquido" value={formatCurrency(data.netProfit)} trend={parseFloat(data.profitMargin.toFixed(1))} iconColor="text-warning" />
             <MetricCard icon={Target} label="Ticket Médio" value={formatCurrency(data.avgTicket)} trend={data.avgTicketTrend} iconColor="text-primary" />
           </div>
@@ -223,6 +249,34 @@ const Index = () => {
             <MetricCard icon={Truck} label="Pendentes" value={String(data.pendingShipments)} iconColor="text-destructive" />
             <MetricCard icon={Send} label="Enviados" value={String(data.sentShipments)} iconColor="text-success" />
             <MetricCard icon={UserPlus} label="Novos Clientes" value={String(data.newCustomers)} trend={data.newCustomersTrend} iconColor="text-primary" />
+          </div>
+
+          {/* Revenue Breakdown - PDV vs ML */}
+          <div className="grid gap-3 lg:gap-4 grid-cols-2 lg:grid-cols-4">
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="px-3 py-2 lg:px-5 lg:py-3">
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita PDV</span>
+                <p className="text-lg lg:text-2xl font-bold text-foreground leading-none mt-1">{formatCurrency(data.revenue)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="px-3 py-2 lg:px-5 lg:py-3">
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">Receita ML</span>
+                <p className="text-lg lg:text-2xl font-bold text-foreground leading-none mt-1">{formatCurrency(data.mlRevenue)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="px-3 py-2 lg:px-5 lg:py-3">
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">Taxas ML</span>
+                <p className="text-lg lg:text-2xl font-bold text-destructive leading-none mt-1">{formatCurrency(data.mlFees)}</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50 bg-muted/20">
+              <CardContent className="px-3 py-2 lg:px-5 lg:py-3">
+                <span className="text-[10px] lg:text-xs font-medium text-muted-foreground uppercase tracking-wider">Pedidos ML</span>
+                <p className="text-lg lg:text-2xl font-bold text-foreground leading-none mt-1">{data.mlOrders}</p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Ações Rápidas */}
