@@ -184,6 +184,28 @@ async function syncForConnection(supabase: any, conn: any, accessToken: string) 
     await supabase.from("products").update(vals).eq("id", id);
   }
   for (const l of linksToUpdate) {
+    // Registrar histórico de preço se houve alteração
+    const newPrice = l.values.ml_price;
+    const newOriginalPrice = l.values.ml_original_price;
+    if (newPrice !== null || newOriginalPrice !== null) {
+      const { data: oldLink } = await supabase
+        .from("ml_linked_products")
+        .select("ml_price, ml_original_price")
+        .eq("id", l.id)
+        .maybeSingle();
+
+      if (oldLink && (oldLink.ml_price !== newPrice || oldLink.ml_original_price !== newOriginalPrice)) {
+        await supabase.from("ml_price_history").insert({
+          ml_linked_product_id: l.id,
+          old_price: oldLink.ml_price,
+          new_price: newPrice,
+          old_original_price: oldLink.ml_original_price,
+          new_original_price: newOriginalPrice,
+          changed_by: 'auto-sync',
+        }).catch((e: any) => console.error("[auto-sync] Erro ao registrar histórico de preço:", e.message));
+      }
+    }
+
     await supabase.from("ml_linked_products").update(l.values).eq("id", l.id);
   }
   if (linksToInsert.length) {

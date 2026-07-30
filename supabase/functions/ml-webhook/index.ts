@@ -234,6 +234,26 @@ async function handleItemNotification(
     const mlPrice = item.price ?? null;
     const mlOriginalPrice = item.original_price ?? null;
 
+    // Registrar histórico de preço ANTES de atualizar
+    if (mlPrice !== null) {
+      const { data: currentLink } = await supabase
+        .from("ml_linked_products")
+        .select("ml_price, ml_original_price")
+        .eq("id", link.id)
+        .maybeSingle();
+
+      if (currentLink && (currentLink.ml_price !== mlPrice || currentLink.ml_original_price !== mlOriginalPrice)) {
+        await supabase.from("ml_price_history").insert({
+          ml_linked_product_id: link.id,
+          old_price: currentLink.ml_price,
+          new_price: mlPrice,
+          old_original_price: currentLink.ml_original_price,
+          new_original_price: mlOriginalPrice,
+          changed_by: 'webhook',
+        }).catch((e: any) => console.error("Erro ao registrar histórico de preço:", e.message));
+      }
+    }
+
     await supabase
       .from("ml_linked_products")
       .update({
@@ -291,6 +311,26 @@ async function handlePriceNotification(
   if (link) {
     const mlPrice = item.price ?? null;
     const mlOriginalPrice = item.original_price ?? null;
+
+    // Registrar histórico de preço ANTES de atualizar
+    if (mlPrice !== null) {
+      const { data: currentLink } = await supabase
+        .from("ml_linked_products")
+        .select("ml_price, ml_original_price")
+        .eq("id", link.id)
+        .maybeSingle();
+
+      if (currentLink && (currentLink.ml_price !== mlPrice || currentLink.ml_original_price !== mlOriginalPrice)) {
+        await supabase.from("ml_price_history").insert({
+          ml_linked_product_id: link.id,
+          old_price: currentLink.ml_price,
+          new_price: mlPrice,
+          old_original_price: currentLink.ml_original_price,
+          new_original_price: mlOriginalPrice,
+          changed_by: 'webhook',
+        }).catch((e: any) => console.error("Erro ao registrar histórico de preço:", e.message));
+      }
+    }
 
     await supabase
       .from("ml_linked_products")
@@ -390,6 +430,138 @@ async function handleQuestionNotification(
   }
 
   console.log(`Question ${q.id} ${existing ? "updated" : "inserted"} via webhook`);
+}
+
+async function handleShipmentNotification(
+  supabase: any,
+  connection: any,
+  accessToken: string,
+  resourcePath: string
+) {
+  // resourcePath is like /shipments/1234567890
+  const shipmentId = resourcePath.split("/").pop();
+  if (!shipmentId) return;
+
+  const response = await fetch(`${ML_API_BASE}/shipments/${shipmentId}`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to fetch shipment ${shipmentId}:`, response.status);
+    return;
+  }
+
+  const shipment = await response.json();
+  const userId = connection.user_id;
+
+  // Find the order associated with this shipment
+  const { data: order } = await supabase
+    .from("ml_orders")
+    .select("id, ml_order_id")
+    .eq("user_id", userId)
+    .eq("shipping_id", Number(shipmentId))
+    .maybeSingle();
+
+  if (!order) {
+    console.log(`No ml_order found for shipment ${shipmentId} — skipping`);
+    return;
+  }
+
+  const shippingStatus = shipment.status ?? null;
+
+  await supabase
+    .from("ml_orders")
+    .update({
+      shipping_status: shippingStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id);
+
+  // Log the shipment update
+  await supabase.from("ml_sync_logs").insert({
+    user_id: userId,
+    sync_type: "webhook_shipments",
+    status: "completed",
+    details: JSON.stringify({
+      shipment_id: shipmentId,
+      ml_order_id: order.ml_order_id,
+      shipping_status: shippingStatus,
+    }),
+    items_synced: 1,
+  });
+
+  console.log(`Shipment ${shipmentId} updated for order ${order.ml_order_id} — status: ${shippingStatus}`);
+}
+
+async function handlePaymentNotification(
+  supabase: any,
+  connection: any,
+  accessToken: string,
+  resourcePath: string
+) {
+  // resourcePath is like /payments/1234567890
+  const paymentId = resourcePath.split("/").pop();
+  if (!paymentId) return;
+
+  const response = await fetch(`${ML_API_BASE}/payments/${paymentId}`, {
+    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    console.error(`Failed to fetch payment ${paymentId}:`, response.status);
+    return;
+  }
+
+  const payment = await response.json();
+  const userId = connection.user_id;
+
+  // Extract financial data
+  const couponAmount = payment.coupon_amount ?? 0;
+  const overpaidAmount = payment.overpaid_amount ?? 0;
+  const installments = payment.installments ?? 1;
+  const paymentMethod = payment.payment_method?.id ?? null;
+
+  // Find the order associated with this payment
+  const { data: order } = await supabase
+    .from("ml_orders")
+    .select("id, ml_order_id")
+    .eq("user_id", userId)
+    .eq("ml_order_id", Number(payment.order_id))
+    .maybeSingle();
+
+  if (!order) {
+    console.log(`No ml_order found for payment ${paymentId} (order ${payment.order_id}) — skipping`);
+    return;
+  }
+
+  await supabase
+    .from("ml_orders")
+    .update({
+      coupon_amount: couponAmount,
+      overpaid_amount: overpaidAmount,
+      installments: installments,
+      payment_method: paymentMethod,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", order.id);
+
+  // Log the payment update
+  await supabase.from("ml_sync_logs").insert({
+    user_id: userId,
+    sync_type: "webhook_payments",
+    status: "completed",
+    details: JSON.stringify({
+      payment_id: paymentId,
+      ml_order_id: order.ml_order_id,
+      coupon_amount: couponAmount,
+      overpaid_amount: overpaidAmount,
+      installments: installments,
+      payment_method: paymentMethod,
+    }),
+    items_synced: 1,
+  });
+
+  console.log(`Payment ${paymentId} updated for order ${order.ml_order_id} — method: ${paymentMethod}, installments: ${installments}`);
 }
 
 async function getUserSettings(supabase: any, userId: string) {
@@ -509,6 +681,16 @@ Deno.serve(async (req) => {
 
       case "questions": {
         await handleQuestionNotification(supabase, connection, accessToken, resource);
+        break;
+      }
+
+      case "shipments": {
+        await handleShipmentNotification(supabase, connection, accessToken, resource);
+        break;
+      }
+
+      case "payments": {
+        await handlePaymentNotification(supabase, connection, accessToken, resource);
         break;
       }
 

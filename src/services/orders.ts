@@ -424,6 +424,57 @@ export const ordersService = {
       }
     }
 
+    // Sincronizar estoque FULL atualizado com Mercado Livre para cada produto movimentado
+    for (const item of bipagemItems) {
+      const qty = item.scannedQty || 0;
+      if (qty <= 0) continue;
+
+      type Move = { productId: string; quantity: number };
+      const moves: Move[] = [];
+      if (item.isKit && Array.isArray(item.components)) {
+        for (const c of item.components) {
+          if (!c?.productId) continue;
+          moves.push({ productId: c.productId, quantity: qty * (c.quantity || 1) });
+        }
+      } else if (item.productId) {
+        moves.push({ productId: item.productId, quantity: qty });
+      }
+
+      for (const m of moves) {
+        try {
+          const { data: linkedProducts } = await supabase
+            .from("ml_linked_products")
+            .select("ml_item_id")
+            .eq("product_id", m.productId);
+
+          if (linkedProducts && linkedProducts.length > 0) {
+            // Buscar o estoque FULL atual após a transferência
+            const { data: product } = await supabase
+              .from("products")
+              .select("stock_full")
+              .eq("id", m.productId)
+              .eq("company_id", companyId)
+              .maybeSingle();
+
+            if (product) {
+              for (const link of linkedProducts) {
+                supabase.functions.invoke("ml-api", {
+                  body: {
+                    action: "sync-stock",
+                    itemId: link.ml_item_id,
+                    quantity: product.stock_full || 0,
+                  },
+                  headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+                }).catch((err: any) => console.error(`Erro ao sincronizar estoque ML para ${link.ml_item_id}:`, err.message));
+              }
+            }
+          }
+        } catch (err: any) {
+          console.error(`Erro ao sincronizar ML para produto ${m.productId}:`, err.message);
+        }
+      }
+    }
+
     const { error: auditErr } = await supabase.from("company_audit_log").insert({
       company_id: companyId,
       user_id: userId,

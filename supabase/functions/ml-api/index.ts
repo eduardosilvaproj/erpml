@@ -416,6 +416,28 @@ async function syncCatalog(supabase: any, userId: string, accessToken: string) {
   }
 
   for (const link of linksToUpdate) {
+    // Registrar histórico de preço se houve alteração
+    const newPrice = link.values.ml_price;
+    const newOriginalPrice = link.values.ml_original_price;
+    if (newPrice !== null || newOriginalPrice !== null) {
+      const { data: oldLink } = await supabase
+        .from("ml_linked_products")
+        .select("ml_price, ml_original_price")
+        .eq("id", link.id)
+        .maybeSingle();
+
+      if (oldLink && (oldLink.ml_price !== newPrice || oldLink.ml_original_price !== newOriginalPrice)) {
+        await supabase.from("ml_price_history").insert({
+          ml_linked_product_id: link.id,
+          old_price: oldLink.ml_price,
+          new_price: newPrice,
+          old_original_price: oldLink.ml_original_price,
+          new_original_price: newOriginalPrice,
+          changed_by: 'sync-catalog',
+        }).catch((e: any) => console.error("[sync-catalog] Erro ao registrar histórico de preço:", e.message));
+      }
+    }
+
     const { error } = await supabase
       .from("ml_linked_products")
       .update(link.values)
@@ -957,6 +979,41 @@ Deno.serve(async (req) => {
         return jsonResponse({ synced, errors, total: linkedProducts.length });
       }
 
+      case "sync-pictures": {
+        const itemId = typeof params.itemId === "string" ? params.itemId.trim() : "";
+        const imageUrl = typeof params.imageUrl === "string" ? params.imageUrl.trim() : "";
+
+        if (!itemId || !/^MLB\d+$/i.test(itemId)) {
+          return jsonResponse({ error: "ID do anúncio inválido." }, 400);
+        }
+        if (!imageUrl) {
+          return jsonResponse({ error: "URL da imagem é obrigatória." }, 400);
+        }
+
+        // Generate a signed URL valid for 1 hour (bucket is not public)
+        const { data: signedUrlData, error: signedUrlError } = await serviceClient
+          .storage
+          .from("product-images")
+          .createSignedUrl(imageUrl, 3600);
+
+        if (signedUrlError || !signedUrlData) {
+          return jsonResponse({ error: "Erro ao gerar URL pública da imagem." }, 500);
+        }
+
+        // Upload picture to ML item
+        const result = await fetchMlJson(
+          `${ML_API_BASE}/items/${encodeURIComponent(itemId)}/pictures`,
+          {
+            method: "POST",
+            headers: mlHeaders,
+            body: JSON.stringify({ source: signedUrlData.signedUrl }),
+          },
+          "Erro ao enviar foto para o Mercado Livre"
+        );
+
+        return jsonResponse(result);
+      }
+
       case "sync-catalog": {
         const result = await syncCatalog(serviceClient, userId, accessToken);
         return jsonResponse(result);
@@ -972,7 +1029,7 @@ Deno.serve(async (req) => {
         const webhookUrl = `${supabaseUrl}/functions/v1/ml-webhook`;
 
         // Register webhook with ML API for orders, items, questions, and price changes
-        const topics = ["orders_v2", "items", "questions", "items_price"];
+        const topics = ["orders_v2", "items", "questions", "items_price", "shipments", "payments"];
         const results: any[] = [];
 
         for (const topic of topics) {

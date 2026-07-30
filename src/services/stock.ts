@@ -103,6 +103,30 @@ export const stockService = {
       referenceType: referenceId ? 'order' : 'manual',
       notes: notes || 'Baixa do estoque FULL'
     });
+
+    // Sincronizar estoque com Mercado Livre se o produto tiver vínculo
+    try {
+      const { data: linkedProducts } = await supabase
+        .from("ml_linked_products")
+        .select("ml_item_id, user_id")
+        .eq("product_id", productId)
+        .eq("sync_status", "synced");
+
+      if (linkedProducts && linkedProducts.length > 0) {
+        for (const link of linkedProducts) {
+          supabase.functions.invoke("ml-api", {
+            body: {
+              action: "sync-stock",
+              itemId: link.ml_item_id,
+              quantity: newStock,
+            },
+            headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+          }).catch((err: any) => console.error(`Erro ao sincronizar estoque ML para ${link.ml_item_id}:`, err.message));
+        }
+      }
+    } catch (err: any) {
+      console.error("Erro ao verificar vínculo ML para sincronização de estoque:", err.message);
+    }
   },
 
   async creditarFull(productId: string, quantity: number, companyId: string) {
