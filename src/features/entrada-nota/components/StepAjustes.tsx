@@ -16,16 +16,17 @@ interface StepAjustesProps {
   kitGroups: KitGroup[];
   updateAdjustedQty: (idx: number, qty: number) => void;
   updateAdjustedCost: (idx: number, cost: number) => void;
-  updateAdjustedName: (idx: number, name: string) => void;
+  updateAdjustedName?: (idx: number, name: string) => void;
   removeAdjustedItem: (idx: number) => void;
   onOpenNewProduct: () => void;
+  onCreateKit: (kit: KitGroup) => void;
   onRemoveKitGroup: (kitId: string) => void;
   entryNotes: string;
   setEntryNotes: (v: string) => void;
   setCurrentStep: (s: any) => void;
   goToStep: (s: any) => void;
   formatCurrency: (v: number) => string;
-  onRemoveKitGroup: (kitId: string) => void;
+  hasMatchesOrBatch: boolean;
 }
 
 export const StepAjustes = ({
