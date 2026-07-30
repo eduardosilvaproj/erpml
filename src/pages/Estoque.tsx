@@ -226,11 +226,10 @@ const Estoque = () => {
     const BOM = "﻿";
     const sep = ";";
     const quote = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-    const headers = ["SKU", "Produto", "Marca", "Tipo", "Físico", "FULL", "Total", "Preço Custo", "Preço Venda", "Valor Total"].join(sep);
+    const headers = ["SKU", "Produto", "Tipo", "Físico", "FULL", "Total", "Preço Custo", "Preço Venda", "Valor Total"].join(sep);
     const rows = filteredItems.map((p) => [
       quote(p.sku),
       quote(p.name),
-      quote(p.brand),
       quote(p.type === 'kit' ? 'Kit' : 'Produto'),
       p.stock_physical,
       p.stock_full,
