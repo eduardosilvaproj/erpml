@@ -83,13 +83,19 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
         .select("id, created_at")
         .eq("company_id", companyId as string);
 
-      // Fetch ML orders with items for cost calculation
-      const { data: mlOrders } = await supabase
-        .from("ml_orders")
-        .select("id, total_amount, ml_order_items(product_id, quantity, unit_price)")
-        .gte("date_created", from)
-        .lte("date_created", to + "T23:59:59")
-        .eq("company_id", companyId as string);
+      // Fetch ML orders with items for cost calculation (non-fatal if fails)
+      let mlOrdersData: any[] = [];
+      try {
+        const { data: mlOrders } = await supabase
+          .from("ml_orders")
+          .select("id, total_amount, ml_order_items(product_id, quantity, unit_price)")
+          .gte("date_created", from)
+          .lte("date_created", to + "T23:59:59")
+          .eq("company_id", companyId as string);
+        mlOrdersData = mlOrders || [];
+      } catch (e) {
+        console.warn("Erro ao buscar ml_orders para o dashboard:", e);
+      }
 
       // Fetch pending full orders
       const { count: pendingFull } = await supabase
@@ -127,7 +133,6 @@ export function useDashboardData(period: PeriodFilter, mlMetrics?: MLMetricsInpu
       const custs = customers || [];
       const xfers = transfers || [];
       const pmts = (payments || []) as any[];
-      const mlOrdersData = mlOrders || [];
 
       // --- KPI Calculations ---
 

@@ -522,12 +522,13 @@ Deno.serve(async (req) => {
   });
 
   const token = authHeader.replace("Bearer ", "");
-  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
-  if (claimsError || !claimsData?.claims?.sub) {
+  const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+  if (authError || !user) {
+    console.error("Auth error:", authError?.message);
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  const userId = claimsData.claims.sub;
+  const userId = user.id;
   const serviceClient = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
