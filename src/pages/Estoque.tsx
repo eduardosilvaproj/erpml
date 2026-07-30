@@ -19,6 +19,7 @@ import { useProductsInfinite, useCategories } from "@/hooks/useProductData";
 import { useAllKits } from "@/hooks/useKitData";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { stockService } from "@/services/stock";
 import { BarcodeScannerInput } from "@/components/BarcodeScannerInput";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatNumber, formatDifference } from "@/lib/formatters";
@@ -31,6 +32,7 @@ const Estoque = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState<"name_asc" | "stock_asc" | "stock_desc">("name_asc");
   const [onlyDivergent, setOnlyDivergent] = useState(false);
   const [reprocessingKits, setReprocessingKits] = useState(false);
   const [validationSearch, setValidationSearch] = useState("");
@@ -99,9 +101,21 @@ const Estoque = () => {
       result = result.filter((p) => (p.stock_physical + p.stock_full) <= p.min_stock && p.min_stock > 0);
     } else if (stockFilter === "zero") {
       result = result.filter((p) => p.stock_physical + p.stock_full === 0);
+    } else if (stockFilter === "with_stock") {
+      result = result.filter((p) => p.stock_physical + p.stock_full > 0);
     }
+
+    // Ordenação
+    result = [...result].sort((a, b) => {
+      const totalA = a.stock_physical + a.stock_full;
+      const totalB = b.stock_physical + b.stock_full;
+      if (sortOrder === "stock_asc") return totalA - totalB;
+      if (sortOrder === "stock_desc") return totalB - totalA;
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+
     return result;
-  }, [allItems, search, stockFilter]);
+  }, [allItems, search, stockFilter, sortOrder]);
 
   const totalPhysical = useMemo(() => allItems.filter(i => i.type === 'product').reduce((s, p) => s + p.stock_physical, 0), [allItems]);
   const totalFull = useMemo(() => allItems.filter(i => i.type === 'product').reduce((s, p) => s + p.stock_full, 0), [allItems]);
@@ -120,20 +134,82 @@ const Estoque = () => {
 
   const handleAdjustSave = async () => {
     if (!adjustDialog) return;
-    if (adjustBoxMode && boxTotal > 0) {
-      const currentStock = adjustBoxTarget === "physical" ? adjustDialog.stock_physical : adjustDialog.stock_full;
-      const newStock = Math.max(0, currentStock - boxTotal);
-      const updateData = adjustBoxTarget === "physical" ? { stock_physical: newStock } : { stock_full: newStock };
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
-      if (error) toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
-      else { toast({ title: `Estoque ajustado! −${boxTotal} un` }); refetch(); }
-    } else {
-      const updateData: { stock_physical?: number; stock_full?: number } = {};
-      if (adjustPhysical !== "") updateData.stock_physical = Number(adjustPhysical);
-      if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
-      const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
-      if (error) toast({ title: "Erro ao ajustar estoque", description: error.message, variant: "destructive" });
-      else { toast({ title: "Estoque ajustado!" }); refetch(); }
+    try {
+      if (adjustBoxMode && boxTotal > 0) {
+        const currentStock = adjustBoxTarget === "physical" ? adjustDialog.stock_physical : adjustDialog.stock_full;
+        const newStock = Math.max(0, currentStock - boxTotal);
+        const updateData = adjustBoxTarget === "physical" ? { stock_physical: newStock } : { stock_full: newStock };
+        const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
+        if (error) throw error;
+
+        // Registrar no histórico
+        await stockService.logMovement({
+          productId: adjustDialog.id,
+          companyId,
+          type: 'ajuste',
+          quantity: -(boxTotal),
+          oldStock: currentStock,
+          newStock,
+          stockType: adjustBoxTarget,
+          referenceType: 'manual',
+          notes: `Ajuste por caixa: −${boxTotal} un (${adjustBoxCount} cx × ${adjustBoxUnitsPerBox} un)`
+        });
+
+        toast({ title: `Estoque ajustado! −${boxTotal} un` });
+        refetch();
+      } else {
+        const updateData: { stock_physical?: number; stock_full?: number } = {};
+        if (adjustPhysical !== "") updateData.stock_physical = Number(adjustPhysical);
+        if (adjustFull !== "") updateData.stock_full = Number(adjustFull);
+
+        // Buscar valores atuais antes de atualizar
+        const { data: currentProduct } = await supabase
+          .from("products")
+          .select("stock_physical, stock_full")
+          .eq("id", adjustDialog.id)
+          .eq("company_id", companyId)
+          .maybeSingle();
+
+        const { error } = await supabase.from("products").update(updateData).eq("id", adjustDialog.id).eq("company_id", companyId);
+        if (error) throw error;
+
+        // Registrar no histórico para cada campo alterado
+        if (adjustPhysical !== "" && currentProduct) {
+          const oldPhysical = currentProduct.stock_physical || 0;
+          const newPhysical = Number(adjustPhysical);
+          await stockService.logMovement({
+            productId: adjustDialog.id,
+            companyId,
+            type: 'ajuste',
+            quantity: newPhysical - oldPhysical,
+            oldStock: oldPhysical,
+            newStock: newPhysical,
+            stockType: 'physical',
+            referenceType: 'manual',
+            notes: 'Ajuste manual de estoque físico'
+          });
+        }
+        if (adjustFull !== "" && currentProduct) {
+          const oldFull = currentProduct.stock_full || 0;
+          const newFull = Number(adjustFull);
+          await stockService.logMovement({
+            productId: adjustDialog.id,
+            companyId,
+            type: 'ajuste',
+            quantity: newFull - oldFull,
+            oldStock: oldFull,
+            newStock: newFull,
+            stockType: 'full',
+            referenceType: 'manual',
+            notes: 'Ajuste manual de estoque FULL'
+          });
+        }
+
+        toast({ title: "Estoque ajustado!" });
+        refetch();
+      }
+    } catch (err: any) {
+      toast({ title: "Erro ao ajustar estoque", description: err.message, variant: "destructive" });
     }
     setAdjustDialog(null); setAdjustBoxMode(false);
   };
@@ -246,8 +322,17 @@ const Estoque = () => {
               <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="with_stock">Com Estoque</SelectItem>
                 <SelectItem value="low">Baixo Estoque</SelectItem>
                 <SelectItem value="zero">Sem Estoque</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "name_asc" | "stock_asc" | "stock_desc")}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name_asc">Nome A-Z</SelectItem>
+                <SelectItem value="stock_asc">Estoque Crescente</SelectItem>
+                <SelectItem value="stock_desc">Estoque Decrescente</SelectItem>
               </SelectContent>
             </Select>
           </div>

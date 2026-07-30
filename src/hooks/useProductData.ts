@@ -32,6 +32,7 @@ export type ProductFormData = {
   barcode?: string;
   ean?: string;
   name: string;
+  brand?: string;
   description?: string;
   category_id?: string;
   cost: number;
@@ -110,13 +111,14 @@ export function useProductsInfinite(filters?: {
   search?: string;
   category_id?: string;
   supplier_id?: string;
+  brand?: string;
   status?: "active" | "inactive" | "all";
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   needsCorrection?: "no_sku" | "no_supplier" | "no_ean";
 }) {
   const companyId = useCompanyId();
-  const pageSize = 50;
+  const pageSize = 100;
 
   return useInfiniteQuery({
     queryKey: ["products-infinite", filters, companyId],
