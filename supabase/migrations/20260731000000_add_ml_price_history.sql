@@ -1,6 +1,6 @@
 CREATE TABLE public.ml_price_history (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  ml_linked_product_id UUID NOT NULL REFERENCES public.ml_linked_products(id) ON DELETE CASCADE,
+  ml_linked_product_id UUID,
   old_price NUMERIC(12,2),
   new_price NUMERIC(12,2),
   old_original_price NUMERIC(12,2),
