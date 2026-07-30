@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Loader2, CheckCircle, ArrowLeft } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 import { type BatchNfe } from "../types";
 import { type MatchResult } from "@/lib/nfe-parser";
 
@@ -32,6 +34,23 @@ export const StepConfirmar = ({
   nfeData, itemsToShow, totalValue, autoUpdateStock, setAutoUpdateStock,
   autoUpdateCost, setAutoUpdateCost, updateAdjustedName, confirmarEntrada, saving, formatCurrency, setCurrentStep
 }: StepConfirmarProps) => {
+  const { toast } = useToast();
+  const hasEmptyName = useMemo(
+    () => itemsToShow.some((item) => !item.xmlProduct.description.trim()),
+    [itemsToShow]
+  );
+
+  const handleConfirm = () => {
+    if (hasEmptyName) {
+      toast({
+        title: "Nome do produto vazio",
+        description: "Corrija os nomes dos produtos antes de confirmar a entrada.",
+        variant: "destructive",
+      });
+      return;
+    }
+    confirmarEntrada();
+  };
   return (
     <div className="space-y-5">
       {isBatchMode ? (
@@ -179,8 +198,8 @@ export const StepConfirmar = ({
           )}
           <Button
             className="min-h-[48px] px-8 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={confirmarEntrada}
-            disabled={saving || (isBatchMode && batchSelectedForConfirm.size === 0)}
+            onClick={handleConfirm}
+            disabled={saving || hasEmptyName || (isBatchMode && batchSelectedForConfirm.size === 0)}
           >
             {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle className="h-5 w-5" />}
             {isBatchMode

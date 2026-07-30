@@ -165,7 +165,7 @@ export const useEntradaNotaConfirm = (
           if (productId && match.matchedProductId && state.autoUpdateStock && !isInKit) {
             const { data: current, error: fetchError } = await supabase
               .from("products")
-              .select("stock_physical, cost, price")
+              .select("stock_physical, cost, price, sku")
               .eq("id", productId)
               .eq("company_id", companyId as string)
               .maybeSingle();
@@ -193,6 +193,12 @@ export const useEntradaNotaConfirm = (
 
               if ((currentPrice === 0 || !currentPrice) && xmlUnit > 0) {
                 update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
+              }
+
+              // Atualizar SKU para o EAN se o produto tem EAN e o SKU atual é diferente
+              const ean = (match.xmlProduct.ean || "").trim();
+              if (ean && current.sku !== ean) {
+                update.sku = ean;
               }
 
               const { error: updateError } = await supabase
@@ -366,7 +372,7 @@ export const useEntradaNotaConfirm = (
             if (productId && wasMatched && state.autoUpdateStock) {
               const { data: current, error: fetchError } = await supabase
                 .from("products")
-                .select("stock_physical, cost, price")
+                .select("stock_physical, cost, price, sku")
                 .eq("id", productId)
                 .eq("company_id", companyId as string)
                 .maybeSingle();
@@ -389,6 +395,12 @@ export const useEntradaNotaConfirm = (
 
                 if ((currentPrice === 0 || !currentPrice) && xmlUnit > 0) {
                   update.price = Math.round(xmlUnit * 1.5 * 100) / 100;
+                }
+
+                // Atualizar SKU para o EAN se o produto tem EAN e o SKU atual é diferente
+                const ean = (match.xmlProduct.ean || "").trim();
+                if (ean && current.sku !== ean) {
+                  update.sku = ean;
                 }
 
                 const { error: updateError } = await supabase

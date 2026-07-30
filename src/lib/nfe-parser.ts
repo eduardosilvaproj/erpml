@@ -206,6 +206,7 @@ export interface MatchResult {
   confidence: number;
   newEan?: string;
   eanPending?: boolean;
+  adjusted?: boolean;
 }
 
 export function matchProducts(

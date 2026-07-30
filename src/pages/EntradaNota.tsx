@@ -402,7 +402,7 @@ const EntradaNota = () => {
           <StepConfirmar
             isBatchMode={isBatchMode} selectedBatchNfes={selectedBatchNfes} batchSelectedForConfirm={batchSelectedForConfirm} setBatchSelectedForConfirm={setBatchSelectedForConfirm}
             nfeData={nfeData} itemsToShow={itemsToShow} totalValue={totalValue} autoUpdateStock={autoUpdateStock} setAutoUpdateStock={setAutoUpdateStock} autoUpdateCost={autoUpdateCost} setAutoUpdateCost={setAutoUpdateCost}
-            updateAdjustedName={(idx, name) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, description: name } } : item))}
+            updateAdjustedName={(idx, name) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, description: name }, adjusted: true } : item))}
             confirmarEntrada={confirmHook.confirmarEntrada} saving={saving} formatCurrency={formatCurrency} setCurrentStep={setCurrentStep}
           />
         )}
