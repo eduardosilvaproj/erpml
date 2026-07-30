@@ -267,8 +267,9 @@ export function useConferenceRealtime(conferenceId: string | null) {
 
   useEffect(() => {
     if (!conferenceId) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     try {
-      const channel = supabase
+      channel = supabase
         .channel(`conference-rt-${conferenceId}-${Date.now()}`)
         .on(
           "postgres_changes",
@@ -290,7 +291,7 @@ export function useConferenceRealtime(conferenceId: string | null) {
     }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [conferenceId, queryClient]);
 }

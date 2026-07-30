@@ -1323,6 +1323,7 @@ export type Database = {
           last_synced_at: string | null
           ml_available_quantity: number | null
           ml_item_id: string
+          ml_original_price: number | null
           ml_price: number | null
           ml_status: string | null
           ml_title: string | null
@@ -1337,6 +1338,7 @@ export type Database = {
           last_synced_at?: string | null
           ml_available_quantity?: number | null
           ml_item_id: string
+          ml_original_price?: number | null
           ml_price?: number | null
           ml_status?: string | null
           ml_title?: string | null
@@ -1351,6 +1353,7 @@ export type Database = {
           last_synced_at?: string | null
           ml_available_quantity?: number | null
           ml_item_id?: string
+          ml_original_price?: number | null
           ml_price?: number | null
           ml_status?: string | null
           ml_title?: string | null
@@ -1440,17 +1443,21 @@ export type Database = {
       ml_orders: {
         Row: {
           company_id: string | null
+          coupon_amount: number | null
           created_at: string
           currency_id: string | null
           date_closed: string | null
           date_created: string | null
           id: string
+          installments: number | null
           marketplace_fee: number | null
           ml_buyer_id: number | null
           ml_buyer_nickname: string | null
           ml_order_id: number
           ml_raw: Json | null
+          overpaid_amount: number | null
           pack_id: number | null
+          payment_method: string | null
           shipping_cost: number | null
           shipping_id: number | null
           shipping_status: string | null
@@ -1461,17 +1468,21 @@ export type Database = {
         }
         Insert: {
           company_id?: string | null
+          coupon_amount?: number | null
           created_at?: string
           currency_id?: string | null
           date_closed?: string | null
           date_created?: string | null
           id?: string
+          installments?: number | null
           marketplace_fee?: number | null
           ml_buyer_id?: number | null
           ml_buyer_nickname?: string | null
           ml_order_id: number
           ml_raw?: Json | null
+          overpaid_amount?: number | null
           pack_id?: number | null
+          payment_method?: string | null
           shipping_cost?: number | null
           shipping_id?: number | null
           shipping_status?: string | null
@@ -1482,17 +1493,21 @@ export type Database = {
         }
         Update: {
           company_id?: string | null
+          coupon_amount?: number | null
           created_at?: string
           currency_id?: string | null
           date_closed?: string | null
           date_created?: string | null
           id?: string
+          installments?: number | null
           marketplace_fee?: number | null
           ml_buyer_id?: number | null
           ml_buyer_nickname?: string | null
           ml_order_id?: number
           ml_raw?: Json | null
+          overpaid_amount?: number | null
           pack_id?: number | null
+          payment_method?: string | null
           shipping_cost?: number | null
           shipping_id?: number | null
           shipping_status?: string | null
@@ -1507,6 +1522,47 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ml_price_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          id: string
+          ml_linked_product_id: string
+          new_original_price: number | null
+          new_price: number | null
+          old_original_price: number | null
+          old_price: number | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          ml_linked_product_id: string
+          new_original_price?: number | null
+          new_price?: number | null
+          old_original_price?: number | null
+          old_price?: number | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          ml_linked_product_id?: string
+          new_original_price?: number | null
+          new_price?: number | null
+          old_original_price?: number | null
+          old_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ml_price_history_ml_linked_product_id_fkey"
+            columns: ["ml_linked_product_id"]
+            isOneToOne: false
+            referencedRelation: "ml_linked_products"
             referencedColumns: ["id"]
           },
         ]
