@@ -116,7 +116,7 @@ const EntradaNota = () => {
     if (!companyId) return [];
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_alternative_gtins(gtin)")
+      .select("id, name, barcode, ean, sku, gtin_cx, box_quantity, product_alternative_gtins(gtin), product_supplier_skus(supplier_sku)")
       .eq("company_id", companyId as string)
       .order("name");
     if (error) throw new Error("Não foi possível carregar os produtos.");
@@ -390,6 +390,7 @@ const EntradaNota = () => {
             itemsToShow={itemsToShow} adjustedItems={adjustedItems} kitGroups={kitGroups}
             updateAdjustedQty={(idx, q) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, quantity: q } } : item))}
             updateAdjustedCost={(idx, c) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, unitValue: c, totalValue: c * item.xmlProduct.quantity } } : item))}
+            updateAdjustedName={(idx, name) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, description: name } } : item))}
             removeAdjustedItem={(idx) => setAdjustedItems(prev => prev.filter((_, i) => i !== idx))}
             onOpenNewProduct={handleOpenNewProductDialog}
             onCreateKit={(name, sku, price, itemIndices, quantity) => {
@@ -414,6 +415,7 @@ const EntradaNota = () => {
           <StepConfirmar
             isBatchMode={isBatchMode} selectedBatchNfes={selectedBatchNfes} batchSelectedForConfirm={batchSelectedForConfirm} setBatchSelectedForConfirm={setBatchSelectedForConfirm}
             nfeData={nfeData} itemsToShow={itemsToShow} totalValue={totalValue} autoUpdateStock={autoUpdateStock} setAutoUpdateStock={setAutoUpdateStock} autoUpdateCost={autoUpdateCost} setAutoUpdateCost={setAutoUpdateCost}
+            updateAdjustedName={(idx, name) => setAdjustedItems(prev => prev.map((item, i) => i === idx ? { ...item, xmlProduct: { ...item.xmlProduct, description: name } } : item))}
             confirmarEntrada={confirmHook.confirmarEntrada} saving={saving} formatCurrency={formatCurrency} setCurrentStep={setCurrentStep}
           />
         )}

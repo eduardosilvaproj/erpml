@@ -15,6 +15,7 @@ interface StepAjustesProps {
   kitGroups: KitGroup[];
   updateAdjustedQty: (idx: number, qty: number) => void;
   updateAdjustedCost: (idx: number, cost: number) => void;
+  updateAdjustedName: (idx: number, name: string) => void;
   removeAdjustedItem: (idx: number) => void;
   onOpenNewProduct: () => void;
   onCreateKit: (name: string, sku: string, price: number, itemIndices: number[], quantity: number) => void;
@@ -28,7 +29,7 @@ interface StepAjustesProps {
 }
 
 export const StepAjustes = ({
-  itemsToShow, adjustedItems, kitGroups, updateAdjustedQty, updateAdjustedCost, removeAdjustedItem,
+  itemsToShow, adjustedItems, kitGroups, updateAdjustedQty, updateAdjustedCost, updateAdjustedName, removeAdjustedItem,
   onOpenNewProduct, onCreateKit, onRemoveKitGroup, entryNotes, setEntryNotes, setCurrentStep, goToStep, formatCurrency, hasMatchesOrBatch
 }: StepAjustesProps) => {
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
@@ -135,9 +136,23 @@ export const StepAjustes = ({
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm font-medium">{item.xmlProduct.description}</p>
-                    <p className="text-xs text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</p>
-                    {inKit && <Badge variant="outline" className="mt-1 text-xs">Em kit</Badge>}
+                    <div className="flex flex-col gap-1">
+                      <Input
+                        value={item.xmlProduct.description}
+                        onChange={(e) => updateAdjustedName(i, e.target.value)}
+                        className="h-8 text-sm font-medium"
+                        disabled={inKit}
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="text-xs text-muted-foreground">{item.xmlProduct.ean || item.xmlProduct.code}</span>
+                        {item.matchedProductName && item.matchedProductName !== item.xmlProduct.description && (
+                          <span className="text-xs text-amber-500">
+                            Sistema: {item.matchedProductName}
+                          </span>
+                        )}
+                      </div>
+                      {inKit && <Badge variant="outline" className="mt-1 text-xs w-fit">Em kit</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell className="text-center">
                     <Input

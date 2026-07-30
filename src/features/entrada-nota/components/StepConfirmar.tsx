@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { type BatchNfe } from "../types";
 import { type MatchResult } from "@/lib/nfe-parser";
@@ -19,6 +20,7 @@ interface StepConfirmarProps {
   setAutoUpdateStock: (v: boolean) => void;
   autoUpdateCost: boolean;
   setAutoUpdateCost: (v: boolean) => void;
+  updateAdjustedName: (idx: number, name: string) => void;
   confirmarEntrada: () => void;
   saving: boolean;
   formatCurrency: (v: number) => string;
@@ -28,7 +30,7 @@ interface StepConfirmarProps {
 export const StepConfirmar = ({
   isBatchMode, selectedBatchNfes, batchSelectedForConfirm, setBatchSelectedForConfirm,
   nfeData, itemsToShow, totalValue, autoUpdateStock, setAutoUpdateStock,
-  autoUpdateCost, setAutoUpdateCost, confirmarEntrada, saving, formatCurrency, setCurrentStep
+  autoUpdateCost, setAutoUpdateCost, updateAdjustedName, confirmarEntrada, saving, formatCurrency, setCurrentStep
 }: StepConfirmarProps) => {
   return (
     <div className="space-y-5">
@@ -124,7 +126,16 @@ export const StepConfirmar = ({
               <TableBody>
                 {itemsToShow.map((item, i) => (
                   <TableRow key={i}>
-                    <TableCell className="text-sm font-medium">{item.xmlProduct.description}</TableCell>
+                    <TableCell className="text-sm">
+                      <Input
+                        value={item.xmlProduct.description}
+                        onChange={(e) => updateAdjustedName(i, e.target.value)}
+                        className="h-8 text-sm font-medium"
+                      />
+                      {item.matchedProductName && item.matchedProductName !== item.xmlProduct.description && (
+                        <p className="text-xs text-amber-500 mt-0.5">Sistema: {item.matchedProductName}</p>
+                      )}
+                    </TableCell>
                     <TableCell className="text-center">{item.xmlProduct.quantity}</TableCell>
                     <TableCell className="text-center">{formatCurrency(item.xmlProduct.unitValue)}</TableCell>
                     <TableCell className="text-center font-medium">{formatCurrency(item.xmlProduct.totalValue)}</TableCell>

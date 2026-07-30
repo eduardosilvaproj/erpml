@@ -210,10 +210,11 @@ export interface MatchResult {
 
 export function matchProducts(
   xmlProducts: NFeProduct[],
-  dbProducts: { 
-    id: string; name: string; barcode: string | null; ean?: string | null; sku: string; 
+  dbProducts: {
+    id: string; name: string; barcode: string | null; ean?: string | null; sku: string;
     gtin_cx?: string | null; box_quantity?: number | null;
     product_gtins?: { gtin: string; tipo?: string; box_quantity?: number }[];
+    product_supplier_skus?: { supplier_sku: string }[];
   }[]
 ): MatchResult[] {
   return xmlProducts.map((xp) => {
@@ -222,8 +223,8 @@ export function matchProducts(
     // Regra Fundamental: Match PRIORITARIAMENTE por EAN
     if (normalizedXmlBarcode) {
       // 1. Match exato por EAN ou Barcode
-      let match = dbProducts.find((dp) => 
-        normalizeBarcode(dp.ean) === normalizedXmlBarcode || 
+      let match = dbProducts.find((dp) =>
+        normalizeBarcode(dp.ean) === normalizedXmlBarcode ||
         normalizeBarcode(dp.barcode) === normalizedXmlBarcode
       );
 
@@ -234,7 +235,7 @@ export function matchProducts(
 
       // 3. Fallback 2: Match por GTINs alternativos (product_gtins)
       if (!match) {
-        match = dbProducts.find((dp) => 
+        match = dbProducts.find((dp) =>
           dp.product_gtins?.some(pg => normalizeBarcode(pg.gtin) === normalizedXmlBarcode)
         );
       }
@@ -255,8 +256,42 @@ export function matchProducts(
       }
     }
 
-    // NUNCA usar nome, descrição ou SKU como match automático
-    // Se não encontrou por EAN/GTIN, trata como novo produto para evitar erros de estoque
+    // Fallback: Match por SKU do fornecedor quando EAN nao estiver disponivel
+    if (!normalizedXmlBarcode) {
+      const normalizedXmlCode = normalizeIdentifier(xp.code);
+
+      if (normalizedXmlCode) {
+        // 1. Match por SKU do produto
+        let match = dbProducts.find((dp) =>
+          normalizeIdentifier(dp.sku) === normalizedXmlCode
+        );
+
+        // 2. Match por supplier_sku em product_supplier_skus (SKUs de fornecedores anteriores)
+        if (!match) {
+          match = dbProducts.find((dp) =>
+            dp.product_supplier_skus?.some(ps => normalizeIdentifier(ps.supplier_sku) === normalizedXmlCode)
+          );
+        }
+
+        if (match) {
+          return {
+            xmlProduct: xp,
+            matchedProductId: match.id,
+            matchedProductName: match.name,
+            matchedProductBarcode: match.barcode,
+            matchedProductEan: match.ean ?? null,
+            matchedProductSku: match.sku,
+            matchedProductGtinCx: match.gtin_cx ?? null,
+            matchedProductBoxQty: match.box_quantity ?? null,
+            matchType: "exact" as const,
+            confidence: 100,
+          };
+        }
+      }
+    }
+
+    // NUNCA usar nome ou descricao como match automatico
+    // Se nao encontrou por EAN/GTIN/SKU, trata como novo produto para evitar erros de estoque
     return {
       xmlProduct: xp,
       matchedProductId: null,
