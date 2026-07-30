@@ -33,21 +33,25 @@ export function useUnansweredMLQuestionsCount() {
       supabase.removeChannel(existing);
     }
 
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "ml_questions",
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["ml-questions-unanswered-count"] });
-          queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
-        }
-      )
-      .subscribe();
+    try {
+      const channel = supabase
+        .channel(channelName)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "ml_questions",
+          },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["ml-questions-unanswered-count"] });
+            queryClient.invalidateQueries({ queryKey: ["ml-questions"] });
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime não disponível para ml_questions:", (e as Error)?.message);
+    }
 
     return () => {
       supabase.removeChannel(channel);

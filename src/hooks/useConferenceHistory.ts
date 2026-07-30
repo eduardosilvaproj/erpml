@@ -267,23 +267,27 @@ export function useConferenceRealtime(conferenceId: string | null) {
 
   useEffect(() => {
     if (!conferenceId) return;
-    const channel = supabase
-      .channel(`conference-rt-${conferenceId}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "conference_items", filter: `conference_id=eq.${conferenceId}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["conference-detail", conferenceId] });
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "conferences", filter: `id=eq.${conferenceId}` },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["conference-detail", conferenceId] });
-        }
-      )
-      .subscribe();
+    try {
+      const channel = supabase
+        .channel(`conference-rt-${conferenceId}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "conference_items", filter: `conference_id=eq.${conferenceId}` },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["conference-detail", conferenceId] });
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "conferences", filter: `id=eq.${conferenceId}` },
+          () => {
+            queryClient.invalidateQueries({ queryKey: ["conference-detail", conferenceId] });
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn("Realtime não disponível para conferência:", (e as Error)?.message);
+    }
 
     return () => {
       supabase.removeChannel(channel);
