@@ -32,3 +32,13 @@ PROMPT_*.md
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code artifacts
+.claude-flow/
+.claude/.proven-config-version
+.claude/proven-config.json
+
+# Temp / export files
+notas xml/
+*.bak
+full_name
