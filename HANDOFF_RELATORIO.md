@@ -8,7 +8,7 @@ WMS (Warehouse Management System) pessoal do **Eduar** para gerenciar
 - **Deploy/edição:** **Lovable** (chat-based) — você não mexe no backend direto; eu gero prompts `PROMPT_*.md` que você cola no Lovable, e você roda SQL no **SQL Editor do Supabase**.
 - **Conta ML de teste:** seller **1075018916** (tem Full). Outra conta: 228868464 (só drop_off).
 
-> ⚠️ O backend **NÃO** roda na sua conta pessoal do Supabase — roda no **Lovable Cloud** (projeto `cjmoecedmsguxewyhdie`). Toda Edge Function nova/alterada precisa de **redeploy via Lovable**. Secrets já estão configurados.
+> ⚠️ O backend roda no **Supabase próprio** (projeto `arvuxnojiqywhvmyzxgw`). Edge Functions são deployadas via `npx supabase functions deploy`.
 
 ## 2. Como voltar a trabalhar comigo (Claude/Claude Code)
 1. **Instalar Claude Code** no novo PC (mesmo plano).
@@ -83,7 +83,7 @@ Existia um plano em `C:\Users\eduar\.claude\plans\deep-tinkering-hedgehog.md` so
    - `git clone` (se houver repo) ou copiar pasta inteira.
    - `npm install` no novo PC.
    - Confirmar variáveis do Supabase em `.env` (não commitar).
-   - Login no Supabase (projeto `cjmoecedmsguxewyhdie`).
+   - Login no Supabase (projeto `arvuxnojiqywhvmyzxgw`).
    - Login no Lovable (mesmo e-mail).
 
 2. **Sanity check (10 min)**
@@ -103,7 +103,7 @@ Existia um plano em `C:\Users\eduar\.claude\plans\deep-tinkering-hedgehog.md` so
 
 ## 6. Contatos e contas relevantes
 - **Lovable** (mesmo e-mail usado pra criar o projeto).
-- **Supabase** (mesmo e-mail) — projeto `cjmoecedmsguxewyhdie` (Lovable Cloud, não pessoal).
+- **Supabase** (mesmo e-mail) — projeto `arvuxnojiqywhvmyzxgw` (próprio, não Lovable).
 - **Mercado Livre** — seller 1075018916 (teste Full) e 228868464 (drop_off).
 - **Claude/Claude Code** — plano pago; autorização pra retomar projeto.
 

@@ -25,9 +25,9 @@ const VERSION_KEY = "erp-app-version";
 const storedVersion = localStorage.getItem(VERSION_KEY);
 if (storedVersion && storedVersion !== APP_VERSION) {
   // Preserve auth-related keys
-  const authKey = localStorage.getItem("sb-cjmoecedmsguxewyhdie-auth-token");
+  const authKey = localStorage.getItem("sb-arvuxnojiqywhvmyzxgw-auth-token");
   localStorage.clear();
-  if (authKey) localStorage.setItem("sb-cjmoecedmsguxewyhdie-auth-token", authKey);
+  if (authKey) localStorage.setItem("sb-arvuxnojiqywhvmyzxgw-auth-token", authKey);
   localStorage.setItem(VERSION_KEY, APP_VERSION);
   window.location.reload();
 } else {

@@ -265,7 +265,7 @@ const RelatorioEstoqueFull = () => {
                             {formatDifference(diff)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">{formatCurrency(p.price ?? 0)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(mlPrice)}</TableCell>
                         <TableCell className="text-right font-bold">{formatCurrency(total)}</TableCell>
                       </TableRow>
                     );

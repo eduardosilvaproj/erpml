@@ -25,7 +25,7 @@ SELECT cron.schedule(
   '*/30 * * * *',
   $$
   SELECT net.http_post(
-    url := 'https://cjmoecedmsguxewyhdie.supabase.co/functions/v1/ml-orders-sync',
+    url := 'https://arvuxnojiqywhvmyzxgw.supabase.co/functions/v1/ml-orders-sync',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'CRON_SECRET' LIMIT 1)
@@ -41,7 +41,7 @@ SELECT cron.schedule(
   '*/15 * * * *',
   $$
   SELECT net.http_post(
-    url := 'https://cjmoecedmsguxewyhdie.supabase.co/functions/v1/ml-full-sync',
+    url := 'https://arvuxnojiqywhvmyzxgw.supabase.co/functions/v1/ml-full-sync',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-cron-secret', (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'CRON_SECRET' LIMIT 1)
