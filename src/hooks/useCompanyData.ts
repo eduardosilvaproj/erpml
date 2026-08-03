@@ -299,13 +299,25 @@ export function useAllCompanies() {
   });
 }
 
+// Colunas reais de companies. Resto (plan, plans, owner_profile, members_count)
+// vem de joins em useGovernanceCompanies e não pode ir no UPDATE — PostgREST
+// rejeita com PGRST204 e o edit inteiro falha silenciosamente no toast.
+const COMPANY_COLUMNS = [
+  "name", "cnpj", "email", "phone", "address", "city", "state", "zip_code",
+  "plan_id", "status", "owner_id", "is_courtesy", "is_test",
+] as const;
+
 export function useAdminUpdateCompany() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Company> & { id: string }) => {
+      const patch: Record<string, unknown> = {};
+      for (const k of COMPANY_COLUMNS) {
+        if (k in updates) patch[k] = (updates as any)[k];
+      }
       const { error } = await supabase
         .from("companies")
-        .update(updates as any)
+        .update(patch as any)
         .eq("id", id);
       if (error) throw error;
     },
