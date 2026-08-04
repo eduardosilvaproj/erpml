@@ -272,7 +272,7 @@ const Separacao = () => {
         return newItems;
       });
 
-      const prefix = qty > 1 ? `📦 Caixa de ` : `✓ `;
+      const prefix = qty > 1 ? `Caixa de ` : ``;
       setLastScan({ success: true, message: `${prefix}${item.name} (${newScannedQty}/${item.neededQty})` });
       scanInputRef.current?.flash(true);
       setScanValue("");
@@ -317,7 +317,7 @@ const Separacao = () => {
         setBoxMode("idle");
         setScanValue("");
         setInternalScanValue("");
-        setLastScan({ success: true, message: `📦 Caixa de ${qtyToLow}x ${item.name} registrada!` });
+        setLastScan({ success: true, message: `Caixa de ${qtyToLow}x ${item.name} registrada` });
         scanInputRef.current?.flash(true);
       } else {
         setLastScan({ success: false, message: `O produto "${internalCode}" não está nesta ordem.` });
@@ -451,7 +451,7 @@ const Separacao = () => {
       item.neededQty,
       item.scannedQty,
       Math.max(0, item.neededQty - item.scannedQty),
-      item.status === "completo" ? "✅ OK" : "❌ PENDENTE"
+      item.status === "completo" ? "OK" : "PENDENTE"
     ]);
 
     autoTable(doc, {
@@ -476,9 +476,28 @@ const Separacao = () => {
   }, [items, endTime]);
 
   const getStatusBadge = (item: SeparacaoItem) => {
-    if (item.status === "completo") return <Badge className="bg-emerald-500 hover:bg-emerald-600 gap-1 text-white">✅ Completo</Badge>;
-    if (item.status === "parcial") return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200 gap-1">🔄 Faltam {item.neededQty - item.scannedQty}</Badge>;
-    return <Badge variant="outline" className="text-muted-foreground gap-1">⏳ Pendente</Badge>;
+    // Badges sem emoji e sem preenchimento saturado: em tabela densa o
+    // peso visual atrapalha a varredura. A cor da borda já classifica.
+    const base = "rounded-sm border px-1.5 py-0 text-[11px] font-medium uppercase tracking-wide";
+    if (item.status === "completo") {
+      return (
+        <span className={base} style={{ color: "hsl(var(--success))", borderColor: "hsl(var(--success) / 0.4)", background: "hsl(var(--success) / 0.08)" }}>
+          Completo
+        </span>
+      );
+    }
+    if (item.status === "parcial") {
+      return (
+        <span className={base} style={{ color: "hsl(var(--warning))", borderColor: "hsl(var(--warning) / 0.4)", background: "hsl(var(--warning) / 0.08)" }}>
+          Parcial
+        </span>
+      );
+    }
+    return (
+      <span className={base} style={{ color: "hsl(var(--muted-foreground))", borderColor: "hsl(var(--border))" }}>
+        Pendente
+      </span>
+    );
   };
 
   const isComplete = productsComplete === totalProducts && totalProducts > 0;
@@ -547,11 +566,12 @@ const Separacao = () => {
 
       {/* Fluxo de Caixa Inline */}
       <Dialog open={boxMode !== "idle"} onOpenChange={(open) => !open && setBoxMode("idle")}>
-        <DialogContent className="sm:max-w-md">
+        {/* .op também aqui: Portal escapa o escopo da página */}
+        <DialogContent className="op sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Box className="h-5 w-5 text-blue-500" />
-              Fluxo de Caixa: {tempBoxCode}
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Box className="h-4 w-4 text-primary" />
+              Fluxo de caixa: <span className="code">{tempBoxCode}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -565,7 +585,7 @@ const Separacao = () => {
                 autoFocus
                 onKeyDown={(e) => e.key === "Enter" && setBoxMode("scan_internal")}
               />
-              <Button className="w-full bg-blue-600" onClick={() => setBoxMode("scan_internal")}>
+              <Button className="w-full" onClick={() => setBoxMode("scan_internal")}>
                 Próximo: Bipar item interno
               </Button>
             </div>
@@ -574,11 +594,11 @@ const Separacao = () => {
           {boxMode === "scan_internal" && (
             <div className="py-6 space-y-6">
               <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
-                  <ScanBarcode className="h-8 w-8 text-blue-600" />
+                <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+                  <ScanBarcode className="h-7 w-7 text-primary" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-lg font-bold text-blue-900">Aguardando leitura...</p>
+                  <p className="text-base font-semibold">Aguardando leitura…</p>
                   <p className="text-sm text-muted-foreground">Bipe o EAN/SKU do produto que está <br/> dentro desta caixa de {tempBoxQty} unidades.</p>
                 </div>
               </div>
@@ -594,7 +614,7 @@ const Separacao = () => {
                     autoFocus
                     scanMode
                     className="h-12"
-                    inputClassName="h-12 text-lg text-center font-mono border-2 focus:border-blue-500 bg-white text-gray-900"
+                    inputClassName="code h-12 text-lg text-center bg-card text-foreground border-2 focus:border-primary"
                   />
                 </div>
                 
@@ -603,7 +623,7 @@ const Separacao = () => {
                     Voltar
                   </Button>
                   <Button 
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 font-bold" 
+                    className="flex-1 font-semibold"
                     onClick={() => {
                       if (internalScanValue.trim()) {
                         handleScan(internalScanValue);
@@ -620,23 +640,28 @@ const Separacao = () => {
         </DialogContent>
       </Dialog>
 
-    <div className="container mx-auto p-4 space-y-6 max-w-5xl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/movimentacao-full")}>
-            <ArrowLeft className="h-5 w-5" />
+    <div className="op min-h-screen -m-4 p-4 space-y-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/movimentacao-full")}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            📦 Separação — {orderInfo?.frete_ml ? `Frete #${orderInfo.frete_ml}` : (orderInfo?.description || `Ordem #${orderInfo?.number}`)}
-          </h1>
+          <div className="flex flex-col">
+            <h1 className="text-base font-semibold leading-tight">
+              Separação
+            </h1>
+            <span className="code text-xs text-muted-foreground">
+              {orderInfo?.frete_ml ? `Frete ${orderInfo.frete_ml}` : (orderInfo?.description || `Ordem ${orderInfo?.number}`)}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {isPaused ? (
-            <Button variant="default" size="sm" onClick={handleContinue} className="gap-2 bg-emerald-600 hover:bg-emerald-700">
+            <Button variant="default" size="sm" onClick={handleContinue} className="gap-2" style={{ background: "hsl(var(--success))", color: "hsl(var(--success-foreground))" }}>
               <Play className="h-4 w-4" /> Continuar Bipagem
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPausing} className="gap-2 text-amber-700 border-amber-200 hover:bg-amber-50">
+            <Button variant="outline" size="sm" onClick={handlePause} disabled={isPausing} className="gap-2" style={{ color: "hsl(var(--warning))", borderColor: "hsl(var(--warning) / 0.4)" }}>
               {isPausing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />} Pausar
             </Button>
           )}
@@ -649,9 +674,18 @@ const Separacao = () => {
             defaultType="separacao"
             onRecordingChange={(isRecording, duration) => setRecordingState({ isRecording, duration })}
             trigger={
-              <Button variant="outline" size="sm" className={`gap-2 ${recordingState.isRecording ? 'bg-red-50 text-red-700 border-red-200 animate-pulse' : 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`gap-2 ${recordingState.isRecording ? "animate-pulse" : ""}`}
+                style={
+                  recordingState.isRecording
+                    ? { color: "hsl(var(--destructive))", borderColor: "hsl(var(--destructive) / 0.4)", background: "hsl(var(--destructive) / 0.08)" }
+                    : { color: "hsl(var(--muted-foreground))" }
+                }
+              >
                 <Video className="h-4 w-4" /> 
-                {recordingState.isRecording ? `🎥 gravando ${Math.floor(recordingState.duration / 60)}:${(recordingState.duration % 60).toString().padStart(2, '0')}` : 'Gravar Separação'}
+                {recordingState.isRecording ? `Gravando ${Math.floor(recordingState.duration / 60)}:${(recordingState.duration % 60).toString().padStart(2, '0')}` : 'Gravar separação'}
               </Button>
             }
           />
@@ -662,103 +696,108 @@ const Separacao = () => {
       </div>
 
       {isComplete ? (
-        <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500">
-          {/* FLUXO VISUAL DOS STATUS */}
-          <div className="flex items-center justify-center py-4 px-2 max-w-3xl mx-auto">
-            <div className="flex items-center w-full">
-              <div className="flex flex-col items-center flex-1 relative">
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 border-2 border-emerald-500 z-10">
-                  <FileText className="h-5 w-5" />
+        <div className="space-y-3 animate-in fade-in duration-200">
+          {/* Esteira de status — barra fina, no lugar dos círculos grandes.
+              Etapa concluída em verde, atual em azul, futura em cinza. */}
+          <div className="flex gap-1">
+            {[
+              { label: "PDF carregado", state: "done" as const, icon: FileText },
+              { label: "Separado", state: "current" as const, icon: CheckCircle2 },
+              { label: "Carregamento", state: "next" as const, icon: Box },
+              { label: "Enviado", state: "next" as const, icon: Package },
+            ].map((step) => {
+              const color =
+                step.state === "done"
+                  ? "hsl(var(--success))"
+                  : step.state === "current"
+                    ? "hsl(var(--primary))"
+                    : "hsl(var(--muted-foreground))";
+              return (
+                <div key={step.label} className="flex-1">
+                  <div
+                    className="h-1 rounded-sm"
+                    style={{
+                      background: step.state === "next" ? "hsl(var(--border))" : color,
+                    }}
+                  />
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <step.icon className="h-3.5 w-3.5 shrink-0" style={{ color }} />
+                    <span
+                      className="text-[11px] font-medium uppercase tracking-wide truncate"
+                      style={{ color }}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[10px] mt-1 font-bold text-emerald-600 uppercase">PDF Carregado</span>
-                <div className="absolute top-5 left-[60%] w-[80%] h-0.5 bg-emerald-500"></div>
-              </div>
-              
-              <div className="flex flex-col items-center flex-1 relative">
-                <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center text-white border-4 border-emerald-100 shadow-lg z-10 scale-110">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <span className="text-[11px] mt-1 font-black text-emerald-700 uppercase">Separado</span>
-                <div className="absolute top-5 left-[65%] w-[70%] h-0.5 bg-gray-200"></div>
-              </div>
-              
-              <div className="flex flex-col items-center flex-1 relative">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-gray-200 z-10">
-                  <Box className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] mt-1 font-medium text-gray-400 uppercase">Carregamento</span>
-                <div className="absolute top-5 left-[60%] w-[80%] h-0.5 bg-gray-200"></div>
-              </div>
-              
-              <div className="flex flex-col items-center flex-1">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border-2 border-gray-200 z-10">
-                  <Package className="h-5 w-5" />
-                </div>
-                <span className="text-[10px] mt-1 font-medium text-gray-400 uppercase">Enviado</span>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
-          <Card className="border-none shadow-2xl overflow-hidden bg-white">
-            <div className="bg-emerald-600 h-2 w-full"></div>
+          <Card className="op-card overflow-hidden">
             <CardContent className="p-0">
-              <div className="p-8 text-center space-y-6">
-                <div className="space-y-2">
-                  <h2 className="text-4xl font-black text-emerald-900 tracking-tight">✅ Separação Concluída!</h2>
-                  <p className="text-emerald-700 text-xl font-medium">Pedido ML #{orderInfo?.frete_ml || orderInfo?.number}</p>
-                </div>
-
-                <div className="max-w-md mx-auto bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-6 font-mono text-left space-y-3 relative">
-                  <div className="absolute -top-3 left-4 bg-white px-2 text-[10px] text-gray-400 font-sans uppercase tracking-widest">Resumo do Processo</div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Package className="h-5 w-5 text-emerald-500" />
-                    <span className="font-bold">{totalProducts} produtos separados</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Box className="h-5 w-5 text-emerald-500" />
-                    <span>{totalUnitsScanned} unidades totais</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <User className="h-5 w-5 text-emerald-500" />
-                    <span>Responsável: <strong>{userFullName}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Clock className="h-5 w-5 text-emerald-500" />
-                    <span>Duração: <strong>{duration}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-3 text-gray-700">
-                    <Calendar className="h-5 w-5 text-emerald-500" />
-                    <span>{format(endTime || new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</span>
+              <div className="p-4 space-y-4">
+                {/* Confirmação sóbria: uma linha, sem emoji nem font-black.
+                    O seller separa dezenas de ordens por dia — celebração a
+                    cada uma vira ruído. */}
+                <div className="flex items-center gap-2 border-l-4 pl-3 py-1"
+                  style={{ borderColor: "hsl(var(--success))" }}>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">Separação concluída</span>
+                    <span className="code text-xs text-muted-foreground">
+                      Pedido ML {orderInfo?.frete_ml || orderInfo?.number}
+                    </span>
                   </div>
                 </div>
 
-                {/* CAMPO: DATA PREVISTA DE CARREGAMENTO */}
-                <div className="max-w-md mx-auto bg-blue-50/50 border border-blue-100 rounded-xl p-6 text-left space-y-4">
-                  <h3 className="font-bold text-blue-900 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" /> 📅 Previsão de carregamento:
-                  </h3>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Input 
-                      type="date" 
+                {/* Resumo em grade densa, rótulo acima do valor */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 border-t border-border pt-3">
+                  {[
+                    { label: "Produtos", value: String(totalProducts) },
+                    { label: "Unidades", value: String(totalUnitsScanned) },
+                    { label: "Duração", value: duration },
+                    { label: "Responsável", value: userFullName },
+                    { label: "Concluído em", value: format(endTime || new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
+                  ].map((f) => (
+                    <div key={f.label} className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {f.label}
+                      </span>
+                      <span className="text-sm font-medium truncate">{f.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Previsão de carregamento — campo de formulário comum,
+                    não um bloco destacado com fundo azul */}
+                <div className="border-t border-border pt-3 space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Previsão de carregamento
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">(opcional)</span>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 max-w-md">
+                    <Input
+                      type="date"
                       value={previsaoData}
                       onChange={(e) => setPrevisaoData(e.target.value)}
-                      className="bg-white border-blue-200"
+                      className="h-9"
                     />
-                    <Input 
-                      type="time" 
+                    <Input
+                      type="time"
                       value={previsaoHora}
                       onChange={(e) => setPrevisaoHora(e.target.value)}
-                      className="bg-white border-blue-200"
+                      className="h-9"
                     />
                   </div>
-                  <p className="text-[10px] text-blue-600 italic">Opcional: Informe quando o carregamento está previsto.</p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto pt-4">
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 border-t border-border pt-3">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="gap-3 h-14 font-semibold"
                     onClick={generatePDF}
                   >
                     <Printer className="h-5 w-5" /> Imprimir Relatório PDF
@@ -767,20 +806,21 @@ const Separacao = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="gap-3 border-2 h-14 font-bold text-gray-700 hover:bg-gray-50"
+                    className="gap-3 h-14 font-semibold"
                     onClick={() => navigate("/movimentacao-full")}
                   >
                     <ArrowLeft className="h-5 w-5" /> Voltar para Ordens
                   </Button>
 
-                  <Button 
-                    size="lg" 
-                    className="gap-3 bg-emerald-600 hover:bg-emerald-700 h-14 font-black text-white shadow-lg md:col-span-2"
+                  <Button
+                    size="lg"
+                    className="gap-3 h-14 font-semibold md:col-span-2"
+                    style={{ background: "hsl(var(--success))", color: "hsl(var(--success-foreground))" }}
                     onClick={handleFinalizarSeparacao}
                     disabled={isFinishing}
                   >
-                    {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Box className="h-6 w-6" />}
-                    💾 Salvar e Aguardar Carregamento
+                    {isFinishing ? <Loader2 className="h-5 w-5 animate-spin" /> : <Box className="h-5 w-5" />}
+                    Salvar e aguardar carregamento
                   </Button>
                 </div>
               </div>
@@ -789,11 +829,11 @@ const Separacao = () => {
         </div>
       ) : (
         <>
-          <Card className="border-2 border-primary/20 shadow-lg">
-            <CardContent className="p-6 space-y-6">
+          <Card className="op-card">
+            <CardContent className="p-3 space-y-3">
               <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1 w-full space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Escanear Produto</label>
+                <div className="flex-1 w-full space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Escanear produto</label>
                   <div className="flex gap-2">
                     <BarcodeScannerInput
                       ref={scanInputRef}
@@ -805,9 +845,9 @@ const Separacao = () => {
                       autoFocus
                       scanMode
                       disabled={blockingAlert.isOpen}
-                      inputClassName="text-gray-900"
+                      inputClassName="code h-12 text-lg tracking-wide bg-card text-foreground border-2 focus:border-primary"
                     />
-                    <Button onClick={() => handleScan(scanValue)} className="px-8 font-bold" disabled={blockingAlert.isOpen}>
+                    <Button onClick={() => handleScan(scanValue)} className="h-12 px-8 font-semibold" disabled={blockingAlert.isOpen}>
                       Bipar
                     </Button>
                   </div>
@@ -815,22 +855,30 @@ const Separacao = () => {
               </div>
 
               {lastScan && (
-                <div className={`p-3 rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
-                  lastScan.success ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
-                }`}>
-                  {lastScan.success ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                <div
+                  className="flex items-center gap-2 border-l-4 px-3 py-2 text-sm animate-in fade-in slide-in-from-top-1 duration-200"
+                  style={{
+                    borderColor: lastScan.success ? "hsl(var(--success))" : "hsl(var(--destructive))",
+                    background: lastScan.success ? "hsl(var(--success) / 0.08)" : "hsl(var(--destructive) / 0.08)",
+                    color: lastScan.success ? "hsl(var(--success))" : "hsl(var(--destructive))",
+                  }}
+                >
+                  {lastScan.success ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
                   <span className="font-medium">{lastScan.message}</span>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-4 bg-muted/30 p-4 rounded-xl">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center text-sm gap-x-6 gap-y-2">
-                    <span className="font-medium">Progresso: <span className="font-bold text-lg">{totalUnitsScanned}/{totalUnitsNeeded}</span> unidades</span>
-                    <span className="text-muted-foreground hidden sm:inline">|</span>
-                    <span className="font-medium"><span className="font-bold text-lg">{productsComplete}/{totalProducts}</span> produtos completos</span>
+              <div className="border-t border-border pt-3">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-xs uppercase tracking-wide text-muted-foreground">
+                    <span>
+                      Unidades <span className="qty ml-1 text-base normal-case text-foreground">{totalUnitsScanned}/{totalUnitsNeeded}</span>
+                    </span>
+                    <span>
+                      Produtos <span className="qty ml-1 text-base normal-case text-foreground">{productsComplete}/{totalProducts}</span>
+                    </span>
                   </div>
-                  <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-3" />
+                  <Progress value={(totalUnitsScanned / (totalUnitsNeeded || 1)) * 100} className="h-1.5" />
                   
                   {import.meta.env.DEV && (
                     <button onClick={handleSkipSeparacao}
@@ -844,56 +892,62 @@ const Separacao = () => {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
+          <Card className="op-card overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead className="w-[400px]">PRODUTO</TableHead>
-                  <TableHead className="text-center">NECESSÁRIO</TableHead>
-                  <TableHead className="text-center">BIPADO</TableHead>
-                  <TableHead className="text-center">FALTAM</TableHead>
-                  <TableHead className="text-right">STATUS</TableHead>
+                <TableRow>
+                  <TableHead className="w-[400px]">Produto</TableHead>
+                  <TableHead className="w-20 text-right">Necessário</TableHead>
+                  <TableHead className="w-20 text-right">Bipado</TableHead>
+                  <TableHead className="w-20 text-right">Faltam</TableHead>
+                  <TableHead className="w-32 text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.productId} className={item.status === 'completo' ? 'bg-emerald-50/20' : ''}>
+                {items.map((item) => {
+                  const faltam = item.neededQty - item.scannedQty;
+                  return (
+                  <TableRow key={item.productId}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         {item.image_url ? (
-                          <img src={item.image_url} alt="" className="h-10 w-10 rounded-md object-cover border" />
+                          <img src={item.image_url} alt="" className="h-8 w-8 rounded-sm object-cover border border-border shrink-0" />
                         ) : (
-                          <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground/40" />
+                          <div className="h-8 w-8 rounded-sm bg-muted flex items-center justify-center shrink-0">
+                            <Package className="h-4 w-4 text-muted-foreground/40" />
                           </div>
                         )}
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm leading-tight">{item.name}</span>
-                          <span className="text-xs text-muted-foreground font-mono">EAN/SKU: {item.ean || item.sku}</span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-medium leading-snug truncate">{item.name}</span>
+                          <span className="code text-[11px] text-muted-foreground">{item.ean || item.sku}</span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center font-bold text-lg">{item.neededQty}</TableCell>
-                    <TableCell className="text-center font-bold text-lg">
-                      <span className={item.scannedQty > 0 ? "text-primary" : "text-muted-foreground"}>
+                    <TableCell className="qty text-right text-muted-foreground">{item.neededQty}</TableCell>
+                    <TableCell className="qty text-right">
+                      <span className={item.scannedQty > 0 ? "text-foreground" : "text-muted-foreground"}>
                         {item.scannedQty}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center">
-                      <span 
-                        className="text-lg font-bold"
+                    <TableCell className="qty text-right">
+                      <span
                         style={{
-                          color: (item.neededQty - item.scannedQty) <= 0 ? '#10B981' : (item.neededQty - item.scannedQty) <= 10 ? '#f59e0b' : '#ef4444'
+                          color: faltam <= 0
+                            ? "hsl(var(--success))"
+                            : faltam <= 10
+                              ? "hsl(var(--warning))"
+                              : "hsl(var(--destructive))",
                         }}
                       >
-                        {(item.neededQty - item.scannedQty) <= 0 ? '✅ 0' : (item.neededQty - item.scannedQty)}
+                        {faltam <= 0 ? "0" : faltam}
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
                       {getStatusBadge(item)}
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
                 {items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
@@ -905,26 +959,38 @@ const Separacao = () => {
             </Table>
           </Card>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" size="lg" onClick={() => navigate("/movimentacao-full")}>
-              Cancelar
-            </Button>
-            <Button 
-              size="lg" 
-              className="px-10 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={!isComplete}
-              onClick={handleFinalizarSeparacao}
-            >
-              Concluir Separação
-            </Button>
+          <div className="flex items-center justify-between border-t border-border pt-3">
+            <span className="text-xs text-muted-foreground">
+              {isComplete
+                ? "Todos os produtos conferidos."
+                : `${totalProducts - productsComplete} produto(s) ainda sem conferência completa.`}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/movimentacao-full")}>
+                Cancelar
+              </Button>
+              <Button
+                className="px-6 font-semibold"
+                style={isComplete ? { background: "hsl(var(--success))", color: "hsl(var(--success-foreground))" } : undefined}
+                disabled={!isComplete}
+                onClick={handleFinalizarSeparacao}
+              >
+                Concluir separação
+              </Button>
+            </div>
           </div>
         </>
       )}
       <Dialog open={blockingAlert.isOpen} onOpenChange={(open) => setBlockingAlert(prev => ({ ...prev, isOpen: open }))}>
-        <DialogContent className="sm:max-w-[425px] text-center p-8 border-4 border-destructive/20 shadow-2xl">
+        {/* .op repetido aqui: DialogContent renderiza em Portal, fora do
+            container da página, então não herdaria os tokens claros. */}
+        <DialogContent className="op sm:max-w-[425px] text-center p-6 border border-border">
           <div className="flex flex-col items-center space-y-6">
-            <div className="w-24 h-24 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
-              <AlertCircle className="h-12 w-12" />
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center"
+              style={{ background: "hsl(var(--warning) / 0.12)", color: "hsl(var(--warning))" }}
+            >
+              <AlertCircle className="h-10 w-10" />
             </div>
             
             <div className="space-y-3">
