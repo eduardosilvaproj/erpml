@@ -39,6 +39,17 @@ const FEATURE_GATE: Record<string, string[]> = {
   "/ia-mercado": ["Análise de Mercado IA", "SaaS Enterprise"],
 };
 
+/**
+ * TEMPORÁRIO (03/08/2026) — desliga os gates de plano enquanto o sistema é
+ * finalizado. Com true, toda rota é liberada para qualquer plano.
+ *
+ * Não mexe em cobrança nem em dado: os planos continuam cadastrados e as
+ * empresas seguem com o plan_id atual. Só a checagem de acesso é ignorada.
+ *
+ * Para reativar: mude para false (ou apague esta const e o if em isRouteAllowed).
+ */
+const PLAN_GATES_DISABLED = true;
+
 /** Returns the minimum plan name required for a given route */
 export function getRequiredPlan(path: string): string | null {
   if (ENTERPRISE_ROUTES.has(path)) return "Enterprise";
@@ -56,6 +67,10 @@ export function usePlanFeatures() {
 
   /** Check if a specific sidebar route is allowed by the current plan */
   const isRouteAllowed = (path: string): boolean => {
+    // TEMPORÁRIO — libera todos os módulos enquanto o sistema é finalizado.
+    // Para reativar os gates de plano: apague este if e a const acima.
+    if (PLAN_GATES_DISABLED) return true;
+
     // Get lowercased plan name and slug for robust comparison
     const currentPlanName = (company?.plan?.name || "").toLowerCase();
     const currentPlanSlug = (company?.plan?.slug || "").toLowerCase();
