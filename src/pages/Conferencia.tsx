@@ -112,10 +112,12 @@ const Conferencia = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-8">
+    /* .op no container: os ConferenceStep1/2/3 usam tokens semânticos,
+       então herdam a superfície clara sem alteração própria. */
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {sessionRestored && (
-        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 flex items-center gap-2 text-sm">
-          <History className="h-4 w-4 text-primary shrink-0" />
+        <div className="flex items-center gap-2 border-l-4 border-primary bg-primary/5 px-3 py-2 text-sm">
+          <History className="h-4 w-4 shrink-0 text-primary" />
           <span>Sessão restaurada</span>
           <Button variant="outline" size="sm" className="ml-auto h-7" onClick={reset}>Descartar</Button>
         </div>

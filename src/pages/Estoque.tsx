@@ -133,7 +133,10 @@ const Estoque = () => {
   const virtualizer = useVirtualizer({
     count: filteredItems.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 64,
+    // Deve acompanhar a altura real da linha na lista abaixo. O virtualizer
+    // posiciona por absolute usando este valor: divergir gera buraco ou
+    // sobreposição entre linhas.
+    estimateSize: () => 44,
     overscan: 10,
   });
 
@@ -293,19 +296,19 @@ const Estoque = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Controle de Estoque</h1>
-          <p className="text-muted-foreground">Estoque Físico + FULL (Mercado Livre)</p>
+          <h1 className="text-base font-semibold leading-tight">Controle de estoque</h1>
+          <p className="text-xs text-muted-foreground">Físico + Full (Mercado Livre)</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV}><Download className="h-4 w-4 mr-1" /> Exportar</Button>
+          <Button variant="outline" size="sm" className="h-8" onClick={handleExportCSV}><Download className="h-4 w-4 mr-1" /> Exportar</Button>
           {kits && kits.length > 0 && (
             <Button
               size="sm"
               variant="outline"
-              className="border-purple-200 text-purple-700 hover:bg-purple-50"
+              className="h-8"
               onClick={handleReprocessKitStock}
               disabled={reprocessingKits}
             >
@@ -313,66 +316,91 @@ const Estoque = () => {
               Reprocessar Kits
             </Button>
           )}
-          <Button size="sm" onClick={() => navigate("/entrada-nota")}><Plus className="h-4 w-4 mr-1" /> Nova Entrada</Button>
+          <Button size="sm" className="h-8" onClick={() => navigate("/entrada-nota")}><Plus className="h-4 w-4 mr-1" /> Nova entrada</Button>
         </div>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Físico</p><p className="text-2xl font-bold">{formatNumber(totalPhysical)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">FULL</p><p className="text-2xl font-bold">{formatNumber(totalFull)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Total</p><p className="text-2xl font-bold">{formatNumber(totalPhysical + totalFull)}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Abaixo Mín.</p><p className="text-2xl font-bold text-destructive">{lowStockCount}</p></CardContent></Card>
-        <Card className="border-purple-200 bg-purple-50/30"><CardContent className="p-4"><p className="text-sm text-purple-600">Kits</p><p className="text-2xl font-bold text-purple-700">{kits?.length || 0}</p><p className="text-xs text-purple-500">{kits?.filter(k => (k.stock_physical || 0) > 0).length || 0} com estoque</p></CardContent></Card>
+      {/* Indicadores em faixa: rótulo pequeno acima, número tabular abaixo.
+          Sem card por métrica — 5 caixas com sombra viravam parede de blocos. */}
+      <div className="grid grid-cols-2 divide-x divide-border border border-border bg-card md:grid-cols-5">
+        {[
+          { label: "Físico", value: formatNumber(totalPhysical) },
+          { label: "Full", value: formatNumber(totalFull) },
+          { label: "Total", value: formatNumber(totalPhysical + totalFull) },
+          { label: "Abaixo do mínimo", value: String(lowStockCount), danger: lowStockCount > 0 },
+          { label: "Kits", value: String(kits?.length || 0), hint: `${kits?.filter(k => (k.stock_physical || 0) > 0).length || 0} com estoque` },
+        ].map((kpi) => (
+          <div key={kpi.label} className="px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{kpi.label}</p>
+            <p
+              className="qty text-xl leading-tight"
+              style={kpi.danger ? { color: "hsl(var(--destructive))" } : undefined}
+            >
+              {kpi.value}
+            </p>
+            {kpi.hint && <p className="text-[10px] text-muted-foreground">{kpi.hint}</p>}
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap gap-3">
+      <Card className="op-card">
+        <CardHeader className="p-3">
+          <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar produto..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Buscar produto…" className="h-9 pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <Input placeholder="Filtrar por marca..." className="w-[180px]" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} />
+            <Input placeholder="Filtrar por marca…" className="h-9 w-[170px]" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)} />
             <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="with_stock">Com Estoque</SelectItem>
-                <SelectItem value="low">Baixo Estoque</SelectItem>
-                <SelectItem value="zero">Sem Estoque</SelectItem>
+                <SelectItem value="with_stock">Com estoque</SelectItem>
+                <SelectItem value="low">Estoque baixo</SelectItem>
+                <SelectItem value="zero">Sem estoque</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "name_asc" | "stock_asc" | "stock_desc")}>
-              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="h-9 w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="name_asc">Nome A-Z</SelectItem>
-                <SelectItem value="stock_asc">Estoque Crescente</SelectItem>
-                <SelectItem value="stock_desc">Estoque Decrescente</SelectItem>
+                <SelectItem value="stock_asc">Estoque crescente</SelectItem>
+                <SelectItem value="stock_desc">Estoque decrescente</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
-          <div ref={parentRef} className="h-[500px] overflow-auto rounded-md border">
+        <CardContent className="p-3 pt-0">
+          {/* Cabeçalho fixo: a lista é virtualizada, então não é <table> —
+              as larguras aqui precisam bater com as das linhas abaixo. */}
+          <div className="flex items-center border border-border border-b-0 bg-muted px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            <div className="flex-1">Produto</div>
+            <div className="w-20 text-right">Físico</div>
+            <div className="w-20 text-right">Full</div>
+            <div className="w-20 text-right">Total</div>
+          </div>
+          <div ref={parentRef} className="h-[560px] overflow-auto border border-border">
             <div style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>
               {virtualizer.getVirtualItems().map((virtualRow) => {
                 const item = filteredItems[virtualRow.index];
                 return (
                   <div
                     key={item.id}
-                    className={`absolute top-0 left-0 w-full border-b flex items-center px-4 hover:bg-muted/50 ${item.type === 'kit' ? 'bg-purple-50/30' : ''}`}
+                    className="absolute top-0 left-0 flex w-full items-center border-b border-border px-3 text-[13px] hover:bg-muted"
                     style={{ height: `${virtualRow.size}px`, transform: `translateY(${virtualRow.start}px)` }}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {item.type === 'kit' && <Badge variant="secondary" className="text-[10px] bg-purple-100 text-purple-700">KIT</Badge>}
-                        <p className="font-medium text-sm truncate">{item.name}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        {item.type === 'kit' && (
+                          <span className="rounded-sm border border-border px-1 text-[9px] font-semibold uppercase text-muted-foreground">Kit</span>
+                        )}
+                        <p className="truncate font-medium leading-tight">{item.name}</p>
                       </div>
-                      <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                      <p className="code text-[11px] text-muted-foreground">{item.sku}</p>
                     </div>
-                    <div className="w-24 text-center font-bold text-primary">{formatNumber(item.stock_physical)}</div>
-                    <div className="w-24 text-center font-bold text-accent">{formatNumber(item.stock_full)}</div>
-                    <div className="w-24 text-center font-bold">{formatNumber(item.stock_physical + item.stock_full)}</div>
+                    <div className="qty w-20 text-right">{formatNumber(item.stock_physical)}</div>
+                    <div className="qty w-20 text-right text-muted-foreground">{formatNumber(item.stock_full)}</div>
+                    <div className="qty w-20 text-right">{formatNumber(item.stock_physical + item.stock_full)}</div>
                   </div>
                 );
               })}

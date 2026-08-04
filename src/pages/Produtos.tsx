@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Package, Plus, Search, Pencil, Trash2, Loader2, Sparkles, Upload, Download, Settings2, AlertTriangle, ScanBarcode } from "lucide-react";
+import { Package, Plus, Search, Pencil, Trash2, Loader2, Wand2, Upload, Download, Settings2, AlertTriangle, ScanBarcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -166,37 +166,40 @@ const Produtos = () => {
   const openEdit = (product: Product) => { setEditingProduct(product); setProductDialogOpen(true); };
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <Tabs defaultValue="products">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
-            <p className="text-muted-foreground text-sm">Gerencie seu catálogo</p>
+            <h1 className="text-base font-semibold leading-tight">Produtos</h1>
+            <p className="text-xs text-muted-foreground">Catálogo e fornecedores</p>
           </div>
           <div className="flex items-center gap-2">
-            <TabsList>
-              <TabsTrigger value="products">Produtos</TabsTrigger>
-              <TabsTrigger value="suppliers">Fornecedores</TabsTrigger>
+            <TabsList className="h-8">
+              <TabsTrigger value="products" className="text-xs">Produtos</TabsTrigger>
+              <TabsTrigger value="suppliers" className="text-xs">Fornecedores</TabsTrigger>
             </TabsList>
           </div>
         </div>
 
-        <TabsContent value="products" className="space-y-4 mt-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <TabsContent value="products" className="space-y-3 mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate("/importacao")}>
+              <Button variant="outline" size="sm" className="h-8" onClick={() => navigate("/importacao")}>
                 <Upload className="mr-2 h-4 w-4" /> Importar
               </Button>
-              <Button variant="outline" size="sm" onClick={handleExport}>
+              <Button variant="outline" size="sm" className="h-8" onClick={handleExport}>
                 <Download className="mr-2 h-4 w-4" /> Exportar
               </Button>
-              <Button variant="outline" size="sm" onClick={handleBatchEnrich} disabled={enriching}>
-                {enriching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                {enriching ? "Atualizando..." : "Atualizar com IA"}
+              {/* Wand2 no lugar de Sparkles: mesma decisão do botão de
+                  sugestão em Ordens Full — brilho é a assinatura visual de
+                  feature de IA e o cliente desconta valor ao reconhecer. */}
+              <Button variant="outline" size="sm" className="h-8" onClick={handleBatchEnrich} disabled={enriching}>
+                {enriching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                {enriching ? "Completando…" : "Completar dados"}
               </Button>
             </div>
-            <Button onClick={() => { setEditingProduct(null); setProductDialogOpen(true); }}>
-              <Plus className="mr-2 h-4 w-4" /> Novo Produto
+            <Button size="sm" className="h-8" onClick={() => { setEditingProduct(null); setProductDialogOpen(true); }}>
+              <Plus className="mr-2 h-4 w-4" /> Novo produto
             </Button>
           </div>
 
@@ -210,20 +213,20 @@ const Produtos = () => {
             </div>
           )}
 
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-3">
+          <Card className="op-card">
+            <CardContent className="p-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nome ou código..."
-                    className="pl-10"
+                    placeholder="Buscar por nome ou código…"
+                    className="h-9 pl-8"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
                 <Select value={statusFilter || "all"} onValueChange={(v) => setStatusFilter(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-[130px]">
+                  <SelectTrigger className="h-9 w-[130px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -233,7 +236,7 @@ const Produtos = () => {
                   </SelectContent>
                 </Select>
                 <Select value={categoryFilter || "all"} onValueChange={(v) => setCategoryFilter(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="h-9 w-[160px]">
                     <SelectValue placeholder="Categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -242,10 +245,10 @@ const Produtos = () => {
                   </SelectContent>
                 </Select>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Filtrar por marca..."
-                    className="pl-10 w-[180px]"
+                    placeholder="Filtrar por marca…"
+                    className="h-9 w-[170px] pl-8"
                     value={brandFilter}
                     onChange={(e) => setBrandFilter(e.target.value)}
                   />
@@ -254,17 +257,17 @@ const Produtos = () => {
             </CardContent>
           </Card>
 
-          <div className="rounded-md border">
+          <div className="border border-border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12"><Checkbox checked={selectedIds.size === allProducts.length && allProducts.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>
-                  <TableHead>SKU</TableHead>
+                  <TableHead className="w-10"><Checkbox checked={selectedIds.size === allProducts.length && allProducts.length > 0} onCheckedChange={toggleSelectAll} /></TableHead>
+                  <TableHead className="w-32">SKU</TableHead>
                   <TableHead>Nome</TableHead>
-                  <TableHead>Preço</TableHead>
-                  <TableHead>Estoque</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="w-24 text-right">Preço</TableHead>
+                  <TableHead className="w-20 text-right">Estoque</TableHead>
+                  <TableHead className="w-24">Status</TableHead>
+                  <TableHead className="w-20 text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,30 +287,41 @@ const Produtos = () => {
                   allProducts.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell><Checkbox checked={selectedIds.has(p.id)} onCheckedChange={() => toggleSelect(p.id)} /></TableCell>
-                      <TableCell className="font-mono text-xs">{p.sku}</TableCell>
+                      <TableCell className="code text-[11px] text-muted-foreground">{p.sku}</TableCell>
                       <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell>R$ {p.price.toFixed(2)}</TableCell>
-                      <TableCell>{p.stock_physical}</TableCell>
-                      <TableCell><Badge variant={p.active ? "default" : "secondary"}>{p.active ? "Ativo" : "Inativo"}</Badge></TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteProduct.mutate(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                      <TableCell className="qty text-right">R$ {p.price.toFixed(2)}</TableCell>
+                      <TableCell className="qty text-right">{p.stock_physical}</TableCell>
+                      <TableCell>
+                        {/* Badge de borda, não preenchido: em tabela densa o
+                            fundo saturado atrapalha a varredura vertical. */}
+                        <span
+                          className="rounded-sm border px-1.5 py-0 text-[11px] font-medium uppercase tracking-wide"
+                          style={p.active
+                            ? { color: "hsl(var(--success))", borderColor: "hsl(var(--success) / 0.4)", background: "hsl(var(--success) / 0.08)" }
+                            : { color: "hsl(var(--muted-foreground))", borderColor: "hsl(var(--border))" }}
+                        >
+                          {p.active ? "Ativo" : "Inativo"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteProduct.mutate(p.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </TableCell>
                     </TableRow>
                   ))
                 )}
               </TableBody>
             </Table>
-            <div ref={targetRef} className="p-8 text-center text-muted-foreground text-sm">
+            <div ref={targetRef} className="border-t border-border py-3 text-center text-xs text-muted-foreground">
               {isFetchingNextPage ? (
                 <div className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Carregando mais produtos...
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Carregando mais produtos…
                 </div>
               ) : hasNextPage ? (
                 "Role para carregar mais"
               ) : (
-                "Fim da lista"
+                `${allProducts.length} produto(s)`
               )}
             </div>
           </div>

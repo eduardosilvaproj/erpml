@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Undo2, Plus, RefreshCw, Loader2 } from "lucide-react";
+import { Plus, RefreshCw, Loader2 } from "lucide-react";
 import { ReturnsListTab } from "@/components/devolucoes/ReturnsListTab";
 import { QuarantinePanel } from "@/components/devolucoes/QuarantinePanel";
 import { ReturnForm } from "@/components/devolucoes/ReturnForm";
@@ -44,40 +44,40 @@ export default function Devolucoes() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-4 max-w-6xl">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Undo2 className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Devoluções e Retiradas</h1>
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        <div>
+          <h1 className="text-base font-semibold leading-tight">Devoluções e retiradas</h1>
+          <p className="text-xs text-muted-foreground">Conferência, decisão e quarentena</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleSyncML} disabled={syncing}>
+          <Button variant="outline" size="sm" className="h-8" onClick={handleSyncML} disabled={syncing}>
             {syncing ? (
               <Loader2 className="h-4 w-4 mr-1 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4 mr-1" />
             )}
-            {syncing ? "Sincronizando..." : "Sincronizar ML"}
+            {syncing ? "Sincronizando…" : "Sincronizar ML"}
           </Button>
-          <Button onClick={() => setFormOpen(true)}>
+          <Button size="sm" className="h-8" onClick={() => setFormOpen(true)}>
             <Plus className="h-4 w-4 mr-1" /> Nova devolução
           </Button>
         </div>
       </div>
 
       <Tabs defaultValue="pendentes" className="w-full">
-        <TabsList className="w-full flex-wrap h-auto">
-          <TabsTrigger value="pendentes">Pendentes</TabsTrigger>
-          <TabsTrigger value="conferencia">Em Conferência</TabsTrigger>
-          <TabsTrigger value="decisao">Aguardando Decisão</TabsTrigger>
-          <TabsTrigger value="concluidas">Concluídas</TabsTrigger>
-          <TabsTrigger value="quarentena">Quarentena</TabsTrigger>
+        <TabsList className="h-8 w-full flex-wrap justify-start">
+          <TabsTrigger value="pendentes" className="text-xs">Pendentes</TabsTrigger>
+          <TabsTrigger value="conferencia" className="text-xs">Em conferência</TabsTrigger>
+          <TabsTrigger value="decisao" className="text-xs">Aguardando decisão</TabsTrigger>
+          <TabsTrigger value="concluidas" className="text-xs">Concluídas</TabsTrigger>
+          <TabsTrigger value="quarentena" className="text-xs">Quarentena</TabsTrigger>
         </TabsList>
-        <TabsContent value="pendentes" className="mt-4"><ReturnsListTab status="pendente" /></TabsContent>
-        <TabsContent value="conferencia" className="mt-4"><ReturnsListTab status="em_conferencia" /></TabsContent>
-        <TabsContent value="decisao" className="mt-4"><ReturnsListTab status="aguardando_decisao" /></TabsContent>
-        <TabsContent value="concluidas" className="mt-4"><ReturnsListTab status="concluida" /></TabsContent>
-        <TabsContent value="quarentena" className="mt-4"><QuarantinePanel /></TabsContent>
+        <TabsContent value="pendentes" className="mt-3"><ReturnsListTab status="pendente" /></TabsContent>
+        <TabsContent value="conferencia" className="mt-3"><ReturnsListTab status="em_conferencia" /></TabsContent>
+        <TabsContent value="decisao" className="mt-3"><ReturnsListTab status="aguardando_decisao" /></TabsContent>
+        <TabsContent value="concluidas" className="mt-3"><ReturnsListTab status="concluida" /></TabsContent>
+        <TabsContent value="quarentena" className="mt-3"><QuarantinePanel /></TabsContent>
       </Tabs>
 
       <ReturnForm open={formOpen} onOpenChange={setFormOpen} />
