@@ -67,11 +67,11 @@ const MovimentacaoFull = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Movimentação Físico → FULL</h1>
-          <p className="text-muted-foreground">Envie produtos do estoque físico para o FULL Mercado Livre</p>
+          <h1 className="text-base font-semibold leading-tight">Movimentação Físico → Full</h1>
+          <p className="text-xs text-muted-foreground">Envio de produtos do estoque físico para o Full do Mercado Livre</p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <Button
@@ -98,10 +98,10 @@ const MovimentacaoFull = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="ordens" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="ordens">📋 Ordens</TabsTrigger>
-          <TabsTrigger value="gravacoes">🎥 Gravações</TabsTrigger>
+      <Tabs defaultValue="ordens" className="space-y-3">
+        <TabsList className="h-8">
+          <TabsTrigger value="ordens" className="text-xs">Ordens</TabsTrigger>
+          <TabsTrigger value="gravacoes" className="text-xs">Gravações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ordens" className="mt-0">

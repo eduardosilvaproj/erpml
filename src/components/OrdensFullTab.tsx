@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Sparkles, FileText, Upload, AlertCircle, AlertTriangle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
+import { ClipboardList, Plus, Eye, Trash2, Play, Search, X, Loader2, Clock, Package, CheckCircle2, Lightbulb, FileText, Upload, AlertCircle, AlertTriangle, SearchIcon, Check, Gift, ChevronDown, Boxes, Calendar, Truck, Printer, Video, Filter, ArrowUpDown } from "lucide-react";
 import { SugestaoOrdemIADialog, type SugestaoItem } from "@/components/SugestaoOrdemIADialog";
 import { ProductFormDialog } from "@/components/ProductFormDialog";
 import { KitFormDialog } from "@/components/KitFormDialog";
@@ -894,19 +894,20 @@ export const OrdensFullTab = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* ETAPA 1 — Carregar Pedido ML */}
-      <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
-        <CardContent className="p-8">
-          <div className="flex flex-col items-center text-center space-y-4">
-            <div className="p-4 bg-primary/10 rounded-full">
-              <Upload className="h-8 w-8 text-primary" />
+    <div className="space-y-3">
+      {/* Dropzone do PDF — faixa horizontal em vez de bloco centralizado
+          de 8rem. Ocupa menos altura e deixa a lista de ordens visível. */}
+      <Card className="op-card border-dashed">
+        <CardContent className="p-3">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:text-left">
+            <div className="rounded-sm bg-primary/10 p-2 shrink-0">
+              <Upload className="h-5 w-5 text-primary" />
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold">📄 Carregar PDF do Mercado Livre</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                ETAPA 1 — Arraste o PDF do pedido ou clique no botão abaixo para selecionar. 
-                O sistema identificará os produtos e quantidades automaticamente.
+            <div className="min-w-0 flex-1 text-center sm:text-left">
+              <h3 className="text-sm font-semibold">Carregar PDF do Mercado Livre</h3>
+              <p className="text-xs text-muted-foreground">
+                Arraste o PDF do inbound ou selecione o arquivo. Os produtos e quantidades
+                são identificados automaticamente.
               </p>
             </div>
             <input
@@ -916,21 +917,20 @@ export const OrdensFullTab = () => {
               accept="application/pdf"
               className="hidden"
             />
-            <Button 
-              size="lg" 
-              className="px-8 gap-2 h-12 text-base font-semibold shadow-lg shadow-primary/20"
+            <Button
+              className="gap-2 font-semibold shrink-0"
               onClick={() => fileInputRef.current?.click()}
               disabled={isParsing}
             >
               {isParsing ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Lendo PDF...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Lendo PDF…
                 </>
               ) : (
                 <>
-                  <FileText className="h-5 w-5" />
-                  Selecionar PDF Mercado Livre
+                  <FileText className="h-4 w-4" />
+                  Selecionar PDF
                 </>
               )}
             </Button>
@@ -1270,57 +1270,59 @@ export const OrdensFullTab = () => {
       )}
 
       {/* Lista geral (Gestor) */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" /> Ordens de Envio FULL
+      <Card className="op-card">
+        <CardHeader className="flex flex-row items-center justify-between p-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-muted-foreground" /> Ordens de envio Full
           </CardTitle>
           {canManageOrders && (
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => setSummaryOpen(true)} className="gap-2">
+              <Button size="sm" variant="outline" onClick={() => setSummaryOpen(true)} className="h-8 gap-2">
                 <ClipboardList className="h-4 w-4" /> Ver resumo
               </Button>
-              <Button size="sm" variant="outline" onClick={() => setIaOpen(true)}
-                className="border-purple-500/40 bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20">
-                <Sparkles className="h-4 w-4 mr-1 text-purple-400" /> Sugestão IA
+              {/* Sem gradiente roxo nem Sparkles: era o elemento mais
+                  "feito por IA" da tela. Botão comum — o valor está no
+                  resultado da sugestão, não no enfeite do botão. */}
+              <Button size="sm" variant="outline" onClick={() => setIaOpen(true)} className="h-8">
+                <Lightbulb className="h-4 w-4 mr-1" /> Sugerir itens
               </Button>
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Button size="sm" onClick={() => setCreateOpen(true)} className="h-8">
                 <Plus className="h-4 w-4 mr-1" /> Nova ordem
               </Button>
             </div>
           )}
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+        <CardContent className="p-3 pt-0">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <div className="relative flex-1 min-w-[240px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Buscar por frete..." 
-                className="pl-10"
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por frete…"
+                className="code h-9 pl-8"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
               />
             </div>
 
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2" />
+              <SelectTrigger className="h-9 w-[170px]">
+                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="aguardando">📄 PDF Carregado</SelectItem>
-                <SelectItem value="em_separacao">🔄 Em Separação</SelectItem>
-                <SelectItem value="separada">✅ Separado</SelectItem>
-                <SelectItem value="aguardando_carregamento">🚛 Aguardando Coleta</SelectItem>
-                <SelectItem value="enviado">📦 Enviado</SelectItem>
-                <SelectItem value="cancelada">❌ Cancelado</SelectItem>
+                <SelectItem value="aguardando">PDF carregado</SelectItem>
+                <SelectItem value="em_separacao">Em separação</SelectItem>
+                <SelectItem value="separada">Separado</SelectItem>
+                <SelectItem value="aguardando_carregamento">Aguardando coleta</SelectItem>
+                <SelectItem value="enviado">Enviado</SelectItem>
+                <SelectItem value="cancelada">Cancelado</SelectItem>
               </SelectContent>
             </Select>
 
             <Select value={ordenacao} onValueChange={setOrdenacao}>
-              <SelectTrigger className="w-[200px]">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectTrigger className="h-9 w-[190px]">
+                <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
                 <SelectValue placeholder="Ordenar por" />
               </SelectTrigger>
               <SelectContent>
@@ -1333,9 +1335,26 @@ export const OrdensFullTab = () => {
           </div>
 
           {isLoading ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Carregando...</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
           ) : ordensFiltradas.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-8">Nenhuma ordem encontrada com os filtros selecionados</p>
+            /* Estado vazio informativo: diz o que fazer, não só que está
+               vazio. Distingue "sem nenhuma ordem" de "filtro sem match". */
+            <div className="flex flex-col items-center gap-1 border border-dashed border-border py-10 text-center">
+              <ClipboardList className="h-6 w-6 text-muted-foreground/40" />
+              {busca || filtroStatus !== "todos" ? (
+                <>
+                  <p className="text-sm font-medium">Nenhuma ordem com esses filtros</p>
+                  <p className="text-xs text-muted-foreground">Ajuste a busca ou o status para ver outras ordens.</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">Nenhuma ordem de envio ainda</p>
+                  <p className="text-xs text-muted-foreground">
+                    Carregue o PDF do inbound do Mercado Livre ou crie uma ordem manualmente.
+                  </p>
+                </>
+              )}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
