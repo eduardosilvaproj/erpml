@@ -248,10 +248,10 @@ const EntradaNota = () => {
         onRegisterGtin={() => navigate("/produtos")} onRegisterProduct={() => navigate("/produtos")} onLinkProduct={() => navigate("/produtos")}
       />
 
-      <div className="max-w-5xl mx-auto space-y-6 pb-8 px-4 sm:px-0 overflow-x-hidden">
-        <div>
-          <h1 className="text-2xl font-bold">Entrada de Mercadoria</h1>
-          <p className="text-sm text-muted-foreground mt-1">Passo {currentStep} — {STEP_LABELS[currentStep - 1]}</p>
+      <div className="op -m-4 min-h-screen space-y-3 overflow-x-hidden p-4">
+        <div className="border-b border-border pb-3">
+          <h1 className="text-base font-semibold leading-tight">Entrada de mercadoria</h1>
+          <p className="text-xs text-muted-foreground">Passo {currentStep} de {STEP_LABELS.length} — {STEP_LABELS[currentStep - 1]}</p>
         </div>
 
         <WizardProgress currentStep={currentStep} completedSteps={completedSteps} canGoToStep={canGoToStep} goToStep={goToStep} stepLabels={STEP_LABELS} />
@@ -415,7 +415,7 @@ const EntradaNota = () => {
           <Dialog open={done} onOpenChange={() => {}}>
             <DialogContent className="max-w-md">
               <div className="flex flex-col items-center gap-4 py-4">
-                <div className="h-16 w-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center"><CheckCircle className="h-8 w-8 text-emerald-500" /></div>
+                <div className="flex h-16 w-16 items-center justify-center rounded-sm" style={{ background: "hsl(var(--success) / 0.12)" }}><CheckCircle className="h-8 w-8" style={{ color: "hsl(var(--success))" }} /></div>
                 <div className="text-center space-y-1">
                   {isBatchMode && batchConfirmResult ? (
                     <>

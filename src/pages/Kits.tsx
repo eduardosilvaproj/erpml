@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
-  Package, Plus, Trash2, Pencil, Copy, Loader2, Sparkles,
+  Package, Plus, Trash2, Pencil, Copy, Loader2, Sparkles, Lightbulb,
   ChevronDown, ChevronUp, ArrowRightLeft, Boxes, Barcode, Printer, RefreshCw, Check, CheckCircle2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -366,55 +366,46 @@ const Kits = () => {
   const eanValid = formEan.length === 13 && isValidEAN13(formEan);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Boxes className="h-6 w-6 text-primary" /> Kits de Produtos
-          </h1>
-          <p className="text-muted-foreground">Gerencie kits compostos por múltiplos produtos</p>
+          <h1 className="text-base font-semibold leading-tight">Kits de produtos</h1>
+          <p className="text-xs text-muted-foreground">Kits compostos por múltiplos produtos</p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => setBulkDialogOpen(true)}>
-            <Copy className="h-4 w-4 mr-1" /> Criar em Massa
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" className="h-8" onClick={() => setBulkDialogOpen(true)}>
+            <Copy className="h-4 w-4 mr-1" /> Criar em massa
           </Button>
-          <Button variant="outline" size="sm" onClick={() => { setAiSuggestions([]); setAiDialogOpen(true); }}>
-            <Sparkles className="h-4 w-4 mr-1" /> Sugestão IA
+          {/* Lightbulb no lugar de Sparkles — mesma decisão de OrdensFullTab
+              e Produtos: brilho sinaliza "feito por IA" e desvaloriza. */}
+          <Button variant="outline" size="sm" className="h-8" onClick={() => { setAiSuggestions([]); setAiDialogOpen(true); }}>
+            <Lightbulb className="h-4 w-4 mr-1" /> Sugerir kits
           </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Kit
+          <Button size="sm" className="h-8" onClick={openCreate}>
+            <Plus className="h-4 w-4 mr-1" /> Novo kit
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-primary">{kits?.length || 0}</div>
-            <div className="text-sm text-muted-foreground">Total de Kits</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-primary">{kits?.filter((k) => k.active).length || 0}</div>
-            <div className="text-sm text-muted-foreground">Kits Ativos</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <div className="text-3xl font-bold text-muted-foreground">
-              {kits?.reduce((sum, k) => sum + (k.kit_items?.length || 0), 0) || 0}
-            </div>
-            <div className="text-sm text-muted-foreground">Total de Componentes</div>
-          </CardContent>
-        </Card>
+      {/* Faixa de indicadores dividida por bordas, como em Estoque */}
+      <div className="grid grid-cols-3 divide-x divide-border border border-border bg-card">
+        {[
+          { label: "Total de kits", value: kits?.length || 0 },
+          { label: "Kits ativos", value: kits?.filter((k) => k.active).length || 0 },
+          { label: "Componentes", value: kits?.reduce((sum, k) => sum + (k.kit_items?.length || 0), 0) || 0 },
+        ].map((kpi) => (
+          <div key={kpi.label} className="px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{kpi.label}</p>
+            <p className="qty text-xl leading-tight">{kpi.value}</p>
+          </div>
+        ))}
       </div>
 
       <Input
-        placeholder="Buscar por nome ou SKU..."
+        placeholder="Buscar por nome ou SKU…"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full"
+        className="h-9 w-full"
       />
 
       {isLoading ? (
@@ -470,7 +461,10 @@ const Kits = () => {
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex flex-col items-center">
-                          <span className={`text-lg font-bold ${(kit.stock_physical || 0) > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+                          <span
+                            className="qty text-lg"
+                            style={{ color: (kit.stock_physical || 0) > 0 ? "hsl(var(--success))" : "hsl(var(--muted-foreground))" }}
+                          >
                             {kit.stock_physical || 0}
                           </span>
                         </div>
@@ -506,7 +500,8 @@ const Kits = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            className="h-8 w-8"
+                            style={{ color: "hsl(var(--success))" }}
                             title="Montar kit"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -519,7 +514,8 @@ const Kits = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            className="h-8 w-8"
+                            style={{ color: "hsl(var(--warning))" }}
                             title="Desmontar kit"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -609,7 +605,11 @@ const Kits = () => {
               {formEan.length > 0 && (
                 <div className="mt-1.5">
                   {eanValid ? (
-                    <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px]"
+                      style={{ color: "hsl(var(--success))", background: "hsl(var(--success) / 0.1)" }}
+                    >
                       <CheckCircle2 className="h-3 w-3 mr-1" /> EAN-13 válido
                     </Badge>
                   ) : (
@@ -691,9 +691,21 @@ const Kits = () => {
                   </div>
                   <div>
                     <Label>Margem</Label>
-                    <div className={`h-10 flex items-center px-3 rounded-xl border border-border text-sm font-bold ${
-                      margin > 20 ? "text-emerald-400 bg-emerald-500/10" : margin > 0 ? "text-amber-400 bg-amber-500/10" : "text-destructive bg-destructive/10"
-                    }`}>
+                    <div
+                      className="qty flex h-10 items-center border border-border px-3 text-sm"
+                      style={{
+                        color: margin > 20
+                          ? "hsl(var(--success))"
+                          : margin > 0
+                            ? "hsl(var(--warning))"
+                            : "hsl(var(--destructive))",
+                        background: margin > 20
+                          ? "hsl(var(--success) / 0.08)"
+                          : margin > 0
+                            ? "hsl(var(--warning) / 0.08)"
+                            : "hsl(var(--destructive) / 0.08)",
+                      }}
+                    >
                       {margin.toFixed(1)}%
                     </div>
                   </div>
@@ -763,8 +775,8 @@ const Kits = () => {
           <p className="text-sm text-muted-foreground">
             Uma linha por kit. Formato: <code className="bg-muted px-1 rounded">Nome;SKU;Descrição;Preço</code>
           </p>
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            ⚠️ A criação em massa cria apenas o cabeçalho do kit (sem produtos). Você precisará editar cada kit depois para adicionar os itens.
+          <p className="text-xs" style={{ color: "hsl(var(--warning))" }}>
+            A criação em massa cria apenas o cabeçalho do kit (sem produtos). Você precisará editar cada kit depois para adicionar os itens.
           </p>
           <Textarea
             value={bulkText}

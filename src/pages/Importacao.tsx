@@ -50,67 +50,60 @@ export default function Importacao() {
   }
 
   return (
-    <div className="container mx-auto py-10 space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Migração de Cadastro e Estoque</h1>
-          <p className="text-muted-foreground">Importe seus produtos e saldo inicial de forma rápida e segura.</p>
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
+      <div className="flex flex-col gap-3 border-b border-border pb-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-base font-semibold leading-tight">Migração de cadastro e estoque</h1>
+          <p className="text-xs text-muted-foreground">Importação de produtos e saldo inicial</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setShowWizard(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Nova Importação
-          </Button>
-        </div>
+        <Button size="sm" className="h-8" onClick={() => setShowWizard(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Nova importação
+        </Button>
       </div>
 
-      <div className="grid gap-6">
-        <div className="bg-card border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <History className="h-5 w-5" />
-            Histórico Recente
+      <div className="space-y-3">
+        <div className="border border-border bg-card p-3">
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <History className="h-4 w-4 text-muted-foreground" />
+            Histórico recente
           </h2>
-          <div className="text-center py-10 text-muted-foreground bg-muted/20 rounded-md border border-dashed">
-            Nenhuma importação encontrada. Inicie uma nova importação acima.
+          <div className="border border-dashed border-border py-8 text-center text-xs text-muted-foreground">
+            Nenhuma importação ainda. Use “Nova importação” para começar.
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-card border rounded-lg p-6 space-y-4">
-            <h3 className="font-semibold">Como funciona?</h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex gap-2">
-                <span className="font-bold text-primary">1.</span>
-                Escolha o tipo de importação (Apenas Produtos ou Produtos + Estoque).
-              </li>
-              <li className="flex gap-2">
-                <span className="font-bold text-primary">2.</span>
-                Faça o upload do seu arquivo CSV ou Excel.
-              </li>
-              <li className="flex gap-2">
-                <span className="font-bold text-primary">3.</span>
-                Mapeie as colunas do seu arquivo com os campos do sistema.
-              </li>
-              <li className="flex gap-2">
-                <span className="font-bold text-primary">4.</span>
-                Valide os dados e confirme a importação.
-              </li>
-            </ul>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2 border border-border bg-card p-3">
+            <h3 className="text-sm font-semibold">Como funciona</h3>
+            <ol className="space-y-1.5 text-xs text-muted-foreground">
+              {[
+                "Escolha o tipo de importação (apenas produtos, ou produtos + estoque).",
+                "Faça o upload do arquivo CSV ou Excel.",
+                "Mapeie as colunas do arquivo com os campos do sistema.",
+                "Valide os dados e confirme a importação.",
+              ].map((txt, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="qty shrink-0 text-primary">{i + 1}.</span>
+                  {txt}
+                </li>
+              ))}
+            </ol>
           </div>
-          <div className="bg-card border rounded-lg p-6 space-y-4">
-            <h3 className="font-semibold text-foreground">Modelos de Importação</h3>
-            <p className="text-sm text-muted-foreground">
-              Use estas planilhas como base para importar seus produtos e estoque.
-              O sistema aceita arquivos <strong>.csv</strong>, <strong>.xlsx</strong> e <strong>.xls</strong>.
+          <div className="space-y-2 border border-border bg-card p-3">
+            <h3 className="text-sm font-semibold">Modelos de importação</h3>
+            <p className="text-xs text-muted-foreground">
+              Use estas planilhas como base. O sistema aceita <span className="code">.csv</span>,{" "}
+              <span className="code">.xlsx</span> e <span className="code">.xls</span>.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button variant="outline" size="sm" onClick={handleDownloadXLSX} className="flex-1">
-                <FileSpreadsheet className="mr-2 h-4 w-4 text-green-600" />
-                Baixar Planilha Modelo (XLSX)
+            <div className="flex flex-col gap-2 pt-1 sm:flex-row">
+              <Button variant="outline" size="sm" onClick={handleDownloadXLSX} className="h-8 flex-1">
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Planilha modelo (XLSX)
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="flex-1">
-                <Download className="mr-2 h-4 w-4 text-blue-600" />
-                Baixar Modelo CSV
+              <Button variant="outline" size="sm" onClick={handleDownloadCSV} className="h-8 flex-1">
+                <Download className="mr-2 h-4 w-4" />
+                Modelo CSV
               </Button>
             </div>
           </div>
