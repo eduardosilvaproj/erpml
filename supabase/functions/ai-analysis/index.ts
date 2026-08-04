@@ -1,5 +1,6 @@
 import { makeCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
+import { getAiConfig, resolveModel, aiHeaders, AI_KEY_MISSING } from "../_shared/ai.ts";
 
 
 Deno.serve(async (req) => {
@@ -44,9 +45,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
+    const aiCfg = getAiConfig();
+    if (!aiCfg) {
+      return new Response(JSON.stringify({ error: AI_KEY_MISSING }), {
         status: 500,
         headers: { ...cors, "Content-Type": "application/json" },
       });
@@ -343,13 +344,14 @@ Seja prático, direto e forneça dados acionáveis. Responda sempre em portuguê
         { role: "user", content: message },
       ];
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch(aiCfg.url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ model: "google/gemini-3-flash-preview", messages: msgs, stream: true }),
+        headers: aiHeaders(aiCfg),
+        body: JSON.stringify({
+          model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
+          messages: msgs,
+          stream: true,
+        }),
       });
 
       if (!response.ok) {
@@ -376,14 +378,11 @@ Seja prático, direto e forneça dados acionáveis. Responda sempre em portuguê
     }
 
     // Non-streaming: structured analysis
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(aiCfg.url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: aiHeaders(aiCfg),
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

@@ -1,4 +1,5 @@
 import { makeCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getAiConfig, resolveModel, aiHeaders, AI_KEY_MISSING } from "../_shared/ai.ts";
 // ML API Edge Function - v2
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
 
@@ -1380,19 +1381,16 @@ Deno.serve(async (req) => {
           }
         }
 
-        const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-        if (!LOVABLE_API_KEY) {
-          return jsonResponse({ error: "Chave de IA não configurada." }, 500);
+        const aiCfg = getAiConfig();
+        if (!aiCfg) {
+          return jsonResponse({ error: AI_KEY_MISSING }, 500);
         }
 
-        const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiResponse = await fetch(aiCfg.url, {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
+          headers: aiHeaders(aiCfg),
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
             messages: [
               {
                 role: "system",

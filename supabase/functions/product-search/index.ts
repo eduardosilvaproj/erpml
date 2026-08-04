@@ -1,5 +1,6 @@
 import { makeCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.100.1";
+import { getAiConfig, resolveModel, aiHeaders, AI_KEY_MISSING } from "../_shared/ai.ts";
 
 
 function jsonResponse(payload: unknown, status = 200) {
@@ -37,9 +38,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Não autorizado" }, 401);
   }
 
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    return jsonResponse({ error: "Chave de IA não configurada" }, 500);
+  const aiCfg = getAiConfig();
+  if (!aiCfg) {
+    return jsonResponse({ error: AI_KEY_MISSING }, 500);
   }
 
   try {
@@ -68,14 +69,11 @@ Considere: preço de custo médio no mercado, preço de venda sugerido, margem d
 
 IMPORTANTE: Retorne dados realistas do mercado brasileiro. Se não tiver certeza, indique o nível de confiança.`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch(aiCfg.url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: aiHeaders(aiCfg),
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
           messages: [
             { role: "system", content: "Você é um consultor de sourcing e precificação para e-commerce brasileiro." },
             { role: "user", content: prompt },
@@ -169,14 +167,11 @@ IMPORTANTE: Retorne dados realistas do mercado brasileiro. Se não tiver certeza
         ? `Sugira 6 produtos vendáveis em alta no nicho "${niche}" para e-commerce brasileiro (Mercado Livre, Shopee). Foque em itens com boa margem e alta demanda atual.`
         : `Sugira 6 produtos vendáveis em alta para e-commerce brasileiro (Mercado Livre, Shopee) em ${new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}. Foque em itens com boa margem e alta demanda atual.`;
 
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const response = await fetch(aiCfg.url, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: aiHeaders(aiCfg),
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
           messages: [
             { role: "system", content: "Você é um especialista em tendências de e-commerce brasileiro." },
             { role: "user", content: prompt },

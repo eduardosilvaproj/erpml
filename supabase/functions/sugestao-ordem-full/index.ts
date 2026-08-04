@@ -1,5 +1,6 @@
 import { makeCorsHeaders, handleCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getAiConfig, resolveModel, aiHeaders, AI_KEY_MISSING } from "../_shared/ai.ts";
 
 
 const CRITERIOS: Record<string, string> = {
@@ -85,8 +86,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ suggestions: [], explanation: "Nenhum produto atende ao critério." }), { headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY não configurada");
+    const aiCfg = getAiConfig();
+    if (!aiCfg) throw new Error(AI_KEY_MISSING);
 
     const systemPrompt = `Você é um assistente especialista em gestão de estoque para Mercado Livre FULL.
 Analise os produtos e sugira os ${quantidade} mais importantes para enviar ao FULL hoje.
@@ -97,11 +98,11 @@ Para cada produto, defina uma quantidade sugerida considerando:
 - Estoque FULL atual (quanto falta)
 Forneça também uma explicação curta (1-2 frases) sobre os critérios usados.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch(aiCfg.url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+      headers: aiHeaders(aiCfg),
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: resolveModel("google/gemini-2.5-flash", aiCfg.provider),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Produtos disponíveis:\n${JSON.stringify(candidatos, null, 2)}` },

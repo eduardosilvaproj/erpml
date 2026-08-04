@@ -1,4 +1,5 @@
 import { makeCorsHeaders, handleCors } from "../_shared/cors.ts";
+import { getAiConfig, resolveModel, aiHeaders, AI_KEY_MISSING } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -48,10 +49,10 @@ serve(async (req) => {
       content: String(m.content).slice(0, 3000),
     }));
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
+    const aiCfg = getAiConfig();
+    if (!aiCfg) {
       return new Response(
-        JSON.stringify({ error: "LOVABLE_API_KEY not configured" }),
+        JSON.stringify({ error: AI_KEY_MISSING }),
         {
           status: 500,
           headers: { ...cors, "Content-Type": "application/json" },
@@ -60,15 +61,12 @@ serve(async (req) => {
     }
 
     const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      aiCfg.url,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: aiHeaders(aiCfg),
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: resolveModel("google/gemini-3-flash-preview", aiCfg.provider),
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             ...trimmed,
