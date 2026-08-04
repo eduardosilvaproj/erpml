@@ -6,11 +6,11 @@
 
 /* Forçar cor visível nos inputs de data/hora */
 input[type="date"], input[type="time"] {
-  color: #ffffff !important;
-  background: #1e2a3a !important;
-  border: 1px solid #3a4a5a !important;
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--input)) !important;
+  border: 1px solid hsl(var(--border)) !important;
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: calc(var(--radius) - 4px);
 }
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
@@ -18,60 +18,73 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 
-/* Premium Dark ERP — High Contrast Depth System */
+/* ============================================================
+   BIPSTOCK DESIGN SYSTEM
+   "Do preparo ao envio, cada bip é prova."
+
+   Paleta derivada dos pixels do logotipo (BIPSTOCK/logo sem fundo.png):
+     #0096FF  azul do bip          -> primary
+     #00AAFF  ciano do scanner     -> accent / scanner
+     #006EFA  azul profundo        -> primary deep
+     #FAFAFA  branco do barcode    -> foreground
+     #141E28  quase-preto contorno -> base das superfícies
+   ============================================================ */
 
 @layer base {
   :root {
-    /* Background: very deep #0C1322 */
-    --background: 222 48% 9%;
-    --foreground: 210 40% 98%;
+    /* Superfícies — profundidade em 4 camadas, do mais escuro ao mais claro */
+    --background: 217 59% 8%;        /* #08111F */
+    --foreground: 0 0% 98%;          /* #FAFAFA — branco do barcode */
 
-    /* Cards: dramatically brighter #2D3F58 */
-    --card: 214 32% 26%;
-    --card-foreground: 210 40% 98%;
+    --card: 216 37% 13%;             /* #151F2E */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 214 32% 26%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 215 33% 15%;          /* #182433 */
+    --popover-foreground: 0 0% 98%;
 
-    /* Primary: #2ecc40 */
-    --primary: 127 63% 49%;
+    /* Primary — o azul do bip */
+    --primary: 205 100% 50%;         /* #0096FF */
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: #1a2332 */
-    --secondary: 218 32% 15%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 216 37% 13%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Muted text: #94A3B8 */
-    --muted: 215 28% 20%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 217 20% 72%; /* #A8B3C7 */
 
-    /* Accent: #27ae60 */
-    --accent: 145 63% 42%;
-    --accent-foreground: 210 40% 98%;
+    /* Accent — ciano do scanner */
+    --accent: 200 100% 50%;          /* #00AAFF */
+    --accent-foreground: 217 59% 8%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 84% 60%;        /* #EF4444 */
     --destructive-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-    --success: 127 63% 49%;
+    --warning: 38 92% 50%;           /* #F59E0B */
+    --warning-foreground: 217 59% 8%;
+    --success: 160 84% 39%;          /* #10B981 */
     --success-foreground: 0 0% 100%;
 
-    /* Borders: clearly visible ~#4B5C73 */
-    --border: 214 20% 37%;
-    --input: 214 22% 28%;
-    --ring: 127 63% 49%;
+    /* Bordas — sutis, quase invisíveis (padrão Linear/Vercel) */
+    --border: 213 25% 22%;
+    --input: 214 26% 20%;
+    --ring: 205 100% 50%;
 
     --radius: 0.75rem;
 
-    /* Sidebar: darkest layer #0B1220 */
-    --sidebar-background: 222 55% 8%;
-    --sidebar-foreground: 215 20% 68%;
-    --sidebar-primary: 128 65% 29%;
+    /* Tokens de marca — usar para o glow do scanner e detalhes do bip */
+    --bip-blue: 205 100% 50%;        /* #0096FF */
+    --bip-blue-deep: 214 100% 49%;   /* #006EFA */
+    --scanner: 200 100% 50%;         /* #00AAFF */
+    --barcode: 220 30% 94%;          /* #E8EEF9 */
+
+    /* Sidebar — a camada mais escura de todas */
+    --sidebar-background: 217 62% 6%;
+    --sidebar-foreground: 217 20% 72%;
+    --sidebar-primary: 205 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 145 63% 42%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 30% 16%;
-    --sidebar-ring: 127 63% 49%;
+    --sidebar-accent: 200 100% 50%;
+    --sidebar-accent-foreground: 217 59% 8%;
+    --sidebar-border: 215 30% 14%;
+    --sidebar-ring: 205 100% 50%;
 
     /* Strong shadows for depth */
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.3);
@@ -79,8 +92,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
     --shadow-md: 0 6px 18px -2px hsl(0 0% 0% / 0.45), 0 3px 8px -3px hsl(0 0% 0% / 0.35);
     --shadow-lg: 0 10px 25px -3px hsl(0 0% 0% / 0.5), 0 6px 12px -5px hsl(0 0% 0% / 0.4);
     --shadow-xl: 0 20px 40px -5px hsl(0 0% 0% / 0.55), 0 10px 20px -8px hsl(0 0% 0% / 0.4);
-    --shadow-primary: 0 4px 20px -2px hsl(127 63% 49% / 0.35);
-    --shadow-glow: 0 0 24px -4px hsl(127 63% 49% / 0.15);
+    --shadow-primary: 0 4px 20px -2px hsl(var(--bip-blue) / 0.35);
+    --shadow-glow: 0 0 24px -4px hsl(var(--bip-blue) / 0.18);
   }
 }
 
@@ -124,7 +137,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   }
   .hover-lift:hover {
     transform: translateY(-3px);
-    box-shadow: 0 14px 30px -4px hsl(0 0% 0% / 0.55), 0 0 0 1px hsl(217 91% 60% / 0.25);
+    box-shadow: 0 14px 30px -4px hsl(0 0% 0% / 0.55), 0 0 0 1px hsl(var(--bip-blue) / 0.25);
   }
 
   /* Responsive table containers */
@@ -150,8 +163,8 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 @keyframes pulse-glow {
-  0%, 100% { filter: drop-shadow(0 0 8px rgba(34,197,94,0.4)); }
-  50% { filter: drop-shadow(0 0 20px rgba(34,197,94,0.8)); }
+  0%, 100% { filter: drop-shadow(0 0 8px hsl(var(--bip-blue) / 0.4)); }
+  50% { filter: drop-shadow(0 0 20px hsl(var(--bip-blue) / 0.8)); }
 }
 
 @keyframes scan {
@@ -168,17 +181,18 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   animation: scan 8s linear infinite;
 }
 
+/* Grid de fundo — mantém o nome da classe para não quebrar os usos existentes */
 .bg-grid-green {
-  background-image: linear-gradient(rgba(34, 197, 94, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 197, 94, 0.05) 1px, transparent 1px);
+  background-image: linear-gradient(hsl(var(--bip-blue) / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--bip-blue) / 0.05) 1px, transparent 1px);
   background-size: 30px 30px;
 }
 
 .login-card-glass {
-  background: rgba(22, 27, 34, 0.85) !important;
+  background: hsl(var(--card) / 0.85) !important;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(34, 197, 94, 0.4) !important;
-  box-shadow: 0 0 60px rgba(34, 197, 94, 0.15), inset 0 1px 0 rgba(255,255,255,0.05), 0 25px 50px rgba(0,0,0,0.5) !important;
+  border: 1px solid hsl(var(--bip-blue) / 0.25) !important;
+  box-shadow: 0 0 60px hsl(var(--bip-blue) / 0.12), inset 0 1px 0 hsl(0 0% 100% / 0.05), 0 25px 50px hsl(0 0% 0% / 0.5) !important;
 }
 
 .logo-container {
@@ -186,13 +200,13 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 .btn-entrar:hover {
-  box-shadow: 0 0 25px rgba(34, 197, 94, 0.6) !important;
+  box-shadow: 0 0 25px hsl(var(--bip-blue) / 0.5) !important;
   transform: translateY(-2px) !important;
 }
 
 input:focus {
-  border-color: #22c55e !important;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
+  border-color: hsl(var(--bip-blue)) !important;
+  box-shadow: 0 0 0 3px hsl(var(--bip-blue) / 0.2) !important;
   outline: none !important;
 }
 
@@ -211,5 +225,5 @@ input:focus {
   padding: 8px 12px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(34,197,94,0.2);
+  border-bottom: 1px solid hsl(var(--sidebar-border));
 }

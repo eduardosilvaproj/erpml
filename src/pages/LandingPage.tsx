@@ -607,7 +607,7 @@ export default function LandingPage() {
             </button>
           </div>
           <p className="text-sm text-muted-foreground">
-            © 2026 Stovix — Controle de Estoque e Operação sem Erro — Todos os direitos reservados
+            © 2026 BipStock — Controle de Estoque e Operação sem Erro — Todos os direitos reservados
           </p>
         </div>
       </footer>
@@ -620,12 +620,12 @@ export default function LandingPage() {
             <DialogDescription>Última atualização: Abril de 2026</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm text-muted-foreground">
-            <p><strong className="text-foreground">1. Aceitação dos Termos</strong><br />Ao utilizar o Stovix, você concorda com estes Termos de Uso. Caso não concorde, não utilize a plataforma.</p>
-            <p><strong className="text-foreground">2. Descrição do Serviço</strong><br />O Stovix é uma plataforma de gestão empresarial que oferece funcionalidades de controle de estoque, vendas, financeiro e integrações com marketplaces.</p>
+            <p><strong className="text-foreground">1. Aceitação dos Termos</strong><br />Ao utilizar o BipStock, você concorda com estes Termos de Uso. Caso não concorde, não utilize a plataforma.</p>
+            <p><strong className="text-foreground">2. Descrição do Serviço</strong><br />O BipStock é uma plataforma de gestão empresarial que oferece funcionalidades de controle de estoque, vendas, financeiro e integrações com marketplaces.</p>
             <p><strong className="text-foreground">3. Cadastro e Conta</strong><br />Você é responsável por manter a confidencialidade de suas credenciais de acesso. Todas as atividades realizadas sob sua conta são de sua responsabilidade.</p>
             <p><strong className="text-foreground">4. Uso Aceitável</strong><br />Você concorda em utilizar a plataforma apenas para fins lícitos e de acordo com a legislação vigente. É proibido qualquer uso que possa prejudicar o serviço ou outros usuários.</p>
-            <p><strong className="text-foreground">5. Propriedade Intelectual</strong><br />Todo o conteúdo, design e código da plataforma são de propriedade do Stovix. É proibida a reprodução sem autorização prévia.</p>
-            <p><strong className="text-foreground">6. Limitação de Responsabilidade</strong><br />O Stovix não se responsabiliza por perdas decorrentes do uso da plataforma, incluindo perda de dados ou interrupções no serviço.</p>
+            <p><strong className="text-foreground">5. Propriedade Intelectual</strong><br />Todo o conteúdo, design e código da plataforma são de propriedade do BipStock. É proibida a reprodução sem autorização prévia.</p>
+            <p><strong className="text-foreground">6. Limitação de Responsabilidade</strong><br />O BipStock não se responsabiliza por perdas decorrentes do uso da plataforma, incluindo perda de dados ou interrupções no serviço.</p>
             <p><strong className="text-foreground">7. Modificações</strong><br />Reservamo-nos o direito de alterar estes termos a qualquer momento. As alterações serão comunicadas através da plataforma.</p>
           </div>
         </DialogContent>

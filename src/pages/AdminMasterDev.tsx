@@ -614,7 +614,7 @@ export default function AdminMasterDevPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Master (Dev)</h1>
-          <p className="text-muted-foreground">Painel de Controle Stovix / Governança, QA e Status do Sistema</p>
+          <p className="text-muted-foreground">Painel de Controle BipStock / Governança, QA e Status do Sistema</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 hidden sm:flex">
@@ -1223,8 +1223,8 @@ export default function AdminMasterDevPage() {
                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                         </linearGradient>
                         <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#22c55e" stopOpacity={0.1}/>
-                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="#10B981" stopOpacity={0.1}/>
+                          <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
@@ -1235,7 +1235,7 @@ export default function AdminMasterDevPage() {
                         itemStyle={{ fontSize: '12px' }}
                       />
                       <Area type="monotone" dataKey="created" name="Criados" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCreated)" />
-                      <Area type="monotone" dataKey="resolved" name="Resolvidos" stroke="#22c55e" fillOpacity={1} fill="url(#colorResolved)" />
+                      <Area type="monotone" dataKey="resolved" name="Resolvidos" stroke="#10B981" fillOpacity={1} fill="url(#colorResolved)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1253,7 +1253,7 @@ export default function AdminMasterDevPage() {
                           { name: 'Abertos', value: metrics?.statusDistribution.open || 0, color: '#ef4444' },
                           { name: 'Triados', value: metrics?.statusDistribution.triaged || 0, color: '#f59e0b' },
                           { name: 'Em Progresso', value: metrics?.statusDistribution.inProgress || 0, color: '#3b82f6' },
-                          { name: 'Resolvidos', value: metrics?.statusDistribution.resolved || 0, color: '#22c55e' },
+                          { name: 'Resolvidos', value: metrics?.statusDistribution.resolved || 0, color: '#10B981' },
                         ]}
                         cx="50%"
                         cy="50%"
@@ -1266,7 +1266,7 @@ export default function AdminMasterDevPage() {
                           { color: '#ef4444' },
                           { color: '#f59e0b' },
                           { color: '#3b82f6' },
-                          { color: '#22c55e' },
+                          { color: '#10B981' },
                         ].map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
@@ -1280,7 +1280,7 @@ export default function AdminMasterDevPage() {
                       <span>Abertos: {metrics?.statusDistribution.open}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs">
-                      <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+                      <div className="w-2 h-2 rounded-full bg-[#10B981]" />
                       <span>Resolvidos: {metrics?.statusDistribution.resolved}</span>
                     </div>
                   </div>

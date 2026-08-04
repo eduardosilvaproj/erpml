@@ -78,7 +78,7 @@ export default function ChatIA() {
       <html>
       <head>
         <meta charset="utf-8" />
-        <title>Relatório de Métricas - STOVIX</title>
+        <title>Relatório de Métricas - BIPSTOCK</title>
         <style>
           body { margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
           @media print {

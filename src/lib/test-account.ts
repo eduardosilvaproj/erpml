@@ -23,7 +23,7 @@ export async function createTestAccount(): Promise<TestAccountResult> {
     }
 
     const randomId = Math.random().toString(36).substring(2, 7);
-    const testEmail = `teste_${randomId}@stovix.com.br`;
+    const testEmail = `teste_${randomId}@bipstock.com.br`;
     const testPassword = 'teste' + Math.random().toString(36).substring(2, 7);
     const testFullName = `Usuário Teste ${randomId}`;
 

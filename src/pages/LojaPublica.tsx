@@ -141,7 +141,7 @@ export default function LojaPublica() {
       {/* Footer */}
       <footer className="border-t border-border py-6 mt-8">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground">
-          {store.store_name} • Powered by Stovix
+          {store.store_name} • Powered by BipStock
         </div>
       </footer>
     </div>

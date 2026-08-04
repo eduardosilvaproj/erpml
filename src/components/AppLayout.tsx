@@ -61,7 +61,7 @@ function getPageInfo(pathname: string) {
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
   const prefix = Object.keys(PAGE_TITLES).find((k) => k !== "/" && pathname.startsWith(k));
   if (prefix) return PAGE_TITLES[prefix];
-  return { title: "Stovix", subtitle: "Controle de Estoque e Operação sem Erro" };
+  return { title: "BipStock", subtitle: "Do preparo ao envio, cada bip é prova" };
 }
 
 function SwipeIndicator() {

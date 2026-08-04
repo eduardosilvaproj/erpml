@@ -60,8 +60,8 @@ const ParticlesBackground = () => {
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(34, 197, 94, 0.5)";
-      ctx.strokeStyle = "rgba(34, 197, 94, 0.1)";
+      ctx.fillStyle = "rgba(0, 150, 255, 0.5)";
+      ctx.strokeStyle = "rgba(0, 150, 255, 0.1)";
 
       particles.forEach((p, i) => {
         p.x += p.vx;
@@ -250,7 +250,7 @@ export default function Login() {
       
       {/* Scan line effect */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="w-full h-[1px] bg-primary/20 animate-scan shadow-[0_0_15px_rgba(34,197,94,0.3)]" />
+        <div className="w-full h-[1px] bg-primary/20 animate-scan shadow-[0_0_15px_rgba(0,150,255,0.3)]" />
       </div>
 
       <motion.div
@@ -263,12 +263,12 @@ export default function Login() {
           <CardHeader className="text-center pb-2">
             <div className="flex flex-col items-center gap-4">
               <img
-                src="/chatgpt-image.png"
-                alt="Stovix"
+                src="/bipstock-logo-sm.png"
+                alt="BipStock"
                 className="h-24 md:h-40 w-auto transition-all duration-300"
                 style={{
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 0 20px rgba(34,197,94,0.6))',
+                  filter: 'drop-shadow(0 0 20px hsl(205 100% 50% / 0.5))',
                   animation: 'pulse-glow 3s ease-in-out infinite'
                 }}
               />
@@ -359,7 +359,7 @@ export default function Login() {
             <CardFooter className="flex flex-col gap-3 pt-2">
               <Button 
                 type="submit" 
-                className="w-full btn-entrar bg-gradient-to-r from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] transition-all duration-300 transform" 
+                className="w-full btn-entrar bg-gradient-to-r from-[#0096FF] to-[#006EFA] hover:from-[#00AAFF] hover:to-[#0078FF] text-white shadow-[0_0_20px_rgba(0,150,255,0.4)] transition-all duration-300 transform"
                 disabled={loading || testAccountLoading || googleLoading || appleLoading}
               >
                 {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <LogIn className="h-4 w-4 mr-2" />}

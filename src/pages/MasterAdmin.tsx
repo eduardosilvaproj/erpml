@@ -47,7 +47,7 @@ export default function MasterAdmin() {
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <ShieldCheck className="h-8 w-8 text-amber-500" />
-          Painel Master Stovix
+          Painel Master BipStock
         </h1>
         <p className="text-muted-foreground">
           Governança completa do ecossistema SaaS: empresas, usuários, planos e faturamento.

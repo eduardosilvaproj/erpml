@@ -1,4 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="20" fill="#2ecc40"/>
-  <text x="50" y="70" font-family="Arial" font-weight="bold" font-size="60" fill="white" text-anchor="middle">S</text>
+  <rect width="100" height="100" rx="22" fill="#08111F"/>
+  <!-- código de barras: o bip -->
+  <g fill="#0096FF">
+    <rect x="22" y="28" width="6"  height="44" rx="2"/>
+    <rect x="34" y="28" width="3"  height="44" rx="1.5"/>
+    <rect x="43" y="28" width="6"  height="44" rx="2"/>
+    <rect x="55" y="28" width="3"  height="44" rx="1.5"/>
+    <rect x="64" y="28" width="6"  height="44" rx="2"/>
+    <rect x="76" y="28" width="3"  height="44" rx="1.5"/>
+  </g>
+  <!-- linha do scanner -->
+  <rect x="16" y="48" width="68" height="4" rx="2" fill="#00AAFF"/>
 </svg>

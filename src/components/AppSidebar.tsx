@@ -175,25 +175,25 @@ function SidebarContent({
       {/* Logo */}
       <div className={`sidebar-header shrink-0 ${compact ? 'justify-center !h-16' : ''}`}>
         {compact ? (
-          <img 
-            src="/chatgpt-image.png" 
-            alt="S" 
+          <img
+            src="/bipstock-logo-sm.png"
+            alt="BipStock"
             style={{
-              height: '32px', 
-              width: '32px', 
-              objectFit: 'contain', 
-              filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.4))'
-            }} 
+              height: '32px',
+              width: '32px',
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 0 8px hsl(205 100% 50% / 0.4))'
+            }}
           />
         ) : (
           <img
-            src="/chatgpt-image.png"
-            alt="Stovix"
+            src="/bipstock-logo-sm.png"
+            alt="BipStock"
             style={{
               height: '80px',
               width: '160px',
               objectFit: 'contain',
-              filter: 'drop-shadow(0 0 8px rgba(34,197,94,0.4))'
+              filter: 'drop-shadow(0 0 8px hsl(205 100% 50% / 0.4))'
             }}
           />
         )}

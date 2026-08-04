@@ -90,7 +90,7 @@ export function ReportPDF({ period }: { period: PeriodFilter }) {
           </p>
         </div>
         <div className="report-logo">
-          <span className="text-2xl font-bold text-primary">STOVIX</span>
+          <span className="text-2xl font-bold text-primary">BIPSTOCK</span>
         </div>
       </div>
 
@@ -170,7 +170,7 @@ export function ReportPDF({ period }: { period: PeriodFilter }) {
 
       {/* Footer */}
       <div className="report-footer">
-        <p>STOVIX - Sistema de Gestao Empresarial</p>
+        <p>BIPSTOCK - Sistema de Gestao Empresarial</p>
         <p>Relatorio gerado automaticamente pelo Assistente Ana</p>
       </div>
 

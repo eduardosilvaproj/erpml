@@ -883,7 +883,7 @@ const Separacao = () => {
                       <span 
                         className="text-lg font-bold"
                         style={{
-                          color: (item.neededQty - item.scannedQty) <= 0 ? '#22c55e' : (item.neededQty - item.scannedQty) <= 10 ? '#f59e0b' : '#ef4444'
+                          color: (item.neededQty - item.scannedQty) <= 0 ? '#10B981' : (item.neededQty - item.scannedQty) <= 10 ? '#f59e0b' : '#ef4444'
                         }}
                       >
                         {(item.neededQty - item.scannedQty) <= 0 ? '✅ 0' : (item.neededQty - item.scannedQty)}

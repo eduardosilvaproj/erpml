@@ -347,7 +347,7 @@ export const CompaniesPanel = () => {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
                   <Label>Nome da Empresa</Label>
-                  <Input value={companyForm.name || ""} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="Ex: Stovix LTDA" />
+                  <Input value={companyForm.name || ""} onChange={(e) => setCompanyForm({ ...companyForm, name: e.target.value })} placeholder="Ex: BipStock LTDA" />
                 </div>
                 <div className="space-y-1">
                   <Label>CNPJ</Label>

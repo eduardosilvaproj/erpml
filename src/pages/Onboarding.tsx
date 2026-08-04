@@ -74,7 +74,7 @@ export default function Onboarding() {
   return (
     <div className="max-w-4xl mx-auto py-10 px-4">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Bem-vindo ao Stovix</h1>
+        <h1 className="text-3xl font-bold text-foreground">Bem-vindo ao BipStock</h1>
         <p className="text-muted-foreground mt-2">
           {step === "plan" ? "Escolha o plano ideal para sua empresa" : "Informe o nome da sua empresa"}
         </p>

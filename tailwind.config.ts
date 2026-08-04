@@ -68,6 +68,13 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        /* Tokens de marca BipStock — derivados do logotipo */
+        bip: {
+          DEFAULT: "hsl(var(--bip-blue))",
+          deep: "hsl(var(--bip-blue-deep))",
+        },
+        scanner: "hsl(var(--scanner))",
+        barcode: "hsl(var(--barcode))",
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
