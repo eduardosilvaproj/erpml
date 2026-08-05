@@ -361,13 +361,36 @@ input:focus {
   --border: 0 0% 90%;
   --input: 0 0% 80%;
 
+  /* --secondary é obrigatório aqui: a sidebar usa bg-secondary nos itens.
+     Sem redefinir, herdava o valor global (216 37% 13% = azul-escuro) e os
+     itens ficavam escuros com texto cinza — ilegíveis sobre fundo claro. */
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 20%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 20%;
+
+  /* Auditei quais tokens a shell realmente usa: primary e destructive
+     também aparecem (item ativo, contador de perguntas do ML). Ficam
+     iguais aos de .op para não haver dois azuis nem dois vermelhos entre
+     navegação e conteúdo. */
+  --primary: 205 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --destructive: 353 88% 59%;
+  --destructive-foreground: 0 0% 100%;
+  --success: 152 100% 33%;
+  --success-foreground: 0 0% 100%;
+  --warning: 34 100% 50%;
+  --warning-foreground: 0 0% 100%;
+  --ring: 205 100% 50%;
+
   --sidebar-background: 0 0% 100%;
-  --sidebar-foreground: 0 0% 40%;
+  --sidebar-foreground: 0 0% 30%;
   --sidebar-primary: 205 100% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 0 0% 96%;
+  --sidebar-accent: 0 0% 93%;
   --sidebar-accent-foreground: 0 0% 20%;
-  --sidebar-border: 0 0% 90%;
+  --sidebar-border: 0 0% 88%;
 
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
