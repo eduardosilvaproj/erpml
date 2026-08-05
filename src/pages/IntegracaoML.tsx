@@ -337,7 +337,7 @@ export default function IntegracaoML() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

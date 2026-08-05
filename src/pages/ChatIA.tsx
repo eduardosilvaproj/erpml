@@ -196,7 +196,7 @@ export default function ChatIA() {
   };
 
   return (
-    <div className="space-y-4 h-[calc(100vh-8rem)] flex flex-col">
+    <div className="op space-y-3 h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex items-center gap-3 shrink-0">
         <Button variant="ghost" size="icon" onClick={() => navigate("/ia-hub")}>
           <ArrowLeft className="h-5 w-5" />

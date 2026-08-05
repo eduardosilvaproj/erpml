@@ -225,7 +225,7 @@ const PDV = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
+    <div className="op -m-4 grid gap-4 p-4 md:grid-cols-3" style={{ minHeight: 'calc(100vh - 6rem)' }}>
       <BarcodeSearchDialogs
         notFoundOpen={barcodeSearch.notFoundOpen}
         setNotFoundOpen={barcodeSearch.setNotFoundOpen}

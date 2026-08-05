@@ -221,7 +221,7 @@ export default function ConciliacaoPrecos() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="h-9 w-9 rounded-xl bg-primary/15 flex items-center justify-center">

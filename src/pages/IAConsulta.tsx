@@ -125,7 +125,7 @@ export default function IAConsulta() {
   };
 
   return (
-    <div className="space-y-4 h-[calc(100vh-6rem)] flex flex-col">
+    <div className="op space-y-3 h-[calc(100vh-6rem)] flex flex-col">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-primary" />

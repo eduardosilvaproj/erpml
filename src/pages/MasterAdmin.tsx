@@ -43,7 +43,7 @@ export default function MasterAdmin() {
   }
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="op -m-4 min-h-screen space-y-3 p-4 pb-12">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
           <ShieldCheck className="h-8 w-8 text-amber-500" />

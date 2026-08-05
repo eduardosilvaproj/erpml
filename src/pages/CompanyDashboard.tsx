@@ -177,7 +177,7 @@ export default function CompanyDashboard() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Minha Empresa</h1>
