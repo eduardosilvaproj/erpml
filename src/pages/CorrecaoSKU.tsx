@@ -161,7 +161,7 @@ const CorrecaoSKU = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/produtos")}>

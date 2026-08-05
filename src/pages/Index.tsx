@@ -133,7 +133,7 @@ const Index = () => {
   const barcodeSearch = useBarcodeSearch();
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {/* Period Filter */}
       <div className="flex items-center justify-end gap-1 lg:gap-1.5">
         <Button

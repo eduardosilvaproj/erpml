@@ -155,7 +155,7 @@ export default function GeradorEAN13() {
   const size = LABEL_SIZES[labelSize];
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">

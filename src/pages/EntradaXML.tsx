@@ -349,7 +349,7 @@ const EntradaXML = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Entrada via XML</h1>
         <p className="text-muted-foreground">Importe notas fiscais e atualize estoque automaticamente</p>

@@ -92,7 +92,7 @@ const DashboardSeparacao = () => {
   );
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div>
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-violet-600" />

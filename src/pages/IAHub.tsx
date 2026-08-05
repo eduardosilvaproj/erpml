@@ -217,7 +217,7 @@ export default function IAHub() {
   const totalAvailable = AI_FEATURES.filter(isFeatureAllowed).length;
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>

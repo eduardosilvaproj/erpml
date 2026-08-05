@@ -610,7 +610,7 @@ export default function AdminMasterDevPage() {
 
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Admin Master (Dev)</h1>

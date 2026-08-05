@@ -190,7 +190,7 @@ export default function OtimizadorTitulos() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="op -m-4 min-h-screen space-y-3 p-4">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/ia-hub")}>
           <ArrowLeft className="h-5 w-5" />
