@@ -380,3 +380,22 @@ input:focus {
   backdrop-filter: none;
   border-bottom-color: hsl(var(--border));
 }
+
+/* ------------------------------------------------------------------
+   Sombras reescritas para fundo claro.
+
+   As globais são preto a 45-50% de opacidade, desenhadas para o tema
+   escuro: em fundo claro elas somem e o cartão perde a forma, porque a
+   borda sozinha não segura. Aqui ficam sutis mas visíveis.
+   ------------------------------------------------------------------ */
+.op,
+.op-shell {
+  --shadow-xs: 0 1px 2px 0 hsl(215 25% 27% / 0.06);
+  --shadow-sm: 0 1px 3px 0 hsl(215 25% 27% / 0.09);
+  --shadow-md: 0 2px 6px -1px hsl(215 25% 27% / 0.11);
+  --shadow-lg: 0 3px 10px -2px hsl(215 25% 27% / 0.12);
+  --shadow-xl: 0 8px 24px -4px hsl(215 25% 27% / 0.14);
+
+  /* Borda um passo mais escura: no claro é ela que define a forma */
+  --border: 0 0% 87%;
+}
