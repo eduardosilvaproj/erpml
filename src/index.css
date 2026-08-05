@@ -337,3 +337,46 @@ input:focus {
 .op input[type="time"]::-webkit-calendar-picker-indicator {
   filter: none;
 }
+
+/* ------------------------------------------------------------------
+   .op-shell — sidebar + topbar + fundo do <main> na mesma superfície.
+
+   Fica no container RAIZ do AppLayout, não dentro de .op: as CSS vars
+   cascateiam para baixo, e o header/sidebar são irmãos do <main>, não
+   descendentes da página. Escopo em .op não os alcançaria.
+
+   Também resolve o padding responsivo do <main> (p-3 → xl:p-8): o -m-4
+   das páginas cancela só 1rem, então em telas grandes sobrava moldura.
+   Com o fundo claro em toda a shell, a sobra virou respiro.
+   ------------------------------------------------------------------ */
+.op-shell {
+  --background: 0 0% 93%;
+  --foreground: 0 0% 20%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 20%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 20%;
+  --border: 0 0% 90%;
+  --input: 0 0% 80%;
+
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 0 0% 40%;
+  --sidebar-primary: 205 100% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 0 0% 96%;
+  --sidebar-accent-foreground: 0 0% 20%;
+  --sidebar-border: 0 0% 90%;
+
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* O header usa bg-background/90 + backdrop-blur-xl: em fundo claro o blur
+   deixa a barra leitosa e apaga a borda. Opaco, com borda definida. */
+.op-shell header {
+  background-color: hsl(var(--card));
+  backdrop-filter: none;
+  border-bottom-color: hsl(var(--border));
+}

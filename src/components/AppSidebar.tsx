@@ -209,7 +209,7 @@ function SidebarContent({
               className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                 isActive("/")
                   ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                  : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <Home className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-foreground" strokeWidth={1.75} />
@@ -227,7 +227,7 @@ function SidebarContent({
               className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                 isActive("/devolucoes")
                   ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                  : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <Undo2 className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
@@ -251,7 +251,7 @@ function SidebarContent({
                     className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                       isOpen || groupActive
                         ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                        : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                        : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                   >
                     <group.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
@@ -274,7 +274,7 @@ function SidebarContent({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => go(sub.url)}
-                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-[13px] font-medium transition-all duration-100 bg-slate-800/50 ${
+                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-[13px] font-medium transition-all duration-100 bg-muted/40 ${
                               subActive
                                 ? "text-primary font-semibold"
                                 : "text-muted-foreground hover:text-primary"
@@ -302,7 +302,7 @@ function SidebarContent({
               className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                 isActive("/ia-hub") || isActive("/ia-")
                   ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                  : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                  : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <Brain className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-[#F472B6]" strokeWidth={1.75} />
@@ -323,7 +323,7 @@ function SidebarContent({
                   className={`relative w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                     isActive("/master-admin")
                       ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                      : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                      : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
                   <Crown className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-amber-400" strokeWidth={1.75} />
@@ -349,7 +349,7 @@ function SidebarContent({
                 className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                   isActive("/admin-master-dev")
                     ? "bg-primary/20 border-l-[3px] border-primary text-foreground"
-                    : "bg-slate-700/50 border-l-[3px] border-transparent text-muted-foreground hover:bg-slate-600/50 hover:text-foreground"
+                    : "bg-muted border-l-[3px] border-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 <LockKeyhole className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
@@ -368,7 +368,7 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium bg-slate-700/30 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium bg-muted/60 text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <LogOut className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0" strokeWidth={1.75} />
               <span className="truncate">Sair</span>

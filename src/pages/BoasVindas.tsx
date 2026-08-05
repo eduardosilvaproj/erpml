@@ -70,7 +70,7 @@ export default function BoasVindas() {
   }, []);
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden">
+    <div className="op -m-4 min-h-[80vh] flex flex-col items-center justify-center p-4 py-10 relative overflow-hidden">
       {/* Animated background elements */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
