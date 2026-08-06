@@ -6,7 +6,7 @@ import {
   Building2, BarChart3, ShoppingBag, DollarSign,
   LockKeyhole, Import, Activity, Undo2, FileText,
   Printer, Factory, Truck, Tags, Briefcase,
-  QrCode, Sparkles, Lock, ArrowRightLeft
+  QrCode, Sparkles, Lock, ArrowRightLeft, Settings
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -119,21 +119,15 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Gestão Loja 2",
+    label: "Canais de Venda",
     icon: Store,
     color: "text-[#94A3B8]",
-    tooltip: "Em desenvolvimento futuro",
+    tooltip: "Gerencie Loja 2, Site, Revenda e conexões por token",
     subItems: [
+      { label: "Gerenciar Canais", url: "/canais-venda", icon: Settings, tooltip: "Cadastre canais e conecte via token de acesso" },
       { label: "Loja 2", url: "#", icon: Lock, tooltip: "Em desenvolvimento futuro", locked: true },
-    ],
-  },
-  {
-    label: "Gestão Site",
-    icon: Monitor,
-    color: "text-[#94A3B8]",
-    tooltip: "Em desenvolvimento futuro",
-    subItems: [
       { label: "Site", url: "#", icon: Lock, tooltip: "Em desenvolvimento futuro", locked: true },
+      { label: "Revenda", url: "#", icon: Lock, tooltip: "Em desenvolvimento futuro", locked: true },
     ],
   },
 ];

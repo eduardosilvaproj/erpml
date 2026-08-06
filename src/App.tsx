@@ -91,6 +91,7 @@ const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
 const RelatorioVendas = lazy(() => import("./pages/RelatorioVendas"));
 const ContasPagar = lazy(() => import("./pages/ContasPagar"));
 const RelatorioDespesas = lazy(() => import("./pages/RelatorioDespesas"));
+const CanaisVenda = lazy(() => import("./pages/CanaisVenda"));
 
 
 const queryClient = new QueryClient({
@@ -204,6 +205,7 @@ const App = (): JSX.Element => {
                               <Route path="/minha-loja/pedidos" element={<MinhaLojaPedidos />} />
                               <Route path="/contas-pagar" element={<ContasPagar />} />
                               <Route path="/relatorio-despesas" element={<RelatorioDespesas />} />
+          <Route path="/canais-venda" element={<CanaisVenda />} />
                               <Route path="/admin-master-dev" element={<AdminMasterDevGuard><AdminMasterDev /></AdminMasterDevGuard>} />
                               <Route path="/admin-master/*" element={<Navigate to="/master-admin" replace />} />
                               <Route path="/admin/painel-controle" element={<Navigate to="/master-admin" replace />} />
