@@ -39,6 +39,7 @@ interface NavGroup {
   color: string;
   tooltip: string;
   subItems: SubItem[];
+  highlight?: boolean;
 }
 
 const groups: NavGroup[] = [
@@ -85,8 +86,9 @@ const groups: NavGroup[] = [
   {
     label: "Gestão Mercado Livre FULL",
     icon: ShoppingBag,
-    color: "text-[#38BDF8]",
+    color: "text-yellow-300",
     tooltip: "Anúncios, estoque FULL e integração ML",
+    highlight: true,
     subItems: [
       { label: "Anúncios", url: "/anuncios-ml", icon: Tags, tooltip: "Vincule anúncios ao estoque FULL e baixa automática por venda" },
       { label: "Dashboard de Vendas", url: "/dashboard-vendas-ml", icon: BarChart3, tooltip: "Dashboard futuro no padrão Metrify", soon: true },
@@ -198,7 +200,7 @@ export function AppSidebar() {
   }
 
   return (
-    <aside className="w-[230px] min-w-[230px] lg:w-[230px] lg:min-w-[230px] md:w-[170px] md:min-w-[170px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
+    <aside className="w-[260px] min-w-[260px] lg:w-[260px] lg:min-w-[260px] md:w-[200px] md:min-w-[200px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
       <SidebarContent
         isActive={isActive}
         toggleGroup={toggleGroup}
@@ -272,14 +274,14 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/"); }}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                 isActive("/")
                   ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                   : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <Home className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-foreground" strokeWidth={1.75} />
-              <span className="truncate">Início</span>
+              <span className="leading-tight">Início</span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">Voltar para o painel principal</TooltipContent>
@@ -298,14 +300,24 @@ function SidebarContent({
                   <button
                     onClick={() => toggleGroup(group.label)}
                     disabled={hasLockedOnly}
-                    className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
-                      isOpen || groupActive
-                        ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
-                        : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
+                    className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                      group.highlight
+                        ? isOpen || groupActive
+                          ? "border border-yellow-400/50 bg-yellow-400/15 border-l-[3px] border-l-yellow-400 font-semibold text-yellow-300"
+                          : "border border-yellow-400/30 bg-yellow-400/10 border-l-[3px] border-l-yellow-400/60 text-yellow-300 hover:bg-yellow-400/20 hover:text-yellow-200"
+                        : isOpen || groupActive
+                          ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
+                          : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                     } ${hasLockedOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
-                    <group.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
-                    <span className="flex-1 text-left truncate">{group.label}</span>
+                    {group.highlight ? (
+                      <svg viewBox="0 0 24 24" className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0" fill="currentColor" aria-hidden="true">
+                        <path d="M14.06 4.32L9.74 7.98l4.32 3.66-2.16 1.83-4.32-3.66-2.16 1.83 6.48 5.49 6.48-5.49-4.32-3.66 4.32-3.66-2.16-1.83-4.32 3.66-2.16-1.83z"/>
+                      </svg>
+                    ) : (
+                      <group.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
+                    )}
+                    <span className="flex-1 text-left leading-tight">{group.label}</span>
                     {group.subItems.some((s) => s.locked) && (
                       <Lock className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     )}
@@ -330,14 +342,14 @@ function SidebarContent({
                           <button
                             onClick={() => go(sub.url)}
                             disabled={sub.locked}
-                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-[13px] font-medium transition-all duration-100 border-l border-border/60 ${
+                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-[13px] font-medium transition-all duration-100 border-l border-border/60 ${
                               subActive
                                 ? "text-primary font-semibold"
                                 : "text-muted-foreground hover:text-primary"
                             } ${sub.locked ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             <sub.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
-                            <span className="truncate">{sub.label}</span>
+                            <span className="leading-tight">{sub.label}</span>
                             {sub.locked && (
                               <Lock className="h-3 w-3 ml-auto shrink-0 opacity-50" />
                             )}
@@ -361,14 +373,14 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                 isActive("/ia-hub") || isActive("/ia-")
                   ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                   : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >
               <Brain className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-[#F472B6]" strokeWidth={1.75} />
-              <span className="truncate">Central de IA</span>
+              <span className="leading-tight">Central de IA</span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">Ferramentas inteligentes para otimizar seu negócio</TooltipContent>
@@ -382,14 +394,14 @@ function SidebarContent({
               <TooltipTrigger asChild>
                 <button
                   onClick={() => { setOpenGroup(null); go("/master-admin"); }}
-                  className={`relative w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+                  className={`relative w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                     isActive("/master-admin")
                       ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                       : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                   }`}
                 >
                   <Crown className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-amber-400" strokeWidth={1.75} />
-                  <span className="truncate">Governança</span>
+                  <span className="leading-tight">Governança</span>
                   {pendingCount > 0 && (
                     <Badge className="ml-auto h-5 min-w-5 px-1.5 text-[10px] bg-destructive text-destructive-foreground border-0 rounded-full">
                       {pendingCount}
@@ -407,14 +419,14 @@ function SidebarContent({
             <TooltipTrigger asChild>
               <button
                 onClick={() => { setOpenGroup(null); go("/admin-master-dev"); }}
-                className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
+                className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                   isActive("/admin-master-dev")
                     ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                     : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
                 }`}
               >
                 <LockKeyhole className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
-                <span className="truncate">Admin Master (Dev)</span>
+                <span className="leading-tight">Admin Master (Dev)</span>
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">Painel de Controle e QA</TooltipContent>
@@ -427,10 +439,10 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium border border-border bg-secondary/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium border border-border bg-secondary/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <LogOut className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0" strokeWidth={1.75} />
-              <span className="truncate">Sair</span>
+              <span className="leading-tight">Sair</span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">Encerrar sessão e sair do sistema</TooltipContent>
