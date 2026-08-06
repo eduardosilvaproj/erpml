@@ -84,9 +84,9 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Gestão Mercado Livre FULL",
+    label: "Gestão Mercado Livre",
     icon: ShoppingBag,
-    color: "text-yellow-300",
+    color: "text-neutral-900",
     tooltip: "Anúncios, estoque FULL e integração ML",
     highlight: true,
     subItems: [
@@ -297,8 +297,8 @@ function SidebarContent({
                     className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
                       group.highlight
                         ? isOpen || groupActive
-                          ? "border border-yellow-400/50 bg-yellow-400/15 border-l-[3px] border-l-yellow-400 font-semibold text-yellow-300"
-                          : "border border-yellow-400/30 bg-yellow-400/10 border-l-[3px] border-l-yellow-400/60 text-yellow-300 hover:bg-yellow-400/20 hover:text-yellow-200"
+                          ? "border border-[#E6CF00] bg-[#FFE600] border-l-[3px] border-l-[#E6CF00] font-bold text-neutral-900 shadow-sm"
+                          : "border border-[#E6CF00] bg-[#FFE600] border-l-[3px] border-l-[#E6CF00] font-semibold text-neutral-900 hover:bg-[#FFD900] hover:text-black"
                         : isOpen || groupActive
                           ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                           : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -316,10 +316,12 @@ function SidebarContent({
                       <Lock className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     )}
                     {group.subItems.some((s) => s.soon) && !group.subItems.some((s) => s.locked) && (
-                      <Sparkles className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                      <Sparkles className={`h-3.5 w-3.5 shrink-0 ${group.highlight ? "opacity-80" : "opacity-50"}`} />
                     )}
                     <ChevronDown
-                      className={`h-3.5 w-3.5 lg:h-4 lg:w-4 shrink-0 opacity-40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      className={`h-3.5 w-3.5 lg:h-4 lg:w-4 shrink-0 transition-transform duration-200 ${
+                        group.highlight ? "opacity-70" : "opacity-40"
+                      } ${isOpen ? "rotate-180" : ""}`}
                     />
                   </button>
                 </TooltipTrigger>
