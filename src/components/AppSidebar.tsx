@@ -73,10 +73,10 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Vendas - Estoque Físico Armazém 1",
+    label: "Vendas · Armazém 1",
     icon: Store,
     color: "text-[#FB923C]",
-    tooltip: "PDV, orçamentos e notas fiscais do estoque físico",
+    tooltip: "PDV, orçamentos e notas fiscais do estoque físico (Armazém 1)",
     subItems: [
       { label: "PDV", url: "/pdv", icon: Monitor, tooltip: "Venda por busca ou bipagem, com ou sem NF" },
       { label: "Orçamento", url: "/orcamentos", icon: Briefcase, tooltip: "Crie orçamentos e converta em venda" },
@@ -268,7 +268,7 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/"); }}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150 ${
                 isActive("/")
                   ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                   : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -294,7 +294,7 @@ function SidebarContent({
                   <button
                     onClick={() => toggleGroup(group.label)}
                     disabled={hasLockedOnly}
-                    className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                    className={`w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150 ${
                       group.highlight
                         ? isOpen || groupActive
                           ? "border border-[#E6CF00] bg-[#FFE600] border-l-[3px] border-l-[#E6CF00] font-bold text-neutral-900 shadow-sm"
@@ -311,11 +311,11 @@ function SidebarContent({
                     ) : (
                       <group.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
                     )}
-                    <span className="flex-1 text-left leading-tight">{group.label}</span>
-                    {group.subItems.some((s) => s.locked) && (
+                    <span className="flex-1 text-left leading-snug text-pretty break-words">{group.label}</span>
+                    {hasLockedOnly && (
                       <Lock className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     )}
-                    {group.subItems.some((s) => s.soon) && !group.subItems.some((s) => s.locked) && (
+                    {group.subItems.some((s) => s.soon) && !hasLockedOnly && (
                       <Sparkles className={`h-3.5 w-3.5 shrink-0 ${group.highlight ? "opacity-80" : "opacity-50"}`} />
                     )}
                     <ChevronDown
@@ -338,14 +338,14 @@ function SidebarContent({
                           <button
                             onClick={() => go(sub.url)}
                             disabled={sub.locked}
-                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-[13px] font-medium transition-all duration-100 border-l border-border/60 ${
+                            className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 rounded-lg text-[13px] font-medium text-left transition-all duration-100 border-l border-border/60 ${
                               subActive
                                 ? "text-primary font-semibold"
                                 : "text-muted-foreground hover:text-primary"
                             } ${sub.locked ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             <sub.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
-                            <span className="leading-tight">{sub.label}</span>
+                            <span className="flex-1 leading-snug text-pretty break-words">{sub.label}</span>
                             {sub.locked && (
                               <Lock className="h-3 w-3 ml-auto shrink-0 opacity-50" />
                             )}
@@ -369,7 +369,7 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={() => { setOpenGroup(null); go("/ia-hub"); }}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+              className={`w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150 ${
                 isActive("/ia-hub") || isActive("/ia-")
                   ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                   : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -390,7 +390,7 @@ function SidebarContent({
               <TooltipTrigger asChild>
                 <button
                   onClick={() => { setOpenGroup(null); go("/master-admin"); }}
-                  className={`relative w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  className={`relative w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150 ${
                     isActive("/master-admin")
                       ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                       : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -415,7 +415,7 @@ function SidebarContent({
             <TooltipTrigger asChild>
               <button
                 onClick={() => { setOpenGroup(null); go("/admin-master-dev"); }}
-                className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium transition-all duration-150 ${
+                className={`w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left transition-all duration-150 ${
                   isActive("/admin-master-dev")
                     ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                     : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -435,7 +435,7 @@ function SidebarContent({
           <TooltipTrigger asChild>
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-sm font-medium border border-border bg-secondary/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+              className="w-full min-h-[44px] lg:min-h-[48px] flex items-center gap-2 lg:gap-2.5 px-3 lg:px-3.5 py-2 lg:py-2.5 rounded-xl text-sm font-medium text-left border border-border bg-secondary/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               <LogOut className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0" strokeWidth={1.75} />
               <span className="leading-tight">Sair</span>
