@@ -3,15 +3,16 @@ import {
   Home, Package, Warehouse, Store, TrendingUp, Brain,
   LogOut, Crown, ChevronDown, Boxes, UsersRound,
   Users, ClipboardList, ScanBarcode, Monitor,
-  Building2, BarChart3, ShoppingBag, BarChart, DollarSign, Copy, ArrowRightLeft,
-  LockKeyhole, Import, Activity, Undo2, TrendingDown
+  Building2, BarChart3, ShoppingBag, DollarSign,
+  LockKeyhole, Import, Activity, Undo2, FileText,
+  Printer, Factory, Truck, Tags, Briefcase,
+  QrCode, Sparkles, Lock, ArrowRightLeft
 } from "lucide-react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePendingUsers, useHasAdminAccess } from "@/hooks/useAdminData";
 import { useAdminMasterDev } from "@/hooks/useAdminMasterDev";
-
 
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -23,54 +24,114 @@ import { VersionBadge } from "@/components/VersionBadge";
 export type { MenuItem, MenuGroup } from "@/lib/menu-data";
 export { menuGroups } from "@/lib/menu-data";
 
-interface SubItem { label: string; url: string; icon: React.ElementType; tooltip: string; }
-interface NavGroup { label: string; icon: React.ElementType; color: string; tooltip: string; subItems: SubItem[]; }
+interface SubItem {
+  label: string;
+  url: string;
+  icon: React.ElementType;
+  tooltip: string;
+  locked?: boolean;
+  soon?: boolean;
+}
+
+interface NavGroup {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  tooltip: string;
+  subItems: SubItem[];
+}
 
 const groups: NavGroup[] = [
   {
-    label: "Cadastros", icon: Package, color: "text-[#60A5FA]",
-    tooltip: "Gerencie produtos, kits, equipe e clientes",
+    label: "Cadastros",
+    icon: Package,
+    color: "text-[#60A5FA]",
+    tooltip: "Produtos, clientes, kits e entrada de notas",
     subItems: [
-      { label: "Produtos", url: "/produtos", icon: Package, tooltip: "Cadastre e gerencie os produtos que você vende" },
-      { label: "Kits", url: "/kits", icon: Boxes, tooltip: "Combine produtos em kits para vender juntos" },
-      { label: "Equipe", url: "/equipe", icon: UsersRound, tooltip: "Adicione colaboradores e defina o que cada um pode acessar" },
+      { label: "Entrada NF XML", url: "/entrada-xml", icon: FileText, tooltip: "Leia XML da nota, encontre produto por EAN e lance estoque/financeiro" },
+      { label: "Produtos", url: "/produtos", icon: Package, tooltip: "Cadastro de produtos com aba de dados fiscais e regras fiscais" },
+      { label: "Devoluções", url: "/devolucoes", icon: Undo2, tooltip: "Abertura de devolução com filmagem e canal de origem" },
+      { label: "Criar Kits", url: "/kits", icon: Boxes, tooltip: "Monte kits compostos" },
       { label: "Clientes", url: "/crm", icon: Users, tooltip: "Base de clientes e histórico de compras" },
-      { label: "Migração", url: "/importacao", icon: Import, tooltip: "Importar produtos e estoque de outros sistemas" },
+      { label: "Gerar Etiqueta", url: "/etiquetas", icon: Printer, tooltip: "Gere etiquetas por EAN/descrição ou vinculadas a produtos" },
     ],
   },
   {
-    label: "Estoque", icon: Warehouse, color: "text-[#34D399]",
-    tooltip: "Controle entradas, saídas e conferência de estoque",
+    label: "Estoque",
+    icon: Warehouse,
+    color: "text-[#34D399]",
+    tooltip: "Controle de saldos, transferências e ajustes",
     subItems: [
-      { label: "Ver Estoque", url: "/estoque", icon: Warehouse, tooltip: "Veja as quantidades disponíveis de cada produto" },
-      { label: "Entrada de Nota", url: "/entrada-nota", icon: ClipboardList, tooltip: "Receba mercadorias e atualize o estoque automaticamente" },
-      { label: "Conferência", url: "/conferencia", icon: ScanBarcode, tooltip: "Bipe produtos para verificar se o estoque está correto" },
-      { label: "Balanço", url: "/balanco-estoque", icon: BarChart, tooltip: "Realize inventário físico do estoque" },
-      { label: "Envio FULL", url: "/movimentacao-full", icon: ArrowRightLeft, tooltip: "Transferir mercadorias para o FULL do Mercado Livre" },
-      { label: "Devoluções", url: "/devolucoes", icon: Undo2, tooltip: "Gerencie devoluções, quarentena e evidências" },
+      { label: "Ver Estoque", url: "/estoque", icon: Warehouse, tooltip: "Filtre por Físico, FULL e armazéns; detalhe kits" },
+      { label: "Relatório Estoque", url: "/relatorio-estoque", icon: BarChart3, tooltip: "Custo médio por NF, filtrado por Físico/FULL/armazém" },
+      { label: "Envio FULL", url: "/movimentacao-full", icon: Truck, tooltip: "Transferir mercadorias para o FULL do Mercado Livre" },
+      { label: "Criar Armazém / Canal", url: "/armazens", icon: Factory, tooltip: "Cadastre depósitos e locais (Físico, Loja, Site, FULL)" },
+      { label: "Transferir Estoque Armazém", url: "/transferencia-armazem", icon: ArrowRightLeft, tooltip: "Transferência via bipagem de EAN entre armazéns" },
+      { label: "Ajuste de Estoque Manual", url: "/ajuste-estoque", icon: Tags, tooltip: "Ajuste quantidade com senha de Gerente" },
+      { label: "Balanço", url: "/balanco-estoque", icon: ClipboardList, tooltip: "Inventário físico do estoque" },
     ],
   },
   {
-    label: "Vendas", icon: Store, color: "text-[#FB923C]",
-    tooltip: "PDV, campanhas e integrações com marketplaces",
+    label: "Vendas - Estoque Físico Armazém 1",
+    icon: Store,
+    color: "text-[#FB923C]",
+    tooltip: "PDV, orçamentos e notas fiscais do estoque físico",
     subItems: [
-      { label: "PDV", url: "/pdv", icon: Monitor, tooltip: "Registre vendas no balcão com ou sem leitor de código de barras" },
-      // Removed Campanhas — feature removed
-      { label: "Minha Loja", url: "/minha-loja/configurar", icon: Store, tooltip: "Configure sua vitrine virtual" },
-      { label: "Integrações", url: "/integracao-ml", icon: ShoppingBag, tooltip: "Conecte sua conta do Mercado Livre ao sistema" },
-      { label: "Duplicador ML", url: "/duplicador-anuncios", icon: Copy, tooltip: "Duplique anúncios com variações automáticas" },
+      { label: "PDV", url: "/pdv", icon: Monitor, tooltip: "Venda por busca ou bipagem, com ou sem NF" },
+      { label: "Orçamento", url: "/orcamentos", icon: Briefcase, tooltip: "Crie orçamentos e converta em venda" },
+      { label: "Nota Fiscal", url: "/notas-fiscais", icon: FileText, tooltip: "Lista de vendas com preenchimento de dados fiscais" },
     ],
   },
   {
-    label: "Gestão", icon: TrendingUp, color: "text-[#A78BFA]",
-    tooltip: "Relatórios, empresa e configurações do sistema",
+    label: "Gestão Mercado Livre FULL",
+    icon: ShoppingBag,
+    color: "text-[#38BDF8]",
+    tooltip: "Anúncios, estoque FULL e integração ML",
     subItems: [
-      { label: "Minha Empresa", url: "/empresa", icon: Building2, tooltip: "Dados e configurações da sua empresa" },
-      { label: "Relatórios", url: "/painel-hub", icon: BarChart3, tooltip: "Métricas e relatórios de desempenho" },
-      { label: "Relatório de Vendas", url: "/relatorio-vendas", icon: BarChart, tooltip: "Relatório detalhado de vendas PDV e ML" },
-      { label: "Performance Separação", url: "/dashboard-separacao", icon: Activity, tooltip: "KPIs operacionais, gráfico e ranking de operadores" },
-      { label: "Financeiro", url: "/financeiro", icon: DollarSign, tooltip: "Cobranças, pagamentos e faturamento" },
-      { label: "Conciliação Preços", url: "/conciliacao-precos", icon: TrendingDown, tooltip: "Compare preços de custo (NF) com preços do Mercado Livre" },
+      { label: "Anúncios", url: "/anuncios-ml", icon: Tags, tooltip: "Vincule anúncios ao estoque FULL e baixa automática por venda" },
+      { label: "Dashboard de Vendas", url: "/dashboard-vendas-ml", icon: BarChart3, tooltip: "Dashboard futuro no padrão Metrify", soon: true },
+      { label: "Estoque FULL", url: "/estoque-full-ml", icon: Warehouse, tooltip: "Sincronize estoque FULL ML com o estoque do armazém" },
+      { label: "Integração", url: "/integracao-ml", icon: ShoppingBag, tooltip: "Conexão e sincronização via API do Mercado Livre" },
+    ],
+  },
+  {
+    label: "Gestão",
+    icon: TrendingUp,
+    color: "text-[#A78BFA]",
+    tooltip: "Empresa, equipe e relatórios",
+    subItems: [
+      { label: "Minha Empresa", url: "/empresa", icon: Building2, tooltip: "Dados e configurações da empresa" },
+      { label: "Equipe", url: "/equipe", icon: UsersRound, tooltip: "Colaboradores e permissões" },
+      { label: "Relatórios", url: "/painel-hub", icon: BarChart3, tooltip: "Relatórios consolidados e métricas" },
+    ],
+  },
+  {
+    label: "Financeiro",
+    icon: DollarSign,
+    color: "text-[#34D399]",
+    tooltip: "Resumo, contas a pagar e despesas",
+    subItems: [
+      { label: "Resumo Financeiro", url: "/financeiro", icon: Activity, tooltip: "Sincronização API estilo Metrify + vendas do estoque físico" },
+      { label: "Contas a Pagar", url: "/contas-pagar", icon: DollarSign, tooltip: "Cadastro de contas (nome, valor, data, descrição)" },
+      { label: "Relatório Despesas", url: "/relatorio-despesas", icon: BarChart3, tooltip: "NFs de fornecedores e contas cadastradas" },
+    ],
+  },
+  {
+    label: "Gestão Loja 2",
+    icon: Store,
+    color: "text-[#94A3B8]",
+    tooltip: "Em desenvolvimento futuro",
+    subItems: [
+      { label: "Loja 2", url: "#", icon: Lock, tooltip: "Em desenvolvimento futuro", locked: true },
+    ],
+  },
+  {
+    label: "Gestão Site",
+    icon: Monitor,
+    color: "text-[#94A3B8]",
+    tooltip: "Em desenvolvimento futuro",
+    subItems: [
+      { label: "Site", url: "#", icon: Lock, tooltip: "Em desenvolvimento futuro", locked: true },
     ],
   },
 ];
@@ -99,6 +160,7 @@ export function AppSidebar() {
   };
 
   const go = (url: string) => {
+    if (url === "#") return;
     navigate(url);
     if (isMobile) setOpenMobile(false);
   };
@@ -107,7 +169,6 @@ export function AppSidebar() {
   if (isMobile) {
     return (
       <>
-        {/* Backdrop */}
         {openMobile && (
           <div
             className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -129,14 +190,13 @@ export function AppSidebar() {
             isPlatformAdmin={!!isPlatformAdmin}
             isAdminMasterDev={!!isAdminMasterDev}
             pendingCount={pendingCount}
-            compact={isCollapsed}
+            compact={false}
           />
         </aside>
       </>
     );
   }
 
-  // Tablet & Desktop
   return (
     <aside className="w-[230px] min-w-[230px] lg:w-[230px] lg:min-w-[230px] md:w-[170px] md:min-w-[170px] h-screen sticky top-0 border-r border-border/40 bg-sidebar flex flex-col overflow-hidden">
       <SidebarContent
@@ -156,7 +216,16 @@ export function AppSidebar() {
 }
 
 function SidebarContent({
-  isActive, toggleGroup, openGroup, setOpenGroup, go, signOut, isPlatformAdmin, isAdminMasterDev, pendingCount, compact,
+  isActive,
+  toggleGroup,
+  openGroup,
+  setOpenGroup,
+  go,
+  signOut,
+  isPlatformAdmin,
+  isAdminMasterDev,
+  pendingCount,
+  compact,
 }: {
   isActive: (url: string) => boolean;
   toggleGroup: (label: string) => void;
@@ -169,10 +238,8 @@ function SidebarContent({
   pendingCount: number;
   compact: boolean;
 }) {
-
   return (
     <>
-      {/* Logo */}
       <div className={`sidebar-header shrink-0 ${compact ? 'justify-center !h-16' : ''}`}>
         {compact ? (
           <img
@@ -199,7 +266,6 @@ function SidebarContent({
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 overflow-y-auto p-2 lg:p-3 space-y-1.5 lg:space-y-2 scrollbar-thin">
         {/* Início */}
         <Tooltip>
@@ -219,28 +285,11 @@ function SidebarContent({
           <TooltipContent side="right">Voltar para o painel principal</TooltipContent>
         </Tooltip>
 
-        {/* Devoluções - atalho direto */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => { setOpenGroup(null); go("/devolucoes"); }}
-              className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
-                isActive("/devolucoes")
-                  ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
-                  : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
-              }`}
-            >
-              <Undo2 className="h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
-              <span className="truncate">Devoluções</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Gerencie devoluções, quarentena e evidências</TooltipContent>
-        </Tooltip>
-
         {/* Groups */}
         {groups.map((group) => {
           const isOpen = openGroup === group.label;
-          const groupActive = group.subItems.some((s) => isActive(s.url));
+          const groupActive = group.subItems.some((s) => s.url !== "#" && isActive(s.url));
+          const hasLockedOnly = group.subItems.every((s) => s.locked);
 
           return (
             <div key={group.label}>
@@ -248,14 +297,21 @@ function SidebarContent({
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => toggleGroup(group.label)}
+                    disabled={hasLockedOnly}
                     className={`w-full flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 rounded-xl text-xs lg:text-[13px] font-medium transition-all duration-150 ${
                       isOpen || groupActive
                         ? "border border-primary/30 bg-primary/10 border-l-[3px] border-l-primary font-semibold text-primary"
                         : "border border-border bg-secondary/60 border-l-[3px] border-l-transparent text-muted-foreground hover:bg-accent hover:text-foreground"
-                    }`}
+                    } ${hasLockedOnly ? "opacity-60 cursor-not-allowed" : ""}`}
                   >
                     <group.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${group.color}`} strokeWidth={1.75} />
                     <span className="flex-1 text-left truncate">{group.label}</span>
+                    {group.subItems.some((s) => s.locked) && (
+                      <Lock className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    )}
+                    {group.subItems.some((s) => s.soon) && !group.subItems.some((s) => s.locked) && (
+                      <Sparkles className="h-3.5 w-3.5 shrink-0 opacity-50" />
+                    )}
                     <ChevronDown
                       className={`h-3.5 w-3.5 lg:h-4 lg:w-4 shrink-0 opacity-40 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                     />
@@ -264,24 +320,30 @@ function SidebarContent({
                 <TooltipContent side="right">{group.tooltip}</TooltipContent>
               </Tooltip>
 
-              {/* Sub-items */}
               {isOpen && (
                 <div className="mt-1 lg:mt-1.5 ml-2 lg:ml-3 space-y-[2px]">
                   {group.subItems.map((sub) => {
-                    const subActive = isActive(sub.url);
+                    const subActive = sub.url !== "#" && isActive(sub.url);
                     return (
-                      <Tooltip key={sub.url}>
+                      <Tooltip key={sub.label}>
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => go(sub.url)}
+                            disabled={sub.locked}
                             className={`w-full flex items-center gap-2 lg:gap-2.5 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg text-xs lg:text-[13px] font-medium transition-all duration-100 border-l border-border/60 ${
                               subActive
                                 ? "text-primary font-semibold"
                                 : "text-muted-foreground hover:text-primary"
-                            }`}
+                            } ${sub.locked ? "opacity-50 cursor-not-allowed" : ""}`}
                           >
                             <sub.icon className={`h-4 w-4 lg:h-[18px] lg:w-[18px] shrink-0 ${subActive ? "text-primary" : ""}`} strokeWidth={1.75} />
                             <span className="truncate">{sub.label}</span>
+                            {sub.locked && (
+                              <Lock className="h-3 w-3 ml-auto shrink-0 opacity-50" />
+                            )}
+                            {sub.soon && !sub.locked && (
+                              <Sparkles className="h-3 w-3 ml-auto shrink-0 opacity-50" />
+                            )}
                           </button>
                         </TooltipTrigger>
                         <TooltipContent side="right">{sub.tooltip}</TooltipContent>
@@ -294,7 +356,7 @@ function SidebarContent({
           );
         })}
 
-        {/* IA */}
+        {/* Central de IA - tela direta */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -339,8 +401,7 @@ function SidebarContent({
             </Tooltip>
           </>
         )}
-        
-        {/* Admin Master Dev - Hidden for regular users, shown only for Devs */}
+
         {isAdminMasterDev && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -361,8 +422,6 @@ function SidebarContent({
         )}
       </nav>
 
-
-      {/* Footer */}
       <div className="border-t border-border/30 p-2 lg:p-3 shrink-0">
         <Tooltip>
           <TooltipTrigger asChild>

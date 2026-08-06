@@ -78,8 +78,19 @@ const AdminMasterDev = lazy(() => import("./pages/AdminMasterDev"));
 const Importacao = lazy(() => import("./pages/Importacao"));
 const RelatorioEstoqueFisico = lazy(() => import("./pages/RelatorioEstoqueFisico"));
 const RelatorioEstoqueFull = lazy(() => import("./pages/RelatorioEstoqueFull"));
+const Armazens = lazy(() => import("./pages/Armazens"));
+const TransferenciaArmazem = lazy(() => import("./pages/TransferenciaArmazem"));
+const AjusteEstoqueManual = lazy(() => import("./pages/AjusteEstoque"));
+const Orcamentos = lazy(() => import("./pages/Orcamentos"));
+const NotasFiscais = lazy(() => import("./pages/NotasFiscais"));
+const GerarEtiqueta = lazy(() => import("./pages/Etiquetas"));
+const AnunciosML = lazy(() => import("./pages/Anuncios"));
+const EstoqueFullML = lazy(() => import("./pages/RelatorioEstoqueFull"));
+const DashboardVendasML = lazy(() => import("./pages/DashboardVendasML"));
 const ConciliacaoPrecos = lazy(() => import("./pages/ConciliacaoPrecos"));
 const RelatorioVendas = lazy(() => import("./pages/RelatorioVendas"));
+const ContasPagar = lazy(() => import("./pages/ContasPagar"));
+const RelatorioDespesas = lazy(() => import("./pages/RelatorioDespesas"));
 
 
 const queryClient = new QueryClient({
@@ -140,6 +151,16 @@ const App = (): JSX.Element => {
                               <Route path="/balanco-estoque" element={<BalancoEstoque />} />
                               <Route path="/relatorio-estoque-fisico" element={<RelatorioEstoqueFisico />} />
                               <Route path="/relatorio-estoque-full" element={<RelatorioEstoqueFull />} />
+                              <Route path="/relatorio-estoque" element={<RelatorioEstoqueFull />} />
+                              <Route path="/armazens" element={<Armazens />} />
+                              <Route path="/transferencia-armazem" element={<TransferenciaArmazem />} />
+                              <Route path="/ajuste-estoque" element={<AjusteEstoqueManual />} />
+                              <Route path="/orcamentos" element={<Orcamentos />} />
+                              <Route path="/notas-fiscais" element={<NotasFiscais />} />
+                              <Route path="/etiquetas" element={<GerarEtiqueta />} />
+                              <Route path="/anuncios-ml" element={<AnunciosML />} />
+                              <Route path="/dashboard-vendas-ml" element={<DashboardVendasML />} />
+                              <Route path="/estoque-full-ml" element={<EstoqueFullML />} />
                               <Route path="/movimentacao-full" element={<PlanProtectedRoute path="/movimentacao-full"><MovimentacaoFull /></PlanProtectedRoute>} />
                               <Route path="/devolucoes" element={<PlanProtectedRoute path="/devolucoes"><Devolucoes /></PlanProtectedRoute>} />
                               <Route path="/devolucoes/:returnId" element={<PlanProtectedRoute path="/devolucoes"><DevolucaoDetail /></PlanProtectedRoute>} />
@@ -181,6 +202,8 @@ const App = (): JSX.Element => {
                               <Route path="/minha-loja/configurar" element={<MinhaLojaConfig />} />
                               <Route path="/minha-loja/produtos" element={<MinhaLojaProdutos />} />
                               <Route path="/minha-loja/pedidos" element={<MinhaLojaPedidos />} />
+                              <Route path="/contas-pagar" element={<ContasPagar />} />
+                              <Route path="/relatorio-despesas" element={<RelatorioDespesas />} />
                               <Route path="/admin-master-dev" element={<AdminMasterDevGuard><AdminMasterDev /></AdminMasterDevGuard>} />
                               <Route path="/admin-master/*" element={<Navigate to="/master-admin" replace />} />
                               <Route path="/admin/painel-controle" element={<Navigate to="/master-admin" replace />} />
