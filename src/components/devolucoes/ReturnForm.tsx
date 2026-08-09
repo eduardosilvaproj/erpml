@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { useCreateReturn } from "@/hooks/useDevolucoes";
+import { useCompanyId } from "@/hooks/useCompanyId";
 import { useNavigate } from "react-router-dom";
+import { productsService } from "@/services/products";
 import { ReturnSource } from "@/services/returns";
 
 export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -15,20 +17,41 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
   const [customer, setCustomer] = useState("");
   const [orderRef, setOrderRef] = useState("");
   const [motivo, setMotivo] = useState("");
-  const [items, setItems] = useState([{ nome: "", sku: "", quantity: 1 }]);
+  const [items, setItems] = useState([{ nome: "", sku: "", quantity: 1, productId: undefined as string | undefined }]);
+  const [lookupIdx, setLookupIdx] = useState<number | null>(null);
+  const [notFoundIdx, setNotFoundIdx] = useState<number | null>(null);
   const create = useCreateReturn();
+  const companyId = useCompanyId();
   const navigate = useNavigate();
 
+  /** Busca produto por EAN/SKU ao sair do campo SKU */
+  const handleSkuBlur = async (idx: number) => {
+    const code = items[idx].sku.trim();
+    if (!code || !companyId || items[idx].nome) return;
+    try {
+      setLookupIdx(idx);
+      setNotFoundIdx(null);
+      const found =
+        (await productsService.findProductByEanOrSku({ ean: code, companyId })) ??
+        (await productsService.findProductByEanOrSku({ sku: code, companyId }));
+      if (found) {
+        setItems(items.map((x, k) => k === idx ? { ...x, nome: found.name ?? "", productId: found.id } : x));
+      } else {
+        setNotFoundIdx(idx);
+      }
+    } catch { /* ignora erro de lookup */ }
+    finally { setLookupIdx(null); }
+  };
+
   const submit = async () => {
-    const valid = items.filter(i => i.nome.trim() && i.quantity > 0);
+    const valid = items.filter(i => (i.nome.trim() || i.sku.trim()) && i.quantity > 0);
     if (valid.length === 0) return;
     const ret = await create.mutateAsync({
-      companyId: "",
       source,
       customerName: customer || undefined,
       orderReference: orderRef || undefined,
       motivo: motivo || undefined,
-      items: valid,
+      items: valid.map(i => ({ productId: (i as any).productId, nome: i.nome, sku: i.sku, quantity: i.quantity })),
     });
     onOpenChange(false);
     setCustomer(""); setOrderRef(""); setMotivo("");
@@ -42,6 +65,11 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
         <DialogHeader>
           <DialogTitle>Nova Devolução</DialogTitle>
         </DialogHeader>
+        {lookupIdx !== null && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Buscando produto…
+          </div>
+        )}
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -73,7 +101,7 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>Itens devolvidos</Label>
-              <Button size="sm" variant="ghost" onClick={() => setItems([...items, { nome: "", sku: "", quantity: 1 }])}>
+              <Button size="sm" variant="ghost" onClick={() => setItems([...items, { nome: "", sku: "", quantity: 1, productId: undefined }])}>
                 <Plus className="h-4 w-4 mr-1" /> Adicionar
               </Button>
             </div>
@@ -85,8 +113,12 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
                       onChange={e => setItems(items.map((x, k) => k === i ? { ...x, nome: e.target.value } : x))} />
                   </div>
                   <div className="col-span-3">
-                    <Input placeholder="SKU / EAN" value={it.sku}
-                      onChange={e => setItems(items.map((x, k) => k === i ? { ...x, sku: e.target.value } : x))} />
+                    <Input placeholder="SKU / EAN" value={it.sku} disabled={lookupIdx === i}
+                      onChange={e => { setNotFoundIdx(null); setItems(items.map((x, k) => k === i ? { ...x, sku: e.target.value } : x)); }}
+                      onBlur={() => handleSkuBlur(i)} />
+                    {notFoundIdx === i && (
+                      <p className="text-xs text-amber-600 mt-0.5">Produto não encontrado — preencha o nome manualmente.</p>
+                    )}
                   </div>
                   <div className="col-span-2">
                     <Input type="number" min={1} value={it.quantity}
