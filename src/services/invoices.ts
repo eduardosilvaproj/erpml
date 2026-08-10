@@ -3,6 +3,25 @@ import type { MatchResult, NFeSupplier } from "@/lib/nfe-parser";
 import { enrichProduct } from "@/lib/enrich-product";
 import { stockService } from "./stock";
 
+function cleanSupplierData(raw: any) {
+  const razao = raw.razao_social || raw.name || "Fornecedor Desconhecido";
+  return {
+    name: razao,
+    razao_social: razao,
+    nome_fantasia: raw.nome_fantasia || null,
+    cnpj: raw.cnpj || null,
+    ie: raw.ie || null,
+    phone: raw.phone || raw.telefone || null,
+    email: raw.email || null,
+    cep: raw.cep || null,
+    logradouro: raw.logradouro || null,
+    numero: raw.numero || null,
+    bairro: raw.bairro || null,
+    municipio: raw.municipio || null,
+    uf: raw.uf || null,
+  };
+}
+
 export interface InvoiceStockProcessSummary {
   invoice: any;
   createdCount: number;
@@ -317,27 +336,28 @@ export const invoicesService = {
     let supplierId: string | null = null;
 
     if (nfeData.supplier) {
+      const sup = cleanSupplierData(nfeData.supplier);
       const { data: existing } = await supabase
         .from("suppliers")
         .select("id, razao_social")
-        .eq("cnpj", nfeData.supplier.cnpj)
+        .eq("cnpj", sup.cnpj)
         .eq("company_id", companyId)
         .maybeSingle();
 
       if (existing) {
         const { error: updError } = await supabase.from("suppliers").update({
-          ...nfeData.supplier,
+          ...sup,
           updated_at: new Date().toISOString(),
-        } as any).eq("id", existing.id).eq("company_id", companyId);
+        }).eq("id", existing.id).eq("company_id", companyId);
         if (updError) throw updError;
         supplierId = existing.id;
       } else {
         const { data: novo, error: insError } = await supabase.from("suppliers").insert({
-          ...nfeData.supplier,
+          ...sup,
           company_id: companyId,
           origem: "nota_fiscal",
           created_at: new Date().toISOString(),
-        } as any).select().maybeSingle();
+        }).select().maybeSingle();
         if (insError) throw insError;
         if (novo) supplierId = novo.id;
       }
