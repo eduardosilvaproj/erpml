@@ -18,7 +18,7 @@ export interface NFeSupplier {
   nome_fantasia?: string;
   cnpj: string;
   ie?: string;
-  telefone?: string;
+  phone?: string;
   email?: string;
   cep?: string;
   logradouro?: string;
@@ -97,7 +97,7 @@ export function parseNFeXml(xmlString: string): NFeData {
       nome_fantasia: getTagValue(emit, "xFant"),
       cnpj: issuerCnpj,
       ie: getTagValue(emit, "IE"),
-      telefone: enderEmit ? getTagValue(enderEmit, "fone") : undefined,
+      phone: enderEmit ? getTagValue(enderEmit, "fone") : undefined,
       email: emailEl?.textContent?.trim(),
       cep: enderEmit ? getTagValue(enderEmit, "CEP") : undefined,
       logradouro: enderEmit ? getTagValue(enderEmit, "xLgr") : undefined,
