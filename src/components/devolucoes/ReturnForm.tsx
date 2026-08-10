@@ -27,7 +27,7 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
   /** Busca produto por EAN/SKU ao sair do campo SKU */
   const handleSkuBlur = async (idx: number) => {
     const code = items[idx].sku.trim();
-    if (!code || !companyId || items[idx].nome) return;
+    if (!code || !companyId) return;
     try {
       setLookupIdx(idx);
       setNotFoundIdx(null);
@@ -35,8 +35,8 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
         (await productsService.findProductByEanOrSku({ ean: code, companyId })) ??
         (await productsService.findProductByEanOrSku({ sku: code, companyId }));
       if (found) {
-        setItems(items.map((x, k) => k === idx ? { ...x, nome: found.name ?? "", productId: found.id } : x));
-      } else {
+        setItems(items.map((x, k) => k === idx ? { ...x, nome: found.name ?? "", sku: found.sku || code, productId: found.id } : x));
+      } else if (!items[idx].nome.trim()) {
         setNotFoundIdx(idx);
       }
     } catch { /* ignora erro de lookup */ }
@@ -44,14 +44,48 @@ export function ReturnForm({ open, onOpenChange }: { open: boolean; onOpenChange
   };
 
   const submit = async () => {
-    const valid = items.filter(i => (i.nome.trim() || i.sku.trim()) && i.quantity > 0);
+    // Garante lookup automático de itens que tenham SKU/EAN preenchido mas nome vazio antes de enviar
+    const updatedItems = [...items];
+    if (companyId) {
+      for (let i = 0; i < updatedItems.length; i++) {
+        const it = updatedItems[i];
+        const code = it.sku.trim();
+        if (code && !it.productId) {
+          try {
+            const found =
+              (await productsService.findProductByEanOrSku({ ean: code, companyId })) ??
+              (await productsService.findProductByEanOrSku({ sku: code, companyId }));
+            if (found) {
+              updatedItems[i] = {
+                ...it,
+                nome: it.nome.trim() ? it.nome : (found.name ?? code),
+                sku: found.sku || code,
+                productId: found.id
+              };
+            } else if (!updatedItems[i].nome.trim()) {
+              updatedItems[i] = { ...it, nome: code };
+            }
+          } catch {
+            if (!updatedItems[i].nome.trim()) {
+              updatedItems[i] = { ...it, nome: code };
+            }
+          }
+        } else if (!it.nome.trim() && code) {
+          updatedItems[i] = { ...it, nome: code };
+        }
+      }
+      setItems(updatedItems);
+    }
+
+    const valid = updatedItems.filter(i => (i.nome.trim() || i.sku.trim()) && i.quantity > 0);
     if (valid.length === 0) return;
+
     const ret = await create.mutateAsync({
       source,
       customerName: customer || undefined,
       orderReference: orderRef || undefined,
       motivo: motivo || undefined,
-      items: valid.map(i => ({ productId: (i as any).productId, nome: i.nome, sku: i.sku, quantity: i.quantity })),
+      items: valid.map(i => ({ productId: (i as any).productId, nome: i.nome || i.sku, sku: i.sku, quantity: i.quantity })),
     });
     onOpenChange(false);
     setCustomer(""); setOrderRef(""); setMotivo("");
