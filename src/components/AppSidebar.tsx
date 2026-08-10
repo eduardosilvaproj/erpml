@@ -49,7 +49,7 @@ const groups: NavGroup[] = [
     color: "text-[#60A5FA]",
     tooltip: "Produtos, clientes, kits e entrada de notas",
     subItems: [
-      { label: "Entrada NF XML", url: "/entrada-xml", icon: FileText, tooltip: "Leia XML da nota, encontre produto por EAN e lance estoque/financeiro" },
+      { label: "Entrada NF XML", url: "/entrada-nota", icon: FileText, tooltip: "Leia XML da nota, conferência por bip, encontre produto por EAN e lance estoque/financeiro" },
       { label: "Produtos", url: "/produtos", icon: Package, tooltip: "Cadastro de produtos com aba de dados fiscais e regras fiscais" },
       { label: "Devoluções", url: "/devolucoes", icon: Undo2, tooltip: "Abertura de devolução com filmagem e canal de origem" },
       { label: "Criar Kits", url: "/kits", icon: Boxes, tooltip: "Monte kits compostos" },
