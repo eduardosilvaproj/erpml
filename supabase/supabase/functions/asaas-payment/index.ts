@@ -168,6 +168,59 @@ async function createSubscription(
     });
   }
 
+  const { data: companyCheck } = await supabaseAdmin
+    .from("companies")
+    .select("is_courtesy")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (companyCheck?.is_courtesy) {
+    const { data: premiumPlan } = await supabaseAdmin
+      .from("plans")
+      .select("id, price, name, slug")
+      .eq("slug", "premium")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    const planToApply = premiumPlan || plan;
+    const { data: inserted, error: insertErr } = await supabaseAdmin
+      .from("subscriptions")
+      .insert({
+        company_id: companyId,
+        plan_id: planToApply.id,
+        asaas_customer_id: customerId,
+        asaas_subscription_id: null,
+        status: "active",
+        payment_method: null,
+        billing_type: "COURTESY",
+        value: 0,
+        next_due_date: null,
+      })
+      .select()
+      .maybeSingle();
+
+    if (insertErr) console.error("DB insert error (courtesy):", insertErr);
+
+    await supabaseAdmin
+      .from("companies")
+      .update({ plan_id: planToApply.id })
+      .eq("id", companyId);
+
+    await supabaseAdmin.from("payment_logs").insert({
+      company_id: companyId,
+      event_type: "COURTESY_GRANTED",
+      status: "courtesy",
+      value: 0,
+      payment_method: null,
+      raw_data: { granted_by: userId, note: "Courtesy grant - no billing performed" },
+    });
+
+    return new Response(
+      JSON.stringify({ subscriptionId: inserted?.id || null, invoiceUrl: null }),
+      { status: 200, headers: { ...cors, "Content-Type": "application/json" } }
+    );
+  }
+
   // Create subscription in Asaas
   const nextDueDate = new Date();
   nextDueDate.setDate(nextDueDate.getDate() + 1);
@@ -277,6 +330,65 @@ async function createPayment(
     return new Response(JSON.stringify({ error: "Plano inválido" }), {
       status: 400, headers: { ...cors, "Content-Type": "application/json" },
     });
+  }
+
+  const { data: companyCheckForPayment } = await supabaseAdmin
+    .from("companies")
+    .select("is_courtesy")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (companyCheckForPayment?.is_courtesy) {
+    const { data: premiumPlan } = await supabaseAdmin
+      .from("plans")
+      .select("id, price, name, slug")
+      .eq("slug", "premium")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    const planToApply = premiumPlan || plan;
+    const { data: inserted, error: insertErr } = await supabaseAdmin
+      .from("subscriptions")
+      .insert({
+        company_id: companyId,
+        plan_id: planToApply.id,
+        asaas_customer_id: customerId,
+        asaas_payment_id: null,
+        status: "active",
+        payment_method: null,
+        billing_type: "COURTESY",
+        value: 0,
+        next_due_date: null,
+      })
+      .select()
+      .maybeSingle();
+
+    if (insertErr) console.error("DB insert error (courtesy payment):", insertErr);
+
+    await supabaseAdmin
+      .from("companies")
+      .update({ plan_id: planToApply.id })
+      .eq("id", companyId);
+
+    await supabaseAdmin.from("payment_logs").insert({
+      company_id: companyId,
+      event_type: "COURTESY_GRANTED",
+      status: "courtesy",
+      value: 0,
+      payment_method: null,
+      raw_data: { granted_by: userId, note: "Courtesy grant - no billing performed" },
+    });
+
+    return new Response(
+      JSON.stringify({
+        paymentId: inserted?.id || null,
+        invoiceUrl: null,
+        bankSlipUrl: null,
+        pixQrCode: null,
+        pixCopyPaste: null,
+      }),
+      { status: 200, headers: { ...cors, "Content-Type": "application/json" } }
+    );
   }
 
   const dueDate = new Date();
